@@ -6,9 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "jobs:search": "tsx scripts/generate-search-jobs.ts",
+    "papers:discover": "npm run jobs:search && tsx scripts/discover-and-download-papers.ts",
+    "downloads:analyze": "npm run jobs:search && tsx scripts/analyze-download-coverage.ts"
   },
   "dependencies": {
+    "cheerio": "^1.2.0",
+    "convex": "^1.38.0",
+    "dotenv": "^17.4.2",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"
@@ -21,6 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
