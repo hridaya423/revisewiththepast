@@ -1,0 +1,378 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "english-language",
+    "specCode": "8700",
+    "version": "2024.1",
+    "scope": "aqa-english-language-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part",
+    "sourceUrls": [
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification",
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification/specification-at-a-glance",
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification/subject-content",
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification/scheme-of-assessment"
+    ]
+  },
+  "topics": [
+    {
+      "id": "paper-1-reading-fiction",
+      "parentId": null,
+      "label": "Paper 1 reading: explorations in creative reading",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["paper 1 section A", "fiction extract", "19th-century prose fiction"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q1-retrieval",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 1 retrieval of explicit information and ideas",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q1"],
+      "aliases": ["AO1", "explicit information", "list four things", "summary points"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q1-evidence-selection",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 1 concise evidence selection from specified lines",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q1"],
+      "aliases": ["short quotations", "line-specific evidence", "retrieve and select"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q2-language-methods",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 2 analysis of language methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q2"],
+      "aliases": ["AO2", "language analysis", "methods", "subject terminology"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q2-word-phrase-analysis",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 2 close analysis of words and phrases",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q2"],
+      "aliases": ["word choice", "connotations", "semantic field", "micro-analysis"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q2-figurative-imagery",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 2 figurative language and imagery effects",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q2"],
+      "aliases": ["metaphor", "simile", "personification", "imagery"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q2-reader-effect",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 2 explanation of effects on readers",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q2"],
+      "aliases": ["reader response", "impact of language", "effect analysis"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q3-structure-overview",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 3 analysis of overall structural design",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q3"],
+      "aliases": ["AO2 structure", "narrative shape", "whole-text structure"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q3-focus-shifts",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 3 tracking focus shifts and viewpoint movement",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q3"],
+      "aliases": ["shift in focus", "narrative perspective", "zoom in zoom out"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q3-opening-closing",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 3 function of openings, turning points and endings",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q3"],
+      "aliases": ["opening", "ending", "structural contrast", "narrative progression"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q3-pace-tension",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 3 pacing, suspense and tension through structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q3"],
+      "aliases": ["pace", "withholding information", "suspense", "tension"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q4-judgement",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 4 critical judgement of statement about text",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q4"],
+      "aliases": ["AO4", "to what extent", "critical evaluation", "agree/disagree"]
+    },
+    {
+      "id": "paper-1-reading-fiction.q4-methods-evidence",
+      "parentId": "paper-1-reading-fiction",
+      "label": "Question 4 supporting evaluation with methods and references",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "Q4"],
+      "aliases": ["evaluate methods", "textual support", "critical evidence", "writer's methods"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints",
+      "parentId": null,
+      "label": "Paper 2 reading: writers' viewpoints and perspectives",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["paper 2 section A", "two non-fiction sources", "viewpoints and perspectives"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q1-explicit-selection",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 1 selection of explicit statements from Source A",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q1"],
+      "aliases": ["AO1", "true statements", "select four", "Source A"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q1-locate-evidence",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 1 rapid evidence location in given lines",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q1"],
+      "aliases": ["locating evidence", "line-referenced retrieval", "explicit details"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q2-summary-differences",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 2 summary of differences across Source A and Source B",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q2"],
+      "aliases": ["summary question", "difference summary", "synthesis", "AO1"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q2-inference-perspectives",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 2 inference about ideas and perspectives across sources",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q2"],
+      "aliases": ["implicit meaning", "inference across sources", "perspective inference"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q3-language-methods",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 3 analysis of language methods in Source B",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q3"],
+      "aliases": ["AO2", "language analysis", "Source B", "word and phrase methods"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q3-rhetorical-analysis",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 3 rhetorical and persuasive language analysis",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q3"],
+      "aliases": ["rhetorical devices", "persuasive language", "tone and emphasis"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q4-compare-viewpoints",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 4 comparison of writers' viewpoints and ideas",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q4"],
+      "aliases": ["AO3", "viewpoint comparison", "compare ideas", "attitudes"]
+    },
+    {
+      "id": "paper-2-reading-viewpoints.q4-compare-methods",
+      "parentId": "paper-2-reading-viewpoints",
+      "label": "Question 4 comparison of language and structural methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "Q4"],
+      "aliases": ["methods comparison", "AO3", "cross-text analysis", "evidence from both sources"]
+    },
+    {
+      "id": "paper-1-writing-creative",
+      "parentId": null,
+      "label": "Paper 1 writing: descriptive and narrative writing",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["paper 1 section B", "creative writing", "descriptive or narrative task"]
+    },
+    {
+      "id": "paper-1-writing-creative.task",
+      "parentId": "paper-1-writing-creative",
+      "label": "Question 5 creative writing task response to stimulus",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO5", "description or story", "image prompt", "title prompt"]
+    },
+    {
+      "id": "paper-1-writing-creative.content-organisation",
+      "parentId": "paper-1-writing-creative",
+      "label": "Content and organisation of creative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO5", "structure of ideas", "paragraph shaping", "cohesion"]
+    },
+    {
+      "id": "paper-1-writing-creative.tone-register-style",
+      "parentId": "paper-1-writing-creative",
+      "label": "Tone, register and style control in creative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["voice", "register", "stylistic control", "fit to purpose"]
+    },
+    {
+      "id": "paper-1-writing-creative.narrative-structure",
+      "parentId": "paper-1-writing-creative",
+      "label": "Narrative and structural crafting in creative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["plot control", "structural shaping", "sequencing", "opening and ending"]
+    },
+    {
+      "id": "paper-1-writing-creative.vocabulary-for-effect",
+      "parentId": "paper-1-writing-creative",
+      "label": "Vocabulary selection for precision and effect",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO6", "lexis", "precise vocabulary", "ambitious vocabulary"]
+    },
+    {
+      "id": "paper-1-writing-creative.sentence-variety",
+      "parentId": "paper-1-writing-creative",
+      "label": "Sentence variety and syntax control",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO6", "sentence forms", "syntax", "fluency"]
+    },
+    {
+      "id": "paper-1-writing-creative.punctuation-control",
+      "parentId": "paper-1-writing-creative",
+      "label": "Punctuation control for clarity and effect",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO6", "punctuation", "sentence boundaries", "control and effect"]
+    },
+    {
+      "id": "paper-1-writing-creative.spelling-grammar-accuracy",
+      "parentId": "paper-1-writing-creative",
+      "label": "Spelling and grammar accuracy",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO6", "spelling accuracy", "grammar accuracy", "technical accuracy"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint",
+      "parentId": null,
+      "label": "Paper 2 writing: viewpoint and perspective writing",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["paper 2 section B", "transactional writing", "viewpoint writing"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.task",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Question 5 viewpoint writing response to statement",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO5", "write a letter/article/speech/essay", "statement response"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.argument-line",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Developing a coherent line of argument",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["line of argument", "clear viewpoint", "reasoned development"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.form-conventions",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Applying form conventions for transactional writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["article conventions", "speech conventions", "letter conventions", "essay conventions"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.audience-purpose-register",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Audience, purpose and register control",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["audience awareness", "purposeful writing", "register", "tone"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.rhetorical-devices",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Using rhetorical and persuasive devices",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["rhetorical question", "anaphora", "triples", "contrast", "emotive language"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.paragraph-cohesion",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Paragraphing and cohesion in argument writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["cohesion", "linking ideas", "paragraph structure", "text organisation"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.counterargument-rebuttal",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Counterargument and rebuttal",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["alternative view", "rebuttal", "balanced argument", "evaluation in writing"]
+    },
+    {
+      "id": "paper-2-writing-viewpoint.technical-accuracy",
+      "parentId": "paper-2-writing-viewpoint",
+      "label": "Technical accuracy in viewpoint writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B", "Q5"],
+      "aliases": ["AO6", "spelling punctuation grammar", "sentence control", "vocabulary precision"]
+    }
+  ]
+}

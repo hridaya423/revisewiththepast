@@ -1,0 +1,270 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "english-literature",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of themes per set text for AQA GCSE English Literature"
+  },
+  "themes": {
+    "macbeth": [
+      "ambition",
+      "guilt",
+      "fate-vs-free-will",
+      "kingship",
+      "supernatural",
+      "betrayal",
+      "violence",
+      "gender",
+      "appearance-vs-reality",
+      "loyalty",
+      "tyranny",
+      "revenge"
+    ],
+    "a-christmas-carol": [
+      "redemption",
+      "social-responsibility",
+      "poverty",
+      "family",
+      "christmas-spirit",
+      "greed",
+      "isolation",
+      "generosity",
+      "class-inequality",
+      "memory",
+      "time"
+    ],
+    "an-inspector-calls": [
+      "social-responsibility",
+      "class-division",
+      "gender-inequality",
+      "capitalism-vs-socialism",
+      "guilt",
+      "hypocrisy",
+      "generational-conflict",
+      "power-and-authority",
+      "truth-and-deception",
+      "exploitation"
+    ],
+    "blood-brothers": [
+      "class-division",
+      "nature-vs-nurture",
+      "superstition",
+      "fate",
+      "friendship",
+      "family",
+      "education",
+      "mental-health",
+      "social-mobility",
+      "jealousy"
+    ],
+    "dna": [
+      "mob-mentality",
+      "guilt",
+      "leadership",
+      "morality",
+      "peer-pressure",
+      "responsibility",
+      "fear",
+      "deception",
+      "justice",
+      "conformity"
+    ],
+    "lord-of-the-flies": [
+      "civilization-vs-savagery",
+      "loss-of-innocence",
+      "power",
+      "fear",
+      "human-nature",
+      "leadership",
+      "morality",
+      "identity",
+      "order-vs-chaos"
+    ],
+    "animal-farm": [
+      "power-and-corruption",
+      "propaganda",
+      "class-division",
+      "revolution",
+      "ignorance",
+      "totalitarianism",
+      "language-as-control",
+      "betrayal",
+      "education",
+      "equality"
+    ],
+    "anita-and-me": [
+      "identity",
+      "racism",
+      "class",
+      "family",
+      "cultural-clash",
+      "coming-of-age",
+      "belonging",
+      "gender-expectations",
+      "illusion-vs-reality"
+    ],
+    "jekyll-and-hyde": [
+      "duality-of-man",
+      "reputation",
+      "science-vs-morality",
+      "secrecy",
+      "good-vs-evil",
+      "repression",
+      "transformation",
+      "respectability",
+      "addiction"
+    ],
+    "romeo-and-juliet": [
+      "love",
+      "fate",
+      "conflict",
+      "family-feud",
+      "youth-vs-age",
+      "death",
+      "honor",
+      "individual-vs-society",
+      "time",
+      "violence"
+    ],
+    "the-tempest": [
+      "power-and-control",
+      "colonialism",
+      "freedom",
+      "forgiveness",
+      "nature-vs-civilization",
+      "illusion",
+      "revenge",
+      "magic",
+      "isolation"
+    ],
+    "great-expectations": [
+      "social-class",
+      "ambition",
+      "guilt",
+      "love",
+      "crime",
+      "identity",
+      "wealth",
+      "parental-figures",
+      "redemption",
+      "expectations-vs-reality"
+    ],
+    "jane-eyre": [
+      "independence",
+      "love",
+      "social-class",
+      "gender-roles",
+      "religion",
+      "morality",
+      "freedom",
+      "identity",
+      "madness",
+      "equality"
+    ],
+    "frankenstein": [
+      "creation-and-responsibility",
+      "isolation",
+      "nature-vs-nurture",
+      "ambition",
+      "revenge",
+      "monstrosity",
+      "science",
+      "parental-abandonment",
+      "prejudice"
+    ],
+    "the-merchant-of-venice": [
+      "justice-vs-mercy",
+      "prejudice",
+      "love",
+      "greed",
+      "appearance-vs-reality",
+      "revenge",
+      "friendship",
+      "gender-roles",
+      "outsider-status"
+    ],
+    "much-ado-about-nothing": [
+      "deception",
+      "love",
+      "honor",
+      "gender-roles",
+      "reputation",
+      "appearance-vs-reality",
+      "pride",
+      "gossip"
+    ],
+    "julius-caesar": [
+      "ambition",
+      "betrayal",
+      "power",
+      "fate",
+      "honor",
+      "public-vs-private-self",
+      "rhetoric",
+      "tyranny",
+      "loyalty"
+    ],
+    "the-sign-of-four": [
+      "justice",
+      "colonialism",
+      "greed",
+      "loyalty",
+      "rationality",
+      "revenge"
+    ],
+    "a-taste-of-honey": [
+      "class",
+      "race",
+      "sexuality",
+      "family",
+      "independence",
+      "prejudice",
+      "motherhood",
+      "poverty"
+    ],
+    "pigeon-english": [
+      "violence",
+      "poverty",
+      "childhood",
+      "immigration",
+      "justice",
+      "community",
+      "fear",
+      "identity"
+    ],
+    "my-name-is-leon": [
+      "family",
+      "belonging",
+      "mental-health",
+      "childhood",
+      "class",
+      "care-system",
+      "love",
+      "identity"
+    ],
+    "leave-taking": [
+      "identity",
+      "racism",
+      "mother-daughter-relationship",
+      "education",
+      "cultural-displacement",
+      "generational-conflict",
+      "empowerment"
+    ],
+    "princess-and-the-hustler": [
+      "identity",
+      "cultural-heritage",
+      "family",
+      "gender",
+      "colonialism",
+      "self-discovery"
+    ],
+    "telling-tales": [
+      "storytelling",
+      "identity",
+      "memory",
+      "perspective",
+      "truth"
+    ]
+  }
+}

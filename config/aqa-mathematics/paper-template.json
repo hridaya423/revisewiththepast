@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "mathematics",
+    "specCode": "8300",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1 (Non-calculator)",
+      "tier": "foundation/higher",
+      "durationMinutes": 90,
+      "totalMarks": 80,
+      "weighting": "33.3%",
+      "calculatorAllowed": false,
+      "sections": []
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2 (Calculator)",
+      "tier": "foundation/higher",
+      "durationMinutes": 90,
+      "totalMarks": 80,
+      "weighting": "33.3%",
+      "calculatorAllowed": true,
+      "sections": []
+    },
+    {
+      "paperCode": "paper-3",
+      "paperName": "Paper 3 (Calculator)",
+      "tier": "foundation/higher",
+      "durationMinutes": 90,
+      "totalMarks": 80,
+      "weighting": "33.3%",
+      "calculatorAllowed": true,
+      "sections": []
+    }
+  ],
+  "topicWeightings": {
+    "foundation": {
+      "number": 25,
+      "algebra": 20,
+      "ratio-proportion": 25,
+      "geometry-measures": 15,
+      "probability": 7.5,
+      "statistics": 7.5
+    },
+    "higher": {
+      "number": 15,
+      "algebra": 30,
+      "ratio-proportion": 20,
+      "geometry-measures": 20,
+      "probability": 7.5,
+      "statistics": 7.5
+    }
+  }
+}

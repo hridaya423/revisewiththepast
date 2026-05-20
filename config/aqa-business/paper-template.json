@@ -1,0 +1,265 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "business",
+    "specCode": "8132",
+    "version": "2024.1",
+    "assessmentModel": "linear-single-tier",
+    "tier": "single"
+  },
+  "qualification": {
+    "type": "GCSE",
+    "totalScaledMarks": 180,
+    "assessmentSeries": "all-assessments-at-end-of-course"
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Influences of operations and HRM on business activity",
+      "durationMinutes": 105,
+      "totalMarks": 90,
+      "weightingPercent": 50,
+      "contexts": ["operations", "human-resources", "business-in-the-real-world", "influences-on-business"],
+      "sections": [
+        {
+          "code": "A",
+          "name": "Multiple choice and short answer",
+          "mode": "mandatory",
+          "marks": 20,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "business-in-the-real-world.purpose-and-nature",
+            "business-in-the-real-world.business-ownership",
+            "business-in-the-real-world.aims-and-objectives",
+            "business-in-the-real-world.stakeholders",
+            "business-in-the-real-world.business-location",
+            "business-in-the-real-world.business-planning",
+            "business-in-the-real-world.expanding-a-business",
+            "influences-on-business.technology",
+            "influences-on-business.ethical-and-environmental-considerations",
+            "influences-on-business.economic-climate",
+            "influences-on-business.globalisation",
+            "influences-on-business.legislation",
+            "influences-on-business.competitive-environment",
+            "business-operations.production-processes",
+            "business-operations.procurement",
+            "business-operations.quality",
+            "business-operations.customer-service",
+            "human-resources.organisational-structures",
+            "human-resources.recruitment-and-selection",
+            "human-resources.motivating-employees",
+            "human-resources.training",
+            "quantitative-skills.calculation",
+            "quantitative-skills.interpretation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": false,
+            "questionStyle": ["multiple-choice", "short-answer"]
+          }
+        },
+        {
+          "code": "B",
+          "name": "Case study/data response 1",
+          "mode": "mandatory",
+          "marks": 34,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "business-in-the-real-world.purpose-and-nature",
+            "business-in-the-real-world.business-ownership",
+            "business-in-the-real-world.aims-and-objectives",
+            "business-in-the-real-world.stakeholders",
+            "business-in-the-real-world.business-location",
+            "business-in-the-real-world.business-planning",
+            "business-in-the-real-world.expanding-a-business",
+            "influences-on-business.technology",
+            "influences-on-business.ethical-and-environmental-considerations",
+            "influences-on-business.economic-climate",
+            "influences-on-business.globalisation",
+            "influences-on-business.legislation",
+            "influences-on-business.competitive-environment",
+            "business-operations.production-processes",
+            "business-operations.procurement",
+            "business-operations.quality",
+            "business-operations.customer-service",
+            "human-resources.organisational-structures",
+            "human-resources.recruitment-and-selection",
+            "human-resources.motivating-employees",
+            "human-resources.training",
+            "quantitative-skills.calculation",
+            "quantitative-skills.interpretation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["data-response", "extended-response"]
+          }
+        },
+        {
+          "code": "C",
+          "name": "Case study/data response 2",
+          "mode": "mandatory",
+          "marks": 36,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "business-in-the-real-world.purpose-and-nature",
+            "business-in-the-real-world.business-ownership",
+            "business-in-the-real-world.aims-and-objectives",
+            "business-in-the-real-world.stakeholders",
+            "business-in-the-real-world.business-location",
+            "business-in-the-real-world.business-planning",
+            "business-in-the-real-world.expanding-a-business",
+            "influences-on-business.technology",
+            "influences-on-business.ethical-and-environmental-considerations",
+            "influences-on-business.economic-climate",
+            "influences-on-business.globalisation",
+            "influences-on-business.legislation",
+            "influences-on-business.competitive-environment",
+            "business-operations.production-processes",
+            "business-operations.procurement",
+            "business-operations.quality",
+            "business-operations.customer-service",
+            "human-resources.organisational-structures",
+            "human-resources.recruitment-and-selection",
+            "human-resources.motivating-employees",
+            "human-resources.training",
+            "quantitative-skills.calculation",
+            "quantitative-skills.interpretation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["data-response", "extended-response"]
+          }
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Influences of marketing and finance on business activity",
+      "durationMinutes": 105,
+      "totalMarks": 90,
+      "weightingPercent": 50,
+      "contexts": ["marketing", "finance", "business-in-the-real-world", "influences-on-business"],
+      "sections": [
+        {
+          "code": "A",
+          "name": "Multiple choice and short answer",
+          "mode": "mandatory",
+          "marks": 20,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "business-in-the-real-world.purpose-and-nature",
+            "business-in-the-real-world.business-ownership",
+            "business-in-the-real-world.aims-and-objectives",
+            "business-in-the-real-world.stakeholders",
+            "business-in-the-real-world.business-location",
+            "business-in-the-real-world.business-planning",
+            "business-in-the-real-world.expanding-a-business",
+            "influences-on-business.technology",
+            "influences-on-business.ethical-and-environmental-considerations",
+            "influences-on-business.economic-climate",
+            "influences-on-business.globalisation",
+            "influences-on-business.legislation",
+            "influences-on-business.competitive-environment",
+            "marketing.identifying-and-understanding-customers",
+            "marketing.segmentation",
+            "marketing.market-research",
+            "marketing.marketing-mix.pricing",
+            "marketing.marketing-mix.product",
+            "marketing.marketing-mix.promotion",
+            "marketing.marketing-mix.place",
+            "marketing.marketing-mix.integration",
+            "finance.sources-of-finance",
+            "finance.cash-flow",
+            "finance.financial-terms-and-calculations",
+            "finance.financial-performance",
+            "quantitative-skills.calculation",
+            "quantitative-skills.interpretation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": false,
+            "questionStyle": ["multiple-choice", "short-answer"]
+          }
+        },
+        {
+          "code": "B",
+          "name": "Case study/data response 1",
+          "mode": "mandatory",
+          "marks": 34,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "business-in-the-real-world.purpose-and-nature",
+            "business-in-the-real-world.business-ownership",
+            "business-in-the-real-world.aims-and-objectives",
+            "business-in-the-real-world.stakeholders",
+            "business-in-the-real-world.business-location",
+            "business-in-the-real-world.business-planning",
+            "business-in-the-real-world.expanding-a-business",
+            "influences-on-business.technology",
+            "influences-on-business.ethical-and-environmental-considerations",
+            "influences-on-business.economic-climate",
+            "influences-on-business.globalisation",
+            "influences-on-business.legislation",
+            "influences-on-business.competitive-environment",
+            "marketing.identifying-and-understanding-customers",
+            "marketing.segmentation",
+            "marketing.market-research",
+            "marketing.marketing-mix.pricing",
+            "marketing.marketing-mix.product",
+            "marketing.marketing-mix.promotion",
+            "marketing.marketing-mix.place",
+            "marketing.marketing-mix.integration",
+            "finance.sources-of-finance",
+            "finance.cash-flow",
+            "finance.financial-terms-and-calculations",
+            "finance.financial-performance",
+            "quantitative-skills.calculation",
+            "quantitative-skills.interpretation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["data-response", "extended-response"]
+          }
+        },
+        {
+          "code": "C",
+          "name": "Case study/data response 2",
+          "mode": "mandatory",
+          "marks": 36,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "business-in-the-real-world.purpose-and-nature",
+            "business-in-the-real-world.business-ownership",
+            "business-in-the-real-world.aims-and-objectives",
+            "business-in-the-real-world.stakeholders",
+            "business-in-the-real-world.business-location",
+            "business-in-the-real-world.business-planning",
+            "business-in-the-real-world.expanding-a-business",
+            "influences-on-business.technology",
+            "influences-on-business.ethical-and-environmental-considerations",
+            "influences-on-business.economic-climate",
+            "influences-on-business.globalisation",
+            "influences-on-business.legislation",
+            "influences-on-business.competitive-environment",
+            "marketing.identifying-and-understanding-customers",
+            "marketing.segmentation",
+            "marketing.market-research",
+            "marketing.marketing-mix.pricing",
+            "marketing.marketing-mix.product",
+            "marketing.marketing-mix.promotion",
+            "marketing.marketing-mix.place",
+            "marketing.marketing-mix.integration",
+            "finance.sources-of-finance",
+            "finance.cash-flow",
+            "finance.financial-terms-and-calculations",
+            "finance.financial-performance",
+            "quantitative-skills.calculation",
+            "quantitative-skills.interpretation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["data-response", "extended-response"]
+          }
+        }
+      ]
+    }
+  ]
+}

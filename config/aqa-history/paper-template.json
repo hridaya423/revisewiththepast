@@ -1,0 +1,142 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "history",
+    "specCode": "8145",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Understanding the modern world",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "totalMarks": 84,
+      "weighting": "50%",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Period studies",
+          "marks": 40,
+          "description": "Interpretations and knowledge questions on one period study option"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Wider world depth studies",
+          "marks": 40,
+          "description": "Source analysis, narrative account, and judgment essay on one conflict/tension option"
+        },
+        {
+          "sectionCode": "SPaG",
+          "sectionName": "Spelling, punctuation and grammar",
+          "marks": 4,
+          "description": "Available on extended response"
+        }
+      ],
+      "options": {
+        "periodStudies": [
+          {
+            "optionCode": "AA",
+            "title": "America, 1840-1895: Expansion and consolidation"
+          },
+          {
+            "optionCode": "AB",
+            "title": "Germany, 1890-1945: Democracy and dictatorship"
+          },
+          {
+            "optionCode": "AC",
+            "title": "Russia, 1894-1945: Tsardom and communism"
+          },
+          {
+            "optionCode": "AD",
+            "title": "America, 1920-1973: Opportunity and inequality"
+          }
+        ],
+        "widerWorldDepthStudies": [
+          {
+            "optionCode": "BA",
+            "title": "Conflict and tension: The First World War, 1894-1918"
+          },
+          {
+            "optionCode": "BB",
+            "title": "Conflict and tension: The inter-war years, 1918-1939"
+          },
+          {
+            "optionCode": "BC",
+            "title": "Conflict and tension between East and West, 1945-1972"
+          },
+          {
+            "optionCode": "BD",
+            "title": "Conflict and tension in Asia, 1950-1975"
+          },
+          {
+            "optionCode": "BE",
+            "title": "Conflict and tension in the Gulf and Afghanistan, 1990-2009"
+          }
+        ]
+      }
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: Shaping the nation",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "totalMarks": 84,
+      "weighting": "50%",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Thematic studies",
+          "marks": 40,
+          "description": "Source utility, significance, comparison and causation/change essay on one British thematic option"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "British depth studies including historic environment",
+          "marks": 40,
+          "description": "Judgment, explanation, source and historic-environment-linked essay on one British depth option"
+        },
+        {
+          "sectionCode": "SPaG",
+          "sectionName": "Spelling, punctuation and grammar",
+          "marks": 4,
+          "description": "Available on extended response"
+        }
+      ],
+      "options": {
+        "thematicStudies": [
+          {
+            "optionCode": "AA",
+            "title": "Britain: Health and the people, c1000 to the present day"
+          },
+          {
+            "optionCode": "AB",
+            "title": "Britain: Power and the people, c1170 to the present day"
+          },
+          {
+            "optionCode": "AC",
+            "title": "Britain: Migration, empires and the people, c790 to the present day"
+          }
+        ],
+        "britishDepthStudies": [
+          {
+            "optionCode": "BA",
+            "title": "Norman England, c1066-c1100"
+          },
+          {
+            "optionCode": "BB",
+            "title": "Medieval England: the reign of Edward I, 1272-1307"
+          },
+          {
+            "optionCode": "BC",
+            "title": "Elizabethan England, c1568-1603"
+          },
+          {
+            "optionCode": "BD",
+            "title": "Restoration England, 1660-1685"
+          }
+        ]
+      }
+    }
+  ]
+}

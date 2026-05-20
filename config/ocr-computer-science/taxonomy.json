@@ -1,0 +1,363 @@
+{
+  "metadata": {
+    "boardCode": "ocr",
+    "subjectSlug": "computer-science",
+    "specCode": "J277",
+    "version": "2024.1",
+    "scope": "ocr-gcse-computer-science-j277-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "component-01-computer-systems",
+      "parentId": null,
+      "label": "Component 01: Computer systems",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.1", "1.2", "1.3", "1.4", "1.5", "1.6"],
+      "aliases": ["j277/01", "computer systems"]
+    },
+    {
+      "id": "component-01.systems-architecture",
+      "parentId": "component-01-computer-systems",
+      "label": "1.1 Systems architecture",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.1"],
+      "aliases": ["systems architecture"]
+    },
+    {
+      "id": "component-01.systems-architecture.cpu-architecture",
+      "parentId": "component-01.systems-architecture",
+      "label": "1.1.1 Architecture of the CPU: fetch-execute cycle, ALU, CU, cache, registers, Von Neumann registers",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.1.1"],
+      "aliases": ["cpu architecture", "fetch execute cycle", "alu", "cu", "cache", "mar", "mdr", "program counter", "accumulator"]
+    },
+    {
+      "id": "component-01.systems-architecture.cpu-performance",
+      "parentId": "component-01.systems-architecture",
+      "label": "1.1.2 CPU performance: clock speed, cache size, number of cores",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.1.2"],
+      "aliases": ["cpu performance", "clock speed", "cache size", "cores"]
+    },
+    {
+      "id": "component-01.systems-architecture.embedded-systems",
+      "parentId": "component-01.systems-architecture",
+      "label": "1.1.3 Embedded systems: purpose, characteristics, examples",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.1.3"],
+      "aliases": ["embedded systems", "microcontroller applications"]
+    },
+    {
+      "id": "component-01.memory-storage",
+      "parentId": "component-01-computer-systems",
+      "label": "1.2 Memory and storage",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.2"],
+      "aliases": ["memory and storage"]
+    },
+    {
+      "id": "component-01.memory-storage.primary-storage",
+      "parentId": "component-01.memory-storage",
+      "label": "1.2.1 Primary storage (memory): RAM, ROM, cache, virtual memory",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.2.1"],
+      "aliases": ["primary storage", "ram", "rom", "virtual memory", "cache"]
+    },
+    {
+      "id": "component-01.memory-storage.secondary-storage",
+      "parentId": "component-01.memory-storage",
+      "label": "1.2.2 Secondary storage: optical, magnetic, solid state; selection factors",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.2.2"],
+      "aliases": ["secondary storage", "optical storage", "magnetic storage", "solid state", "capacity", "speed", "portability", "durability", "reliability", "cost"]
+    },
+    {
+      "id": "component-01.memory-storage.units-capacity",
+      "parentId": "component-01.memory-storage",
+      "label": "1.2.3 Units and capacity: bit to petabyte, binary representation, file size/capacity calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.2.3"],
+      "aliases": ["units", "bit", "byte", "kilobyte", "megabyte", "gigabyte", "terabyte", "petabyte", "file size calculation", "capacity calculation"]
+    },
+    {
+      "id": "component-01.memory-storage.number-character-media-representation",
+      "parentId": "component-01.memory-storage",
+      "label": "1.2.4 Data storage: number bases, binary arithmetic and shifts, character sets, image and sound representation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.2.4"],
+      "aliases": ["data storage", "binary", "denary", "hexadecimal", "binary addition", "overflow", "binary shift", "ascii", "unicode", "character set", "image representation", "colour depth", "resolution", "metadata", "sound sampling", "sample rate", "bit depth"]
+    },
+    {
+      "id": "component-01.memory-storage.compression",
+      "parentId": "component-01.memory-storage",
+      "label": "1.2.5 Compression: lossy and lossless",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.2.5"],
+      "aliases": ["compression", "lossy", "lossless"]
+    },
+    {
+      "id": "component-01.networks-connections-protocols",
+      "parentId": "component-01-computer-systems",
+      "label": "1.3 Computer networks, connections and protocols",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.3"],
+      "aliases": ["networks", "connections and protocols"]
+    },
+    {
+      "id": "component-01.networks-connections-protocols.networks-topologies",
+      "parentId": "component-01.networks-connections-protocols",
+      "label": "1.3.1 Networks and topologies: LAN/WAN, client-server and peer-to-peer, network hardware, Internet and cloud, star/mesh",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.3.1"],
+      "aliases": ["lan", "wan", "client server", "peer to peer", "wireless access point", "router", "switch", "nic", "transmission media", "dns", "hosting", "cloud", "web server", "topologies", "star", "mesh"]
+    },
+    {
+      "id": "component-01.networks-connections-protocols.wired-wireless-protocols-layers",
+      "parentId": "component-01.networks-connections-protocols",
+      "label": "1.3.2 Wired and wireless networks, protocols and layers: Ethernet, Wi-Fi, Bluetooth, encryption, IP/MAC, standards, TCP/IP, HTTP(S), FTP, POP, IMAP, SMTP",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.3.2"],
+      "aliases": ["wired", "wireless", "ethernet", "wifi", "bluetooth", "encryption", "ip address", "ipv4", "ipv6", "mac address", "standards", "protocols", "tcp ip", "http", "https", "ftp", "pop", "imap", "smtp", "layers"]
+    },
+    {
+      "id": "component-01.network-security",
+      "parentId": "component-01-computer-systems",
+      "label": "1.4 Network security",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.4"],
+      "aliases": ["network security", "cyber security"]
+    },
+    {
+      "id": "component-01.network-security.threats",
+      "parentId": "component-01.network-security",
+      "label": "1.4.1 Threats to computer systems and networks: malware, social engineering, brute force, DoS, interception/theft, SQL injection",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.4.1"],
+      "aliases": ["threats", "malware", "social engineering", "phishing", "brute force", "denial of service", "data interception", "sql injection"]
+    },
+    {
+      "id": "component-01.network-security.prevention",
+      "parentId": "component-01.network-security",
+      "label": "1.4.2 Identifying and preventing vulnerabilities: penetration testing, anti-malware, firewalls, access levels, passwords, encryption, physical security",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.4.2"],
+      "aliases": ["prevention", "penetration testing", "anti malware", "firewall", "user access levels", "passwords", "encryption", "physical security"]
+    },
+    {
+      "id": "component-01.systems-software",
+      "parentId": "component-01-computer-systems",
+      "label": "1.5 Systems software",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.5"],
+      "aliases": ["systems software"]
+    },
+    {
+      "id": "component-01.systems-software.operating-systems",
+      "parentId": "component-01.systems-software",
+      "label": "1.5.1 Operating systems: user interface, memory management, peripherals/drivers, user and file management",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.5.1"],
+      "aliases": ["operating system", "ui", "memory management", "multitasking", "peripheral management", "drivers", "user management", "file management"]
+    },
+    {
+      "id": "component-01.systems-software.utility-software",
+      "parentId": "component-01.systems-software",
+      "label": "1.5.2 Utility software: encryption software, defragmentation, compression",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.5.2"],
+      "aliases": ["utility software", "encryption software", "defragmentation", "data compression"]
+    },
+    {
+      "id": "component-01.impact-of-digital-technology",
+      "parentId": "component-01-computer-systems",
+      "label": "1.6 Ethical, legal, cultural and environmental impacts of digital technology",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.6"],
+      "aliases": ["ethical legal cultural environmental impacts"]
+    },
+    {
+      "id": "component-01.impact-of-digital-technology.impact-and-legislation",
+      "parentId": "component-01.impact-of-digital-technology",
+      "label": "1.6.1 Impact and legislation: ethical/legal/cultural/environmental/privacy issues; DPA 2018, CMA 1990, CDPA 1988, software licences",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1.6.1"],
+      "aliases": ["data protection act 2018", "computer misuse act 1990", "copyright designs and patents act 1988", "software licences", "open source", "proprietary", "privacy issues"]
+    },
+    {
+      "id": "component-02-ctap",
+      "parentId": null,
+      "label": "Component 02: Computational thinking, algorithms and programming",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.1", "2.2", "2.3", "2.4", "2.5"],
+      "aliases": ["j277/02", "computational thinking algorithms and programming", "ctap"]
+    },
+    {
+      "id": "component-02.algorithms",
+      "parentId": "component-02-ctap",
+      "label": "2.1 Algorithms",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.1"],
+      "aliases": ["algorithms"]
+    },
+    {
+      "id": "component-02.algorithms.computational-thinking",
+      "parentId": "component-02.algorithms",
+      "label": "2.1.1 Computational thinking: abstraction, decomposition, algorithmic thinking",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.1.1"],
+      "aliases": ["computational thinking", "abstraction", "decomposition", "algorithmic thinking"]
+    },
+    {
+      "id": "component-02.algorithms.design-create-refine",
+      "parentId": "component-02.algorithms",
+      "label": "2.1.2 Designing, creating and refining algorithms: IPO, structure diagrams, pseudocode, flowcharts, reference language/HLL, trace tables, error correction",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.1.2"],
+      "aliases": ["inputs processes outputs", "structure diagram", "pseudocode", "flowchart", "exam reference language", "trace table", "syntax errors", "logic errors"]
+    },
+    {
+      "id": "component-02.algorithms.searching-sorting",
+      "parentId": "component-02.algorithms",
+      "label": "2.1.3 Searching and sorting algorithms: binary search, linear search, bubble sort, merge sort, insertion sort",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.1.3"],
+      "aliases": ["searching", "sorting", "binary search", "linear search", "bubble sort", "merge sort", "insertion sort"]
+    },
+    {
+      "id": "component-02.programming-fundamentals",
+      "parentId": "component-02-ctap",
+      "label": "2.2 Programming fundamentals",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.2"],
+      "aliases": ["programming fundamentals"]
+    },
+    {
+      "id": "component-02.programming-fundamentals.core-constructs-operators",
+      "parentId": "component-02.programming-fundamentals",
+      "label": "2.2.1 Programming fundamentals: variables, constants, I/O, assignment, sequence/selection/iteration, arithmetic and Boolean operators",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.2.1"],
+      "aliases": ["variables", "constants", "input", "output", "assignment", "sequence", "selection", "iteration", "count controlled loop", "condition controlled loop", "arithmetic operators", "boolean operators", "and or not"]
+    },
+    {
+      "id": "component-02.programming-fundamentals.data-types",
+      "parentId": "component-02.programming-fundamentals",
+      "label": "2.2.2 Data types: integer, real, Boolean, character/string, casting",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.2.2"],
+      "aliases": ["data types", "integer", "real", "boolean", "character", "string", "casting"]
+    },
+    {
+      "id": "component-02.programming-fundamentals.additional-techniques",
+      "parentId": "component-02.programming-fundamentals",
+      "label": "2.2.3 Additional programming techniques: string manipulation, file handling, records, SQL, arrays, subprograms, random number generation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.2.3"],
+      "aliases": ["string manipulation", "concatenation", "slicing", "file handling", "open read write close", "records", "sql", "select", "from", "where", "arrays", "1d array", "2d array", "functions", "procedures", "local variables", "global variables", "random numbers"]
+    },
+    {
+      "id": "component-02.producing-robust-programs",
+      "parentId": "component-02-ctap",
+      "label": "2.3 Producing robust programs",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.3"],
+      "aliases": ["producing robust programs"]
+    },
+    {
+      "id": "component-02.producing-robust-programs.defensive-design",
+      "parentId": "component-02.producing-robust-programs",
+      "label": "2.3.1 Defensive design: anticipating misuse, authentication, input validation, maintainability",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.3.1"],
+      "aliases": ["defensive design", "authentication", "input validation", "maintainability", "naming conventions", "indentation", "commenting"]
+    },
+    {
+      "id": "component-02.producing-robust-programs.testing",
+      "parentId": "component-02.producing-robust-programs",
+      "label": "2.3.2 Testing: iterative/final testing, syntax/logic errors, normal/boundary/invalid/erroneous data, test plans, refinement",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.3.2"],
+      "aliases": ["testing", "iterative testing", "terminal testing", "syntax error", "logic error", "normal data", "boundary data", "invalid data", "erroneous data", "test plan", "refining algorithms"]
+    },
+    {
+      "id": "component-02.boolean-logic",
+      "parentId": "component-02-ctap",
+      "label": "2.4 Boolean logic",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.4"],
+      "aliases": ["boolean logic"]
+    },
+    {
+      "id": "component-02.boolean-logic.logic-diagrams-truth-tables",
+      "parentId": "component-02.boolean-logic",
+      "label": "2.4.1 Boolean logic: logic diagrams and truth tables with AND, OR, NOT",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.4.1"],
+      "aliases": ["logic diagrams", "truth tables", "and gate", "or gate", "not gate", "boolean operators"]
+    },
+    {
+      "id": "component-02.languages-and-ide",
+      "parentId": "component-02-ctap",
+      "label": "2.5 Programming languages and Integrated Development Environments",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.5"],
+      "aliases": ["languages and ide", "translators"]
+    },
+    {
+      "id": "component-02.languages-and-ide.language-levels-translators",
+      "parentId": "component-02.languages-and-ide",
+      "label": "2.5.1 Languages: high-level and low-level languages, translators, compiler vs interpreter",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.5.1"],
+      "aliases": ["high level language", "low level language", "translator", "compiler", "interpreter"]
+    },
+    {
+      "id": "component-02.languages-and-ide.ide-tools",
+      "parentId": "component-02.languages-and-ide",
+      "label": "2.5.2 Integrated Development Environment (IDE): editor, diagnostics, run-time environment, translators",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["2.5.2"],
+      "aliases": ["ide", "editor", "error diagnostics", "runtime environment", "translator tools"]
+    }
+  ]
+}

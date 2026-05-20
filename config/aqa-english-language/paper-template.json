@@ -1,0 +1,113 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "english-language",
+    "specCode": "8700",
+    "version": "2024.1",
+    "assessmentModel": "linear-single-tier",
+    "sourceUrls": [
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification/specification-at-a-glance",
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification/subject-content",
+      "https://www.aqa.org.uk/subjects/english/gcse/english-language-8700/specification/scheme-of-assessment"
+    ]
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Paper 1: Explorations in creative reading and writing",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 80,
+      "weightingPercent": 50,
+      "sections": [
+        {
+          "code": "A",
+          "name": "Reading",
+          "mode": "mandatory",
+          "marks": 40,
+          "requiredQuestionCount": "all",
+          "description": "19th-century fiction extract with four questions on retrieval, language, structure and evaluation.",
+          "allowedPrimaryTopicIds": [
+            "paper-1-reading-fiction.q1-retrieval",
+            "paper-1-reading-fiction.q1-evidence-selection",
+            "paper-1-reading-fiction.q2-language-methods",
+            "paper-1-reading-fiction.q2-word-phrase-analysis",
+            "paper-1-reading-fiction.q2-figurative-imagery",
+            "paper-1-reading-fiction.q2-reader-effect",
+            "paper-1-reading-fiction.q3-structure-overview",
+            "paper-1-reading-fiction.q3-focus-shifts",
+            "paper-1-reading-fiction.q3-opening-closing",
+            "paper-1-reading-fiction.q3-pace-tension",
+            "paper-1-reading-fiction.q4-judgement",
+            "paper-1-reading-fiction.q4-methods-evidence"
+          ]
+        },
+        {
+          "code": "B",
+          "name": "Writing",
+          "mode": "mandatory",
+          "marks": 40,
+          "requiredQuestionCount": 1,
+          "choiceOf": 2,
+          "description": "One creative writing response (descriptive or narrative) assessed for content/organisation and technical accuracy.",
+          "allowedPrimaryTopicIds": [
+            "paper-1-writing-creative.task",
+            "paper-1-writing-creative.content-organisation",
+            "paper-1-writing-creative.tone-register-style",
+            "paper-1-writing-creative.narrative-structure",
+            "paper-1-writing-creative.vocabulary-for-effect",
+            "paper-1-writing-creative.sentence-variety",
+            "paper-1-writing-creative.punctuation-control",
+            "paper-1-writing-creative.spelling-grammar-accuracy"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Paper 2: Writers' viewpoints and perspectives",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 80,
+      "weightingPercent": 50,
+      "sections": [
+        {
+          "code": "A",
+          "name": "Reading",
+          "mode": "mandatory",
+          "marks": 40,
+          "requiredQuestionCount": "all",
+          "description": "Two linked non-fiction extracts with questions on explicit meaning, synthesis, language and comparison.",
+          "allowedPrimaryTopicIds": [
+            "paper-2-reading-viewpoints.q1-explicit-selection",
+            "paper-2-reading-viewpoints.q1-locate-evidence",
+            "paper-2-reading-viewpoints.q2-summary-differences",
+            "paper-2-reading-viewpoints.q2-inference-perspectives",
+            "paper-2-reading-viewpoints.q3-language-methods",
+            "paper-2-reading-viewpoints.q3-rhetorical-analysis",
+            "paper-2-reading-viewpoints.q4-compare-viewpoints",
+            "paper-2-reading-viewpoints.q4-compare-methods"
+          ]
+        },
+        {
+          "code": "B",
+          "name": "Writing",
+          "mode": "mandatory",
+          "marks": 40,
+          "requiredQuestionCount": 1,
+          "description": "One viewpoint writing response in an appropriate transactional form.",
+          "allowedPrimaryTopicIds": [
+            "paper-2-writing-viewpoint.task",
+            "paper-2-writing-viewpoint.argument-line",
+            "paper-2-writing-viewpoint.form-conventions",
+            "paper-2-writing-viewpoint.audience-purpose-register",
+            "paper-2-writing-viewpoint.rhetorical-devices",
+            "paper-2-writing-viewpoint.paragraph-cohesion",
+            "paper-2-writing-viewpoint.counterargument-rebuttal",
+            "paper-2-writing-viewpoint.technical-accuracy"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,281 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "french",
+    "specCode": "1FR0",
+    "version": "2024.1"
+  },
+  "qualification": {
+    "tiering": ["foundation", "higher"],
+    "linearity": "linear-all-papers-end-of-course",
+    "rules": [
+      "students-must-take-all-four-papers-at-same-tier",
+      "speaking-assessment-window-april-may",
+      "other-papers-assessment-window-may-june",
+      "no-dictionaries-in-any-paper"
+    ]
+  },
+  "papers": [
+    {
+      "paperCode": "listening",
+      "paperName": "Paper 1: Listening and understanding in French",
+      "examCodeByTier": { "foundation": "1FR0/1F", "higher": "1FR0/1H" },
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 35, "readingTimeMinutes": 5, "totalMarks": 50 },
+        "higher": { "durationMinutes": 45, "readingTimeMinutes": 5, "totalMarks": 50 }
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Section A",
+          "tierInstructionLanguage": { "foundation": "english", "higher": "french" },
+          "responseStyle": ["multiple-response", "short-answer-open-response"],
+          "questionCountByTier": { "foundation": 12, "higher": 2 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.listening",
+            "communication-skills.listening-reading",
+            "theme.identity-culture.daily-life.social-media-technology",
+            "theme.identity-culture.cultural-life.music",
+            "theme.local-area-holiday-travel.holidays.experiences",
+            "theme.local-area-holiday-travel.travel-tourist-transactions.asking-for-help-problems",
+            "theme.school.what-school-is-like.subjects",
+            "theme.future-aspirations-study-work.ambitions.further-study",
+            "theme.international-global-dimension.environmental-issues.being-green",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Section B",
+          "tierInstructionLanguage": { "foundation": "french", "higher": "english" },
+          "responseStyle": ["multiple-response", "short-answer-open-response"],
+          "questionCountByTier": { "foundation": 2, "higher": 8 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.listening",
+            "communication-skills.listening-reading",
+            "theme.identity-culture.who-am-i.friends-family-like",
+            "theme.local-area-holiday-travel.town-region-country.weather",
+            "theme.school.school-activities.events-exchanges",
+            "theme.future-aspirations-study-work.work.jobs",
+            "theme.international-global-dimension.bringing-world-together.campaigns-good-causes",
+            "grammar.foundation.pronouns",
+            "grammar.foundation.number-quantity-dates-time",
+            "vocabulary.high-frequency.question-connecting",
+            "vocabulary.topic-specific"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "speaking",
+      "paperName": "Paper 2: Speaking in French",
+      "examCodeByTier": { "foundation": "1FR0/2F", "higher": "1FR0/2H" },
+      "weighting": "25%",
+      "assessmentMode": "internally-conducted-externally-assessed",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 8, "durationRangeMinutes": "7-9", "preparationMinutes": 12, "totalMarks": 70 },
+        "higher": { "durationMinutes": 11, "durationRangeMinutes": "10-12", "preparationMinutes": 12, "totalMarks": 70 }
+      },
+      "sections": [
+        {
+          "sectionCode": "task-1-role-play",
+          "sectionName": "Task 1: Role play",
+          "marks": 10,
+          "recommendedDurationByTier": { "foundation": "1-1.5 minutes", "higher": "2-2.5 minutes" },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking",
+            "communication-skills.speaking",
+            "theme.identity-culture.who-am-i.socialising",
+            "theme.local-area-holiday-travel.travel-tourist-transactions.directions",
+            "theme.school.what-school-is-like.rules-pressures",
+            "theme.future-aspirations-study-work.work.jobs",
+            "grammar.foundation.verbs",
+            "grammar.foundation.pronouns",
+            "vocabulary.high-frequency.social-conventions",
+            "vocabulary.high-frequency.question-connecting"
+          ]
+        },
+        {
+          "sectionCode": "task-2-picture-based",
+          "sectionName": "Task 2: Picture-based task",
+          "marks": 24,
+          "recommendedDurationByTier": { "foundation": "2.5-3 minutes", "higher": "3-3.5 minutes" },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking",
+            "communication-skills.speaking",
+            "theme.identity-culture.cultural-life.sport",
+            "theme.local-area-holiday-travel.holidays.preferences",
+            "theme.school.school-activities.school-trips",
+            "theme.international-global-dimension.bringing-world-together.sports-events",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "task-3-conversation",
+          "sectionName": "Task 3: Conversation (two themes)",
+          "marks": 36,
+          "recommendedDurationByTier": { "foundation": "3.5-4.5 minutes", "higher": "5-6 minutes" },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking",
+            "communication-skills.speaking",
+            "theme.identity-culture.who-am-i.role-models",
+            "theme.local-area-holiday-travel.town-region-country.things-to-do",
+            "theme.school.what-school-is-like.celebrating-success",
+            "theme.future-aspirations-study-work.ambitions.training",
+            "theme.international-global-dimension.environmental-issues.natural-resources",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs",
+            "vocabulary.topic-specific"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "reading",
+      "paperName": "Paper 3: Reading and understanding in French",
+      "examCodeByTier": { "foundation": "1FR0/3F", "higher": "1FR0/3H" },
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 45, "totalMarks": 50 },
+        "higher": { "durationMinutes": 60, "totalMarks": 50 }
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Section A: Questions in English",
+          "instructionLanguage": "english",
+          "responseStyle": ["multiple-response", "short-answer-open-response"],
+          "questionCount": 6,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.reading",
+            "communication-skills.listening-reading",
+            "theme.identity-culture.daily-life.shopping",
+            "theme.local-area-holiday-travel.holidays.destinations",
+            "theme.school.what-school-is-like.school-day",
+            "theme.future-aspirations-study-work.using-languages.travel",
+            "theme.international-global-dimension.bringing-world-together.music-events",
+            "grammar.foundation.verbs",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Section B: Questions in French",
+          "instructionLanguage": "french",
+          "responseStyleByTier": { "foundation": ["multiple-response"], "higher": ["multiple-response", "short-answer-open-response"] },
+          "questionCount": 3,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.reading",
+            "communication-skills.listening-reading",
+            "theme.identity-culture.cultural-life.reading",
+            "theme.local-area-holiday-travel.travel-tourist-transactions.travel-accommodation",
+            "theme.school.what-school-is-like.subjects",
+            "theme.future-aspirations-study-work.work.careers-professions",
+            "grammar.foundation.pronouns",
+            "grammar.higher.pronouns",
+            "vocabulary.high-frequency.question-connecting",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Section C: Translation from French into English",
+          "instructionLanguage": "english",
+          "responseLanguage": "english",
+          "questionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.reading",
+            "communication-skills.listening-reading",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs",
+            "grammar.foundation.prepositions",
+            "vocabulary.high-frequency.word-classes",
+            "vocabulary.topic-specific"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "writing",
+      "paperName": "Paper 4: Writing in French",
+      "examCodeByTier": { "foundation": "1FR0/4F", "higher": "1FR0/4H" },
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 75, "totalMarks": 60 },
+        "higher": { "durationMinutes": 80, "totalMarks": 60 }
+      },
+      "sections": [
+        {
+          "sectionCode": "Q1",
+          "sectionName": "Open response task 1",
+          "tierMode": "both-tiers-different-task",
+          "marksByTier": { "foundation": 12, "higher": 20 },
+          "recommendedWordsByTier": { "foundation": "20-30", "higher": "90" },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing",
+            "communication-skills.writing",
+            "theme.identity-culture.who-am-i.interests",
+            "theme.school.what-school-is-like.subjects",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "Q2",
+          "sectionName": "Open response task 2",
+          "tierMode": "both-tiers-different-task",
+          "marksByTier": { "foundation": 16, "higher": 28 },
+          "recommendedWordsByTier": { "foundation": "40", "higher": "150" },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing",
+            "communication-skills.writing",
+            "theme.local-area-holiday-travel.travel-tourist-transactions.eating-out",
+            "theme.future-aspirations-study-work.ambitions.volunteering",
+            "theme.international-global-dimension.environmental-issues.being-green",
+            "grammar.foundation.conjunctions",
+            "grammar.higher.verbs",
+            "vocabulary.high-frequency.question-connecting",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "Q3",
+          "sectionName": "Open response (Foundation) / Translation (Higher)",
+          "tierMode": "mixed-by-tier",
+          "marksByTier": { "foundation": 20, "higher": 12 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing",
+            "communication-skills.writing",
+            "theme.local-area-holiday-travel.town-region-country.places-to-see",
+            "theme.future-aspirations-study-work.work.jobs",
+            "grammar.foundation.verbs",
+            "grammar.higher.pronouns",
+            "vocabulary.topic-specific"
+          ]
+        },
+        {
+          "sectionCode": "Q4",
+          "sectionName": "Translation from English into French (Foundation only)",
+          "tierMode": "foundation-only",
+          "marksByTier": { "foundation": 12 },
+          "taskFormat": "five-sentences-increasing-difficulty",
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing",
+            "communication-skills.writing",
+            "grammar.foundation.verbs",
+            "grammar.foundation.articles",
+            "grammar.foundation.pronouns",
+            "grammar.foundation.prepositions",
+            "vocabulary.high-frequency.word-classes"
+          ]
+        }
+      ]
+    }
+  ]
+}

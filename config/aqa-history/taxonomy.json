@@ -1,0 +1,596 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "history",
+    "specCode": "8145",
+    "version": "2024.1",
+    "scope": "aqa-history-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "paper1.modern-world",
+      "parentId": null,
+      "label": "Paper 1: Understanding the modern world",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["understanding the modern world"]
+    },
+    {
+      "id": "paper1.period.aa",
+      "parentId": "paper1.modern-world",
+      "label": "AA America, 1840-1895: Expansion and consolidation",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["period study aa", "America 1840-1895"]
+    },
+    {
+      "id": "paper1.period.aa.expansion",
+      "parentId": "paper1.period.aa",
+      "label": "Expansion opportunities and challenges",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Great American Desert", "Manifest Destiny", "Brigham Young", "Mormons", "pioneer farmers", "journey west", "miners", "Plains Indians", "Permanent Indian Frontier"]
+    },
+    {
+      "id": "paper1.period.aa.conflict",
+      "parentId": "paper1.period.aa",
+      "label": "Conflict across America",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Fort Laramie Treaty 1851", "Indian Wars 1862-67", "Sand Creek Massacre", "Fetterman's Trap", "American Civil War background", "Missouri Compromise", "John Brown", "Lincoln", "Jefferson Davis", "Mountain Meadow Massacre"]
+    },
+    {
+      "id": "paper1.period.aa.consolidation",
+      "parentId": "paper1.period.aa",
+      "label": "Consolidation and forging the nation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["13th Amendment", "Civil Rights Act", "reconstruction", "railways", "Homesteaders", "Cattle industry", "John Iliff", "Joseph McCoy", "Exodusters", "Plains Wars", "Little Big Horn", "Wounded Knee"]
+    },
+    {
+      "id": "paper1.period.ab",
+      "parentId": "paper1.modern-world",
+      "label": "AB Germany, 1890-1945: Democracy and dictatorship",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["period study ab", "Germany 1890-1945"]
+    },
+    {
+      "id": "paper1.period.ab.democracy-growth",
+      "parentId": "paper1.period.ab",
+      "label": "Germany and the growth of democracy",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Kaiser Wilhelm", "Prussian militarism", "industrialisation", "social reform", "socialism", "WWI impact", "abdication", "reparations", "Ruhr occupation", "hyperinflation", "Weimar Constitution", "Spartacists", "Kapp Putsch", "Munich Putsch", "Stresemann", "Dawes Plan", "Young Plan", "Weimar culture"]
+    },
+    {
+      "id": "paper1.period.ab.depression",
+      "parentId": "paper1.period.ab",
+      "label": "Germany and the Depression",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Nazi support growth", "SA", "Hitler appeal", "election results", "Papen", "Hindenburg", "Hitler Chancellor", "Reichstag Fire", "Enabling Act", "Night of the Long Knives", "Fuhrer"]
+    },
+    {
+      "id": "paper1.period.ab.nazi-experience",
+      "parentId": "paper1.period.ab",
+      "label": "Experiences of Germans under the Nazis",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["employment", "public works", "rearmament", "self-sufficiency", "rationing", "women", "young people", "Nazi education", "workers", "minorities", "Jews", "Nuremberg Laws", "Kristallnacht", "opposition"]
+    },
+    {
+      "id": "paper1.period.ac",
+      "parentId": "paper1.modern-world",
+      "label": "AC Russia, 1894-1945: Tsardom and communism",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["period study ac", "Russia 1894-1945"]
+    },
+    {
+      "id": "paper1.period.ac.tsardom",
+      "parentId": "paper1.period.ac",
+      "label": "Tsardom and collapse",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Nicholas II", "1905 Revolution", "Duma", "Stolypin", "land reform", "Rasputin", "WWI defeats", "Tsar abdication"]
+    },
+    {
+      "id": "paper1.period.ac.lenin",
+      "parentId": "paper1.period.ac",
+      "label": "Lenin's new society",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Provisional Government", "Lenin", "Trotsky", "October Revolution", "Cheka", "Red Army", "Civil War", "Bolshevik success", "War Communism", "Kronstadt", "NEP"]
+    },
+    {
+      "id": "paper1.period.ac.stalin",
+      "parentId": "paper1.period.ac",
+      "label": "Stalin's USSR and the Great Patriotic War",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["power struggle", "terror", "purges", "labour camps", "cult of personality", "collectivisation", "Five Year Plans", "modernisation", "kulaks", "women", "workers", "Stalin wartime leadership"]
+    },
+    {
+      "id": "paper1.period.ad",
+      "parentId": "paper1.modern-world",
+      "label": "AD America, 1920-1973: Opportunity and inequality",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["period study ad", "America 1920-1973"]
+    },
+    {
+      "id": "paper1.period.ad.boom",
+      "parentId": "paper1.period.ad",
+      "label": "Boom and inequality in the 1920s",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["economic boom", "mass production", "consumerism", "jazz", "Hollywood", "prohibition", "organised crime", "immigration", "Ku Klux Klan", "racial segregation", "women changing role"]
+    },
+    {
+      "id": "paper1.period.ad.bust-new-deal",
+      "parentId": "paper1.period.ad",
+      "label": "Depression and the New Deal",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Great Depression", "Hoover", "Roosevelt", "New Deal", "Supreme Court opposition", "farmers", "unemployment", "WWII recovery", "Lend Lease"]
+    },
+    {
+      "id": "paper1.period.ad.postwar",
+      "parentId": "paper1.period.ad",
+      "label": "Post-war America and social change",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["American Dream", "consumerism", "McCarthyism", "Rock and Roll", "Civil Rights campaigns", "Martin Luther King", "Malcolm X", "Black Power", "Civil Rights Acts 1964 and 1968", "Great Society", "feminism", "NOW", "Roe v Wade"]
+    },
+    {
+      "id": "paper1.depth.ba",
+      "parentId": "paper1.modern-world",
+      "label": "BA Conflict and tension: The First World War, 1894-1918",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["depth ba", "first world war"]
+    },
+    {
+      "id": "paper1.depth.ba.causes",
+      "parentId": "paper1.depth.ba",
+      "label": "Causes of the First World War",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["alliances", "militarism", "imperialism", "nationalism", "Bosnian Crisis", "Agadir Crisis", "Balkan Wars", "assassination Sarajevo", "July Crisis"]
+    },
+    {
+      "id": "paper1.depth.ba.stalemate",
+      "parentId": "paper1.depth.ba",
+      "label": "Stalemate and wider war",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Schlieffen Plan", "Battle of Marne", "trench warfare", "Verdun", "Somme", "Passchendaele", "Gallipoli", "Jutland", "U-Boat campaign", "convoys"]
+    },
+    {
+      "id": "paper1.depth.ba.ending",
+      "parentId": "paper1.depth.ba",
+      "label": "Ending the war",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Bolshevik Revolution", "USA entry", "Ludendorff Offensive", "Hundred Days", "blockade", "Kaiser abdication", "armistice", "Haig", "Foch"]
+    },
+    {
+      "id": "paper1.depth.bb",
+      "parentId": "paper1.modern-world",
+      "label": "BB Conflict and tension: The inter-war years, 1918-1939",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["depth bb", "inter-war years"]
+    },
+    {
+      "id": "paper1.depth.bb.peacemaking",
+      "parentId": "paper1.depth.bb",
+      "label": "Peacemaking after World War I",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Wilson", "Clemenceau", "Lloyd George", "Fourteen Points", "Treaty of Versailles", "League of Nations"]
+    },
+    {
+      "id": "paper1.depth.bb.league-failure",
+      "parentId": "paper1.depth.bb",
+      "label": "League of Nations and international crises",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Aaland Islands", "Corfu", "Manchuria", "Abyssinia", "Disarmament Conference", "collective security failure"]
+    },
+    {
+      "id": "paper1.depth.bb.origins-ww2",
+      "parentId": "paper1.depth.bb",
+      "label": "Origins and outbreak of the Second World War",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Hitler foreign policy", "Saar", "rearmament", "Stresa Front", "Anglo-German Naval Agreement", "Rhineland", "Rome-Berlin Axis", "Anschluss", "appeasement", "Munich", "Nazi-Soviet Pact", "Poland invasion", "Chamberlain", "Stalin"]
+    },
+    {
+      "id": "paper1.depth.bc",
+      "parentId": "paper1.modern-world",
+      "label": "BC Conflict and tension between East and West, 1945-1972",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["depth bc", "cold war east west"]
+    },
+    {
+      "id": "paper1.depth.bc.origins",
+      "parentId": "paper1.depth.bc",
+      "label": "Origins of the Cold War",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Yalta", "Potsdam", "Germany division", "Truman Doctrine", "Marshall Plan", "Cominform", "Comecon", "Berlin Blockade", "Berlin Airlift"]
+    },
+    {
+      "id": "paper1.depth.bc.development",
+      "parentId": "paper1.depth.bc",
+      "label": "Development of Cold War crises",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["NATO", "Warsaw Pact", "Hungarian Uprising", "Berlin Wall", "Cuban Missile Crisis", "Prague Spring", "Czechoslovakia", "detente", "Brezhnev"]
+    },
+    {
+      "id": "paper1.depth.bc.vietnam",
+      "parentId": "paper1.depth.bc",
+      "label": "The Vietnam conflict in Cold War context",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["US policy in Vietnam", "guerrilla warfare", "Tet Offensive", "USSR and China influence", "withdrawal and consequences"]
+    },
+    {
+      "id": "paper1.depth.bd",
+      "parentId": "paper1.modern-world",
+      "label": "BD Conflict and tension in Asia, 1950-1975",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["depth bd", "asia conflict"]
+    },
+    {
+      "id": "paper1.depth.bd.korea",
+      "parentId": "paper1.depth.bd",
+      "label": "Conflict in Korea",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Kim Il Sung", "Syngman Rhee", "UN response", "Inchon", "MacArthur", "Chinese intervention", "armistice", "38th Parallel"]
+    },
+    {
+      "id": "paper1.depth.bd.vietnam",
+      "parentId": "paper1.depth.bd",
+      "label": "Escalation of conflict in Vietnam",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Dien Bien Phu", "Geneva Agreement", "Diem", "Vietcong", "Ho Chi Minh", "Domino Theory", "Gulf of Tonkin", "My Lai", "Search and Destroy", "Tet Offensive", "Nixon", "Vietnamisation"]
+    },
+    {
+      "id": "paper1.depth.bd.ending",
+      "parentId": "paper1.depth.bd",
+      "label": "Ending conflict and consequences in Asia",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["peace talks", "Paris Peace Agreement", "Cambodia", "Laos", "fall of Saigon", "regional consequences"]
+    },
+    {
+      "id": "paper1.depth.be",
+      "parentId": "paper1.modern-world",
+      "label": "BE Conflict and tension in the Gulf and Afghanistan, 1990-2009",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["depth be", "gulf and afghanistan"]
+    },
+    {
+      "id": "paper1.depth.be.gulf",
+      "parentId": "paper1.depth.be",
+      "label": "Tensions in the Gulf",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Iran-Iraq war consequences", "oil supplies", "Israeli-Palestinian conflict", "Iraq invasion of Kuwait", "Bush", "Thatcher", "UN campaign", "Saddam Hussein"]
+    },
+    {
+      "id": "paper1.depth.be.alqaeda",
+      "parentId": "paper1.depth.be",
+      "label": "War on Al-Qaeda",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Osama bin Laden", "9/11", "Taliban", "Afghanistan rogue state", "Bush war on terror", "Blair", "2001 intervention", "Karzai government"]
+    },
+    {
+      "id": "paper1.depth.be.iraq",
+      "parentId": "paper1.depth.be",
+      "label": "The Iraq War",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["WMD", "IAEA inspectors", "2003 invasion", "downfall of Saddam", "insurgency", "National Assembly", "US troop surge 2007", "global terrorism"]
+    },
+    {
+      "id": "paper2.shaping-nation",
+      "parentId": null,
+      "label": "Paper 2: Shaping the nation",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["shaping the nation"]
+    },
+    {
+      "id": "paper2.thematic.aa",
+      "parentId": "paper2.shaping-nation",
+      "label": "AA Britain: Health and the people, c1000-present",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["thematic aa", "health and the people"]
+    },
+    {
+      "id": "paper2.thematic.aa.medicine-stands-still",
+      "parentId": "paper2.thematic.aa",
+      "label": "Medicine stands still",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["medieval medicine", "Hippocratic", "Galenic", "medieval doctor", "Islamic medicine", "Black Death", "public health in Middle Ages"]
+    },
+    {
+      "id": "paper2.thematic.aa.beginnings-change",
+      "parentId": "paper2.thematic.aa",
+      "label": "Beginnings of change",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Renaissance", "Vesalius", "Pare", "William Harvey", "Great Plague", "quackery", "Royal Society"]
+    },
+    {
+      "id": "paper2.thematic.aa.revolution-medicine",
+      "parentId": "paper2.thematic.aa",
+      "label": "Revolution in medicine",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Jenner vaccination", "Pasteur Germ Theory", "Koch", "anaesthetics", "antiseptics", "public health reforms", "Snow", "Chadwick", "1875 Act"]
+    },
+    {
+      "id": "paper2.thematic.aa.modern-medicine",
+      "parentId": "paper2.thematic.aa",
+      "label": "Modern medicine",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["pharmaceutical industry", "penicillin", "antibiotic resistance", "plastic surgery", "blood transfusions", "transplants", "NHS", "Beveridge", "Booth", "Rowntree", "healthcare in 21st century"]
+    },
+    {
+      "id": "paper2.thematic.ab",
+      "parentId": "paper2.shaping-nation",
+      "label": "AB Britain: Power and the people, c1170-present",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["thematic ab", "power and the people"]
+    },
+    {
+      "id": "paper2.thematic.ab.feudalism",
+      "parentId": "paper2.thematic.ab",
+      "label": "Challenging authority and feudalism",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Magna Carta", "Simon de Montfort", "Provisions of Oxford", "Parliament of 1265", "Peasants Revolt"]
+    },
+    {
+      "id": "paper2.thematic.ab.royal-authority",
+      "parentId": "paper2.thematic.ab",
+      "label": "Challenging royal authority",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Pilgrimage of Grace", "English Revolution", "New Model Army", "trial and execution of Charles I", "Commonwealth", "American Revolution impact"]
+    },
+    {
+      "id": "paper2.thematic.ab.reformers",
+      "parentId": "paper2.thematic.ab",
+      "label": "Reform and reformers",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Great Reform Act", "Chartism", "Anti-Slavery movement", "Anti-Corn Law League", "factory reformers", "GNCTU", "Tolpuddle Martyrs", "new unionism", "match girls", "dockers"]
+    },
+    {
+      "id": "paper2.thematic.ab.equality",
+      "parentId": "paper2.thematic.ab",
+      "label": "Equality and rights in modern Britain",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["suffragettes", "votes for women", "Representation of the People Acts", "trade unions", "Civil Rights influences", "anti-racism", "LGBT rights", "devolution", "human rights"]
+    },
+    {
+      "id": "paper2.thematic.ac",
+      "parentId": "paper2.shaping-nation",
+      "label": "AC Britain: Migration, empires and the people, c790-present",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["thematic ac", "migration empires people"]
+    },
+    {
+      "id": "paper2.thematic.ac.conquered",
+      "parentId": "paper2.thematic.ac",
+      "label": "Conquered and conquerors",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Vikings", "Danelaw", "Alfred", "King Cnut", "Normans", "Henry II", "Ireland invasion", "King John losses", "Hundred Years War", "English identity"]
+    },
+    {
+      "id": "paper2.thematic.ac.looking-west",
+      "parentId": "paper2.thematic.ac",
+      "label": "Looking west",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Caribbean sugar", "piracy", "slave trade", "John Hawkins", "Barbados", "North America colonisation", "Seven Years War", "American independence impact"]
+    },
+    {
+      "id": "paper2.thematic.ac.expansion",
+      "parentId": "paper2.thematic.ac",
+      "label": "Expansion and empire",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["East India Company", "Robert Clive", "Warren Hastings", "Indian Rebellion 1857", "Scramble for Africa", "Cecil Rhodes", "Boer War", "imperial propaganda", "Irish migration", "Jewish migration", "transportation", "Empire migration"]
+    },
+    {
+      "id": "paper2.thematic.ac.twentieth-century",
+      "parentId": "paper2.thematic.ac",
+      "label": "Britain in the 20th century",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["end of Empire", "Suez", "Gandhi", "Nkrumah", "Kenyatta", "Windrush", "Claudia Jones", "Amin", "Commonwealth", "Falklands", "EU membership", "European migration"]
+    },
+    {
+      "id": "paper2.depth.ba",
+      "parentId": "paper2.shaping-nation",
+      "label": "BA Norman England, c1066-c1100",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["depth ba", "Norman England"]
+    },
+    {
+      "id": "paper2.depth.ba.conquest-control",
+      "parentId": "paper2.depth.ba",
+      "label": "The Normans: conquest and control",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Edward the Confessor", "claimants", "Stamford Bridge", "Hastings", "Norman military", "castles", "rebellions", "Harrying of the North"]
+    },
+    {
+      "id": "paper2.depth.ba.life-rule",
+      "parentId": "paper2.depth.ba",
+      "label": "Life under Norman rule",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["feudalism", "landholding", "Domesday Book", "forest law", "language", "society change"]
+    },
+    {
+      "id": "paper2.depth.ba.church",
+      "parentId": "paper2.depth.ba",
+      "label": "The Norman Church and monasticism",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Lanfranc", "Church reform", "William II", "Papacy", "Investiture Controversy", "abbeys", "monasteries", "education", "Latin and vernacular"]
+    },
+    {
+      "id": "paper2.depth.ba.historic-environment",
+      "parentId": "paper2.depth.ba",
+      "label": "Historic environment of Norman England",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["specified site", "site context", "change continuity causation consequence", "Norman buildings", "castles", "towns and villages"]
+    },
+    {
+      "id": "paper2.depth.bb",
+      "parentId": "paper2.shaping-nation",
+      "label": "BB Medieval England: the reign of Edward I, 1272-1307",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["depth bb", "Edward I"]
+    },
+    {
+      "id": "paper2.depth.bb.government",
+      "parentId": "paper2.depth.bb",
+      "label": "Government and rights",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Henry III legacy", "Hundred Rolls", "Robert Burnell", "Statutes of Westminster", "Statutes of Mortmain", "Quo Warranto", "Model Parliament 1295"]
+    },
+    {
+      "id": "paper2.depth.bb.life",
+      "parentId": "paper2.depth.bb",
+      "label": "Life in Medieval England",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["wool trade", "taxation", "Italian bankers", "expulsion of Jews 1290", "universities", "Roger Bacon", "Duns Scotus", "legal system", "Statutes of Gloucester and Winchester"]
+    },
+    {
+      "id": "paper2.depth.bb.campaigns",
+      "parentId": "paper2.depth.bb",
+      "label": "Edward I's campaigns in Wales and Scotland",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Welsh Wars 1277 and 1282-83", "Statute of Rhuddlan", "castle building", "Great Cause", "Balliol", "Bruce", "William Wallace", "First War of Scottish Independence"]
+    },
+    {
+      "id": "paper2.depth.bb.historic-environment",
+      "parentId": "paper2.depth.bb",
+      "label": "Historic environment of Medieval England",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["specified site", "medieval buildings", "churches", "fortified manor houses", "castles", "towns", "villages"]
+    },
+    {
+      "id": "paper2.depth.bc",
+      "parentId": "paper2.shaping-nation",
+      "label": "BC Elizabethan England, c1568-1603",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["depth bc", "Elizabethan England"]
+    },
+    {
+      "id": "paper2.depth.bc.court-parliament",
+      "parentId": "paper2.depth.bc",
+      "label": "Elizabeth's court and Parliament",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Elizabeth and government", "Privy Council", "Parliament", "factions", "patronage", "marriage question"]
+    },
+    {
+      "id": "paper2.depth.bc.life-times",
+      "parentId": "paper2.depth.bc",
+      "label": "Life in Elizabethan times",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Golden Age", "gentry", "theatre", "poverty", "government responses", "Hawkins", "Drake", "Raleigh", "voyages", "trade"]
+    },
+    {
+      "id": "paper2.depth.bc.troubles",
+      "parentId": "paper2.depth.bc",
+      "label": "Troubles at home and abroad",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Catholic challenge", "Puritan challenge", "Northern Rebellion", "Mary Queen of Scots", "Catholic plots", "Spanish Armada", "naval warfare"]
+    },
+    {
+      "id": "paper2.depth.bc.historic-environment",
+      "parentId": "paper2.depth.bc",
+      "label": "Historic environment of Elizabethan England",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["specified site", "Tudor manor houses", "gardens", "theatres", "towns and cities", "site and wider context"]
+    },
+    {
+      "id": "paper2.depth.bd",
+      "parentId": "paper2.shaping-nation",
+      "label": "BD Restoration England, 1660-1685",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["depth bd", "Restoration England"]
+    },
+    {
+      "id": "paper2.depth.bd.crown-parliament",
+      "parentId": "paper2.depth.bd",
+      "label": "Crown, Parliament, plots and court life",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["legacy of Civil War", "Restoration monarchy", "succession", "Cabal", "party politics", "rule without parliament", "Popish Plot", "Exclusion Crisis", "court culture"]
+    },
+    {
+      "id": "paper2.depth.bd.religion-society",
+      "parentId": "paper2.depth.bd",
+      "label": "Religion and society in Restoration England",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Clarendon Code", "religious dissent", "Plague", "Great Fire of London", "social change", "science and culture"]
+    },
+    {
+      "id": "paper2.depth.bd.foreign-policy",
+      "parentId": "paper2.depth.bd",
+      "label": "Foreign policy and power politics",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Dutch Wars", "Treaty of Dover", "France relations", "navy", "finances", "policy outcomes"]
+    },
+    {
+      "id": "paper2.depth.bd.historic-environment",
+      "parentId": "paper2.depth.bd",
+      "label": "Historic environment of Restoration England",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["specified site", "site context", "change continuity causation consequence", "Restoration architecture", "urban environments"]
+    }
+  ]
+}

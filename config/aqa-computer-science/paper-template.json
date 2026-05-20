@@ -1,0 +1,78 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "computer-science",
+    "specCode": "8525",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Computational thinking and programming skills",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "totalMarks": 90,
+      "weighting": "50%",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Fundamentals of algorithms",
+          "marks": 15,
+          "description": "Algorithm design, searching, sorting, computational thinking"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Programming",
+          "marks": 60,
+          "description": "Programming concepts, code writing, debugging, testing"
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Fundamentals of data representation",
+          "marks": 15,
+          "description": "Number systems, binary arithmetic, logic gates, data representation"
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: Computing concepts",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "totalMarks": 90,
+      "weighting": "50%",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Computer systems",
+          "marks": 25,
+          "description": "System architecture, memory, storage, software"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Networks",
+          "marks": 15,
+          "description": "Network types, protocols, internet concepts"
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Cyber security",
+          "marks": 10,
+          "description": "Threats and prevention"
+        },
+        {
+          "sectionCode": "D",
+          "sectionName": "Relational databases and SQL",
+          "marks": 15,
+          "description": "Database model, SQL queries"
+        },
+        {
+          "sectionCode": "E",
+          "sectionName": "Ethical, legal and environmental impacts",
+          "marks": 25,
+          "description": "Legislation, privacy, open source, environmental impact"
+        }
+      ]
+    }
+  ]
+}

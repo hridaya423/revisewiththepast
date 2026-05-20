@@ -1,0 +1,157 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "history",
+    "specCode": "1HI0",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Thematic study and historic environment",
+      "examCode": "1HI0/10-13",
+      "tier": "single-tier",
+      "durationMinutes": 80,
+      "totalMarks": 52,
+      "weighting": "30%",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Historic environment",
+          "marks": 16,
+          "description": "Source-based and knowledge questions on one linked historic environment site"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Thematic study",
+          "marks": 36,
+          "description": "Change and continuity across a long timespan; includes one 16-mark judgment question with SPaG"
+        }
+      ],
+      "options": [
+        {
+          "optionCode": "10",
+          "title": "Crime and punishment in Britain, c1000-present and Whitechapel, c1870-c1900"
+        },
+        {
+          "optionCode": "11",
+          "title": "Medicine in Britain, c1250-present and the British sector of the Western Front, 1914-18"
+        },
+        {
+          "optionCode": "12",
+          "title": "Warfare and British society, c1250-present and London and the Second World War, 1939-45"
+        },
+        {
+          "optionCode": "13",
+          "title": "Migrants in Britain, c800-present and Notting Hill, c1948-c1970"
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: Period study and British depth study",
+      "examCode": "1HI0/2A-2W",
+      "tier": "single-tier",
+      "durationMinutes": 110,
+      "totalMarks": 64,
+      "weighting": "40%",
+      "sections": [
+        {
+          "sectionCode": "P",
+          "sectionName": "Period study booklet",
+          "marks": 32,
+          "description": "Narrative and analytical questions on one period study option"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "British depth study booklet",
+          "marks": 32,
+          "description": "Feature, causation and judgment questions on one British depth study option"
+        }
+      ],
+      "options": {
+        "periodStudies": [
+          {
+            "optionCode": "P1",
+            "title": "Spain and the 'New World', c1490-c1555"
+          },
+          {
+            "optionCode": "P2",
+            "title": "British America, 1713-83: empire and revolution"
+          },
+          {
+            "optionCode": "P3",
+            "title": "The American West, c1835-c1895"
+          },
+          {
+            "optionCode": "P4",
+            "title": "Superpower relations and the Cold War, 1941-91"
+          },
+          {
+            "optionCode": "P5",
+            "title": "Conflict in the Middle East, 1945-95"
+          }
+        ],
+        "britishDepthStudies": [
+          {
+            "optionCode": "B1",
+            "title": "Anglo-Saxon and Norman England, c1060-88"
+          },
+          {
+            "optionCode": "B2",
+            "title": "The reigns of King Richard I and King John, 1189-1216"
+          },
+          {
+            "optionCode": "B3",
+            "title": "Henry VIII and his ministers, 1509-40"
+          },
+          {
+            "optionCode": "B4",
+            "title": "Early Elizabethan England, 1558-88"
+          }
+        ]
+      }
+    },
+    {
+      "paperCode": "paper-3",
+      "paperName": "Paper 3: Modern depth study",
+      "examCode": "1HI0/30-33",
+      "tier": "single-tier",
+      "durationMinutes": 90,
+      "totalMarks": 52,
+      "weighting": "30%",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Source and causation",
+          "marks": 16,
+          "description": "Inference from source and one causation question"
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Sources and interpretations",
+          "marks": 36,
+          "description": "Usefulness, interpretation comparison/explanation/evaluation; includes SPaG"
+        }
+      ],
+      "options": [
+        {
+          "optionCode": "30",
+          "title": "Russia and the Soviet Union, 1917-41"
+        },
+        {
+          "optionCode": "31",
+          "title": "Weimar and Nazi Germany, 1918-39"
+        },
+        {
+          "optionCode": "32",
+          "title": "Mao's China, 1945-76"
+        },
+        {
+          "optionCode": "33",
+          "title": "The USA, 1954-75: conflict at home and abroad"
+        }
+      ]
+    }
+  ]
+}

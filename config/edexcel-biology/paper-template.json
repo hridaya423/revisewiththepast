@@ -1,0 +1,121 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "biology",
+    "specCode": "1BI0",
+    "version": "2024.1"
+  },
+  "qualification": {
+    "level": "GCSE",
+    "linear": true,
+    "availability": "May/June",
+    "assessmentModel": "two-written-papers",
+    "calculator": "allowed",
+    "questionTypes": ["multiple-choice", "short-answer", "calculations", "extended open-response"]
+  },
+  "papers": [
+    {
+      "id": "paper-1",
+      "label": "Paper 1",
+      "code": "1BI0/1F, 1BI0/1H",
+      "tier": ["foundation", "higher"],
+      "duration": "1h 45m",
+      "durationMinutes": 105,
+      "marks": 100,
+      "weight": 50,
+      "content": {
+        "topicSplit": [
+          { "sectionCode": "1", "sectionLabel": "Topic 1 - Key concepts in biology", "topicIds": ["key-concepts-biology.cell-structure-specialisation", "key-concepts-biology.microscopy-units", "key-concepts-biology.enzymes-food-tests", "key-concepts-biology.transport-in-cells"] },
+          { "sectionCode": "2", "sectionLabel": "Topic 2 - Cells and control", "topicIds": ["cells-and-control.cell-cycle-cancer", "cells-and-control.stem-cells-growth-data", "cells-and-control.brain-imaging-limitations", "cells-and-control.nervous-system-reflexes", "cells-and-control.eye-defects-correction"] },
+          { "sectionCode": "3", "sectionLabel": "Topic 3 - Genetics", "topicIds": ["genetics.reproduction-meiosis", "genetics.dna-genome-protein-synthesis", "genetics.mendel-inheritance-models", "genetics.variation-mutation-hgp"] },
+          { "sectionCode": "4", "sectionLabel": "Topic 4 - Natural selection and genetic modification", "topicIds": ["natural-selection-genetic-modification.evolution-evidence", "natural-selection-genetic-modification.classification-selective-breeding", "natural-selection-genetic-modification.genetic-engineering-gm", "natural-selection-genetic-modification.agriculture-ethics"] },
+          { "sectionCode": "5", "sectionLabel": "Topic 5 - Health, disease and the development of medicines", "topicIds": ["health-disease-medicines.health-disease-types", "health-disease-medicines.pathogens-transmission", "health-disease-medicines.plant-defence-detection", "health-disease-medicines.immune-system-immunisation", "health-disease-medicines.antibiotics-culture-practical", "health-disease-medicines.medicine-development-monoclonal", "health-disease-medicines.lifestyle-ncd-treatment"] }
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Written paper",
+          "mode": "mandatory",
+          "allowedPrimaryTopicIds": [
+            "key-concepts-biology.cell-structure-specialisation",
+            "key-concepts-biology.microscopy-units",
+            "key-concepts-biology.enzymes-food-tests",
+            "key-concepts-biology.transport-in-cells",
+            "cells-and-control.cell-cycle-cancer",
+            "cells-and-control.stem-cells-growth-data",
+            "cells-and-control.brain-imaging-limitations",
+            "cells-and-control.nervous-system-reflexes",
+            "cells-and-control.eye-defects-correction",
+            "genetics.reproduction-meiosis",
+            "genetics.dna-genome-protein-synthesis",
+            "genetics.mendel-inheritance-models",
+            "genetics.variation-mutation-hgp",
+            "natural-selection-genetic-modification.evolution-evidence",
+            "natural-selection-genetic-modification.classification-selective-breeding",
+            "natural-selection-genetic-modification.genetic-engineering-gm",
+            "natural-selection-genetic-modification.agriculture-ethics",
+            "health-disease-medicines.health-disease-types",
+            "health-disease-medicines.pathogens-transmission",
+            "health-disease-medicines.plant-defence-detection",
+            "health-disease-medicines.immune-system-immunisation",
+            "health-disease-medicines.antibiotics-culture-practical",
+            "health-disease-medicines.medicine-development-monoclonal",
+            "health-disease-medicines.lifestyle-ncd-treatment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "paper-2",
+      "label": "Paper 2",
+      "code": "1BI0/2F, 1BI0/2H",
+      "tier": ["foundation", "higher"],
+      "duration": "1h 45m",
+      "durationMinutes": 105,
+      "marks": 100,
+      "weight": 50,
+      "content": {
+        "topicSplit": [
+          { "sectionCode": "1", "sectionLabel": "Topic 1 - Key concepts in biology", "topicIds": ["key-concepts-biology.cell-structure-specialisation", "key-concepts-biology.microscopy-units", "key-concepts-biology.enzymes-food-tests", "key-concepts-biology.transport-in-cells"] },
+          { "sectionCode": "6", "sectionLabel": "Topic 6 - Plant structures and their functions", "topicIds": ["plant-structures-functions.photosynthesis-limiting-factors", "plant-structures-functions.transport-xylem-phloem", "plant-structures-functions.transpiration-leaf-adaptation", "plant-structures-functions.plant-adaptation-hormones"] },
+          { "sectionCode": "7", "sectionLabel": "Topic 7 - Animal coordination, control and homeostasis", "topicIds": ["animal-coordination-homeostasis.endocrine-hormones", "animal-coordination-homeostasis.menstrual-contraception-art", "animal-coordination-homeostasis.homeostasis-thermoregulation", "animal-coordination-homeostasis.blood-glucose-diabetes", "animal-coordination-homeostasis.urinary-system-kidney"] },
+          { "sectionCode": "8", "sectionLabel": "Topic 8 - Exchange and transport in animals", "topicIds": ["exchange-transport-animals.exchange-surfaces-diffusion", "exchange-transport-animals.blood-heart-vessels", "exchange-transport-animals.respiration-practical", "exchange-transport-animals.cardiac-output"] },
+          { "sectionCode": "9", "sectionLabel": "Topic 9 - Ecosystems and material cycles", "topicIds": ["ecosystems-material-cycles.ecosystem-organisation-interdependence", "ecosystems-material-cycles.fieldwork-population-estimates", "ecosystems-material-cycles.trophic-levels-biomass", "ecosystems-material-cycles.human-impact-biodiversity", "ecosystems-material-cycles.biogeochemical-cycles", "ecosystems-material-cycles.pollution-indicators-decomposition"] }
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Written paper",
+          "mode": "mandatory",
+          "allowedPrimaryTopicIds": [
+            "key-concepts-biology.cell-structure-specialisation",
+            "key-concepts-biology.microscopy-units",
+            "key-concepts-biology.enzymes-food-tests",
+            "key-concepts-biology.transport-in-cells",
+            "plant-structures-functions.photosynthesis-limiting-factors",
+            "plant-structures-functions.transport-xylem-phloem",
+            "plant-structures-functions.transpiration-leaf-adaptation",
+            "plant-structures-functions.plant-adaptation-hormones",
+            "animal-coordination-homeostasis.endocrine-hormones",
+            "animal-coordination-homeostasis.menstrual-contraception-art",
+            "animal-coordination-homeostasis.homeostasis-thermoregulation",
+            "animal-coordination-homeostasis.blood-glucose-diabetes",
+            "animal-coordination-homeostasis.urinary-system-kidney",
+            "exchange-transport-animals.exchange-surfaces-diffusion",
+            "exchange-transport-animals.blood-heart-vessels",
+            "exchange-transport-animals.respiration-practical",
+            "exchange-transport-animals.cardiac-output",
+            "ecosystems-material-cycles.ecosystem-organisation-interdependence",
+            "ecosystems-material-cycles.fieldwork-population-estimates",
+            "ecosystems-material-cycles.trophic-levels-biomass",
+            "ecosystems-material-cycles.human-impact-biodiversity",
+            "ecosystems-material-cycles.biogeochemical-cycles",
+            "ecosystems-material-cycles.pollution-indicators-decomposition"
+          ]
+        }
+      ]
+    }
+  ]
+}

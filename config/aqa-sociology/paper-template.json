@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "sociology",
+    "specCode": "8192",
+    "version": "2024.1",
+    "assessmentModel": "linear-single-tier",
+    "tier": "single"
+  },
+  "qualification": {
+    "type": "GCSE",
+    "totalScaledMarks": 200,
+    "assessmentSeries": "all-assessments-at-end-of-course"
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "The sociology of families and education",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weightingPercent": 50,
+      "structure": {
+        "officialFormat": "single-tier",
+        "questionStyle": "Section A and B each start with two multiple-choice questions followed by short and extended responses"
+      },
+      "sections": [
+        {
+          "code": "A",
+          "name": "Families",
+          "mode": "mandatory",
+          "marks": 50,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "families.functions",
+            "families.forms-diversity",
+            "families.conjugal-role-relationships",
+            "families.changing-relationships",
+            "families.criticisms",
+            "families.divorce",
+            "sociological-approach.debates-conflict-consensus",
+            "sociological-approach.classical-sociologists",
+            "sociological-approach.perspectives",
+            "sociological-approach.core-terms",
+            "social-structures-processes-issues.comparison-and-evaluation",
+            "social-structures-processes-issues.methods-in-context",
+            "social-structures-processes-issues.contemporary-debates",
+            "sociological-research-methods.research-design",
+            "sociological-research-methods.qualitative-and-quantitative-methods",
+            "sociological-research-methods.types-of-data",
+            "sociological-research-methods.primary-and-secondary-sources",
+            "sociological-research-methods.interpretation-of-data",
+            "sociological-research-methods.practical-issues",
+            "sociological-research-methods.ethical-issues"
+          ]
+        },
+        {
+          "code": "B",
+          "name": "Education",
+          "mode": "mandatory",
+          "marks": 50,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "education.roles-and-functions",
+            "education.relationship-with-capitalism",
+            "education.achievement-factors",
+            "education.processes-within-schools",
+            "sociological-approach.debates-conflict-consensus",
+            "sociological-approach.classical-sociologists",
+            "sociological-approach.perspectives",
+            "sociological-approach.core-terms",
+            "social-structures-processes-issues.comparison-and-evaluation",
+            "social-structures-processes-issues.methods-in-context",
+            "social-structures-processes-issues.contemporary-debates",
+            "sociological-research-methods.research-design",
+            "sociological-research-methods.qualitative-and-quantitative-methods",
+            "sociological-research-methods.types-of-data",
+            "sociological-research-methods.primary-and-secondary-sources",
+            "sociological-research-methods.interpretation-of-data",
+            "sociological-research-methods.practical-issues",
+            "sociological-research-methods.ethical-issues"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "The sociology of crime and deviance and social stratification",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weightingPercent": 50,
+      "structure": {
+        "officialFormat": "single-tier",
+        "questionStyle": "Section A and B each start with two multiple-choice questions followed by short and extended responses"
+      },
+      "sections": [
+        {
+          "code": "A",
+          "name": "Crime and deviance",
+          "mode": "mandatory",
+          "marks": 50,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "crime-and-deviance.social-construction",
+            "crime-and-deviance.social-control",
+            "crime-and-deviance.criminal-and-deviant-behaviour",
+            "crime-and-deviance.data-on-crime",
+            "sociological-approach.debates-conflict-consensus",
+            "sociological-approach.classical-sociologists",
+            "sociological-approach.perspectives",
+            "sociological-approach.core-terms",
+            "social-structures-processes-issues.comparison-and-evaluation",
+            "social-structures-processes-issues.methods-in-context",
+            "social-structures-processes-issues.contemporary-debates",
+            "sociological-research-methods.research-design",
+            "sociological-research-methods.qualitative-and-quantitative-methods",
+            "sociological-research-methods.types-of-data",
+            "sociological-research-methods.primary-and-secondary-sources",
+            "sociological-research-methods.interpretation-of-data",
+            "sociological-research-methods.practical-issues",
+            "sociological-research-methods.ethical-issues"
+          ]
+        },
+        {
+          "code": "B",
+          "name": "Social stratification",
+          "mode": "mandatory",
+          "marks": 50,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "social-stratification.functionalist-theory",
+            "social-stratification.socio-economic-class",
+            "social-stratification.life-chances",
+            "social-stratification.poverty",
+            "social-stratification.power-and-authority",
+            "social-stratification.power-relationships",
+            "sociological-approach.debates-conflict-consensus",
+            "sociological-approach.classical-sociologists",
+            "sociological-approach.perspectives",
+            "sociological-approach.core-terms",
+            "social-structures-processes-issues.comparison-and-evaluation",
+            "social-structures-processes-issues.methods-in-context",
+            "social-structures-processes-issues.contemporary-debates",
+            "sociological-research-methods.research-design",
+            "sociological-research-methods.qualitative-and-quantitative-methods",
+            "sociological-research-methods.types-of-data",
+            "sociological-research-methods.primary-and-secondary-sources",
+            "sociological-research-methods.interpretation-of-data",
+            "sociological-research-methods.practical-issues",
+            "sociological-research-methods.ethical-issues"
+          ]
+        }
+      ]
+    }
+  ]
+}

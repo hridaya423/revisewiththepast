@@ -1,0 +1,279 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "french",
+    "specCode": "8658",
+    "version": "2024.1"
+  },
+  "qualification": {
+    "tiering": ["foundation", "higher"],
+    "linearity": "linear-all-papers-end-of-course",
+    "rules": [
+      "students-must-take-all-four-papers-at-same-tier",
+      "all-papers-in-same-series"
+    ]
+  },
+  "papers": [
+    {
+      "paperCode": "listening",
+      "paperName": "Paper 1: Listening",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 35, "totalMarks": 40, "readingTimeMinutes": 5 },
+        "higher": { "durationMinutes": 45, "totalMarks": 50, "readingTimeMinutes": 5 }
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Questions in English",
+          "responseLanguage": "english-or-nonverbal",
+          "allowedPrimaryTopicIds": [
+            "scope-of-study.listening",
+            "assessment-constructs.listening-sections",
+            "theme-1.me-family-friends",
+            "theme-1.technology",
+            "theme-1.free-time",
+            "theme-1.customs-festivals",
+            "theme-2.home-town-region",
+            "theme-2.social-issues",
+            "theme-2.global-issues",
+            "theme-2.travel-tourism",
+            "theme-3.my-studies",
+            "theme-3.life-at-school-college",
+            "theme-3.education-post-16",
+            "theme-3.jobs-careers-ambitions",
+            "vocabulary.general.opinions",
+            "vocabulary.general.time-expressions",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs-tenses",
+            "communication-strategies.understanding.use-context",
+            "communication-strategies.understanding.cognates-patterns"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Questions in French",
+          "responseLanguage": "french-or-nonverbal",
+          "allowedPrimaryTopicIds": [
+            "scope-of-study.listening",
+            "assessment-constructs.listening-sections",
+            "vocabulary.rubrics-instructions",
+            "theme-1.me-family-friends.relationships",
+            "theme-1.technology.social-media",
+            "theme-1.free-time.music",
+            "theme-2.social-issues.healthy-unhealthy",
+            "theme-2.global-issues.environment",
+            "theme-3.my-studies",
+            "theme-3.jobs-careers-ambitions",
+            "vocabulary.general.question-forms",
+            "vocabulary.general.connectives",
+            "grammar.foundation.pronouns",
+            "grammar.foundation.number-time",
+            "communication-strategies.understanding.grammatical-clues"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "speaking",
+      "paperName": "Paper 2: Speaking (non-exam assessment)",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 8, "durationRangeMinutes": "7-9", "totalMarks": 60, "preparationMinutes": 12 },
+        "higher": { "durationMinutes": 11, "durationRangeMinutes": "10-12", "totalMarks": 60, "preparationMinutes": 12 }
+      },
+      "sections": [
+        {
+          "sectionCode": "role-play",
+          "sectionName": "Role-play",
+          "marks": 15,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-roleplay",
+            "scope-of-study.speaking",
+            "communication-strategies.production.verbal",
+            "communication-strategies.production.non-verbal",
+            "vocabulary.general.question-forms",
+            "vocabulary.general.greetings-exclamations",
+            "grammar.foundation.verbs",
+            "grammar.foundation.pronouns"
+          ]
+        },
+        {
+          "sectionCode": "photo-card",
+          "sectionName": "Photo card",
+          "marks": 15,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-photo-card",
+            "scope-of-study.speaking",
+            "vocabulary.general.opinions",
+            "vocabulary.general.time-expressions",
+            "grammar.foundation.adjectives",
+            "grammar.foundation.verbs",
+            "grammar.higher.adjectives",
+            "communication-strategies.production.verbal"
+          ]
+        },
+        {
+          "sectionCode": "general-conversation",
+          "sectionName": "General conversation",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-general-conversation",
+            "scope-of-study.speaking",
+            "theme-1.me-family-friends",
+            "theme-1.technology",
+            "theme-1.free-time",
+            "theme-1.customs-festivals",
+            "theme-2.home-town-region",
+            "theme-2.social-issues",
+            "theme-2.global-issues",
+            "theme-2.travel-tourism",
+            "theme-3.my-studies",
+            "theme-3.life-at-school-college",
+            "theme-3.education-post-16",
+            "theme-3.jobs-careers-ambitions",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs-tenses",
+            "vocabulary.general.opinions",
+            "communication-strategies.production.verbal"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "reading",
+      "paperName": "Paper 3: Reading",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 45, "totalMarks": 60 },
+        "higher": { "durationMinutes": 60, "totalMarks": 60 }
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Questions in English",
+          "responseLanguage": "english-or-nonverbal",
+          "allowedPrimaryTopicIds": [
+            "scope-of-study.reading",
+            "assessment-constructs.reading-sections",
+            "theme-1.free-time.cinema-tv",
+            "theme-2.travel-tourism",
+            "theme-2.global-issues.poverty-homelessness",
+            "theme-3.education-post-16",
+            "communication-strategies.understanding.use-context",
+            "communication-strategies.understanding.ignore-nonessential",
+            "vocabulary.general.connectives"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Questions in French",
+          "responseLanguage": "french-or-nonverbal",
+          "allowedPrimaryTopicIds": [
+            "scope-of-study.reading",
+            "assessment-constructs.reading-sections",
+            "vocabulary.rubrics-instructions",
+            "theme-1.me-family-friends.marriage-partnership",
+            "theme-2.home-town-region",
+            "theme-3.life-at-school-college",
+            "grammar.foundation.conjunctions",
+            "grammar.foundation.pronouns",
+            "grammar.higher.pronouns",
+            "communication-strategies.understanding.word-formation-patterns"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Translation from French into English",
+          "responseLanguage": "english",
+          "allowedPrimaryTopicIds": [
+            "scope-of-study.reading",
+            "assessment-constructs.reading-sections",
+            "grammar.foundation.verbs",
+            "grammar.higher.verbs-tenses",
+            "grammar.foundation.prepositions",
+            "vocabulary.general.comparisons",
+            "vocabulary.general.negatives"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "writing",
+      "paperName": "Paper 4: Writing",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 60, "totalMarks": 50 },
+        "higher": { "durationMinutes": 75, "totalMarks": 60 }
+      },
+      "sections": [
+        {
+          "sectionCode": "Q1",
+          "sectionName": "Foundation message task / Higher 90-word task",
+          "tierMode": "mixed-by-tier",
+          "marksByTier": { "foundation": 8, "higher": 16 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation",
+            "assessment-constructs.writing-higher",
+            "scope-of-study.writing",
+            "vocabulary.general.greetings-exclamations",
+            "grammar.foundation.verbs",
+            "grammar.foundation.adjectives",
+            "theme-1.me-family-friends"
+          ]
+        },
+        {
+          "sectionCode": "Q2",
+          "sectionName": "Foundation 40-word task / Higher 150-word task",
+          "tierMode": "mixed-by-tier",
+          "marksByTier": { "foundation": 16, "higher": 32 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation",
+            "assessment-constructs.writing-higher",
+            "scope-of-study.writing",
+            "vocabulary.general.opinions",
+            "vocabulary.general.connectives",
+            "grammar.foundation.conjunctions",
+            "grammar.higher.verbs-tenses",
+            "communication-strategies.production.verbal",
+            "theme-2.global-issues.environment",
+            "theme-3.jobs-careers-ambitions"
+          ]
+        },
+        {
+          "sectionCode": "Q3",
+          "sectionName": "Translation from English into French",
+          "tierMode": "common-purpose-different-length",
+          "marksByTier": { "foundation": 10, "higher": 12 },
+          "allowedPrimaryTopicIds": [
+            "scope-of-study.writing",
+            "assessment-constructs.writing-foundation",
+            "assessment-constructs.writing-higher",
+            "grammar.foundation.verbs",
+            "grammar.foundation.pronouns",
+            "grammar.foundation.articles",
+            "grammar.higher.pronouns",
+            "grammar.higher.verbs-tenses",
+            "vocabulary.general.negatives",
+            "vocabulary.general.prepositions"
+          ]
+        },
+        {
+          "sectionCode": "Q4",
+          "sectionName": "Foundation 90-word structured writing task",
+          "tierMode": "foundation-only",
+          "marksByTier": { "foundation": 16 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation",
+            "scope-of-study.writing",
+            "grammar.foundation.verbs",
+            "grammar.foundation.conjunctions",
+            "vocabulary.general.opinions",
+            "theme-2.travel-tourism",
+            "theme-3.my-studies"
+          ]
+        }
+      ]
+    }
+  ]
+}

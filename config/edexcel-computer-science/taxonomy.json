@@ -1,0 +1,313 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "computer-science",
+    "specCode": "1CP2",
+    "version": "2024.1",
+    "scope": "edexcel-computer-science-1cp2-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "topic-1-computational-thinking",
+      "parentId": null,
+      "label": "Topic 1: Computational thinking",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["topic 1", "computational thinking", "paper 1"]
+    },
+    {
+      "id": "topic-1.decomposition-abstraction",
+      "parentId": "topic-1-computational-thinking",
+      "label": "1.1 Decomposition and abstraction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["1.1", "decomposition", "abstraction", "subprogram benefits"]
+    },
+    {
+      "id": "topic-1.algorithms-control-structures",
+      "parentId": "topic-1-computational-thinking",
+      "label": "1.2.1 Algorithms with sequence, selection, repetition, iteration, input-process-output",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["1.2.1", "flowcharts", "pseudocode", "program code", "control structures"]
+    },
+    {
+      "id": "topic-1.algorithms-data-operators-trace-errors",
+      "parentId": "topic-1-computational-thinking",
+      "label": "1.2.2-1.2.5 Variables/constants, data structures, operators, trace tables, and errors",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["1.2.2", "1.2.3", "1.2.4", "1.2.5", "trace tables", "syntax logic runtime errors"]
+    },
+    {
+      "id": "topic-1.standard-algorithms-evaluation",
+      "parentId": "topic-1-computational-thinking",
+      "label": "1.2.6-1.2.7 Standard algorithms and algorithm evaluation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["1.2.6", "1.2.7", "bubble sort", "merge sort", "linear search", "binary search", "fitness for purpose", "efficiency"]
+    },
+    {
+      "id": "topic-1.truth-tables",
+      "parentId": "topic-1-computational-thinking",
+      "label": "1.3 Truth tables with logical operators",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["1.3", "truth tables", "AND OR NOT", "up to three inputs"]
+    },
+
+    {
+      "id": "topic-2-data",
+      "parentId": null,
+      "label": "Topic 2: Data",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["topic 2", "data", "paper 1"]
+    },
+    {
+      "id": "topic-2.binary-representation-conversion",
+      "parentId": "topic-2-data",
+      "label": "2.1.1-2.1.3 Binary use, signed/unsigned representation, and denary-binary conversion",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["2.1.1", "2.1.2", "2.1.3", "unsigned integers", "two's complement", "8-bit conversion"]
+    },
+    {
+      "id": "topic-2.binary-arithmetic-shifts-overflow-hex",
+      "parentId": "topic-2-data",
+      "label": "2.1.4-2.1.6 Binary arithmetic, shifts, overflow, and hexadecimal",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["2.1.4", "2.1.5", "2.1.6", "binary addition", "logical shift", "arithmetic shift", "overflow", "hexadecimal"]
+    },
+    {
+      "id": "topic-2.character-image-sound-representation",
+      "parentId": "topic-2-data",
+      "label": "2.2 Data representation: ASCII, bitmap images, and analogue sound encoding",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["2.2", "2.2.1", "2.2.2", "2.2.3", "7-bit ASCII", "pixels", "resolution", "colour depth", "sample rate", "bit depth", "sample interval"]
+    },
+    {
+      "id": "topic-2.data-representation-limitations",
+      "parentId": "topic-2-data",
+      "label": "2.2.4 Limitations of binary representation with finite bit widths",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["2.2.4", "limitations of binary representation", "finite bits"]
+    },
+    {
+      "id": "topic-2.data-storage-units-file-size-capacity",
+      "parentId": "topic-2-data",
+      "label": "2.3.1 Data storage units and file size/capacity calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["2.3.1", "bit", "nibble", "byte", "kibibyte", "mebibyte", "gibibyte", "tebibyte", "file size"]
+    },
+    {
+      "id": "topic-2.data-compression",
+      "parentId": "topic-2-data",
+      "label": "2.3.2 Data compression: lossless and lossy",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["2.3.2", "compression", "lossless", "lossy"]
+    },
+
+    {
+      "id": "topic-3-computers",
+      "parentId": null,
+      "label": "Topic 3: Computers",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["topic 3", "computers", "paper 1"]
+    },
+    {
+      "id": "topic-3.hardware-von-neumann-fde",
+      "parentId": "topic-3-computers",
+      "label": "3.1.1 Hardware architecture: von Neumann model and fetch-decode-execute",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["3.1.1", "RAM", "CPU", "control unit", "ALU", "registers", "clock", "address bus", "data bus", "control bus", "fetch decode execute"]
+    },
+    {
+      "id": "topic-3.secondary-storage-and-embedded",
+      "parentId": "topic-3-computers",
+      "label": "3.1.2-3.1.3 Secondary storage methods and embedded systems",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["3.1.2", "3.1.3", "magnetic storage", "optical storage", "solid state", "embedded systems"]
+    },
+    {
+      "id": "topic-3.operating-systems",
+      "parentId": "topic-3-computers",
+      "label": "3.2.1 Operating system purpose and functionality",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["3.2.1", "file management", "process management", "peripheral management", "user management"]
+    },
+    {
+      "id": "topic-3.utility-software-and-robustness",
+      "parentId": "topic-3-computers",
+      "label": "3.2.2-3.2.3 Utility software and robust software development",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["3.2.2", "3.2.3", "file repair", "backup", "data compression", "disk defragmentation", "anti-malware", "audit trails", "code reviews"]
+    },
+    {
+      "id": "topic-3.programming-languages-and-translation",
+      "parentId": "topic-3-computers",
+      "label": "3.3 Programming language levels and translation (interpreter vs compiler)",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["3.3", "3.3.1", "3.3.2", "low-level", "high-level", "interpreter", "compiler", "machine code"]
+    },
+
+    {
+      "id": "topic-4-networks",
+      "parentId": null,
+      "label": "Topic 4: Networks",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["topic 4", "networks", "paper 1"]
+    },
+    {
+      "id": "topic-4.network-purpose-types-internet-connectivity",
+      "parentId": "topic-4-networks",
+      "label": "4.1.1-4.1.5 Network purpose, LAN/WAN, internet structure, connectivity performance, and speed calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["4.1.1", "4.1.2", "4.1.3", "4.1.4", "4.1.5", "LAN", "WAN", "IP addressing", "routers", "speed", "range", "latency", "bandwidth", "bits per second"]
+    },
+    {
+      "id": "topic-4.protocols-tcpip-topologies",
+      "parentId": "topic-4-networks",
+      "label": "4.1.6-4.1.8 Protocols, 4-layer TCP/IP model, and network topologies",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["4.1.6", "4.1.7", "4.1.8", "Ethernet", "Wi-Fi", "TCP/IP", "HTTP", "HTTPS", "FTP", "POP3", "SMTP", "IMAP", "application transport internet link", "bus", "star", "mesh"]
+    },
+    {
+      "id": "topic-4.network-security",
+      "parentId": "topic-4-networks",
+      "label": "4.2 Network security: vulnerabilities and protection",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["4.2", "4.2.1", "penetration testing", "ethical hacking", "access control", "physical security", "firewalls"]
+    },
+
+    {
+      "id": "topic-5-issues-and-impact",
+      "parentId": null,
+      "label": "Topic 5: Issues and impact",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["topic 5", "issues and impact", "paper 1"]
+    },
+    {
+      "id": "topic-5.environmental-issues",
+      "parentId": "topic-5-issues-and-impact",
+      "label": "5.1 Environmental issues from digital device use",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["5.1", "5.1.1", "energy consumption", "manufacture", "replacement cycle", "disposal"]
+    },
+    {
+      "id": "topic-5.data-ethics-and-law",
+      "parentId": "topic-5-issues-and-impact",
+      "label": "5.2.1 Ethical and legal issues in personal data collection and use",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["5.2.1", "privacy", "ownership", "consent", "misuse", "data protection"]
+    },
+    {
+      "id": "topic-5.ai-ml-robotics-ethics-legal",
+      "parentId": "topic-5-issues-and-impact",
+      "label": "5.2.2 Ethical and legal issues in AI, machine learning, and robotics",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["5.2.2", "artificial intelligence", "machine learning", "robotics", "accountability", "safety", "algorithmic bias", "legal liability"]
+    },
+    {
+      "id": "topic-5.intellectual-property",
+      "parentId": "topic-5-issues-and-impact",
+      "label": "5.2.3 Intellectual property protection methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["5.2.3", "copyright", "patents", "trademarks", "licencing"]
+    },
+    {
+      "id": "topic-5.cybersecurity-threats",
+      "parentId": "topic-5-issues-and-impact",
+      "label": "5.3.1 Cybersecurity threats and attack methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["5.3.1", "malware", "viruses", "worms", "trojans", "ransomware", "key loggers", "unpatched software", "social engineering"]
+    },
+    {
+      "id": "topic-5.cybersecurity-protection",
+      "parentId": "topic-5-issues-and-impact",
+      "label": "5.3.2 Cybersecurity protection methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["5.3.2", "anti-malware", "encryption", "acceptable use policies", "backup", "recovery procedures"]
+    },
+
+    {
+      "id": "topic-6-problem-solving-with-programming",
+      "parentId": null,
+      "label": "Topic 6: Problem solving with programming",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["topic 6", "problem solving with programming", "paper 2", "python 3"]
+    },
+    {
+      "id": "topic-6.develop-code",
+      "parentId": "topic-6-problem-solving-with-programming",
+      "label": "6.1 Develop code",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["6.1", "6.1.1", "6.1.2", "6.1.3", "6.1.4", "6.1.5", "6.1.6", "decomposition", "abstraction", "read write analyse refine", "debugging", "program evaluation"]
+    },
+    {
+      "id": "topic-6.constructs",
+      "parentId": "topic-6-problem-solving-with-programming",
+      "label": "6.2 Constructs",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["6.2", "6.2.1", "6.2.2", "constants", "variables", "initialisation", "assignment", "selection", "repetition", "iteration", "subprograms", "single entry single exit"]
+    },
+    {
+      "id": "topic-6.data-types-and-structures",
+      "parentId": "topic-6-problem-solving-with-programming",
+      "label": "6.3 Data types and structures",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["6.3", "6.3.1", "6.3.2", "6.3.3", "integer", "real", "Boolean", "char", "string", "array", "record", "string manipulation"]
+    },
+    {
+      "id": "topic-6.input-output-validation-authentication",
+      "parentId": "topic-6-problem-solving-with-programming",
+      "label": "6.4 Input/output, file handling, validation, and authentication",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["6.4", "6.4.1", "6.4.2", "6.4.3", "6.4.4", "CSV files", "length check", "presence check", "range check", "pattern check", "ID and password", "lookup"]
+    },
+    {
+      "id": "topic-6.operators",
+      "parentId": "topic-6-problem-solving-with-programming",
+      "label": "6.5 Operators",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["6.5", "6.5.1", "6.5.2", "6.5.3", "arithmetic operators", "relational operators", "logical operators"]
+    },
+    {
+      "id": "topic-6.subprograms",
+      "parentId": "topic-6-problem-solving-with-programming",
+      "label": "6.6 Subprograms",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["6.6", "6.6.1", "6.6.2", "6.6.3", "built-in", "library", "procedures", "functions", "parameters", "global variables", "local variables"]
+    }
+  ]
+}

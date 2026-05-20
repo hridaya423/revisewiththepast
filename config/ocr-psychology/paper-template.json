@@ -1,0 +1,210 @@
+{
+  "metadata": {
+    "boardCode": "ocr",
+    "subjectSlug": "psychology",
+    "specCode": "J203",
+    "version": "2024.1",
+    "scope": "ocr-gcse-psychology-j203-assessment-structure-and-topic-coverage",
+    "taggingRule": "set-primary-topic-from-component-section-topic-and-add-research-methods-leaf-where-method-content-is-explicit",
+    "sourceUrls": [
+      "https://www.ocr.org.uk/qualifications/gcse/psychology-j203-from-2017/specification-at-a-glance/",
+      "https://www.ocr.org.uk/qualifications/gcse/psychology-j203-from-2017/assessment/",
+      "https://www.ocr.org.uk/Images/309306-specification-accredited-gcse-psychology-j203.pdf"
+    ]
+  },
+  "qualification": {
+    "level": "GCSE",
+    "linear": true,
+    "availability": "May/June"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Studies and applications in psychology 1 (J203/01)",
+      "tier": "single-tier",
+      "durationMinutes": 90,
+      "totalMarks": 90,
+      "weighting": "50%",
+      "questionTypes": ["multiple-choice", "short answer", "extended response"],
+      "coverage": {
+        "topicRange": "Criminal psychology; Development; Psychological problems; Research methods (designing an investigation)",
+        "topicIds": [
+          "studies-applications-1.criminal-psychology.types-and-social-construction",
+          "studies-applications-1.criminal-psychology.biological-explanations",
+          "studies-applications-1.criminal-psychology.social-psychological-explanations",
+          "studies-applications-1.criminal-psychology.reduction-and-rehabilitation",
+          "studies-applications-1.criminal-psychology.core-study-cooper-mackie",
+          "studies-applications-1.criminal-psychology.core-study-heaven",
+          "studies-applications-1.development.early-brain-development",
+          "studies-applications-1.development.piaget-cognitive-development",
+          "studies-applications-1.development.education-and-learning",
+          "studies-applications-1.development.core-study-freud",
+          "studies-applications-1.development.core-study-van-ijzen-doorn-kroonenberg",
+          "studies-applications-1.psychological-problems.introduction-and-incidence",
+          "studies-applications-1.psychological-problems.depression",
+          "studies-applications-1.psychological-problems.addiction",
+          "studies-applications-1.psychological-problems.core-study-caspi",
+          "studies-applications-1.psychological-problems.core-study-hope",
+          "research-methods.research-process",
+          "research-methods.methods-and-designs",
+          "research-methods.data-and-analysis",
+          "research-methods.reliability-validity-ethics",
+          "research-methods.component-01-focus"
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Criminal psychology",
+          "mode": "mandatory",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "studies-applications-1.criminal-psychology.types-and-social-construction",
+            "studies-applications-1.criminal-psychology.biological-explanations",
+            "studies-applications-1.criminal-psychology.social-psychological-explanations",
+            "studies-applications-1.criminal-psychology.reduction-and-rehabilitation",
+            "studies-applications-1.criminal-psychology.core-study-cooper-mackie",
+            "studies-applications-1.criminal-psychology.core-study-heaven",
+            "research-methods.research-process",
+            "research-methods.methods-and-designs",
+            "research-methods.data-and-analysis",
+            "research-methods.reliability-validity-ethics",
+            "research-methods.component-01-focus"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Development",
+          "mode": "mandatory",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "studies-applications-1.development.early-brain-development",
+            "studies-applications-1.development.piaget-cognitive-development",
+            "studies-applications-1.development.education-and-learning",
+            "studies-applications-1.development.core-study-freud",
+            "studies-applications-1.development.core-study-van-ijzen-doorn-kroonenberg",
+            "research-methods.research-process",
+            "research-methods.methods-and-designs",
+            "research-methods.data-and-analysis",
+            "research-methods.reliability-validity-ethics",
+            "research-methods.component-01-focus"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Psychological problems",
+          "mode": "mandatory",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "studies-applications-1.psychological-problems.introduction-and-incidence",
+            "studies-applications-1.psychological-problems.depression",
+            "studies-applications-1.psychological-problems.addiction",
+            "studies-applications-1.psychological-problems.core-study-caspi",
+            "studies-applications-1.psychological-problems.core-study-hope",
+            "research-methods.research-process",
+            "research-methods.methods-and-designs",
+            "research-methods.data-and-analysis",
+            "research-methods.reliability-validity-ethics",
+            "research-methods.component-01-focus"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Studies and applications in psychology 2 (J203/02)",
+      "tier": "single-tier",
+      "durationMinutes": 90,
+      "totalMarks": 90,
+      "weighting": "50%",
+      "questionTypes": ["multiple-choice", "short answer", "extended response"],
+      "coverage": {
+        "topicRange": "Sleep and dreaming; Memory; Social influence; Research methods (novel source)",
+        "topicIds": [
+          "studies-applications-2.sleep-dreaming.sleep-cycles",
+          "studies-applications-2.sleep-dreaming.endogenous-exogenous-controls",
+          "studies-applications-2.sleep-dreaming.sleep-disorders-and-hygiene",
+          "studies-applications-2.sleep-dreaming.biological-and-psychological-dream-theories",
+          "studies-applications-2.sleep-dreaming.core-study-freud-wolfman",
+          "studies-applications-2.sleep-dreaming.core-study-williams",
+          "studies-applications-2.memory.processes-and-types",
+          "studies-applications-2.memory.multi-store-model",
+          "studies-applications-2.memory.reconstructive-memory",
+          "studies-applications-2.memory.forgetting-and-eyewitness",
+          "studies-applications-2.memory.core-study-baddeley",
+          "studies-applications-2.memory.core-study-schmolck",
+          "studies-applications-2.social-influence.conformity",
+          "studies-applications-2.social-influence.obedience",
+          "studies-applications-2.social-influence.prosocial-and-bystander",
+          "studies-applications-2.social-influence.collective-behaviour",
+          "studies-applications-2.social-influence.core-study-hofling",
+          "studies-applications-2.social-influence.core-study-levine",
+          "research-methods.research-process",
+          "research-methods.methods-and-designs",
+          "research-methods.data-and-analysis",
+          "research-methods.reliability-validity-ethics",
+          "research-methods.component-02-focus"
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Sleep and dreaming",
+          "mode": "mandatory",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "studies-applications-2.sleep-dreaming.sleep-cycles",
+            "studies-applications-2.sleep-dreaming.endogenous-exogenous-controls",
+            "studies-applications-2.sleep-dreaming.sleep-disorders-and-hygiene",
+            "studies-applications-2.sleep-dreaming.biological-and-psychological-dream-theories",
+            "studies-applications-2.sleep-dreaming.core-study-freud-wolfman",
+            "studies-applications-2.sleep-dreaming.core-study-williams",
+            "research-methods.research-process",
+            "research-methods.methods-and-designs",
+            "research-methods.data-and-analysis",
+            "research-methods.reliability-validity-ethics",
+            "research-methods.component-02-focus"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Memory",
+          "mode": "mandatory",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "studies-applications-2.memory.processes-and-types",
+            "studies-applications-2.memory.multi-store-model",
+            "studies-applications-2.memory.reconstructive-memory",
+            "studies-applications-2.memory.forgetting-and-eyewitness",
+            "studies-applications-2.memory.core-study-baddeley",
+            "studies-applications-2.memory.core-study-schmolck",
+            "research-methods.research-process",
+            "research-methods.methods-and-designs",
+            "research-methods.data-and-analysis",
+            "research-methods.reliability-validity-ethics",
+            "research-methods.component-02-focus"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Social influence",
+          "mode": "mandatory",
+          "marks": 30,
+          "allowedPrimaryTopicIds": [
+            "studies-applications-2.social-influence.conformity",
+            "studies-applications-2.social-influence.obedience",
+            "studies-applications-2.social-influence.prosocial-and-bystander",
+            "studies-applications-2.social-influence.collective-behaviour",
+            "studies-applications-2.social-influence.core-study-hofling",
+            "studies-applications-2.social-influence.core-study-levine",
+            "research-methods.research-process",
+            "research-methods.methods-and-designs",
+            "research-methods.data-and-analysis",
+            "research-methods.reliability-validity-ethics",
+            "research-methods.component-02-focus"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,633 @@
+{
+  "metadata": {
+    "boardCode": "ocr",
+    "subjectSlug": "english-language",
+    "specCode": "J351",
+    "version": "2024.1",
+    "scope": "ocr-gcse-english-language-j351-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "reading",
+      "parentId": null,
+      "label": "Reading",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["reading", "component A reading"]
+    },
+    {
+      "id": "reading.non-fiction",
+      "parentId": "reading",
+      "label": "Component 01 reading: non-fiction comparison",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["communicating information and ideas", "component 01 part A", "non-fiction reading"]
+    },
+    {
+      "id": "reading.non-fiction.comprehension",
+      "parentId": "reading.non-fiction",
+      "label": "Non-fiction comprehension and interpretation",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["retrieval and inference", "reading understanding"]
+    },
+    {
+      "id": "reading.non-fiction.comprehension.retrieve-explicit",
+      "parentId": "reading.non-fiction.comprehension",
+      "label": "Retrieve explicit information and details from non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["explicit retrieval", "locate evidence", "quotations"]
+    },
+    {
+      "id": "reading.non-fiction.comprehension.infer-implicit",
+      "parentId": "reading.non-fiction.comprehension",
+      "label": "Infer implicit meanings and attitudes in non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["inference", "implied meaning", "subtext"]
+    },
+    {
+      "id": "reading.non-fiction.comprehension.evidence-selection",
+      "parentId": "reading.non-fiction.comprehension",
+      "label": "Select concise supporting evidence from non-fiction texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["evidence choice", "textual support", "embed quotation"]
+    },
+    {
+      "id": "reading.non-fiction.comprehension.summary-synthesis",
+      "parentId": "reading.non-fiction.comprehension",
+      "label": "Summarise and synthesise key ideas in non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["summary", "synthesis", "main ideas"]
+    },
+    {
+      "id": "reading.non-fiction.analysis-methods",
+      "parentId": "reading.non-fiction",
+      "label": "Non-fiction language and structure analysis methods",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["writer's methods", "analysis of craft"]
+    },
+    {
+      "id": "reading.non-fiction.analysis-methods.language-diction-connotation",
+      "parentId": "reading.non-fiction.analysis-methods",
+      "label": "Analyse diction, phrasing and connotations in non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["word choice", "connotation", "language effects"]
+    },
+    {
+      "id": "reading.non-fiction.analysis-methods.language-rhetorical-devices",
+      "parentId": "reading.non-fiction.analysis-methods",
+      "label": "Analyse rhetorical devices and persuasive language in non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["rhetoric", "persuasive techniques", "ethos pathos logos"]
+    },
+    {
+      "id": "reading.non-fiction.analysis-methods.structure-organisation",
+      "parentId": "reading.non-fiction.analysis-methods",
+      "label": "Analyse whole-text and paragraph organisation in non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["text organisation", "paragraphing", "sequencing"]
+    },
+    {
+      "id": "reading.non-fiction.analysis-methods.structure-development-shifts",
+      "parentId": "reading.non-fiction.analysis-methods",
+      "label": "Analyse development, shifts and endings in non-fiction structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["structural shift", "focus change", "ending impact"]
+    },
+    {
+      "id": "reading.non-fiction.comparison-evaluation",
+      "parentId": "reading.non-fiction",
+      "label": "Non-fiction comparison and evaluation",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["cross-text response", "critical judgement"]
+    },
+    {
+      "id": "reading.non-fiction.comparison-evaluation.compare-viewpoints",
+      "parentId": "reading.non-fiction.comparison-evaluation",
+      "label": "Compare writers' viewpoints, ideas and attitudes in non-fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["viewpoint comparison", "similarities and differences", "perspective"]
+    },
+    {
+      "id": "reading.non-fiction.comparison-evaluation.compare-methods",
+      "parentId": "reading.non-fiction.comparison-evaluation",
+      "label": "Compare language and structure methods across non-fiction texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["methods comparison", "cross-text craft"]
+    },
+    {
+      "id": "reading.non-fiction.comparison-evaluation.evaluate-statement",
+      "parentId": "reading.non-fiction.comparison-evaluation",
+      "label": "Evaluate a statement about non-fiction texts using evidence",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["evaluate statement", "to what extent", "judgement"]
+    },
+    {
+      "id": "reading.literary-prose",
+      "parentId": "reading",
+      "label": "Component 02 reading: literary prose comparison",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["exploring effects and impact", "component 02 part A", "prose reading"]
+    },
+    {
+      "id": "reading.literary-prose.comprehension",
+      "parentId": "reading.literary-prose",
+      "label": "Prose comprehension and interpretation",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["prose retrieval and inference", "reading prose"]
+    },
+    {
+      "id": "reading.literary-prose.comprehension.retrieve-explicit",
+      "parentId": "reading.literary-prose.comprehension",
+      "label": "Retrieve explicit details from literary prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["prose retrieval", "literal understanding"]
+    },
+    {
+      "id": "reading.literary-prose.comprehension.infer-implicit",
+      "parentId": "reading.literary-prose.comprehension",
+      "label": "Infer implicit meanings, feelings and attitudes in prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["prose inference", "implied meaning", "character feeling"]
+    },
+    {
+      "id": "reading.literary-prose.comprehension.evidence-selection",
+      "parentId": "reading.literary-prose.comprehension",
+      "label": "Select supporting evidence from literary prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["evidence choice", "quotations", "text support"]
+    },
+    {
+      "id": "reading.literary-prose.comprehension.summary-synthesis",
+      "parentId": "reading.literary-prose.comprehension",
+      "label": "Summarise key points and narrative ideas in prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["summary", "synthesise meaning", "key ideas"]
+    },
+    {
+      "id": "reading.literary-prose.analysis-methods",
+      "parentId": "reading.literary-prose",
+      "label": "Prose language and structure analysis methods",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["writer's craft", "methods analysis"]
+    },
+    {
+      "id": "reading.literary-prose.analysis-methods.language-diction-imagery",
+      "parentId": "reading.literary-prose.analysis-methods",
+      "label": "Analyse diction, imagery and figurative language in prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["imagery analysis", "word choice", "figurative methods"]
+    },
+    {
+      "id": "reading.literary-prose.analysis-methods.language-tone-atmosphere",
+      "parentId": "reading.literary-prose.analysis-methods",
+      "label": "Analyse tone and atmosphere effects in prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["tone", "mood", "effect on reader"]
+    },
+    {
+      "id": "reading.literary-prose.analysis-methods.structure-narrative-organisation",
+      "parentId": "reading.literary-prose.analysis-methods",
+      "label": "Analyse narrative organisation and sequencing in prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["narrative structure", "sequencing", "plot movement"]
+    },
+    {
+      "id": "reading.literary-prose.analysis-methods.structure-focus-shifts",
+      "parentId": "reading.literary-prose.analysis-methods",
+      "label": "Analyse focus shifts, perspective movement and endings in prose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["focus shift", "perspective shift", "ending impact"]
+    },
+    {
+      "id": "reading.literary-prose.comparison-evaluation",
+      "parentId": "reading.literary-prose",
+      "label": "Prose comparison and evaluation",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["cross-text prose", "critical prose response"]
+    },
+    {
+      "id": "reading.literary-prose.comparison-evaluation.compare-ideas-feelings",
+      "parentId": "reading.literary-prose.comparison-evaluation",
+      "label": "Compare ideas, feelings and attitudes across prose texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["compare ideas", "feelings comparison", "attitudes"]
+    },
+    {
+      "id": "reading.literary-prose.comparison-evaluation.compare-methods",
+      "parentId": "reading.literary-prose.comparison-evaluation",
+      "label": "Compare language and structure methods across prose texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["methods comparison", "writer craft comparison"]
+    },
+    {
+      "id": "reading.literary-prose.comparison-evaluation.evaluate-statement",
+      "parentId": "reading.literary-prose.comparison-evaluation",
+      "label": "Evaluate a statement about prose texts using evidence",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["evaluate statement", "to what extent", "critical judgement"]
+    },
+    {
+      "id": "writing",
+      "parentId": null,
+      "label": "Writing",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["writing", "component B writing"]
+    },
+    {
+      "id": "writing.non-fiction",
+      "parentId": "writing",
+      "label": "Component 01 writing: original non-fiction",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["component 01 part B", "transactional writing", "informative writing", "argument writing"]
+    },
+    {
+      "id": "writing.non-fiction.forms",
+      "parentId": "writing.non-fiction",
+      "label": "Non-fiction writing forms",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["transactional forms", "audience form"]
+    },
+    {
+      "id": "writing.non-fiction.forms.article",
+      "parentId": "writing.non-fiction.forms",
+      "label": "Write in article form for a defined audience",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["article writing", "magazine article", "newspaper article"]
+    },
+    {
+      "id": "writing.non-fiction.forms.letter",
+      "parentId": "writing.non-fiction.forms",
+      "label": "Write in letter form with appropriate conventions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["letter writing", "formal letter", "open letter"]
+    },
+    {
+      "id": "writing.non-fiction.forms.speech",
+      "parentId": "writing.non-fiction.forms",
+      "label": "Write in speech form with direct audience address",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["speech writing", "talk script", "audience address"]
+    },
+    {
+      "id": "writing.non-fiction.forms.leaflet-guide",
+      "parentId": "writing.non-fiction.forms",
+      "label": "Write in leaflet or guide form using clear signposting",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["leaflet", "guide", "advice text"]
+    },
+    {
+      "id": "writing.non-fiction.craft",
+      "parentId": "writing.non-fiction",
+      "label": "Non-fiction writing craft",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["composition and effect", "crafting response"]
+    },
+    {
+      "id": "writing.non-fiction.craft.purpose-audience-register",
+      "parentId": "writing.non-fiction.craft",
+      "label": "Match content and register to purpose and audience in non-fiction writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["PAF", "register control", "audience awareness"]
+    },
+    {
+      "id": "writing.non-fiction.craft.argument-line",
+      "parentId": "writing.non-fiction.craft",
+      "label": "Develop a coherent argument or viewpoint line",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["line of argument", "viewpoint development", "discursive structure"]
+    },
+    {
+      "id": "writing.non-fiction.craft.paragraph-cohesion",
+      "parentId": "writing.non-fiction.craft",
+      "label": "Organise non-fiction writing with clear paragraphing and cohesion",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["paragraphing", "cohesive devices", "sequencing ideas"]
+    },
+    {
+      "id": "writing.non-fiction.craft.rhetorical-crafting",
+      "parentId": "writing.non-fiction.craft",
+      "label": "Use rhetorical methods to shape impact in non-fiction writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["persuasive devices", "rhetorical methods", "engagement strategies"]
+    },
+    {
+      "id": "writing.non-fiction.craft.tone-control",
+      "parentId": "writing.non-fiction.craft",
+      "label": "Control tone and writer voice in non-fiction writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["voice", "tone", "style control"]
+    },
+    {
+      "id": "writing.creative",
+      "parentId": "writing",
+      "label": "Component 02 writing: original creative writing",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["component 02 part B", "creative writing", "narrative", "descriptive prose"]
+    },
+    {
+      "id": "writing.creative.composition",
+      "parentId": "writing.creative",
+      "label": "Creative writing composition",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["creative structure", "story shaping"]
+    },
+    {
+      "id": "writing.creative.composition.narrative-shaping",
+      "parentId": "writing.creative.composition",
+      "label": "Shape narrative events with a clear progression",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["narrative development", "plot progression", "story arc"]
+    },
+    {
+      "id": "writing.creative.composition.descriptive-crafted-imagery",
+      "parentId": "writing.creative.composition",
+      "label": "Craft descriptive writing through precise imagery",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["descriptive detail", "imagery", "show not tell"]
+    },
+    {
+      "id": "writing.creative.composition.setting-atmosphere",
+      "parentId": "writing.creative.composition",
+      "label": "Construct setting and atmosphere effectively",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["setting", "atmosphere", "mood creation"]
+    },
+    {
+      "id": "writing.creative.composition.characterisation-voice",
+      "parentId": "writing.creative.composition",
+      "label": "Develop characterisation and believable narrative voice",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["character voice", "persona", "character detail"]
+    },
+    {
+      "id": "writing.creative.composition.structural-control",
+      "parentId": "writing.creative.composition",
+      "label": "Control opening, focus shifts and ending in creative structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["opening and ending", "structural shift", "pacing"]
+    },
+    {
+      "id": "writing.creative.style",
+      "parentId": "writing.creative",
+      "label": "Creative writing style and effect",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["style and tone", "voice and effect"]
+    },
+    {
+      "id": "writing.creative.style.perspective-viewpoint",
+      "parentId": "writing.creative.style",
+      "label": "Sustain perspective and viewpoint choices in creative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["point of view", "narrative perspective", "first person"]
+    },
+    {
+      "id": "writing.creative.style.tense-control",
+      "parentId": "writing.creative.style",
+      "label": "Maintain consistent and purposeful tense control",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["tense consistency", "verb control"]
+    },
+    {
+      "id": "writing.creative.style.sensory-detail",
+      "parentId": "writing.creative.style",
+      "label": "Use sensory detail to deepen creative effects",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["sensory imagery", "description through senses"]
+    },
+    {
+      "id": "writing.creative.style.figurative-language-effects",
+      "parentId": "writing.creative.style",
+      "label": "Use figurative language to shape tone and impact",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["metaphor", "simile", "personification"]
+    },
+    {
+      "id": "writing.technical-accuracy",
+      "parentId": "writing",
+      "label": "Technical accuracy across writing components",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["accuracy", "SPaG", "written standard English"]
+    },
+    {
+      "id": "writing.technical-accuracy.vocabulary-precision",
+      "parentId": "writing.technical-accuracy",
+      "label": "Select precise and varied vocabulary",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["lexical range", "word precision"]
+    },
+    {
+      "id": "writing.technical-accuracy.sentence-variety-control",
+      "parentId": "writing.technical-accuracy",
+      "label": "Use varied sentence forms with secure control",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["sentence variety", "syntax control", "sentence boundaries"]
+    },
+    {
+      "id": "writing.technical-accuracy.punctuation-clarity-effect",
+      "parentId": "writing.technical-accuracy",
+      "label": "Use punctuation accurately for clarity and effect",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["punctuation", "comma control", "punctuation for effect"]
+    },
+    {
+      "id": "writing.technical-accuracy.grammar-accuracy",
+      "parentId": "writing.technical-accuracy",
+      "label": "Use grammar accurately and consistently",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["grammatical accuracy", "agreement", "clause control"]
+    },
+    {
+      "id": "writing.technical-accuracy.spelling-accuracy",
+      "parentId": "writing.technical-accuracy",
+      "label": "Spell accurately, including ambitious vocabulary",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["spelling", "orthographic accuracy"]
+    },
+    {
+      "id": "spoken-language",
+      "parentId": null,
+      "label": "Spoken language endorsement (components 03 and 04)",
+      "kind": "branch",
+      "paperCodes": [],
+      "aliases": ["spoken language endorsement", "component 03", "component 04", "non-exam assessment"]
+    },
+    {
+      "id": "spoken-language.presentation",
+      "parentId": "spoken-language",
+      "label": "Spoken presentation skills",
+      "kind": "branch",
+      "paperCodes": [],
+      "aliases": ["presentation", "speech", "talk"]
+    },
+    {
+      "id": "spoken-language.presentation.organisation",
+      "parentId": "spoken-language.presentation",
+      "label": "Organise and sequence a spoken presentation on an agreed topic",
+      "kind": "leaf",
+      "paperCodes": [],
+      "aliases": ["presentation structure", "sequencing ideas", "talk organisation"]
+    },
+    {
+      "id": "spoken-language.presentation.delivery-clarity",
+      "parentId": "spoken-language.presentation",
+      "label": "Deliver spoken content clearly and audibly",
+      "kind": "leaf",
+      "paperCodes": [],
+      "aliases": ["delivery", "clarity", "fluency"]
+    },
+    {
+      "id": "spoken-language.presentation.audience-engagement",
+      "parentId": "spoken-language.presentation",
+      "label": "Engage audience through appropriate spoken methods",
+      "kind": "leaf",
+      "paperCodes": [],
+      "aliases": ["audience engagement", "spoken rhetoric", "interactional methods"]
+    },
+    {
+      "id": "spoken-language.interaction",
+      "parentId": "spoken-language",
+      "label": "Spoken interaction and response",
+      "kind": "branch",
+      "paperCodes": [],
+      "aliases": ["question response", "discussion"]
+    },
+    {
+      "id": "spoken-language.interaction.response-to-questions",
+      "parentId": "spoken-language.interaction",
+      "label": "Respond appropriately to questions and feedback",
+      "kind": "leaf",
+      "paperCodes": [],
+      "aliases": ["Q and A response", "feedback response"]
+    },
+    {
+      "id": "spoken-language.interaction.listening-and-adaptation",
+      "parentId": "spoken-language.interaction",
+      "label": "Listen actively and adapt spoken responses in discussion",
+      "kind": "leaf",
+      "paperCodes": [],
+      "aliases": ["active listening", "adapt response", "discussion listening"]
+    },
+    {
+      "id": "spoken-language.standard-english",
+      "parentId": "spoken-language",
+      "label": "Spoken Standard English control",
+      "kind": "branch",
+      "paperCodes": [],
+      "aliases": ["spoken standard English", "register control"]
+    },
+    {
+      "id": "spoken-language.standard-english.register-control",
+      "parentId": "spoken-language.standard-english",
+      "label": "Use spoken Standard English where appropriate to audience and context",
+      "kind": "leaf",
+      "paperCodes": [],
+      "aliases": ["standard English", "spoken register", "formal spoken accuracy"]
+    }
+  ]
+}

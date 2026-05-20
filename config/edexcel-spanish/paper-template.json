@@ -1,0 +1,243 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "spanish",
+    "specCode": "1SP0",
+    "version": "2024.1",
+    "scope": "pearson-edexcel-gcse-spanish-2024-spec-structure-and-content",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part",
+    "sourceUrls": [
+      "https://qualifications.pearson.com/en/qualifications/edexcel-gcses/spanish-2024.html",
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/Spanish/2024/specification-and-sample-assessments/gq000027-gcse-spanish-specification-2024-issue-2.pdf",
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/Spanish/2024/teaching-and-learning-materials/spanish-vocabulary-and-grammar-guide.pdf"
+    ]
+  },
+  "qualification": {
+    "tiering": ["foundation", "higher"],
+    "linearity": "linear-all-papers-end-of-course",
+    "rules": [
+      "students-must-take-all-four-papers-at-same-tier",
+      "all-papers-in-same-series"
+    ]
+  },
+  "papers": [
+    {
+      "paperCode": "speaking",
+      "paperName": "Paper 1: Speaking in Spanish",
+      "examCode": "1SP1/1F-1H",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": {
+          "durationMinutes": 8,
+          "durationRangeMinutes": "7-9",
+          "preparationMinutes": 15,
+          "totalMarks": 50
+        },
+        "higher": {
+          "durationMinutes": 11,
+          "durationRangeMinutes": "10-12",
+          "preparationMinutes": 15,
+          "totalMarks": 50
+        }
+      },
+      "sections": [
+        {
+          "sectionCode": "read-aloud",
+          "sectionName": "Task 1: Read aloud with short unprepared interaction",
+          "marks": 12,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-read-aloud",
+            "communication-skills.speaking-interaction",
+            "grammar.ssc",
+            "thematic-contexts.personal-world",
+            "thematic-contexts.media-technology"
+          ]
+        },
+        {
+          "sectionCode": "role-play",
+          "sectionName": "Task 2: Transactional role play",
+          "marks": 10,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-role-play",
+            "communication-skills.speaking-interaction",
+            "vocabulary.short-phrases",
+            "subject-domains.town-shopping-transport",
+            "subject-domains.travel-accommodation"
+          ]
+        },
+        {
+          "sectionCode": "picture-description",
+          "sectionName": "Task 3a: Picture description",
+          "marks": 8,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-picture-conversation",
+            "communication-skills.speaking-picture-description",
+            "communication-skills.extended-production",
+            "thematic-contexts.lifestyle-wellbeing",
+            "thematic-contexts.travel-tourism"
+          ]
+        },
+        {
+          "sectionCode": "picture-followup",
+          "sectionName": "Task 3b: Two unprepared follow-up questions",
+          "marks": 4,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-picture-conversation",
+            "communication-skills.speaking-interaction",
+            "communication-skills.extended-production"
+          ]
+        },
+        {
+          "sectionCode": "picture-conversation",
+          "sectionName": "Task 3c: Broader thematic conversation",
+          "marks": 16,
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.speaking-picture-conversation",
+            "communication-skills.timeframe-control",
+            "communication-skills.extended-production",
+            "grammar.verbs-tenses",
+            "thematic-contexts.studying-future"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "listening",
+      "paperName": "Paper 2: Listening and understanding in Spanish",
+      "examCode": "1SP1/2F-2H",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 45, "readingTimeMinutes": 5, "totalMarks": 50 },
+        "higher": { "durationMinutes": 60, "readingTimeMinutes": 5, "totalMarks": 50 }
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Section A: Listening comprehension questions in English",
+          "marks": 40,
+          "responseLanguage": "english",
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.listening-section-a",
+            "communication-skills.receptive-understanding",
+            "thematic-contexts.personal-world",
+            "thematic-contexts.neighbourhood",
+            "thematic-contexts.media-technology",
+            "vocabulary.basic-high-frequency"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Section B: Dictation",
+          "marks": 10,
+          "responseLanguage": "spanish",
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.listening-section-b-dictation",
+            "grammar.ssc",
+            "vocabulary.verbs",
+            "vocabulary.nouns"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "reading",
+      "paperName": "Paper 3: Reading and understanding in Spanish",
+      "examCode": "1SP1/3F-3H",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 45, "totalMarks": 50 },
+        "higher": { "durationMinutes": 60, "totalMarks": 50 }
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Section A: Reading comprehension questions in English",
+          "marks": 40,
+          "responseLanguage": "english",
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.reading-section-a",
+            "communication-skills.receptive-understanding",
+            "thematic-contexts.lifestyle-wellbeing",
+            "thematic-contexts.studying-future",
+            "thematic-contexts.travel-tourism",
+            "grammar.derivational-morphology"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Section B: Translation into English",
+          "marks": 10,
+          "responseLanguage": "english",
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.reading-section-b-translation",
+            "communication-skills.translation-into-english",
+            "grammar.verbs-tenses",
+            "vocabulary.conjunctions"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "writing",
+      "paperName": "Paper 4: Writing in Spanish",
+      "examCode": "1SP1/4F-4H",
+      "weighting": "25%",
+      "tierDetails": {
+        "foundation": { "durationMinutes": 75, "totalMarks": 50 },
+        "higher": { "durationMinutes": 80, "totalMarks": 50 }
+      },
+      "sections": [
+        {
+          "sectionCode": "Q1",
+          "sectionName": "Foundation: picture-based task / Higher: informal open-response",
+          "tierMode": "mixed-by-tier",
+          "marksByTier": { "foundation": 8, "higher": 18 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation-q1",
+            "assessment-constructs.writing-higher-q1",
+            "communication-skills.extended-production",
+            "thematic-contexts.personal-world"
+          ]
+        },
+        {
+          "sectionCode": "Q2",
+          "sectionName": "Foundation: formal open-response / Higher: formal open-response",
+          "tierMode": "mixed-by-tier",
+          "marksByTier": { "foundation": 14, "higher": 22 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation-q2",
+            "assessment-constructs.writing-higher-q2",
+            "communication-skills.extended-production",
+            "communication-skills.timeframe-control",
+            "thematic-contexts.studying-future"
+          ]
+        },
+        {
+          "sectionCode": "Q3",
+          "sectionName": "Foundation: informal open-response / Higher: translation into Spanish",
+          "tierMode": "mixed-by-tier",
+          "marksByTier": { "foundation": 18, "higher": 10 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation-q3",
+            "assessment-constructs.writing-higher-q3",
+            "communication-skills.extended-production",
+            "communication-skills.translation-into-spanish",
+            "grammar.verbs-tenses"
+          ]
+        },
+        {
+          "sectionCode": "Q4",
+          "sectionName": "Foundation only: translation into Spanish",
+          "tierMode": "foundation-only",
+          "marksByTier": { "foundation": 10 },
+          "allowedPrimaryTopicIds": [
+            "assessment-constructs.writing-foundation-q4",
+            "communication-skills.translation-into-spanish",
+            "grammar.verbs-core",
+            "vocabulary.verbs"
+          ]
+        }
+      ]
+    }
+  ]
+}

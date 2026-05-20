@@ -1,0 +1,253 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "english-literature",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of characters per set text for AQA GCSE English Literature"
+  },
+  "characters": {
+    "macbeth": [
+      "macbeth",
+      "lady-macbeth",
+      "macduff",
+      "banquo",
+      "duncan",
+      "three-witches",
+      "malcolm",
+      "fleance",
+      "lady-macduff",
+      "ross",
+      "lennox",
+      "macduffs-son"
+    ],
+    "a-christmas-carol": [
+      "scrooge",
+      "ghost-of-christmas-past",
+      "ghost-of-christmas-present",
+      "ghost-of-christmas-yet-to-come",
+      "bob-cratchit",
+      "tiny-tim",
+      "fred",
+      "mrs-cratchit",
+      "fezziwig",
+      "belle",
+      "jacob-marley",
+      "ignorance-and-want"
+    ],
+    "an-inspector-calls": [
+      "inspector-goole",
+      "arthur-birling",
+      "sybil-birling",
+      "sheila-birling",
+      "eric-birling",
+      "gerald-croft",
+      "eva-smith-daisy-renton",
+      "edna"
+    ],
+    "blood-brothers": [
+      "mrs-johnstone",
+      "mrs-lyons",
+      "mickey",
+      "eddie",
+      "linda",
+      "sammy",
+      "narrator",
+      "mr-lyons"
+    ],
+    "dna": [
+      "phil",
+      "kelly",
+      "lou",
+      "leah",
+      "richard",
+      "mike",
+      "dennis",
+      "tess",
+      "carl",
+      "janice"
+    ],
+    "a-taste-of-honey": [
+      "jo",
+      "helen",
+      "geoffrey",
+      "the-boy",
+      "peter",
+      "aunt-lily"
+    ],
+    "princess-and-the-hustler": [
+      "princess",
+      "the-hustler",
+      "mama",
+      "uncle"
+    ],
+    "leave-taking": [
+      "del",
+      "mama",
+      "mrs-henry",
+      "jerome",
+      "enid"
+    ],
+    "lord-of-the-flies": [
+      "ralph",
+      "jack",
+      "piggy",
+      "simon",
+      "samneric",
+      "roger",
+      "the-littluns"
+    ],
+    "animal-farm": [
+      "napoleon",
+      "snowball",
+      "boxer",
+      "squealer",
+      "old-major",
+      "mollie",
+      "benjamin",
+      "clover",
+      "mr-jones",
+      "mr-pilkington",
+      "muriel"
+    ],
+    "anita-and-me": [
+      "meena",
+      "anita",
+      "mumji",
+      "papa-ji",
+      "nanima",
+      "sam-lowbridge",
+      "deidre-rutter",
+      "uncle-raj"
+    ],
+    "pigeon-english": [
+      "engy",
+      "supa-hannah",
+      "mama",
+      "papa",
+      "baptiste",
+      "dean",
+      "chaps",
+      "harrison"
+    ],
+    "my-name-is-leon": [
+      "leon",
+      "jake",
+      "ma",
+      "carol",
+      "peggy",
+      "mrs-franklin"
+    ],
+    "telling-tales": [
+      "various-narrators"
+    ],
+    "jekyll-and-hyde": [
+      "dr-jekyll",
+      "mr-hyde",
+      "mr-utterson",
+      "dr-lanyon",
+      "mr-enfield",
+      "mr-guest",
+      "poole"
+    ],
+    "the-tempest": [
+      "prospero",
+      "ariel",
+      "caliban",
+      "miranda",
+      "ferdinand",
+      "gonzalo",
+      "antonio",
+      "sebastian",
+      "alonso",
+      "trinculo",
+      "stephano"
+    ],
+    "romeo-and-juliet": [
+      "romeo",
+      "juliet",
+      "mercutio",
+      "tybalt",
+      "benvolio",
+      "friar-lawrence",
+      "nurse",
+      "lady-capulet",
+      "lord-capulet",
+      "lady-montague",
+      "lord-montague",
+      "paris",
+      "prince-escalus"
+    ],
+    "the-merchant-of-venice": [
+      "shylock",
+      "portia",
+      "bassanio",
+      "antonio",
+      "gratiano",
+      "nerissa",
+      "jessica",
+      "lorenzo",
+      "tubal",
+      "launcelot-gobbo"
+    ],
+    "much-ado-about-nothing": [
+      "beatrice",
+      "benedick",
+      "hero",
+      "claudio",
+      "don-pedro",
+      "don-john",
+      "dogberry",
+      "leonato"
+    ],
+    "julius-caesar": [
+      "brutus",
+      "cassius",
+      "mark-antony",
+      "julius-caesar",
+      "portia",
+      "calpurnia",
+      "octavius",
+      "casca"
+    ],
+    "great-expectations": [
+      "pip",
+      "miss-havisham",
+      "estella",
+      "magwitch",
+      "joe-gargery",
+      "jaggers",
+      "biddy",
+      "herbert-pocket",
+      "mrs-joe"
+    ],
+    "jane-eyre": [
+      "jane-eyre",
+      "mr-rochester",
+      "bertha-mason",
+      "st-john-rivers",
+      "helen-burns",
+      "mrs-reed",
+      "adele",
+      "miss-temple",
+      "grace-poole"
+    ],
+    "frankenstein": [
+      "victor-frankenstein",
+      "the-creature",
+      "elizabeth-lavenza",
+      "henry-clerval",
+      "robert-walton",
+      "justine-moritz",
+      "alphonse-frankenstein"
+    ],
+    "the-sign-of-four": [
+      "sherlock-holmes",
+      "dr-watson",
+      "mary-morstan",
+      "thaddeus-sholto",
+      "jonathan-small",
+      "tonga",
+      "ajora"
+    ]
+  }
+}

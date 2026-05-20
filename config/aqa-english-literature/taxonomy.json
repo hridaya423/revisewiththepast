@@ -1,0 +1,539 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "english-literature",
+    "specCode": "8702",
+    "version": "2024.1",
+    "scope": "aqa-english-literature-8702-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "paper-1-shakespeare-19th-century-novel",
+      "parentId": null,
+      "label": "Paper 1: Shakespeare and the 19th-century novel",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["paper 1", "shakespeare and the 19th-century novel"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare",
+      "parentId": "paper-1-shakespeare-19th-century-novel",
+      "label": "Section A Shakespeare",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["shakespeare", "section a"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.extract-analysis",
+      "parentId": "paper-1.section-a-shakespeare",
+      "label": "Extract analysis in Shakespeare play",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["extract question", "close language analysis", "AO2 Shakespeare"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.whole-text-response",
+      "parentId": "paper-1.section-a-shakespeare",
+      "label": "Whole-text response in Shakespeare play",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["whole play", "essay response", "AO1 Shakespeare", "AO3 Shakespeare"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice",
+      "parentId": "paper-1.section-a-shakespeare",
+      "label": "Shakespeare set text choice",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["shakespeare set texts", "choose one play"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice.macbeth",
+      "parentId": "paper-1.section-a-shakespeare.text-choice",
+      "label": "Macbeth",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["macbeth", "shakespeare tragedy"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice.romeo-and-juliet",
+      "parentId": "paper-1.section-a-shakespeare.text-choice",
+      "label": "Romeo and Juliet",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["romeo and juliet"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice.the-tempest",
+      "parentId": "paper-1.section-a-shakespeare.text-choice",
+      "label": "The Tempest",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["the tempest"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice.the-merchant-of-venice",
+      "parentId": "paper-1.section-a-shakespeare.text-choice",
+      "label": "The Merchant of Venice",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["merchant of venice"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice.much-ado-about-nothing",
+      "parentId": "paper-1.section-a-shakespeare.text-choice",
+      "label": "Much Ado About Nothing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["much ado about nothing"]
+    },
+    {
+      "id": "paper-1.section-a-shakespeare.text-choice.julius-caesar",
+      "parentId": "paper-1.section-a-shakespeare.text-choice",
+      "label": "Julius Caesar",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["julius caesar"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel",
+      "parentId": "paper-1-shakespeare-19th-century-novel",
+      "label": "Section B The 19th-century novel",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["19th-century novel", "section b"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.extract-analysis",
+      "parentId": "paper-1.section-b-19th-century-novel",
+      "label": "Extract analysis in 19th-century novel",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["extract question", "close analysis", "AO2 19th-century novel"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.whole-text-response",
+      "parentId": "paper-1.section-b-19th-century-novel",
+      "label": "Whole-text response in 19th-century novel",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["whole novel", "essay response", "AO1 novel", "AO3 novel"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice",
+      "parentId": "paper-1.section-b-19th-century-novel",
+      "label": "19th-century novel set text choice",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["19th-century set texts", "choose one novel"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.jekyll-and-hyde",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "The Strange Case of Dr Jekyll and Mr Hyde",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["jekyll and hyde", "stevenson"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.a-christmas-carol",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "A Christmas Carol",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["a christmas carol", "dickens"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.great-expectations",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "Great Expectations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["great expectations", "dickens", "1867"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.jane-eyre",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "Jane Eyre",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["jane eyre", "charlotte bronte"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.frankenstein",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "Frankenstein (1831)",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["frankenstein", "mary shelley", "1831"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.pride-and-prejudice",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "Pride and Prejudice",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["pride and prejudice", "jane austen"]
+    },
+    {
+      "id": "paper-1.section-b-19th-century-novel.text-choice.the-sign-of-four",
+      "parentId": "paper-1.section-b-19th-century-novel.text-choice",
+      "label": "The Sign of Four",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["the sign of four", "conan doyle"]
+    },
+    {
+      "id": "paper-2-modern-texts-and-poetry",
+      "parentId": null,
+      "label": "Paper 2: Modern texts and poetry",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["paper 2", "modern texts and poetry"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts",
+      "parentId": "paper-2-modern-texts-and-poetry",
+      "label": "Section A Modern texts",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["modern text", "post-1914 prose or drama", "section a"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.essay-choice",
+      "parentId": "paper-2.section-a-modern-texts",
+      "label": "Modern text essay question choice (one from two)",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["choose one of two", "modern text essay", "AO1 AO2 AO3"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice",
+      "parentId": "paper-2.section-a-modern-texts",
+      "label": "Modern set text choice",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["modern set texts", "choose one text"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama",
+      "parentId": "paper-2.section-a-modern-texts.text-choice",
+      "label": "Modern drama text options",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["drama options"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama.an-inspector-calls",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.drama",
+      "label": "An Inspector Calls",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["an inspector calls", "j b priestley"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama.blood-brothers",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.drama",
+      "label": "Blood Brothers (musical version)",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["blood brothers", "willy russell"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama.dna",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.drama",
+      "label": "DNA",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["dna", "dennis kelly"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama.a-taste-of-honey",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.drama",
+      "label": "A Taste of Honey",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["a taste of honey", "shelagh delaney"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama.princess-and-the-hustler",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.drama",
+      "label": "Princess & The Hustler",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["princess and the hustler", "chinonyerem odimba"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.drama.leave-taking",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.drama",
+      "label": "Leave Taking",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["leave taking", "winsome pinnock"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose",
+      "parentId": "paper-2.section-a-modern-texts.text-choice",
+      "label": "Modern prose text options",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["prose options"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose.lord-of-the-flies",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.prose",
+      "label": "Lord of the Flies",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["lord of the flies", "william golding"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose.telling-tales",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.prose",
+      "label": "Telling Tales",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["telling tales", "aqa anthology"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose.animal-farm",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.prose",
+      "label": "Animal Farm",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["animal farm", "george orwell"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose.anita-and-me",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.prose",
+      "label": "Anita and Me",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["anita and me", "meera syal"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose.pigeon-english",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.prose",
+      "label": "Pigeon English",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["pigeon english", "stephen kelman"]
+    },
+    {
+      "id": "paper-2.section-a-modern-texts.text-choice.prose.my-name-is-leon",
+      "parentId": "paper-2.section-a-modern-texts.text-choice.prose",
+      "label": "My Name is Leon",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["my name is leon", "kit de waal"]
+    },
+    {
+      "id": "paper-2.section-b-poetry-anthology",
+      "parentId": "paper-2-modern-texts-and-poetry",
+      "label": "Section B Poetry anthology",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["poetry anthology", "section b"]
+    },
+    {
+      "id": "paper-2.section-b-poetry-anthology.comparative-question",
+      "parentId": "paper-2.section-b-poetry-anthology",
+      "label": "Comparative anthology poetry question",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["named poem", "compare with another anthology poem", "AO1 AO2 AO3"]
+    },
+    {
+      "id": "paper-2.section-b-poetry-anthology.cluster-choice",
+      "parentId": "paper-2.section-b-poetry-anthology",
+      "label": "Poetry anthology cluster choice",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["poems past and present", "choose one cluster"]
+    },
+    {
+      "id": "paper-2.section-b-poetry-anthology.cluster-choice.love-and-relationships",
+      "parentId": "paper-2.section-b-poetry-anthology.cluster-choice",
+      "label": "Love and Relationships cluster",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["love and relationships"]
+    },
+    {
+      "id": "paper-2.section-b-poetry-anthology.cluster-choice.power-and-conflict",
+      "parentId": "paper-2.section-b-poetry-anthology.cluster-choice",
+      "label": "Power and Conflict cluster",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["power and conflict"]
+    },
+    {
+      "id": "paper-2.section-b-poetry-anthology.cluster-choice.worlds-and-lives",
+      "parentId": "paper-2.section-b-poetry-anthology.cluster-choice",
+      "label": "Worlds and Lives cluster",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["worlds and lives"]
+    },
+    {
+      "id": "paper-2.section-c-unseen-poetry",
+      "parentId": "paper-2-modern-texts-and-poetry",
+      "label": "Section C Unseen poetry",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["unseen poetry", "section c"]
+    },
+    {
+      "id": "paper-2.section-c-unseen-poetry.single-poem-analysis",
+      "parentId": "paper-2.section-c-unseen-poetry",
+      "label": "Single unseen poem analysis",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["first unseen question", "close analysis", "AO1 AO2"]
+    },
+    {
+      "id": "paper-2.section-c-unseen-poetry.comparative-analysis",
+      "parentId": "paper-2.section-c-unseen-poetry",
+      "label": "Comparison of two unseen poems",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["second unseen question", "compare unseen poems", "AO1 AO2"]
+    },
+    {
+      "id": "assessment-objectives",
+      "parentId": null,
+      "label": "Assessment objectives",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["AOs"]
+    },
+    {
+      "id": "assessment-objectives.ao1",
+      "parentId": "assessment-objectives",
+      "label": "AO1 Read, understand and respond to texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["critical style", "personal response", "textual references", "quotations"]
+    },
+    {
+      "id": "assessment-objectives.ao2",
+      "parentId": "assessment-objectives",
+      "label": "AO2 Analyse language, form and structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["methods", "effects", "subject terminology"]
+    },
+    {
+      "id": "assessment-objectives.ao3",
+      "parentId": "assessment-objectives",
+      "label": "AO3 Relationship between texts and contexts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["context", "social historical cultural context"]
+    },
+    {
+      "id": "assessment-objectives.ao4",
+      "parentId": "assessment-objectives",
+      "label": "AO4 Vocabulary, sentence structure, spelling and punctuation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["technical accuracy", "spelling punctuation grammar"]
+    },
+    {
+      "id": "skills",
+      "parentId": null,
+      "label": "Cross-text skills",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["specification skills"]
+    },
+    {
+      "id": "skills.reading-comprehension-critical",
+      "parentId": "skills",
+      "label": "Reading comprehension and critical reading",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["literal and inferential comprehension", "critical reading", "themes", "interpretations"]
+    },
+    {
+      "id": "skills.evaluating-writers-methods",
+      "parentId": "skills",
+      "label": "Evaluation of writer's language, form and structure choices",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["evaluate methods", "language structure form", "literary terminology"]
+    },
+    {
+      "id": "skills.comparing-texts",
+      "parentId": "skills",
+      "label": "Comparing texts across theme, characterisation, context and style",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["compare texts", "contrast texts", "literary comparison"]
+    },
+    {
+      "id": "skills.writing-about-literature",
+      "parentId": "skills",
+      "label": "Clear, coherent analytical writing about literature",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["explain", "argue", "analyse", "evaluate", "textual references"]
+    },
+    {
+      "id": "skills.standard-english-accuracy",
+      "parentId": "skills",
+      "label": "Accurate Standard English (spelling, punctuation and grammar)",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["spag", "accurate standard english"]
+    }
+  ]
+}

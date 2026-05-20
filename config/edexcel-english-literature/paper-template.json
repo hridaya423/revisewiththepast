@@ -1,0 +1,138 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "english-literature",
+    "specCode": "1ET0",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Shakespeare and Post-1914 Literature",
+      "examCode": "1ET0/01",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 80,
+      "weighting": "50%",
+      "assessmentMode": "written exam, closed book",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Shakespeare",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Two-part question on one studied Shakespeare play: part a extract analysis and part b theme elsewhere in play.",
+          "coreTopicIds": [
+            "paper-1.section-a-shakespeare.part-a-extract-analysis",
+            "paper-1.section-a-shakespeare.part-b-theme-whole-play"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-a-shakespeare-text-option",
+              "choose": 1,
+              "options": [
+                { "id": "shakespeare-macbeth", "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.macbeth"] },
+                { "id": "shakespeare-the-tempest", "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.the-tempest"] },
+                { "id": "shakespeare-romeo-and-juliet", "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.romeo-and-juliet"] },
+                { "id": "shakespeare-much-ado-about-nothing", "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.much-ado-about-nothing"] },
+                { "id": "shakespeare-twelfth-night", "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.twelfth-night"] },
+                { "id": "shakespeare-the-merchant-of-venice", "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.the-merchant-of-venice"] }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Post-1914 British play or novel",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "One essay question from a choice of two on one studied post-1914 text (play or novel), including AO4 technical accuracy.",
+          "coreTopicIds": [
+            "paper-1.section-b-post-1914.single-essay-choice-of-two"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-b-post-1914-text-option",
+              "choose": 1,
+              "options": [
+                { "id": "post1914-an-inspector-calls", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.an-inspector-calls"] },
+                { "id": "post1914-hobsons-choice", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.hobsons-choice"] },
+                { "id": "post1914-blood-brothers", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.blood-brothers"] },
+                { "id": "post1914-journeys-end", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.journeys-end"] },
+                { "id": "post1914-the-empress", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.the-empress"] },
+                { "id": "post1914-refugee-boy", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.refugee-boy-stage-version"] },
+                { "id": "post1914-coram-boy", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.drama.coram-boy"] },
+                { "id": "post1914-animal-farm", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.novel.animal-farm"] },
+                { "id": "post1914-lord-of-the-flies", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.novel.lord-of-the-flies"] },
+                { "id": "post1914-anita-and-me", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.novel.anita-and-me"] },
+                { "id": "post1914-the-woman-in-black", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.novel.the-woman-in-black"] },
+                { "id": "post1914-boys-dont-cry", "allowedPrimaryTopicIds": ["paper-1.section-b-post-1914.text-choice.novel.boys-dont-cry"] }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: 19th-century Novel and Poetry since 1789",
+      "examCode": "1ET0/02",
+      "tier": "single-tier",
+      "durationMinutes": 135,
+      "totalMarks": 80,
+      "weighting": "50%",
+      "assessmentMode": "written exam, closed book",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "19th-century novel",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Two-part question on one studied 19th-century novel: part 1 extract analysis, part 2 whole-text essay.",
+          "coreTopicIds": [
+            "paper-2.section-a-19th-century-novel.part-1-extract-analysis",
+            "paper-2.section-a-19th-century-novel.part-2-whole-text-essay"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-a-19th-century-novel-text-option",
+              "choose": 1,
+              "options": [
+                { "id": "novel-jane-eyre", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.jane-eyre"] },
+                { "id": "novel-great-expectations", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.great-expectations"] },
+                { "id": "novel-dr-jekyll-and-mr-hyde", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.dr-jekyll-and-mr-hyde"] },
+                { "id": "novel-a-christmas-carol", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.a-christmas-carol"] },
+                { "id": "novel-pride-and-prejudice", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.pride-and-prejudice"] },
+                { "id": "novel-silas-marner", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.silas-marner"] },
+                { "id": "novel-frankenstein", "allowedPrimaryTopicIds": ["paper-2.section-a-19th-century-novel.text-choice.frankenstein"] }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Poetry since 1789",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Part 1 compares a named anthology poem with one chosen poem from the same collection; Part 2 compares two unseen contemporary poems.",
+          "coreTopicIds": [
+            "paper-2.section-b-poetry-since-1789.part-1-anthology-comparison",
+            "paper-2.section-b-poetry-since-1789.part-2-unseen-comparison"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-b-anthology-collection-option",
+              "choose": 1,
+              "options": [
+                { "id": "anthology-relationships", "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-since-1789.anthology-collection-choice.relationships"] },
+                { "id": "anthology-conflict", "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-since-1789.anthology-collection-choice.conflict"] },
+                { "id": "anthology-time-and-place", "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-since-1789.anthology-collection-choice.time-and-place"] },
+                { "id": "anthology-belonging", "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-since-1789.anthology-collection-choice.belonging"] }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

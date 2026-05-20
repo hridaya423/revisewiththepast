@@ -1,0 +1,579 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "geography",
+    "specCode": "8035",
+    "version": "2024.1",
+    "scope": "aqa-geography-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "natural-hazards",
+      "parentId": null,
+      "label": "The challenge of natural hazards",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["natural hazards"]
+    },
+    {
+      "id": "natural-hazards.overview",
+      "parentId": "natural-hazards",
+      "label": "Natural hazards definition, types and risk factors",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["hazard risk", "types of natural hazard"]
+    },
+    {
+      "id": "tectonic-hazards",
+      "parentId": "natural-hazards",
+      "label": "Tectonic hazards",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["earthquakes", "volcanoes", "plate tectonics"]
+    },
+    {
+      "id": "tectonic-hazards.plate-margins",
+      "parentId": "tectonic-hazards",
+      "label": "Plate tectonics theory and plate margins",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["constructive", "destructive", "conservative", "plate margin", "plate tectonics theory", "global distribution"]
+    },
+    {
+      "id": "tectonic-hazards.effects-responses",
+      "parentId": "tectonic-hazards",
+      "label": "Effects and responses to tectonic hazards",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["primary effects", "secondary effects", "immediate responses", "long-term responses", "contrasting wealth"]
+    },
+    {
+      "id": "tectonic-hazards.management",
+      "parentId": "tectonic-hazards",
+      "label": "Management and reasons for living at risk",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["monitoring", "prediction", "protection", "planning", "why people live at risk"]
+    },
+    {
+      "id": "weather-hazards",
+      "parentId": "natural-hazards",
+      "label": "Weather hazards",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["tropical storms", "extreme weather"]
+    },
+    {
+      "id": "weather-hazards.global-circulation",
+      "parentId": "weather-hazards",
+      "label": "Global atmospheric circulation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["global circulation", "pressure belts", "surface winds"]
+    },
+    {
+      "id": "weather-hazards.tropical-storms",
+      "parentId": "weather-hazards",
+      "label": "Tropical storms formation, effects and responses",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["hurricanes", "cyclones", "typhoons", "storm formation", "storm structure", "climate change and storms", "named example"]
+    },
+    {
+      "id": "weather-hazards.uk-extreme-weather",
+      "parentId": "weather-hazards",
+      "label": "UK extreme weather events",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["uk extreme weather", "recent weather event", "social impacts", "economic impacts", "environmental impacts"]
+    },
+    {
+      "id": "climate-change",
+      "parentId": "natural-hazards",
+      "label": "Climate change",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["global warming"]
+    },
+    {
+      "id": "climate-change.evidence-causes",
+      "parentId": "climate-change",
+      "label": "Evidence and causes of climate change",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["quaternary", "orbital changes", "volcanic activity", "solar output", "fossil fuels", "agriculture", "deforestation"]
+    },
+    {
+      "id": "climate-change.effects-management",
+      "parentId": "climate-change",
+      "label": "Effects and management of climate change",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["mitigation", "adaptation", "alternative energy", "carbon capture", "planting trees", "international agreements", "agricultural systems", "water supply", "sea level rise"]
+    },
+    {
+      "id": "living-world",
+      "parentId": null,
+      "label": "The living world",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["living world"]
+    },
+    {
+      "id": "living-world.ecosystems",
+      "parentId": "living-world",
+      "label": "Ecosystems at different scales",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["ecosystems", "biotic", "abiotic", "producers", "consumers", "decomposers", "food chain", "food web", "nutrient cycling", "uk ecosystem"]
+    },
+    {
+      "id": "living-world.tropical-rainforests",
+      "parentId": "living-world",
+      "label": "Tropical rainforests",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["rainforest"]
+    },
+    {
+      "id": "living-world.tropical-rainforests.characteristics",
+      "parentId": "living-world.tropical-rainforests",
+      "label": "Tropical rainforest characteristics and interdependence",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["rainforest characteristics", "adaptations", "biodiversity", "interdependence", "climate", "water", "soils"]
+    },
+    {
+      "id": "living-world.tropical-rainforests.deforestation",
+      "parentId": "living-world.tropical-rainforests",
+      "label": "Deforestation causes, impacts and management",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["deforestation", "subsistence farming", "commercial farming", "logging", "road building", "mineral extraction", "energy development", "soil erosion", "sustainable management", "selective logging", "replanting", "ecotourism", "debt reduction"]
+    },
+    {
+      "id": "living-world.hot-deserts",
+      "parentId": "living-world",
+      "label": "Hot deserts",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["hot desert"]
+    },
+    {
+      "id": "living-world.hot-deserts.characteristics",
+      "parentId": "living-world.hot-deserts",
+      "label": "Hot desert characteristics and adaptation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["hot desert characteristics", "desert adaptations", "desert biodiversity", "interdependence"]
+    },
+    {
+      "id": "living-world.hot-deserts.development-desertification",
+      "parentId": "living-world.hot-deserts",
+      "label": "Hot desert development, challenges and desertification",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["desertification", "hot desert development", "mineral extraction", "energy", "farming", "tourism", "extreme temperatures", "water supply", "inaccessibility", "soil management", "tree planting", "appropriate technology"]
+    },
+    {
+      "id": "living-world.cold-environments",
+      "parentId": "living-world",
+      "label": "Cold environments",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["cold environment", "tundra", "polar"]
+    },
+    {
+      "id": "living-world.cold-environments.characteristics",
+      "parentId": "living-world.cold-environments",
+      "label": "Cold environment characteristics and adaptation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["permafrost", "cold environment adaptations", "biodiversity", "interdependence"]
+    },
+    {
+      "id": "living-world.cold-environments.development-conservation",
+      "parentId": "living-world.cold-environments",
+      "label": "Cold environment development, conservation and management",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["cold environment development", "mineral extraction", "energy", "fishing", "tourism", "wilderness protection", "technology", "governments", "international agreements", "conservation groups"]
+    },
+    {
+      "id": "physical-landscapes-uk",
+      "parentId": null,
+      "label": "Physical landscapes in the UK",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["uk physical landscapes"]
+    },
+    {
+      "id": "physical-landscapes-uk.overview",
+      "parentId": "physical-landscapes-uk",
+      "label": "UK upland, lowland and river-system overview",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["upland", "lowland", "river systems overview"]
+    },
+    {
+      "id": "coasts",
+      "parentId": "physical-landscapes-uk",
+      "label": "Coastal landscapes in the UK",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["coasts", "coastal landscapes"]
+    },
+    {
+      "id": "coasts.processes",
+      "parentId": "coasts",
+      "label": "Coastal processes and landforms",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["waves", "weathering", "mechanical weathering", "chemical weathering", "mass movement", "sliding", "slumping", "rock falls", "hydraulic action", "abrasion", "attrition", "longshore drift", "deposition", "headlands", "bays", "cliffs", "wave cut platform", "caves", "arches", "stacks", "beaches", "sand dunes", "spits", "bars"]
+    },
+    {
+      "id": "coasts.management",
+      "parentId": "coasts",
+      "label": "Coastal management strategies and case study",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["sea walls", "rock armour", "gabions", "groynes", "beach nourishment", "reprofiling", "dune regeneration", "managed retreat", "coastal realignment", "hard engineering", "soft engineering"]
+    },
+    {
+      "id": "rivers",
+      "parentId": "physical-landscapes-uk",
+      "label": "River landscapes in the UK",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["rivers", "river landscapes"]
+    },
+    {
+      "id": "rivers.profiles-and-processes",
+      "parentId": "rivers",
+      "label": "River profiles, fluvial processes and landforms",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["long profile", "cross profile", "hydraulic action", "abrasion", "attrition", "solution", "vertical erosion", "lateral erosion", "traction", "saltation", "suspension", "interlocking spurs", "waterfalls", "gorges", "meanders", "ox-bow lakes", "levees", "flood plains", "estuaries"]
+    },
+    {
+      "id": "rivers.flood-risk-management",
+      "parentId": "rivers",
+      "label": "Flood risk factors, hydrographs and management",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["flood risk", "precipitation", "geology", "relief", "land use", "hydrograph", "dams", "reservoirs", "straightening", "embankments", "flood relief channel", "flood warnings", "flood plain zoning", "planting trees", "river restoration"]
+    },
+    {
+      "id": "glacial-landscapes",
+      "parentId": "physical-landscapes-uk",
+      "label": "Glacial landscapes in the UK",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["glaciation", "glacial landscapes"]
+    },
+    {
+      "id": "glacial-landscapes.processes-and-landforms",
+      "parentId": "glacial-landscapes",
+      "label": "Glacial processes and landforms",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["freeze-thaw", "plucking", "abrasion", "rotational slip", "bulldozing", "till", "outwash", "corrie", "arete", "pyramidal peak", "truncated spur", "glacial trough", "ribbon lake", "hanging valley", "erratics", "drumlins", "moraine"]
+    },
+    {
+      "id": "glacial-landscapes.management",
+      "parentId": "glacial-landscapes",
+      "label": "Tourism, land use conflicts and management in glaciated uplands",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["C"],
+      "aliases": ["glaciated upland tourism", "farming", "forestry", "quarrying", "land use conflicts", "conservation", "tourism impacts"]
+    },
+    {
+      "id": "urban-issues",
+      "parentId": null,
+      "label": "Urban issues and challenges",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["urban issues", "urban challenges"]
+    },
+    {
+      "id": "urban-issues.global-urbanisation",
+      "parentId": "urban-issues",
+      "label": "Global urbanisation patterns and causes",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["urbanisation", "migration", "natural increase", "megacities"]
+    },
+    {
+      "id": "urban-issues.lic-nee-city",
+      "parentId": "urban-issues",
+      "label": "LIC/NEE city growth opportunities and challenges",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["slums", "squatter settlements", "water supply", "sanitation", "urban planning"]
+    },
+    {
+      "id": "urban-issues.uk-city",
+      "parentId": "urban-issues",
+      "label": "Urban change in a UK city",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["uk city case study", "migration in UK city", "urban deprivation", "urban sprawl"]
+    },
+    {
+      "id": "urban-issues.strategies",
+      "parentId": "urban-issues",
+      "label": "Urban regeneration, sustainability and transport strategies",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["urban regeneration", "sustainable urban living", "traffic congestion"]
+    },
+    {
+      "id": "changing-economic-world",
+      "parentId": null,
+      "label": "The changing economic world",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["changing economic world"]
+    },
+    {
+      "id": "changing-economic-world.development-gap",
+      "parentId": "changing-economic-world",
+      "label": "Development measures, causes and consequences of uneven development",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["HDI", "GNI", "development indicators", "development gap", "demographic transition model"]
+    },
+    {
+      "id": "changing-economic-world.reducing-gap",
+      "parentId": "changing-economic-world",
+      "label": "Strategies for reducing the development gap",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["aid", "tourism", "fairtrade", "microfinance", "debt relief", "intermediate technology"]
+    },
+    {
+      "id": "changing-economic-world.nee-case-study",
+      "parentId": "changing-economic-world",
+      "label": "LIC/NEE case study economic development",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["nigeria", "TNCs", "industrial structure", "international aid", "quality of life"]
+    },
+    {
+      "id": "changing-economic-world.uk-economy",
+      "parentId": "changing-economic-world",
+      "label": "UK economic change and regional development",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["de-industrialisation", "post-industrial economy", "north-south divide", "infrastructure", "rural change"]
+    },
+    {
+      "id": "resource-management",
+      "parentId": null,
+      "label": "The challenge of resource management",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["resource management"]
+    },
+    {
+      "id": "resource-management.overview",
+      "parentId": "resource-management",
+      "label": "Global and UK resource management overview",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["food water energy overview", "resource inequalities", "changing demand"]
+    },
+    {
+      "id": "resource-management.food",
+      "parentId": "resource-management",
+      "label": "Food security and sustainable food supply",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["food insecurity", "agribusiness", "organic farming", "permaculture", "food miles"]
+    },
+    {
+      "id": "resource-management.water",
+      "parentId": "resource-management",
+      "label": "Water security and sustainable water supply",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["water insecurity", "desalination", "water transfer", "grey water", "groundwater management"]
+    },
+    {
+      "id": "resource-management.energy",
+      "parentId": "resource-management",
+      "label": "Energy security and sustainable energy supply",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["C"],
+      "aliases": ["energy insecurity", "renewables", "fossil fuels", "nuclear", "carbon footprint"]
+    },
+    {
+      "id": "applications.fieldwork",
+      "parentId": null,
+      "label": "Fieldwork enquiry",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["B"],
+      "aliases": ["fieldwork"]
+    },
+    {
+      "id": "applications.fieldwork-question-design",
+      "parentId": "applications.fieldwork",
+      "label": "Fieldwork enquiry design and risk assessment",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["B"],
+      "aliases": ["enquiry question", "hypothesis", "risk assessment", "primary and secondary data"]
+    },
+    {
+      "id": "applications.fieldwork-data-collection",
+      "parentId": "applications.fieldwork",
+      "label": "Fieldwork data collection and sampling",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["B"],
+      "aliases": ["sampling", "data collection methods", "measurement"]
+    },
+    {
+      "id": "applications.fieldwork-presentation",
+      "parentId": "applications.fieldwork",
+      "label": "Fieldwork data presentation",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["B"],
+      "aliases": ["presentation methods", "graphs", "cartographic methods"]
+    },
+    {
+      "id": "applications.fieldwork-analysis",
+      "parentId": "applications.fieldwork",
+      "label": "Fieldwork analysis and conclusions",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["B"],
+      "aliases": ["analysis", "conclusions", "statistical techniques", "anomalies"]
+    },
+    {
+      "id": "applications.fieldwork-evaluation",
+      "parentId": "applications.fieldwork",
+      "label": "Fieldwork evaluation and reliability",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["B"],
+      "aliases": ["evaluation", "limitations", "reliability", "improvements"]
+    },
+    {
+      "id": "applications.issue-evaluation",
+      "parentId": null,
+      "label": "Issue evaluation",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["A"],
+      "aliases": ["issue evaluation", "pre-release"]
+    },
+    {
+      "id": "applications.issue-evaluation.physical",
+      "parentId": "applications.issue-evaluation",
+      "label": "Issue evaluation with physical geography context",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["A"],
+      "aliases": ["pre-release physical", "issue evaluation physical"]
+    },
+    {
+      "id": "applications.issue-evaluation.human",
+      "parentId": "applications.issue-evaluation",
+      "label": "Issue evaluation with human geography context",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["A"],
+      "aliases": ["pre-release human", "issue evaluation human"]
+    },
+    {
+      "id": "applications.issue-evaluation.synoptic",
+      "parentId": "applications.issue-evaluation",
+      "label": "Issue evaluation requiring synoptic physical-human linkage",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "sectionCodes": ["A"],
+      "aliases": ["synoptic issue evaluation", "stakeholders", "option appraisal", "evaluative judgement"]
+    },
+    {
+      "id": "applications.skills.cartographic",
+      "parentId": null,
+      "label": "Cartographic and mapping skills",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["OS map", "scale", "distance", "bearing", "GIS", "maps"]
+    },
+    {
+      "id": "applications.skills.graphical-statistical",
+      "parentId": null,
+      "label": "Graphical and statistical skills",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["graph", "chart", "mean", "median", "mode", "scattergraph"]
+    },
+    {
+      "id": "applications.skills.visual-resource-interpretation",
+      "parentId": null,
+      "label": "Photo, sketch and resource interpretation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["photograph interpretation", "resource booklet", "figure interpretation", "satellite image"]
+    }
+  ]
+}

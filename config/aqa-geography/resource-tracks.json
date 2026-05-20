@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "geography",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of resource tracks for AQA GCSE Geography"
+  },
+  "resourceTracks": {
+    "resource-management": [
+      "food",
+      "water",
+      "energy"
+    ]
+  }
+}

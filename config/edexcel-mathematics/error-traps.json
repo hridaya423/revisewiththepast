@@ -1,0 +1,164 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "mathematics",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of common error traps per subtopic for Edexcel GCSE Mathematics"
+  },
+  "errorTraps": {
+    "histograms": [
+      "class_width_not_frequency_density",
+      "bar_touching_axis",
+      "misread_scale",
+      "frequency_not_area",
+      "wrong_class_boundary",
+      "interpolation_error",
+      "unequal_intervals_ignored"
+    ],
+    "cumulative-frequency": [
+      "plotting_at_lower_bound",
+      "misreading_cf_axis",
+      "iqr_calculation_error",
+      "median_from_wrong_point",
+      "curve_not_smooth"
+    ],
+    "box-plots": [
+      "whisker_to_min_max_not_quartiles",
+      "outlier_not_shown",
+      "median_line_missing",
+      "scale_not_labelled"
+    ],
+    "scatter-graphs": [
+      "extrapolation_beyond_data",
+      "correlation_not_causation",
+      "line_not_balanced",
+      "outlier_ignored"
+    ],
+    "averages": [
+      "mean_from_grouped_data_midpoint_error",
+      "mode_vs_modal_class",
+      "range_not_calculated",
+      "median_position_error",
+      "frequency_weighted_mean_error"
+    ],
+    "probability": [
+      "probabilities_not_summing_to_1",
+      "confusing_and_with_or",
+      "dependent_treated_as_independent",
+      "replacement_not_considered",
+      "double_counting_outcomes"
+    ],
+    "standard-form": [
+      "a_not_between_1_and_10",
+      "index_addition_error",
+      "negative_index_mishandled",
+      "calculator_standard_form_notation"
+    ],
+    "quadratic-equations": [
+      "sign_error_in_formula",
+      "not_set_to_zero_first",
+      "wrong_solution_from_factorising",
+      "discriminant_not_checked",
+      "rounding_prematurely"
+    ],
+    "simultaneous-equations": [
+      "sign_error_elimination",
+      "substitution_into_wrong_equation",
+      "not_checking_both_variables",
+      "linear_quadratic_missing_solution"
+    ],
+    "straight-lines": [
+      "gradient_sign_error",
+      "confusing_m_and_c",
+      "parallel_perpendicular_m_confusion",
+      "coordinates_swapped"
+    ],
+    "trigonometry": [
+      "wrong_ratio_selected",
+      "radians_vs_degrees",
+      "ambiguous_case_sine_rule",
+      "not_drawing_diagram",
+      "hypotenuse_not_longest_side"
+    ],
+    "circle-theorems": [
+      "theorem_not_stated",
+      "angle_at_centre_vs_circumference",
+      "tangent_not_90_degrees",
+      "cyclic_quad_opposite_angles"
+    ],
+    "algebraic-fractions": [
+      "factorising_denominator_first",
+      "common_denominator_error",
+      "cancelling_terms_not_factors",
+      "domain_restrictions_ignored"
+    ],
+    "sequences": [
+      "nth_term_formula_wrong",
+      "position_vs_value_confusion",
+      "quadratic_second_difference_halved",
+      "geometric_common_ratio_error"
+    ],
+    "proportion": [
+      "direct_vs_inverse_confusion",
+      "k_value_calculation_error",
+      "graph_shape_wrong"
+    ],
+    "bounds": [
+      "upper_bound_rounding_up_error",
+      "lower_bound_rounding_down_error",
+      "max_min_from_wrong_operation",
+      "error_interval_notation"
+    ],
+    "surds": [
+      "adding_unlike_surds",
+      "rationalising_sign_error",
+      "simplifying_not_complete",
+      "sqrt_a_plus_b_not_sqrt_a_plus_sqrt_b"
+    ],
+    "functions": [
+      "fg_vs_gf_confusion",
+      "inverse_notation_error",
+      "domain_range_ignored"
+    ],
+    "vectors": [
+      "direction_reversed",
+      "scalar_not_applied_to_both",
+      "geometric_path_wrong"
+    ],
+    "transformations": [
+      "centre_of_rotation_wrong",
+      "scale_factor_vs_enlargement",
+      "reflection_line_confused",
+      "order_of_transformations"
+    ],
+    "area-volume": [
+      "radius_vs_diameter",
+      "units_not_cubed",
+      "slant_height_vs_vertical_height",
+      "curved_surface_vs_total_surface"
+    ],
+    "pythagoras": [
+      "hypotenuse_not_identified",
+      "squared_not_applied",
+      "square_root_forgotten",
+      "3d_not_extended"
+    ],
+    "ratios": [
+      "part_part_vs_part_whole",
+      "total_shares_wrong",
+      "units_not_converted"
+    ],
+    "percentages": [
+      "multiplier_error",
+      "reverse_percentage_wrong_division",
+      "compound_vs_simple",
+      "percentage_of_percentage"
+    ],
+    "indices": [
+      "multiplication_vs_addition_of_powers",
+      "power_of_power_not_multiplied",
+      "negative_power_reciprocal",
+      "fractional_power_root_confusion"
+    ]
+  }
+}

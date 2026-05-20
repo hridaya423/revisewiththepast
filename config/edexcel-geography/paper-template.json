@@ -1,0 +1,229 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "geography",
+    "specCode": "1GA0",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "id": "physical",
+      "label": "Component 1: The Physical Environment",
+      "code": "1GA0/01",
+      "tier": ["single-tier"],
+      "duration": "1h 45m",
+      "marks": 94,
+      "weight": 37.5,
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Topic 1: The changing landscapes of the UK",
+          "mode": "mandatory-with-options",
+          "requiredQuestionCount": "answer-core-plus-two-of-three-options",
+          "coreTopicIds": [
+            "topic-1-changing-landscapes-uk.uk-geology-and-landscape"
+          ],
+          "optionGroups": [
+            {
+              "id": "physical-section-a-landscape-options",
+              "choose": 2,
+              "options": [
+                {
+                  "id": "coastal-option-1a",
+                  "allowedPrimaryTopicIds": [
+                    "topic-1-changing-landscapes-uk.coasts.processes",
+                    "topic-1-changing-landscapes-uk.coasts.landforms",
+                    "topic-1-changing-landscapes-uk.coasts.management",
+                    "topic-1-changing-landscapes-uk.coasts.named-landscape"
+                  ]
+                },
+                {
+                  "id": "river-option-1b",
+                  "allowedPrimaryTopicIds": [
+                    "topic-1-changing-landscapes-uk.rivers.processes-and-long-profile",
+                    "topic-1-changing-landscapes-uk.rivers.landforms",
+                    "topic-1-changing-landscapes-uk.rivers.flooding-and-management",
+                    "topic-1-changing-landscapes-uk.rivers.named-landscape"
+                  ]
+                },
+                {
+                  "id": "glaciated-option-1c",
+                  "allowedPrimaryTopicIds": [
+                    "topic-1-changing-landscapes-uk.glaciated-uplands.processes",
+                    "topic-1-changing-landscapes-uk.glaciated-uplands.landforms",
+                    "topic-1-changing-landscapes-uk.glaciated-uplands.management",
+                    "topic-1-changing-landscapes-uk.glaciated-uplands.named-landscape"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Topic 2: Weather hazards and climate change",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "topic-2-weather-hazards-climate-change.global-system-and-change",
+            "topic-2-weather-hazards-climate-change.uk-climate",
+            "topic-2-weather-hazards-climate-change.tropical-cyclones",
+            "topic-2-weather-hazards-climate-change.drought"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Topic 3: Ecosystems, biodiversity and management",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "topic-3-ecosystems-biodiversity-management.global-and-uk-ecosystems",
+            "topic-3-ecosystems-biodiversity-management.tropical-rainforests",
+            "topic-3-ecosystems-biodiversity-management.deciduous-woodlands"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "human",
+      "label": "Component 2: The Human Environment",
+      "code": "1GA0/02",
+      "tier": ["single-tier"],
+      "duration": "1h 30m",
+      "marks": 94,
+      "weight": 37.5,
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Topic 4: Changing cities",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "topic-4-changing-cities.global-and-uk-urbanisation",
+            "topic-4-changing-cities.uk-city",
+            "topic-4-changing-cities.emerging-or-developing-city"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Topic 5: Global development",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "topic-5-global-development.measures-patterns-strategies",
+            "topic-5-global-development.country-case-study"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Topic 6: Resource management",
+          "mode": "mandatory-with-options",
+          "requiredQuestionCount": "answer-core-plus-one-of-two-options",
+          "coreTopicIds": [
+            "topic-6-resource-management.foundations"
+          ],
+          "optionGroups": [
+            {
+              "id": "human-section-c-resource-options",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "energy-option-6a",
+                  "allowedPrimaryTopicIds": [
+                    "topic-6-resource-management.energy"
+                  ]
+                },
+                {
+                  "id": "water-option-6b",
+                  "allowedPrimaryTopicIds": [
+                    "topic-6-resource-management.water"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fieldwork",
+      "label": "Component 3: Geographical Investigations: Fieldwork and UK Challenges",
+      "code": "1GA0/03",
+      "tier": ["single-tier"],
+      "duration": "1h 30m",
+      "marks": 64,
+      "weight": 25,
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Topic 7A: Geographical investigations - physical environments",
+          "mode": "mandatory-with-single-option",
+          "requiredQuestionCount": "choose-one-option",
+          "optionGroups": [
+            {
+              "id": "fieldwork-section-a-physical-options",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "river-fieldwork-option",
+                  "allowedPrimaryTopicIds": [
+                    "topic-7-geographical-investigations-fieldwork.river-investigation"
+                  ]
+                },
+                {
+                  "id": "coast-fieldwork-option",
+                  "allowedPrimaryTopicIds": [
+                    "topic-7-geographical-investigations-fieldwork.coast-investigation"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Topic 7B: Geographical investigations - human environments",
+          "mode": "mandatory-with-single-option",
+          "requiredQuestionCount": "choose-one-option",
+          "optionGroups": [
+            {
+              "id": "fieldwork-section-b-human-options",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "urban-fieldwork-option",
+                  "allowedPrimaryTopicIds": [
+                    "topic-7-geographical-investigations-fieldwork.urban-investigation"
+                  ]
+                },
+                {
+                  "id": "rural-fieldwork-option",
+                  "allowedPrimaryTopicIds": [
+                    "topic-7-geographical-investigations-fieldwork.rural-investigation"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Topic 8: Geographical investigations - UK challenges",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "topic-8-geographical-investigations-uk-challenges.resource-consumption-sustainability",
+            "topic-8-geographical-investigations-uk-challenges.settlement-population-economy",
+            "topic-8-geographical-investigations-uk-challenges.landscape",
+            "topic-8-geographical-investigations-uk-challenges.climate-change"
+          ]
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    "Repository paper codes are mapped directly to Pearson component papers: physical=Paper 1 (1GA0/01), human=Paper 2 (1GA0/02), fieldwork=Paper 3 (1GA0/03).",
+    "Pearson labels these as Components 1-3 rather than the repository's paper-code names; this template preserves official component names in `label` and repo codes in `id`.",
+    "Section-level structures and option logic follow the Pearson specification issue showing Topic 1 two-of-three options, Topic 6 one-of-two option, and Paper 3 section A/B single-option choices."
+  ]
+}

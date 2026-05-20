@@ -1,0 +1,198 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "physics",
+    "specCode": "8463",
+    "version": "2024.1"
+  },
+  "examStructure": {
+    "qualificationType": "GCSE",
+    "assessmentModel": "linear",
+    "tiers": ["foundation", "higher"],
+    "questionTypes": ["multiple-choice", "structured", "closed-short-answer", "open-response"],
+    "totalScaledMark": 200
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Paper 1",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weightingPercent": 50,
+      "tiers": ["foundation", "higher"],
+      "assessedTopicRange": "Topics 1-4: Energy, Electricity, Particle model of matter, Atomic structure",
+      "sections": [
+        {
+          "code": "4.1",
+          "name": "Energy",
+          "allowedPrimaryTopicIds": [
+            "energy.stores-systems",
+            "energy.energy-calculations",
+            "energy.thermal-energy-change",
+            "energy.power",
+            "energy.conservation-dissipation",
+            "energy.efficiency",
+            "energy.resources"
+          ]
+        },
+        {
+          "code": "4.2",
+          "name": "Electricity",
+          "allowedPrimaryTopicIds": [
+            "electricity.circuit-symbols",
+            "electricity.charge-current",
+            "electricity.current-pd-resistance",
+            "electricity.resistors-iv-characteristics",
+            "electricity.series-parallel",
+            "electricity.ac-dc",
+            "electricity.mains-safety",
+            "electricity.power-equations",
+            "electricity.energy-transfer",
+            "electricity.national-grid",
+            "electricity.static-charge",
+            "electricity.electric-fields"
+          ]
+        },
+        {
+          "code": "4.3",
+          "name": "Particle model of matter",
+          "allowedPrimaryTopicIds": [
+            "particle-model.density",
+            "particle-model.change-of-state",
+            "particle-model.internal-energy",
+            "particle-model.shc",
+            "particle-model.latent-heat",
+            "particle-model.gas-particles",
+            "particle-model.pressure-volume",
+            "particle-model.compression-heating"
+          ]
+        },
+        {
+          "code": "4.4",
+          "name": "Atomic structure",
+          "allowedPrimaryTopicIds": [
+            "atomic-structure.atom-model",
+            "atomic-structure.isotopes",
+            "atomic-structure.history",
+            "atomic-structure.radioactive-decay",
+            "atomic-structure.nuclear-equations",
+            "atomic-structure.half-life",
+            "atomic-structure.contamination-irradiation",
+            "atomic-structure.background-radiation",
+            "atomic-structure.half-life-hazards",
+            "atomic-structure.uses-of-radiation",
+            "atomic-structure.fission",
+            "atomic-structure.fusion",
+            "key-ideas"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Paper 2",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weightingPercent": 50,
+      "tiers": ["foundation", "higher"],
+      "assessedTopicRange": "Topics 5-8: Forces, Waves, Magnetism and electromagnetism, Space physics (plus synoptic links to Energy and Electricity)",
+      "sections": [
+        {
+          "code": "4.5",
+          "name": "Forces",
+          "allowedPrimaryTopicIds": [
+            "forces.scalar-vector",
+            "forces.contact-noncontact",
+            "forces.gravity-weight",
+            "forces.resultant",
+            "forces.work-done",
+            "forces.elasticity",
+            "forces.moments-levers-gears",
+            "forces.pressure-fluid-surface",
+            "forces.pressure-fluid-depth",
+            "forces.atmospheric-pressure",
+            "forces.distance-displacement",
+            "forces.speed",
+            "forces.velocity",
+            "forces.distance-time-graphs",
+            "forces.acceleration",
+            "forces.newton-first-law",
+            "forces.newton-second-law",
+            "forces.newton-third-law",
+            "forces.stopping-distance",
+            "forces.reaction-time",
+            "forces.braking-distance-factors",
+            "forces.momentum",
+            "forces.conservation-of-momentum",
+            "forces.rate-of-change-of-momentum"
+          ]
+        },
+        {
+          "code": "4.6",
+          "name": "Waves",
+          "allowedPrimaryTopicIds": [
+            "waves.transverse-longitudinal",
+            "waves.properties-equations",
+            "waves.reflection",
+            "waves.sound-hearing",
+            "waves.detection-exploration",
+            "waves.em-spectrum",
+            "waves.em-properties-1",
+            "waves.em-properties-2",
+            "waves.em-uses",
+            "waves.lenses",
+            "waves.visible-light",
+            "waves.infrared-emission",
+            "waves.black-body-radiation"
+          ]
+        },
+        {
+          "code": "4.7",
+          "name": "Magnetism and electromagnetism",
+          "allowedPrimaryTopicIds": [
+            "magnetism-electromagnetism.poles",
+            "magnetism-electromagnetism.fields",
+            "magnetism-electromagnetism.electromagnets",
+            "magnetism-electromagnetism.motor-effect",
+            "magnetism-electromagnetism.electric-motors",
+            "magnetism-electromagnetism.loudspeakers",
+            "magnetism-electromagnetism.generator-effect",
+            "magnetism-electromagnetism.alternator-dynamo",
+            "magnetism-electromagnetism.microphones",
+            "magnetism-electromagnetism.transformers"
+          ]
+        },
+        {
+          "code": "4.8",
+          "name": "Space physics (physics only)",
+          "allowedPrimaryTopicIds": [
+            "space-physics.solar-system",
+            "space-physics.star-life-cycle",
+            "space-physics.orbits-satellites",
+            "space-physics.red-shift"
+          ]
+        },
+        {
+          "code": "4.1-4.2",
+          "name": "Synoptic application from Energy and Electricity",
+          "allowedPrimaryTopicIds": [
+            "energy.stores-systems",
+            "energy.energy-calculations",
+            "energy.thermal-energy-change",
+            "energy.power",
+            "energy.conservation-dissipation",
+            "energy.efficiency",
+            "electricity.current-pd-resistance",
+            "electricity.power-equations",
+            "electricity.energy-transfer",
+            "electricity.national-grid",
+            "key-ideas"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "cross-paper-application"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,480 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "economics",
+    "specCode": "8136",
+    "version": "2024.1",
+    "scope": "aqa-gcse-economics-8136",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "how-markets-work",
+      "parentId": null,
+      "label": "How markets work",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1-6", "3.1"],
+      "aliases": ["paper 1", "markets", "microeconomics"]
+    },
+    {
+      "id": "economic-foundations",
+      "parentId": "how-markets-work",
+      "label": "Economic foundations",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1", "3.1.1"],
+      "aliases": ["foundations", "economic activity", "factors of production", "making choices"]
+    },
+    {
+      "id": "economic-foundations.economic-activity",
+      "parentId": "economic-foundations",
+      "label": "Economic activity, needs and wants",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1", "3.1.1.1"],
+      "aliases": ["needs", "wants", "purpose of economic activity", "economic decisions", "consumers producers government"]
+    },
+    {
+      "id": "economic-foundations.factors-of-production",
+      "parentId": "economic-foundations",
+      "label": "Factors of production and rewards",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1", "3.1.1.2"],
+      "aliases": ["land labour capital enterprise", "economic resources", "factor rewards"]
+    },
+    {
+      "id": "economic-foundations.making-choices-opportunity-cost",
+      "parentId": "economic-foundations",
+      "label": "Making choices, costs, benefits and opportunity cost",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["1", "3.1.1.3"],
+      "aliases": ["basic economic problem", "opportunity cost", "cost benefit analysis"]
+    },
+    {
+      "id": "resource-allocation",
+      "parentId": "how-markets-work",
+      "label": "Resource allocation",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2", "3.1.2"],
+      "aliases": ["market allocation", "economic sectors", "specialisation"]
+    },
+    {
+      "id": "resource-allocation.markets-allocation-factor-product",
+      "parentId": "resource-allocation",
+      "label": "Markets, scarce resources, factor and product markets",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2", "3.1.2.1"],
+      "aliases": ["market mechanism", "scarcity", "factor markets", "product markets"]
+    },
+    {
+      "id": "resource-allocation.economic-sectors-goods-services",
+      "parentId": "resource-allocation",
+      "label": "Economic sectors, goods and services",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2", "3.1.2.2"],
+      "aliases": ["primary secondary tertiary", "goods vs services", "uk sector mix"]
+    },
+    {
+      "id": "resource-allocation.specialisation-division-labour-exchange",
+      "parentId": "resource-allocation",
+      "label": "Specialisation, division of labour and exchange",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2", "3.1.2.3"],
+      "aliases": ["specialisation", "division of labour", "benefits and costs of specialisation", "exchange"]
+    },
+    {
+      "id": "how-prices-are-determined",
+      "parentId": "how-markets-work",
+      "label": "How prices are determined",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3"],
+      "aliases": ["demand and supply", "equilibrium", "elasticity"]
+    },
+    {
+      "id": "how-prices-are-determined.demand",
+      "parentId": "how-prices-are-determined",
+      "label": "Demand for goods and services",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3.1"],
+      "aliases": ["determinants of demand", "demand curve", "shifts and movements demand"]
+    },
+    {
+      "id": "how-prices-are-determined.supply",
+      "parentId": "how-prices-are-determined",
+      "label": "Supply for goods and services",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3.2"],
+      "aliases": ["determinants of supply", "supply curve", "shifts and movements supply"]
+    },
+    {
+      "id": "how-prices-are-determined.equilibrium-price-revenue",
+      "parentId": "how-prices-are-determined",
+      "label": "Equilibrium price, excess demand/supply and revenue",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3.3"],
+      "aliases": ["market equilibrium", "excess demand", "excess supply", "revenue on demand supply diagram"]
+    },
+    {
+      "id": "how-prices-are-determined.intermarket-relationships",
+      "parentId": "how-prices-are-determined",
+      "label": "Intermarket relationships: complements and substitutes",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3.4"],
+      "aliases": ["complementary goods", "substitute goods", "related markets"]
+    },
+    {
+      "id": "how-prices-are-determined.ped",
+      "parentId": "how-prices-are-determined",
+      "label": "Price elasticity of demand (PED)",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3.5"],
+      "aliases": ["ped", "elastic demand", "inelastic demand", "ped calculation"]
+    },
+    {
+      "id": "how-prices-are-determined.pes",
+      "parentId": "how-prices-are-determined",
+      "label": "Price elasticity of supply (PES)",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3", "3.1.3.6"],
+      "aliases": ["pes", "elastic supply", "inelastic supply", "pes calculation"]
+    },
+    {
+      "id": "production-costs-revenue-profit",
+      "parentId": "how-markets-work",
+      "label": "Production, costs, revenue and profit",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4", "3.1.4"],
+      "aliases": ["business costs", "revenue and profit", "productivity", "economies of scale"]
+    },
+    {
+      "id": "production-costs-revenue-profit.business-objectives-costs-revenue-profit",
+      "parentId": "production-costs-revenue-profit",
+      "label": "Business objectives, costs, revenue, profit and ethics",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4", "3.1.4.1"],
+      "aliases": ["business objectives", "fixed and variable costs", "average and total cost", "average and total revenue", "profit calculation", "moral and ethical considerations"]
+    },
+    {
+      "id": "production-costs-revenue-profit.production-productivity",
+      "parentId": "production-costs-revenue-profit",
+      "label": "Production, productivity and productivity drivers",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4", "3.1.4.2"],
+      "aliases": ["production vs productivity", "benefits of productivity", "productivity factors"]
+    },
+    {
+      "id": "production-costs-revenue-profit.economies-diseconomies-scale",
+      "parentId": "production-costs-revenue-profit",
+      "label": "Economies and diseconomies of scale",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4", "3.1.4.3"],
+      "aliases": ["managerial purchasing financial technical risk-bearing economies", "average costs", "business growth costs and benefits", "diseconomies"]
+    },
+    {
+      "id": "competitive-and-concentrated-markets",
+      "parentId": "how-markets-work",
+      "label": "Competitive and concentrated markets",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5", "3.1.5"],
+      "aliases": ["market structures", "competition", "monopoly", "oligopoly", "labour market"]
+    },
+    {
+      "id": "competitive-and-concentrated-markets.market-structures",
+      "parentId": "competitive-and-concentrated-markets",
+      "label": "Identifying market structures",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5", "3.1.5.1"],
+      "aliases": ["number of firms", "product differentiation", "barriers to entry"]
+    },
+    {
+      "id": "competitive-and-concentrated-markets.competitive-markets",
+      "parentId": "competitive-and-concentrated-markets",
+      "label": "Competitive markets",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5", "3.1.5.2"],
+      "aliases": ["features of competitive markets", "competition effects on consumers producers workers", "lower profits in competition"]
+    },
+    {
+      "id": "competitive-and-concentrated-markets.non-competitive-markets",
+      "parentId": "competitive-and-concentrated-markets",
+      "label": "Non-competitive markets, monopoly and oligopoly",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5", "3.1.5.3"],
+      "aliases": ["non-competitive market", "monopoly", "oligopoly", "market power"]
+    },
+    {
+      "id": "competitive-and-concentrated-markets.labour-market-wages",
+      "parentId": "competitive-and-concentrated-markets",
+      "label": "Labour market and wage determination",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5", "3.1.5.4"],
+      "aliases": ["wage determination", "wage differentials", "gross pay", "net pay", "income calculations"]
+    },
+    {
+      "id": "market-failure",
+      "parentId": "how-markets-work",
+      "label": "Market failure",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["6", "3.1.6"],
+      "aliases": ["misallocation of resources", "externalities", "government intervention"]
+    },
+    {
+      "id": "market-failure.misallocation-government-intervention",
+      "parentId": "market-failure",
+      "label": "Misallocation of resources and government intervention",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["6", "3.1.6.1"],
+      "aliases": ["market failure definition", "inefficient allocation", "intervention methods"]
+    },
+    {
+      "id": "market-failure.externalities",
+      "parentId": "market-failure",
+      "label": "Positive and negative externalities",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["6", "3.1.6.2"],
+      "aliases": ["social vs private costs and benefits", "positive externality", "negative externality", "consumption and production externalities"]
+    },
+    {
+      "id": "how-the-economy-works",
+      "parentId": null,
+      "label": "How the economy works",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7-11", "3.2"],
+      "aliases": ["paper 2", "macroeconomics", "national and global economy"]
+    },
+    {
+      "id": "introduction-to-the-national-economy",
+      "parentId": "how-the-economy-works",
+      "label": "Introduction to the national economy",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7", "3.2.1"],
+      "aliases": ["interest rates", "government income and expenditure"]
+    },
+    {
+      "id": "introduction-to-the-national-economy.interest-rates-saving-borrowing-spending-investment",
+      "parentId": "introduction-to-the-national-economy",
+      "label": "Interest rates, saving, borrowing, spending and investment",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7", "3.2.1.1"],
+      "aliases": ["interest rates", "consumer saving borrowing spending", "producer saving borrowing investment", "interest calculations"]
+    },
+    {
+      "id": "introduction-to-the-national-economy.government-income-expenditure-taxation",
+      "parentId": "introduction-to-the-national-economy",
+      "label": "Government income, expenditure and taxation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7", "3.2.1.2"],
+      "aliases": ["government revenue", "government spending", "direct tax", "indirect tax", "progressive tax", "regressive tax"]
+    },
+    {
+      "id": "government-objectives",
+      "parentId": "how-the-economy-works",
+      "label": "Government objectives",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2"],
+      "aliases": ["economic objectives", "growth", "unemployment", "inflation", "balance of payments", "distribution of income"]
+    },
+    {
+      "id": "government-objectives.objectives-conflicts",
+      "parentId": "government-objectives",
+      "label": "Economic objectives, conflicts and wider considerations",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2.1"],
+      "aliases": ["full employment", "price stability", "economic growth", "balance of payments", "objective trade-offs", "inequality", "environmental change"]
+    },
+    {
+      "id": "government-objectives.economic-growth-gdp-real-gdp-per-capita",
+      "parentId": "government-objectives",
+      "label": "Economic growth: GDP, real GDP and GDP per capita",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2.2"],
+      "aliases": ["economic growth", "gdp", "real gdp", "gdp per capita", "growth costs and benefits"]
+    },
+    {
+      "id": "government-objectives.employment-unemployment",
+      "parentId": "government-objectives",
+      "label": "Employment and unemployment",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2.3"],
+      "aliases": ["structural unemployment", "seasonal unemployment", "frictional unemployment", "cyclical unemployment", "unemployment consequences"]
+    },
+    {
+      "id": "government-objectives.inflation-price-stability",
+      "parentId": "government-objectives",
+      "label": "Inflation and price stability",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2.4"],
+      "aliases": ["inflation", "cpi", "cost-push inflation", "demand-pull inflation", "inflation calculations"]
+    },
+    {
+      "id": "government-objectives.balance-of-payments",
+      "parentId": "government-objectives",
+      "label": "Balance of payments and current account",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2.5"],
+      "aliases": ["balance of trade", "current account", "deficit", "surplus", "balance of payments calculations"]
+    },
+    {
+      "id": "government-objectives.distribution-of-income-wealth",
+      "parentId": "government-objectives",
+      "label": "Distribution of income and wealth",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8", "3.2.2.6"],
+      "aliases": ["income inequality", "wealth inequality", "redistribution", "taxation and spending"]
+    },
+    {
+      "id": "government-manages-economy",
+      "parentId": "how-the-economy-works",
+      "label": "How the government manages the economy",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9", "3.2.3"],
+      "aliases": ["fiscal policy", "monetary policy", "supply-side policy", "externality policies"]
+    },
+    {
+      "id": "government-manages-economy.fiscal-policy-budget",
+      "parentId": "government-manages-economy",
+      "label": "Fiscal policy and government budget",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9", "3.2.3.1"],
+      "aliases": ["fiscal policy", "budget surplus", "budget deficit", "balanced budget"]
+    },
+    {
+      "id": "government-manages-economy.monetary-policy",
+      "parentId": "government-manages-economy",
+      "label": "Monetary policy",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9", "3.2.3.2"],
+      "aliases": ["interest rate policy", "inflation control", "macroeconomic objectives"]
+    },
+    {
+      "id": "government-manages-economy.supply-side-policies",
+      "parentId": "government-manages-economy",
+      "label": "Supply-side policies",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9", "3.2.3.3"],
+      "aliases": ["education and training", "lower direct taxes", "lower business taxes", "trade union reform", "privatisation", "deregulation"]
+    },
+    {
+      "id": "government-manages-economy.policies-correct-externalities",
+      "parentId": "government-manages-economy",
+      "label": "Policies to correct positive and negative externalities",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9", "3.2.3.4"],
+      "aliases": ["correcting externalities", "government intervention externalities"]
+    },
+    {
+      "id": "international-trade-global-economy",
+      "parentId": "how-the-economy-works",
+      "label": "International trade and the global economy",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["10", "3.2.4"],
+      "aliases": ["trade", "exchange rates", "free trade agreements", "globalisation"]
+    },
+    {
+      "id": "international-trade-global-economy.why-countries-trade-uk-exports-imports",
+      "parentId": "international-trade-global-economy",
+      "label": "Why countries trade and UK exports/imports",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["10", "3.2.4.1"],
+      "aliases": ["importance of trade", "uk exports", "uk imports", "global interdependence"]
+    },
+    {
+      "id": "international-trade-global-economy.exchange-rates",
+      "parentId": "international-trade-global-economy",
+      "label": "Exchange rates and their effects",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["10", "3.2.4.2"],
+      "aliases": ["exchange rate determination", "currency demand and supply", "effects on consumers and producers"]
+    },
+    {
+      "id": "international-trade-global-economy.free-trade-agreements-eu",
+      "parentId": "international-trade-global-economy",
+      "label": "Free-trade agreements including the EU",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["10", "3.2.4.3"],
+      "aliases": ["free trade", "arguments for and against free trade", "eu trade agreement benefits"]
+    },
+    {
+      "id": "international-trade-global-economy.globalisation-benefits-drawbacks",
+      "parentId": "international-trade-global-economy",
+      "label": "Globalisation: features, benefits and drawbacks",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["10", "3.2.4.4"],
+      "aliases": ["multinational companies", "technology and globalisation", "globalisation developed countries", "globalisation less developed countries", "ethical and sustainability trade issues"]
+    },
+    {
+      "id": "role-of-money-and-financial-markets",
+      "parentId": "how-the-economy-works",
+      "label": "The role of money and financial markets",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["11", "3.2.5"],
+      "aliases": ["money", "financial sector", "bank of england", "commercial banks"]
+    },
+    {
+      "id": "role-of-money-and-financial-markets.role-of-money",
+      "parentId": "role-of-money-and-financial-markets",
+      "label": "Functions and definition of money",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["11", "3.2.5.1"],
+      "aliases": ["medium of exchange", "unit of account", "store of value", "deferred payment", "money definition"]
+    },
+    {
+      "id": "role-of-money-and-financial-markets.financial-sector-bank-of-england",
+      "parentId": "role-of-money-and-financial-markets",
+      "label": "Financial sector, Bank of England and institutions",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["11", "3.2.5.2"],
+      "aliases": ["bank of england", "commercial banks", "building societies", "financial system stability", "savers and borrowers"]
+    }
+  ]
+}

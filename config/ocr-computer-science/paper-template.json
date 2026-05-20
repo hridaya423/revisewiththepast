@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "boardCode": "ocr",
+    "subjectSlug": "computer-science",
+    "specCode": "J277",
+    "version": "2024.1",
+    "scope": "ocr-gcse-computer-science-j277-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "qualification": {
+    "tier": "single-tier",
+    "totalMarks": 160,
+    "paperSplit": "2 x 50%"
+  },
+  "papers": [
+    {
+      "id": "paper-1",
+      "paperCode": "paper-1",
+      "label": "Component 01: Computer systems",
+      "officialCode": "J277/01",
+      "tier": "single-tier",
+      "durationMinutes": 90,
+      "duration": "1h 30m",
+      "marks": 80,
+      "weighting": "50%",
+      "structure": {
+        "questionPattern": "all questions mandatory; multiple-choice, short-response and extended-response questions"
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Computer systems content (1.1-1.6)",
+          "topicRefs": [
+            "component-01.systems-architecture.cpu-architecture",
+            "component-01.systems-architecture.cpu-performance",
+            "component-01.systems-architecture.embedded-systems",
+            "component-01.memory-storage.primary-storage",
+            "component-01.memory-storage.secondary-storage",
+            "component-01.memory-storage.units-capacity",
+            "component-01.memory-storage.number-character-media-representation",
+            "component-01.memory-storage.compression",
+            "component-01.networks-connections-protocols.networks-topologies",
+            "component-01.networks-connections-protocols.wired-wireless-protocols-layers",
+            "component-01.network-security.threats",
+            "component-01.network-security.prevention",
+            "component-01.systems-software.operating-systems",
+            "component-01.systems-software.utility-software",
+            "component-01.impact-of-digital-technology.impact-and-legislation"
+          ]
+        }
+      ],
+      "topics": [
+        "component-01.systems-architecture.cpu-architecture",
+        "component-01.systems-architecture.cpu-performance",
+        "component-01.systems-architecture.embedded-systems",
+        "component-01.memory-storage.primary-storage",
+        "component-01.memory-storage.secondary-storage",
+        "component-01.memory-storage.units-capacity",
+        "component-01.memory-storage.number-character-media-representation",
+        "component-01.memory-storage.compression",
+        "component-01.networks-connections-protocols.networks-topologies",
+        "component-01.networks-connections-protocols.wired-wireless-protocols-layers",
+        "component-01.network-security.threats",
+        "component-01.network-security.prevention",
+        "component-01.systems-software.operating-systems",
+        "component-01.systems-software.utility-software",
+        "component-01.impact-of-digital-technology.impact-and-legislation"
+      ]
+    },
+    {
+      "id": "paper-2",
+      "paperCode": "paper-2",
+      "label": "Component 02: Computational thinking, algorithms and programming",
+      "officialCode": "J277/02",
+      "tier": "single-tier",
+      "durationMinutes": 90,
+      "duration": "1h 30m",
+      "marks": 80,
+      "weighting": "50%",
+      "structure": {
+        "questionPattern": "all questions mandatory; Section A and Section B"
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Section A: algorithms, logic and fundamentals",
+          "marks": 50,
+          "topicRefs": [
+            "component-02.algorithms.computational-thinking",
+            "component-02.algorithms.design-create-refine",
+            "component-02.algorithms.searching-sorting",
+            "component-02.programming-fundamentals.core-constructs-operators",
+            "component-02.programming-fundamentals.data-types",
+            "component-02.boolean-logic.logic-diagrams-truth-tables",
+            "component-02.languages-and-ide.language-levels-translators"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Section B: practical programming",
+          "marks": 30,
+          "topicRefs": [
+            "component-02.programming-fundamentals.additional-techniques",
+            "component-02.producing-robust-programs.defensive-design",
+            "component-02.producing-robust-programs.testing",
+            "component-02.languages-and-ide.ide-tools"
+          ]
+        }
+      ],
+      "topics": [
+        "component-02.algorithms.computational-thinking",
+        "component-02.algorithms.design-create-refine",
+        "component-02.algorithms.searching-sorting",
+        "component-02.programming-fundamentals.core-constructs-operators",
+        "component-02.programming-fundamentals.data-types",
+        "component-02.programming-fundamentals.additional-techniques",
+        "component-02.producing-robust-programs.defensive-design",
+        "component-02.producing-robust-programs.testing",
+        "component-02.boolean-logic.logic-diagrams-truth-tables",
+        "component-02.languages-and-ide.language-levels-translators",
+        "component-02.languages-and-ide.ide-tools"
+      ]
+    }
+  ]
+}

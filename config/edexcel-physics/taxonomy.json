@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "physics",
+    "specCode": "1PH0",
+    "version": "2024.1",
+    "scope": "edexcel-physics-1ph0-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    { "id": "key-concepts", "parentId": null, "label": "Topic 1: Key concepts of physics", "kind": "branch", "paperCodes": ["paper-1", "paper-2"], "aliases": ["topic 1", "fundamental quantities"] },
+    { "id": "key-concepts.units-prefixes", "parentId": "key-concepts", "label": "SI units, prefixes and unit conversions", "kind": "leaf", "paperCodes": ["paper-1", "paper-2"], "aliases": ["1.1", "1.2", "1.3", "SI", "giga mega kilo", "hours to seconds"] },
+    { "id": "key-concepts.significant-standard-form", "parentId": "key-concepts", "label": "Significant figures and standard form in physics", "kind": "leaf", "paperCodes": ["paper-1", "paper-2"], "aliases": ["1.4", "standard form", "sig figs"] },
+
+    { "id": "motion-forces", "parentId": null, "label": "Topic 2: Motion and forces", "kind": "branch", "paperCodes": ["paper-1"], "aliases": ["topic 2", "kinematics", "newton laws"] },
+    { "id": "motion-forces.scalars-vectors", "parentId": "motion-forces", "label": "Scalars and vectors in motion", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["2.1", "2.2", "2.3", "2.4", "velocity vs speed", "displacement"] },
+    { "id": "motion-forces.speed-graphs", "parentId": "motion-forces", "label": "Speed, distance and distance-time graph analysis", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["2.6", "2.7", "average speed", "gradient", "light gates"] },
+    { "id": "motion-forces.acceleration-graphs", "parentId": "motion-forces", "label": "Acceleration equations and velocity-time graphs", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["2.8", "2.9", "2.10", "SUVAT", "area under graph"] },
+    { "id": "motion-forces.newton-laws-weight", "parentId": "motion-forces", "label": "Newton's laws, resultant force, mass and weight", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["2.13", "2.14", "2.15", "2.16", "2.18", "F=ma", "W=mg", "inertial mass"] },
+    { "id": "motion-forces.circular-momentum", "parentId": "motion-forces", "label": "Circular motion, centripetal force and momentum conservation", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["2.20", "2.21", "2.23", "2.24", "2.26", "2.27", "momentum", "Newton third law", "stopping distance"] },
+
+    { "id": "conservation-energy", "parentId": null, "label": "Topic 3: Conservation of energy", "kind": "branch", "paperCodes": ["paper-1"], "aliases": ["topic 3", "energy stores"] },
+    { "id": "conservation-energy.stores-transfers", "parentId": "conservation-energy", "label": "Energy stores, pathways and conservation", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["3.1", "3.2", "closed systems", "energy pathways"] },
+    { "id": "conservation-energy.calculation-work", "parentId": "conservation-energy", "label": "Work done and mechanical energy calculations", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["3.3", "3.4", "3.5", "work done", "GPE", "KE"] },
+    { "id": "conservation-energy.dissipation-efficiency", "parentId": "conservation-energy", "label": "Energy dissipation, power and efficiency", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["3.6", "3.7", "3.8", "3.9", "waste energy", "efficiency"] },
+
+    { "id": "waves", "parentId": null, "label": "Topic 4: Waves", "kind": "branch", "paperCodes": ["paper-1"], "aliases": ["topic 4"] },
+    { "id": "waves.properties-equation", "parentId": "waves", "label": "Wave properties, wave equation and representations", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["4.1", "4.2", "4.3", "4.4", "frequency", "wavelength", "speed=fλ"] },
+    { "id": "waves.reflection-refraction", "parentId": "waves", "label": "Reflection, refraction and wave-front behaviour", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["4.5", "4.6", "ray diagrams", "normal", "change of speed"] },
+    { "id": "waves.sound-ultrasound", "parentId": "waves", "label": "Sound waves, ultrasound and echo methods", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["4.7", "4.8", "4.9", "ultrasound", "echo sounding", "medical imaging"] },
+    { "id": "waves.seismic", "parentId": "waves", "label": "Seismic waves and Earth structure evidence", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["4.10", "4.11", "P waves", "S waves", "earth layers"] },
+
+    { "id": "light-em-spectrum", "parentId": null, "label": "Topic 5: Light and the electromagnetic spectrum", "kind": "branch", "paperCodes": ["paper-1"], "aliases": ["topic 5", "EM spectrum"] },
+    { "id": "light-em-spectrum.properties-order", "parentId": "light-em-spectrum", "label": "Electromagnetic spectrum order and common properties", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["5.1", "5.2", "radio to gamma", "transverse waves"] },
+    { "id": "light-em-spectrum.uses-risks", "parentId": "light-em-spectrum", "label": "Uses and hazards of electromagnetic radiation", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["5.3", "5.4", "ionising", "microwave", "X-ray", "UV"] },
+    { "id": "light-em-spectrum.light-behaviour", "parentId": "light-em-spectrum", "label": "Visible light behaviour, colour and black body ideas", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["5.5", "5.6", "colour filters", "absorption", "emission"] },
+
+    { "id": "radioactivity", "parentId": null, "label": "Topic 6: Radioactivity", "kind": "branch", "paperCodes": ["paper-1"], "aliases": ["topic 6", "nuclear physics"] },
+    { "id": "radioactivity.atomic-model-isotopes", "parentId": "radioactivity", "label": "Atomic structure, isotopes and nuclear notation", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["6.1", "6.2", "6.3", "proton number", "mass number", "isotopes"] },
+    { "id": "radioactivity.radiation-types", "parentId": "radioactivity", "label": "Alpha, beta, gamma properties and penetration", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["6.4", "6.5", "ionisation", "range in air", "shielding"] },
+    { "id": "radioactivity.decay-half-life", "parentId": "radioactivity", "label": "Nuclear decay equations, activity and half-life", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["6.6", "6.7", "6.8", "6.9", "half life", "decay curves", "becquerel"] },
+    { "id": "radioactivity.background-safety-uses", "parentId": "radioactivity", "label": "Background radiation, safety and medical/industrial uses", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["6.10", "6.11", "6.12", "contamination", "irradiation", "tracers", "radiotherapy"] },
+
+    { "id": "astronomy", "parentId": null, "label": "Topic 7: Astronomy", "kind": "branch", "paperCodes": ["paper-1"], "aliases": ["topic 7", "space physics"] },
+    { "id": "astronomy.solar-system-formation", "parentId": "astronomy", "label": "Solar system components and origin models", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["7.1", "7.2", "nebula", "solar system", "comets", "asteroids"] },
+    { "id": "astronomy.orbits-gravity", "parentId": "astronomy", "label": "Orbital motion, gravity and satellites", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["7.3", "7.4", "elliptical orbit", "artificial satellites", "orbital speed"] },
+    { "id": "astronomy.stars-lifecycle", "parentId": "astronomy", "label": "Stars, fusion and stellar life cycles", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["7.5", "7.6", "main sequence", "red giant", "supernova", "white dwarf"] },
+    { "id": "astronomy.cosmology-redshift", "parentId": "astronomy", "label": "Red-shift evidence, Big Bang and universe evolution", "kind": "leaf", "paperCodes": ["paper-1"], "aliases": ["7.7", "7.8", "Big Bang", "expanding universe", "cosmic microwave background"] },
+
+    { "id": "energy-forces-work", "parentId": null, "label": "Topic 8: Energy - forces doing work", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 8"] },
+    { "id": "energy-forces-work.stores-transfers", "parentId": "energy-forces-work", "label": "Energy stores, pathways and conservation in closed systems", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["8.1", "8.2", "8.3", "8.4"] },
+    { "id": "energy-forces-work.work-gpe-ke", "parentId": "energy-forces-work", "label": "Work done with GPE and KE calculations", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["8.5", "8.6", "8.7", "8.8", "8.9"] },
+    { "id": "energy-forces-work.power-efficiency", "parentId": "energy-forces-work", "label": "Dissipation, power and efficiency", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["8.10", "8.11", "8.12", "8.13", "8.15"] },
+
+    { "id": "forces-effects", "parentId": null, "label": "Topic 9: Forces and their effects", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 9"] },
+    { "id": "forces-effects.interactions-vectors", "parentId": "forces-effects", "label": "Contact/non-contact forces, vectors and resultant force", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["9.1", "9.2", "9.3", "9.4", "free-body diagrams", "equilibrium"] },
+    { "id": "forces-effects.moments-levers-gears", "parentId": "forces-effects", "label": "Moments, principle of moments, levers and gears", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["9.6P", "9.7P", "9.8P", "9.9P", "clockwise moments"] },
+    { "id": "forces-effects.friction-lubrication", "parentId": "forces-effects", "label": "Friction and reducing unwanted energy transfer", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["9.10", "lubrication"] },
+
+    { "id": "electricity-circuits", "parentId": null, "label": "Topic 10: Electricity and circuits", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 10", "circuits"] },
+    { "id": "electricity-circuits.components-layout", "parentId": "electricity-circuits", "label": "Circuit symbols, component functions, series and parallel", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["10.2", "10.3", "ammeter", "voltmeter", "diode", "LDR", "thermistor"] },
+    { "id": "electricity-circuits.charge-current-voltage", "parentId": "electricity-circuits", "label": "Charge, current, potential difference and energy transfer", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["10.5", "10.6", "10.8", "10.9", "Q=It", "E=QV"] },
+    { "id": "electricity-circuits.resistance-iv", "parentId": "electricity-circuits", "label": "Resistance, Ohm's law and I-V characteristics", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["10.12", "10.13", "10.14", "10.18", "10.19", "10.20", "V=IR"] },
+    { "id": "electricity-circuits.power-heating", "parentId": "electricity-circuits", "label": "Electrical power, heating effect and reducing losses", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["10.22", "10.23", "10.24", "10.27", "10.29", "P=IV", "E=IVt"] },
+
+    { "id": "static-electricity", "parentId": null, "label": "Topic 11: Static electricity", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 11"] },
+    { "id": "static-electricity.charging-fields", "parentId": "static-electricity", "label": "Charging by friction, attraction/repulsion and electric fields", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["11.1", "11.2", "11.3", "electrostatic force", "field lines"] },
+    { "id": "static-electricity.hazards-applications", "parentId": "static-electricity", "label": "Static electricity hazards and practical applications", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["11.4", "11.5", "fuel transfer", "paint spraying", "electrostatic precipitator"] },
+
+    { "id": "magnetism-motor-effect", "parentId": null, "label": "Topic 12: Magnetism and the motor effect", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 12"] },
+    { "id": "magnetism-motor-effect.fields-permanent", "parentId": "magnetism-motor-effect", "label": "Magnetic fields, poles and plotting fields", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["12.1", "12.2", "12.3", "permanent magnets", "compass plotting"] },
+    { "id": "magnetism-motor-effect.current-fields", "parentId": "magnetism-motor-effect", "label": "Magnetic effect of current and electromagnets", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["12.4", "12.5", "12.6", "solenoid", "right-hand grip rule"] },
+    { "id": "magnetism-motor-effect.motor-force", "parentId": "magnetism-motor-effect", "label": "Motor effect, force on conductor and DC motor", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["12.7", "12.8", "12.9", "Fleming left hand", "motor"] },
+
+    { "id": "electromagnetic-induction", "parentId": null, "label": "Topic 13: Electromagnetic induction", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 13", "induction"] },
+    { "id": "electromagnetic-induction.generator-principle", "parentId": "electromagnetic-induction", "label": "Induced potential difference and generator principle", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["13.1", "13.2", "13.3", "dynamo", "alternating current"] },
+    { "id": "electromagnetic-induction.transformers-national-grid", "parentId": "electromagnetic-induction", "label": "Transformers, National Grid and transmission efficiency", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["13.4", "13.5", "13.6", "step-up", "step-down", "power loss"] },
+
+    { "id": "particle-model", "parentId": null, "label": "Topic 14: Particle model", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 14", "kinetic theory"] },
+    { "id": "particle-model.states-density", "parentId": "particle-model", "label": "States of matter and density", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["14.1", "14.2", "14.3", "14.4", "density", "core practical"] },
+    { "id": "particle-model.internal-energy-changes", "parentId": "particle-model", "label": "Internal energy, changes of state, SHC and latent heat", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["14.5", "14.6", "14.7", "14.8", "14.9", "specific heat capacity", "specific latent heat"] },
+    { "id": "particle-model-gases-pressure", "parentId": "particle-model", "label": "Gas pressure, Kelvin scale and pressure-volume relationships", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["14.12", "14.13", "14.14", "14.15", "14.18P", "14.19P", "Boyle law"] },
+
+    { "id": "forces-matter", "parentId": null, "label": "Topic 15: Forces and matter", "kind": "branch", "paperCodes": ["paper-2"], "aliases": ["topic 15", "elasticity"] },
+    { "id": "forces-matter.elastic-behaviour", "parentId": "forces-matter", "label": "Elastic and inelastic behaviour of materials", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["15.1", "15.2", "distortion", "restoring forces"] },
+    { "id": "forces-matter.hooke-law-spring-energy", "parentId": "forces-matter", "label": "Hooke's law, spring constant and elastic energy", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["15.3", "15.4", "15.6", "F=kx", "0.5kx^2", "core practical"] },
+    { "id": "forces-matter.force-extension-graphs", "parentId": "forces-matter", "label": "Linear/non-linear force-extension relationships and limits", "kind": "leaf", "paperCodes": ["paper-2"], "aliases": ["15.5", "limit of proportionality", "elastic limit"] }
+  ]
+}

@@ -1,0 +1,534 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "combined-science",
+    "specCode": "8464",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "code": "biology-1",
+      "name": "Biology Paper 1",
+      "durationMinutes": 75,
+      "totalMarks": 70,
+      "weightingPercent": 16.7,
+      "tiers": [
+        "foundation",
+        "higher"
+      ],
+      "questionTypes": [
+        "multiple-choice",
+        "structured",
+        "closed-short-answer",
+        "open-response"
+      ],
+      "assessedTopicRange": "Biology topics 1-4",
+      "sections": [
+        {
+          "code": "1",
+          "name": "Cell biology",
+          "allowedPrimaryTopicIds": [
+            "biology.cell-biology.cell-structure.eukaryotes-prokaryotes",
+            "biology.cell-biology.cell-structure.animal-plant-cells",
+            "biology.cell-biology.cell-structure.cell-specialisation",
+            "biology.cell-biology.cell-structure.cell-differentiation",
+            "biology.cell-biology.cell-structure.microscopy",
+            "biology.cell-biology.cell-division.chromosomes",
+            "biology.cell-biology.cell-division.mitosis-cell-cycle",
+            "biology.cell-biology.cell-division.stem-cells",
+            "biology.cell-biology.transport-in-cells.diffusion",
+            "biology.cell-biology.transport-in-cells.osmosis",
+            "biology.cell-biology.transport-in-cells.active-transport"
+          ]
+        },
+        {
+          "code": "2",
+          "name": "Organisation",
+          "allowedPrimaryTopicIds": [
+            "biology.organisation.principles",
+            "biology.organisation.animal-systems.digestive-system",
+            "biology.organisation.animal-systems.heart-blood-vessels",
+            "biology.organisation.animal-systems.blood",
+            "biology.organisation.animal-systems.coronary-heart-disease",
+            "biology.organisation.animal-systems.health-issues",
+            "biology.organisation.animal-systems.lifestyle-risk-factors",
+            "biology.organisation.animal-systems.cancer",
+            "biology.organisation.plant-systems.plant-tissues",
+            "biology.organisation.plant-systems.plant-organ-system"
+          ]
+        },
+        {
+          "code": "3",
+          "name": "Infection and response",
+          "allowedPrimaryTopicIds": [
+            "biology.infection-response.communicable-diseases.infectious-diseases",
+            "biology.infection-response.communicable-diseases.viral-diseases",
+            "biology.infection-response.communicable-diseases.bacterial-diseases",
+            "biology.infection-response.communicable-diseases.fungal-diseases",
+            "biology.infection-response.communicable-diseases.protist-diseases",
+            "biology.infection-response.communicable-diseases.human-defence-systems",
+            "biology.infection-response.communicable-diseases.vaccination",
+            "biology.infection-response.communicable-diseases.antibiotics-painkillers",
+            "biology.infection-response.communicable-diseases.drug-development"
+          ]
+        },
+        {
+          "code": "4",
+          "name": "Bioenergetics",
+          "allowedPrimaryTopicIds": [
+            "biology.bioenergetics.photosynthesis.reaction",
+            "biology.bioenergetics.photosynthesis.rate",
+            "biology.bioenergetics.photosynthesis.uses-of-glucose",
+            "biology.bioenergetics.respiration.aerobic-anaerobic",
+            "biology.bioenergetics.respiration.response-to-exercise",
+            "biology.bioenergetics.respiration.metabolism"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "biology-2",
+      "name": "Biology Paper 2",
+      "durationMinutes": 75,
+      "totalMarks": 70,
+      "weightingPercent": 16.7,
+      "tiers": [
+        "foundation",
+        "higher"
+      ],
+      "questionTypes": [
+        "multiple-choice",
+        "structured",
+        "closed-short-answer",
+        "open-response"
+      ],
+      "assessedTopicRange": "Biology topics 5-7",
+      "sections": [
+        {
+          "code": "5",
+          "name": "Homeostasis and response",
+          "allowedPrimaryTopicIds": [
+            "biology.homeostasis-response.homeostasis",
+            "biology.homeostasis-response.nervous-system",
+            "biology.homeostasis-response.hormonal-coordination.endocrine-system",
+            "biology.homeostasis-response.hormonal-coordination.blood-glucose-control",
+            "biology.homeostasis-response.hormonal-coordination.hormones-reproduction",
+            "biology.homeostasis-response.hormonal-coordination.contraception",
+            "biology.homeostasis-response.hormonal-coordination.infertility-treatment",
+            "biology.homeostasis-response.hormonal-coordination.feedback-systems"
+          ]
+        },
+        {
+          "code": "6",
+          "name": "Inheritance, variation and evolution",
+          "allowedPrimaryTopicIds": [
+            "biology.inheritance-variation-evolution.reproduction.sexual-asexual",
+            "biology.inheritance-variation-evolution.reproduction.meiosis",
+            "biology.inheritance-variation-evolution.reproduction.dna-genome",
+            "biology.inheritance-variation-evolution.reproduction.genetic-inheritance",
+            "biology.inheritance-variation-evolution.reproduction.inherited-disorders",
+            "biology.inheritance-variation-evolution.reproduction.sex-determination",
+            "biology.inheritance-variation-evolution.variation-evolution.variation",
+            "biology.inheritance-variation-evolution.variation-evolution.evolution",
+            "biology.inheritance-variation-evolution.variation-evolution.selective-breeding",
+            "biology.inheritance-variation-evolution.variation-evolution.genetic-engineering",
+            "biology.inheritance-variation-evolution.genetics-history.evidence-for-evolution",
+            "biology.inheritance-variation-evolution.genetics-history.fossils",
+            "biology.inheritance-variation-evolution.genetics-history.extinction",
+            "biology.inheritance-variation-evolution.genetics-history.resistant-bacteria",
+            "biology.inheritance-variation-evolution.classification"
+          ]
+        },
+        {
+          "code": "7",
+          "name": "Ecology",
+          "allowedPrimaryTopicIds": [
+            "biology.ecology.adaptations-interdependence-competition.communities",
+            "biology.ecology.adaptations-interdependence-competition.abiotic-factors",
+            "biology.ecology.adaptations-interdependence-competition.biotic-factors",
+            "biology.ecology.adaptations-interdependence-competition.adaptations",
+            "biology.ecology.organisation-of-ecosystem.levels-of-organisation",
+            "biology.ecology.organisation-of-ecosystem.material-cycles",
+            "biology.ecology.biodiversity-human-impact.biodiversity",
+            "biology.ecology.biodiversity-human-impact.waste-management",
+            "biology.ecology.biodiversity-human-impact.land-use",
+            "biology.ecology.biodiversity-human-impact.deforestation",
+            "biology.ecology.biodiversity-human-impact.global-warming",
+            "biology.ecology.biodiversity-human-impact.maintaining-biodiversity"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "chemistry-1",
+      "name": "Chemistry Paper 1",
+      "durationMinutes": 75,
+      "totalMarks": 70,
+      "weightingPercent": 16.7,
+      "tiers": [
+        "foundation",
+        "higher"
+      ],
+      "questionTypes": [
+        "multiple-choice",
+        "structured",
+        "closed-short-answer",
+        "open-response"
+      ],
+      "assessedTopicRange": "Chemistry topics 8-12",
+      "sections": [
+        {
+          "code": "8",
+          "name": "Atomic structure and the periodic table",
+          "allowedPrimaryTopicIds": [
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.atoms-elements-compounds",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.mixtures",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.atomic-model-history",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.subatomic-charges",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.size-mass-isotopes",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.relative-atomic-mass",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.electronic-structure",
+            "chemistry.atomic-structure-periodic-table.periodic-table.structure",
+            "chemistry.atomic-structure-periodic-table.periodic-table.development",
+            "chemistry.atomic-structure-periodic-table.periodic-table.metals-non-metals",
+            "chemistry.atomic-structure-periodic-table.periodic-table.group-0",
+            "chemistry.atomic-structure-periodic-table.periodic-table.group-1",
+            "chemistry.atomic-structure-periodic-table.periodic-table.group-7"
+          ]
+        },
+        {
+          "code": "9",
+          "name": "Bonding, structure, and the properties of matter",
+          "allowedPrimaryTopicIds": [
+            "chemistry.bonding-structure-properties.chemical-bonds.bond-types",
+            "chemistry.bonding-structure-properties.chemical-bonds.ionic-bonding",
+            "chemistry.bonding-structure-properties.chemical-bonds.ionic-compounds",
+            "chemistry.bonding-structure-properties.chemical-bonds.covalent-bonding",
+            "chemistry.bonding-structure-properties.chemical-bonds.metallic-bonding",
+            "chemistry.bonding-structure-properties.structure-and-properties.states-of-matter",
+            "chemistry.bonding-structure-properties.structure-and-properties.state-symbols",
+            "chemistry.bonding-structure-properties.structure-and-properties.ionic-properties",
+            "chemistry.bonding-structure-properties.structure-and-properties.small-molecule-properties",
+            "chemistry.bonding-structure-properties.structure-and-properties.polymers",
+            "chemistry.bonding-structure-properties.structure-and-properties.giant-covalent",
+            "chemistry.bonding-structure-properties.structure-and-properties.metals-alloys",
+            "chemistry.bonding-structure-properties.structure-and-properties.metals-conductors",
+            "chemistry.bonding-structure-properties.carbons-structures.diamond",
+            "chemistry.bonding-structure-properties.carbons-structures.graphite",
+            "chemistry.bonding-structure-properties.carbons-structures.graphene-fullerenes"
+          ]
+        },
+        {
+          "code": "10",
+          "name": "Quantitative chemistry",
+          "allowedPrimaryTopicIds": [
+            "chemistry.quantitative-chemistry.measurements-conservation.conservation-balanced-equations",
+            "chemistry.quantitative-chemistry.measurements-conservation.relative-formula-mass",
+            "chemistry.quantitative-chemistry.measurements-conservation.mass-changes-gases",
+            "chemistry.quantitative-chemistry.measurements-conservation.chemical-measurements",
+            "chemistry.quantitative-chemistry.amount-of-substance.moles",
+            "chemistry.quantitative-chemistry.amount-of-substance.amounts-in-equations",
+            "chemistry.quantitative-chemistry.amount-of-substance.balance-by-moles",
+            "chemistry.quantitative-chemistry.amount-of-substance.limiting-reactants",
+            "chemistry.quantitative-chemistry.amount-of-substance.solution-concentration"
+          ]
+        },
+        {
+          "code": "11",
+          "name": "Chemical changes",
+          "allowedPrimaryTopicIds": [
+            "chemistry.chemical-changes.reactivity-of-metals.metal-oxides",
+            "chemistry.chemical-changes.reactivity-of-metals.reactivity-series",
+            "chemistry.chemical-changes.reactivity-of-metals.extraction-reduction",
+            "chemistry.chemical-changes.reactivity-of-metals.redox-electrons",
+            "chemistry.chemical-changes.reactions-of-acids.acids-with-metals",
+            "chemistry.chemical-changes.reactions-of-acids.neutralisation-salts",
+            "chemistry.chemical-changes.reactions-of-acids.soluble-salts",
+            "chemistry.chemical-changes.reactions-of-acids.ph-scale-neutralisation",
+            "chemistry.chemical-changes.reactions-of-acids.strong-weak-acids",
+            "chemistry.chemical-changes.electrolysis.process",
+            "chemistry.chemical-changes.electrolysis.molten-ionic",
+            "chemistry.chemical-changes.electrolysis.extract-metals",
+            "chemistry.chemical-changes.electrolysis.aqueous-solutions",
+            "chemistry.chemical-changes.electrolysis.half-equations"
+          ]
+        },
+        {
+          "code": "12",
+          "name": "Energy changes",
+          "allowedPrimaryTopicIds": [
+            "chemistry.energy-changes.exothermic-endothermic.energy-transfer",
+            "chemistry.energy-changes.exothermic-endothermic.reaction-profiles",
+            "chemistry.energy-changes.exothermic-endothermic.energy-change-calculations"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "chemistry-2",
+      "name": "Chemistry Paper 2",
+      "durationMinutes": 75,
+      "totalMarks": 70,
+      "weightingPercent": 16.7,
+      "tiers": [
+        "foundation",
+        "higher"
+      ],
+      "questionTypes": [
+        "multiple-choice",
+        "structured",
+        "closed-short-answer",
+        "open-response"
+      ],
+      "assessedTopicRange": "Chemistry topics 13-17; may draw on sections 5.1-5.3",
+      "sections": [
+        {
+          "code": "13",
+          "name": "The rate and extent of chemical change",
+          "allowedPrimaryTopicIds": [
+            "chemistry.rate-and-extent.rate-of-reaction.calculating-rates",
+            "chemistry.rate-and-extent.rate-of-reaction.factors-affecting-rate",
+            "chemistry.rate-and-extent.rate-of-reaction.collision-theory-activation-energy",
+            "chemistry.rate-and-extent.rate-of-reaction.catalysts",
+            "chemistry.rate-and-extent.reversible-equilibrium.reversible-reactions",
+            "chemistry.rate-and-extent.reversible-equilibrium.energy-and-reversible",
+            "chemistry.rate-and-extent.reversible-equilibrium.equilibrium",
+            "chemistry.rate-and-extent.reversible-equilibrium.change-conditions",
+            "chemistry.rate-and-extent.reversible-equilibrium.change-concentration",
+            "chemistry.rate-and-extent.reversible-equilibrium.change-temperature",
+            "chemistry.rate-and-extent.reversible-equilibrium.change-pressure"
+          ]
+        },
+        {
+          "code": "14",
+          "name": "Organic chemistry",
+          "allowedPrimaryTopicIds": [
+            "chemistry.organic-chemistry.carbons-fuels-feedstock.crude-oil-alkanes",
+            "chemistry.organic-chemistry.carbons-fuels-feedstock.fractional-distillation",
+            "chemistry.organic-chemistry.carbons-fuels-feedstock.hydrocarbon-properties",
+            "chemistry.organic-chemistry.carbons-fuels-feedstock.cracking-alkenes"
+          ]
+        },
+        {
+          "code": "15",
+          "name": "Chemical analysis",
+          "allowedPrimaryTopicIds": [
+            "chemistry.chemical-analysis.purity-formulations-chromatography.pure-substances",
+            "chemistry.chemical-analysis.purity-formulations-chromatography.formulations",
+            "chemistry.chemical-analysis.purity-formulations-chromatography.chromatography",
+            "chemistry.chemical-analysis.identification-of-gases.hydrogen-test",
+            "chemistry.chemical-analysis.identification-of-gases.oxygen-test",
+            "chemistry.chemical-analysis.identification-of-gases.carbondioxide-test",
+            "chemistry.chemical-analysis.identification-of-gases.chlorine-test"
+          ]
+        },
+        {
+          "code": "16",
+          "name": "Chemistry of the atmosphere",
+          "allowedPrimaryTopicIds": [
+            "chemistry.atmosphere.composition-evolution.gas-proportions",
+            "chemistry.atmosphere.composition-evolution.early-atmosphere",
+            "chemistry.atmosphere.composition-evolution.oxygen-increase",
+            "chemistry.atmosphere.composition-evolution.carbondioxide-decrease",
+            "chemistry.atmosphere.greenhouse-gases.greenhouse-effect",
+            "chemistry.atmosphere.greenhouse-gases.human-activities",
+            "chemistry.atmosphere.greenhouse-gases.global-climate-change",
+            "chemistry.atmosphere.greenhouse-gases.carbondioxide-footprint",
+            "chemistry.atmosphere.pollutants.pollutants-from-fuels",
+            "chemistry.atmosphere.pollutants.properties-effects"
+          ]
+        },
+        {
+          "code": "17",
+          "name": "Using resources",
+          "allowedPrimaryTopicIds": [
+            "chemistry.using-resources.earths-resources-water.sustainable-development",
+            "chemistry.using-resources.earths-resources-water.potable-water",
+            "chemistry.using-resources.earths-resources-water.waste-water-treatment",
+            "chemistry.using-resources.earths-resources-water.alternative-extraction",
+            "chemistry.using-resources.lifecycle-recycling.life-cycle-assessment",
+            "chemistry.using-resources.lifecycle-recycling.reducing-resource-use"
+          ]
+        },
+        {
+          "code": "13-17-foundations",
+          "name": "Fundamental concepts that may be drawn upon",
+          "allowedPrimaryTopicIds": [
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.atoms-elements-compounds",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.mixtures",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.atomic-model-history",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.subatomic-charges",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.size-mass-isotopes",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.relative-atomic-mass",
+            "chemistry.atomic-structure-periodic-table.simple-atom-model.electronic-structure",
+            "chemistry.atomic-structure-periodic-table.periodic-table.structure",
+            "chemistry.atomic-structure-periodic-table.periodic-table.development",
+            "chemistry.atomic-structure-periodic-table.periodic-table.metals-non-metals",
+            "chemistry.atomic-structure-periodic-table.periodic-table.group-0",
+            "chemistry.atomic-structure-periodic-table.periodic-table.group-1",
+            "chemistry.atomic-structure-periodic-table.periodic-table.group-7",
+            "chemistry.bonding-structure-properties.chemical-bonds.bond-types",
+            "chemistry.bonding-structure-properties.chemical-bonds.ionic-bonding",
+            "chemistry.bonding-structure-properties.chemical-bonds.ionic-compounds",
+            "chemistry.bonding-structure-properties.chemical-bonds.covalent-bonding",
+            "chemistry.bonding-structure-properties.chemical-bonds.metallic-bonding",
+            "chemistry.bonding-structure-properties.structure-and-properties.states-of-matter",
+            "chemistry.bonding-structure-properties.structure-and-properties.state-symbols",
+            "chemistry.bonding-structure-properties.structure-and-properties.ionic-properties",
+            "chemistry.bonding-structure-properties.structure-and-properties.small-molecule-properties",
+            "chemistry.bonding-structure-properties.structure-and-properties.polymers",
+            "chemistry.bonding-structure-properties.structure-and-properties.giant-covalent",
+            "chemistry.bonding-structure-properties.structure-and-properties.metals-alloys",
+            "chemistry.bonding-structure-properties.structure-and-properties.metals-conductors",
+            "chemistry.bonding-structure-properties.carbons-structures.diamond",
+            "chemistry.bonding-structure-properties.carbons-structures.graphite",
+            "chemistry.bonding-structure-properties.carbons-structures.graphene-fullerenes",
+            "chemistry.quantitative-chemistry.measurements-conservation.conservation-balanced-equations",
+            "chemistry.quantitative-chemistry.measurements-conservation.relative-formula-mass",
+            "chemistry.quantitative-chemistry.measurements-conservation.mass-changes-gases",
+            "chemistry.quantitative-chemistry.measurements-conservation.chemical-measurements",
+            "chemistry.quantitative-chemistry.amount-of-substance.moles",
+            "chemistry.quantitative-chemistry.amount-of-substance.amounts-in-equations",
+            "chemistry.quantitative-chemistry.amount-of-substance.balance-by-moles",
+            "chemistry.quantitative-chemistry.amount-of-substance.limiting-reactants",
+            "chemistry.quantitative-chemistry.amount-of-substance.solution-concentration"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "physics-1",
+      "name": "Physics Paper 1",
+      "durationMinutes": 75,
+      "totalMarks": 70,
+      "weightingPercent": 16.7,
+      "tiers": [
+        "foundation",
+        "higher"
+      ],
+      "questionTypes": [
+        "multiple-choice",
+        "structured",
+        "closed-short-answer",
+        "open-response"
+      ],
+      "assessedTopicRange": "Physics topics 18-21",
+      "sections": [
+        {
+          "code": "18",
+          "name": "Energy",
+          "allowedPrimaryTopicIds": [
+            "physics.energy.energy-changes.energy-stores-systems",
+            "physics.energy.energy-changes.changes-in-energy",
+            "physics.energy.energy-changes.thermal-energy-changes",
+            "physics.energy.energy-changes.power",
+            "physics.energy.conservation-dissipation.energy-transfers",
+            "physics.energy.conservation-dissipation.efficiency",
+            "physics.energy.resources"
+          ]
+        },
+        {
+          "code": "19",
+          "name": "Electricity",
+          "allowedPrimaryTopicIds": [
+            "physics.electricity.current-pd-resistance.circuit-symbols",
+            "physics.electricity.current-pd-resistance.charge-current",
+            "physics.electricity.current-pd-resistance.ohms-law",
+            "physics.electricity.current-pd-resistance.resistors",
+            "physics.electricity.series-parallel",
+            "physics.electricity.domestic-safety.ac-dc",
+            "physics.electricity.domestic-safety.mains-electricity",
+            "physics.electricity.energy-transfers.power",
+            "physics.electricity.energy-transfers.appliances",
+            "physics.electricity.energy-transfers.national-grid"
+          ]
+        },
+        {
+          "code": "20",
+          "name": "Particle model of matter",
+          "allowedPrimaryTopicIds": [
+            "physics.particle-model.changes-of-state.density",
+            "physics.particle-model.changes-of-state.state-changes",
+            "physics.particle-model.internal-energy.internal-energy-definition",
+            "physics.particle-model.internal-energy.specific-heat-capacity",
+            "physics.particle-model.internal-energy.specific-latent-heat",
+            "physics.particle-model.pressure.particle-motion-gases"
+          ]
+        },
+        {
+          "code": "21",
+          "name": "Atomic structure",
+          "allowedPrimaryTopicIds": [
+            "physics.atomic-structure.atoms-isotopes.structure-of-atom",
+            "physics.atomic-structure.atoms-isotopes.mass-atomic-number",
+            "physics.atomic-structure.atoms-isotopes.atomic-model-history",
+            "physics.atomic-structure.nuclear-radiation.radioactive-decay",
+            "physics.atomic-structure.nuclear-radiation.nuclear-equations",
+            "physics.atomic-structure.nuclear-radiation.half-life",
+            "physics.atomic-structure.nuclear-radiation.radioactive-contamination"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "physics-2",
+      "name": "Physics Paper 2",
+      "durationMinutes": 75,
+      "totalMarks": 70,
+      "weightingPercent": 16.7,
+      "tiers": [
+        "foundation",
+        "higher"
+      ],
+      "questionTypes": [
+        "multiple-choice",
+        "structured",
+        "closed-short-answer",
+        "open-response"
+      ],
+      "assessedTopicRange": "Physics topics 22-24",
+      "sections": [
+        {
+          "code": "22",
+          "name": "Forces",
+          "allowedPrimaryTopicIds": [
+            "physics.forces.interactions.scalar-vector",
+            "physics.forces.interactions.contact-noncontact",
+            "physics.forces.interactions.gravity",
+            "physics.forces.interactions.resultant-forces",
+            "physics.forces.work-energy-transfer",
+            "physics.forces.elasticity",
+            "physics.forces.motion.describing-motion",
+            "physics.forces.motion.newton-laws",
+            "physics.forces.motion.braking",
+            "physics.forces.momentum.momentum-property",
+            "physics.forces.momentum.conservation"
+          ]
+        },
+        {
+          "code": "23",
+          "name": "Waves",
+          "allowedPrimaryTopicIds": [
+            "physics.waves.air-fluids-solids.transverse-longitudinal",
+            "physics.waves.air-fluids-solids.wave-properties",
+            "physics.waves.electromagnetic.types",
+            "physics.waves.electromagnetic.properties-1",
+            "physics.waves.electromagnetic.properties-2",
+            "physics.waves.electromagnetic.uses-applications"
+          ]
+        },
+        {
+          "code": "24",
+          "name": "Magnetism and electromagnetism",
+          "allowedPrimaryTopicIds": [
+            "physics.magnetism-electromagnetism.magnetism-fields.poles",
+            "physics.magnetism-electromagnetism.magnetism-fields.magnetic-fields",
+            "physics.magnetism-electromagnetism.motor-effect.electromagnetism",
+            "physics.magnetism-electromagnetism.motor-effect.fleming-left-hand-rule",
+            "physics.magnetism-electromagnetism.motor-effect.electric-motors"
+          ]
+        }
+      ]
+    }
+  ]
+}

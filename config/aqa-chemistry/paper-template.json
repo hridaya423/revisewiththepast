@@ -1,0 +1,238 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "chemistry",
+    "specCode": "8462",
+    "version": "2024.1"
+  },
+  "examStructure": {
+    "qualificationType": "GCSE",
+    "assessmentModel": "linear",
+    "tiers": ["foundation", "higher"],
+    "questionTypes": ["multiple-choice", "structured", "closed-short-answer", "open-response"],
+    "totalScaledMark": 200
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Paper 1",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weightingPercent": 50,
+      "tiers": ["foundation", "higher"],
+      "assessedTopicRange": "Topics 1-5",
+      "sections": [
+        {
+          "code": "4.1",
+          "name": "Atomic structure and the periodic table",
+          "allowedPrimaryTopicIds": [
+            "atomic-structure-periodic-table.simple-atom-model.atoms-elements-compounds",
+            "atomic-structure-periodic-table.simple-atom-model.mixtures",
+            "atomic-structure-periodic-table.simple-atom-model.atomic-model-history",
+            "atomic-structure-periodic-table.simple-atom-model.subatomic-charges",
+            "atomic-structure-periodic-table.simple-atom-model.size-mass-isotopes",
+            "atomic-structure-periodic-table.simple-atom-model.relative-atomic-mass",
+            "atomic-structure-periodic-table.simple-atom-model.electronic-structure",
+            "atomic-structure-periodic-table.periodic-table.structure",
+            "atomic-structure-periodic-table.periodic-table.development",
+            "atomic-structure-periodic-table.periodic-table.metals-non-metals",
+            "atomic-structure-periodic-table.periodic-table.group-0",
+            "atomic-structure-periodic-table.periodic-table.group-1",
+            "atomic-structure-periodic-table.periodic-table.group-7",
+            "atomic-structure-periodic-table.transition-metals.comparison-group-1",
+            "atomic-structure-periodic-table.transition-metals.typical-properties"
+          ]
+        },
+        {
+          "code": "4.2",
+          "name": "Bonding, structure, and the properties of matter",
+          "allowedPrimaryTopicIds": [
+            "bonding-structure-properties.chemical-bonds.bond-types",
+            "bonding-structure-properties.chemical-bonds.ionic-bonding",
+            "bonding-structure-properties.chemical-bonds.ionic-compounds",
+            "bonding-structure-properties.chemical-bonds.covalent-bonding",
+            "bonding-structure-properties.chemical-bonds.metallic-bonding",
+            "bonding-structure-properties.structure-properties.states-of-matter",
+            "bonding-structure-properties.structure-properties.state-symbols",
+            "bonding-structure-properties.structure-properties.ionic-properties",
+            "bonding-structure-properties.structure-properties.small-molecule-properties",
+            "bonding-structure-properties.structure-properties.polymers",
+            "bonding-structure-properties.structure-properties.giant-covalent",
+            "bonding-structure-properties.structure-properties.metals-alloys",
+            "bonding-structure-properties.structure-properties.metals-conductors",
+            "bonding-structure-properties.carbons-structures.diamond",
+            "bonding-structure-properties.carbons-structures.graphite",
+            "bonding-structure-properties.carbons-structures.graphene-fullerenes",
+            "bonding-structure-properties.nanoparticles.size-properties",
+            "bonding-structure-properties.nanoparticles.uses-risks"
+          ]
+        },
+        {
+          "code": "4.3",
+          "name": "Quantitative chemistry",
+          "allowedPrimaryTopicIds": [
+            "quantitative-chemistry.measurements-conservation.conservation-balanced-equations",
+            "quantitative-chemistry.measurements-conservation.relative-formula-mass",
+            "quantitative-chemistry.measurements-conservation.mass-changes-gases",
+            "quantitative-chemistry.measurements-conservation.uncertainty",
+            "quantitative-chemistry.amount-of-substance.moles",
+            "quantitative-chemistry.amount-of-substance.amounts-in-equations",
+            "quantitative-chemistry.amount-of-substance.balance-by-moles",
+            "quantitative-chemistry.amount-of-substance.limiting-reactants",
+            "quantitative-chemistry.amount-of-substance.solution-concentration",
+            "quantitative-chemistry.yield-and-atom-economy.percentage-yield",
+            "quantitative-chemistry.yield-and-atom-economy.atom-economy",
+            "quantitative-chemistry.mol-dm3",
+            "quantitative-chemistry.gas-volumes"
+          ]
+        },
+        {
+          "code": "4.4",
+          "name": "Chemical changes",
+          "allowedPrimaryTopicIds": [
+            "chemical-changes.reactivity-of-metals.metal-oxides",
+            "chemical-changes.reactivity-of-metals.reactivity-series",
+            "chemical-changes.reactivity-of-metals.extraction-reduction",
+            "chemical-changes.reactivity-of-metals.redox-electrons",
+            "chemical-changes.reactions-of-acids.acids-with-metals",
+            "chemical-changes.reactions-of-acids.neutralisation-salts",
+            "chemical-changes.reactions-of-acids.soluble-salts",
+            "chemical-changes.reactions-of-acids.ph-scale-neutralisation",
+            "chemical-changes.reactions-of-acids.titrations",
+            "chemical-changes.reactions-of-acids.strong-weak-acids",
+            "chemical-changes.electrolysis.process",
+            "chemical-changes.electrolysis.molten-ionic",
+            "chemical-changes.electrolysis.extract-metals",
+            "chemical-changes.electrolysis.aqueous-solutions",
+            "chemical-changes.electrolysis.half-equations"
+          ]
+        },
+        {
+          "code": "4.5",
+          "name": "Energy changes",
+          "allowedPrimaryTopicIds": [
+            "energy-changes.exothermic-endothermic.energy-transfer",
+            "energy-changes.exothermic-endothermic.reaction-profiles",
+            "energy-changes.exothermic-endothermic.energy-change-calculations",
+            "energy-changes.cells-fuel-cells.cells-batteries",
+            "energy-changes.cells-fuel-cells.hydrogen-fuel-cells",
+            "key-ideas"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Paper 2",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weightingPercent": 50,
+      "tiers": ["foundation", "higher"],
+      "assessedTopicRange": "Topics 6-10 (may draw on concepts from 4.1-4.3)",
+      "sections": [
+        {
+          "code": "4.6",
+          "name": "The rate and extent of chemical change",
+          "allowedPrimaryTopicIds": [
+            "rate-and-extent.rate-of-reaction.calculating-rates",
+            "rate-and-extent.rate-of-reaction.factors-affecting-rate",
+            "rate-and-extent.rate-of-reaction.collision-theory",
+            "rate-and-extent.rate-of-reaction.catalysts",
+            "rate-and-extent.reversible-equilibrium.reversible-reactions",
+            "rate-and-extent.reversible-equilibrium.energy-changes",
+            "rate-and-extent.reversible-equilibrium.dynamic-equilibrium",
+            "rate-and-extent.reversible-equilibrium.conditions",
+            "rate-and-extent.reversible-equilibrium.concentration",
+            "rate-and-extent.reversible-equilibrium.temperature",
+            "rate-and-extent.reversible-equilibrium.pressure"
+          ]
+        },
+        {
+          "code": "4.7",
+          "name": "Organic chemistry",
+          "allowedPrimaryTopicIds": [
+            "organic-chemistry.fuels-feedstock.crude-oil-alkanes",
+            "organic-chemistry.fuels-feedstock.fractional-distillation",
+            "organic-chemistry.fuels-feedstock.hydrocarbon-properties",
+            "organic-chemistry.fuels-feedstock.cracking-alkenes",
+            "organic-chemistry.alkenes-alcohols.alkene-structure",
+            "organic-chemistry.alkenes-alcohols.alkene-reactions",
+            "organic-chemistry.alkenes-alcohols.alcohols",
+            "organic-chemistry.alkenes-alcohols.carboxylic-acids",
+            "organic-chemistry.polymers.addition-polymerisation",
+            "organic-chemistry.polymers.condensation-polymerisation",
+            "organic-chemistry.polymers.amino-acids",
+            "organic-chemistry.polymers.dna-natural-polymers"
+          ]
+        },
+        {
+          "code": "4.8",
+          "name": "Chemical analysis",
+          "allowedPrimaryTopicIds": [
+            "chemical-analysis.purity-formulations-chromatography.pure-substances",
+            "chemical-analysis.purity-formulations-chromatography.formulations",
+            "chemical-analysis.purity-formulations-chromatography.chromatography",
+            "chemical-analysis.gas-tests.hydrogen",
+            "chemical-analysis.gas-tests.oxygen",
+            "chemical-analysis.gas-tests.carbondioxide",
+            "chemical-analysis.gas-tests.chlorine",
+            "chemical-analysis.ions-and-spectroscopy.flame-tests",
+            "chemical-analysis.ions-and-spectroscopy.metal-hydroxides",
+            "chemical-analysis.ions-and-spectroscopy.carbons-halides-sulfates",
+            "chemical-analysis.ions-and-spectroscopy.instrumental-methods"
+          ]
+        },
+        {
+          "code": "4.9",
+          "name": "Chemistry of the atmosphere",
+          "allowedPrimaryTopicIds": [
+            "chemistry-atmosphere.composition-evolution.proportions",
+            "chemistry-atmosphere.composition-evolution.early-atmosphere",
+            "chemistry-atmosphere.composition-evolution.oxygen-increase",
+            "chemistry-atmosphere.composition-evolution.carbondioxide-decrease",
+            "chemistry-atmosphere.greenhouse-gases.greenhouse-effect",
+            "chemistry-atmosphere.greenhouse-gases.human-activity",
+            "chemistry-atmosphere.greenhouse-gases.climate-change",
+            "chemistry-atmosphere.greenhouse-gases.carbons-footprint",
+            "chemistry-atmosphere.pollutants.sources",
+            "chemistry-atmosphere.pollutants.effects"
+          ]
+        },
+        {
+          "code": "4.10",
+          "name": "Using resources",
+          "allowedPrimaryTopicIds": [
+            "using-resources.earth-resources-water.sustainable-development",
+            "using-resources.earth-resources-water.potable-water",
+            "using-resources.earth-resources-water.waste-water-treatment",
+            "using-resources.earth-resources-water.alternative-metal-extraction",
+            "using-resources.life-cycle-recycling.lca",
+            "using-resources.life-cycle-recycling.reduce-reuse-recycle",
+            "using-resources.materials.corrosion-prevention",
+            "using-resources.materials.alloys",
+            "using-resources.materials.ceramics-polymers-composites",
+            "using-resources.haber-npk.haber-process",
+            "using-resources.haber-npk.npk-fertilisers",
+            "key-ideas"
+          ]
+        },
+        {
+          "code": "4.1-4.3",
+          "name": "Fundamental concepts from Paper 1 applied in Paper 2",
+          "allowedPrimaryTopicIds": [
+            "atomic-structure-periodic-table.simple-atom-model.atoms-elements-compounds",
+            "atomic-structure-periodic-table.simple-atom-model.electronic-structure",
+            "atomic-structure-periodic-table.periodic-table.structure",
+            "bonding-structure-properties.chemical-bonds.bond-types",
+            "bonding-structure-properties.structure-properties.states-of-matter",
+            "quantitative-chemistry.measurements-conservation.conservation-balanced-equations",
+            "quantitative-chemistry.amount-of-substance.solution-concentration"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "cross-paper-application"
+          }
+        }
+      ]
+    }
+  ]
+}

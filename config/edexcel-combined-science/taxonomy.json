@@ -1,0 +1,972 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "combined-science",
+    "specCode": "1SC0",
+    "version": "2024.1",
+    "scope": "edexcel-combined-science-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "biology",
+      "parentId": null,
+      "label": "Biology",
+      "kind": "branch",
+      "paperCodes": ["paper-1-biology", "paper-2-biology"],
+      "aliases": ["bio"]
+    },
+    {
+      "id": "biology.key-concepts",
+      "parentId": "biology",
+      "label": "Key concepts in biology",
+      "kind": "branch",
+      "paperCodes": ["paper-1-biology", "paper-2-biology"],
+      "aliases": ["topic 1", "key concepts"]
+    },
+    {
+      "id": "biology.key-concepts.cell-structure",
+      "parentId": "biology.key-concepts",
+      "label": "Cell structure: eukaryotic, prokaryotic and specialised cells",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology", "paper-2-biology"],
+      "aliases": ["eukaryotic cells", "prokaryotic cells", "animal cells", "plant cells", "bacteria", "nucleus", "cell membrane", "mitochondria", "ribosomes", "cell wall", "chloroplasts", "vacuole", "chromosomal DNA", "plasmid DNA", "flagella", "specialised cells", "sperm cells", "egg cells", "ciliated epithelial cells", "acrosome", "haploid nucleus", "fertilisation", "1.1", "1.2"]
+    },
+    {
+      "id": "biology.key-concepts.microscopy",
+      "parentId": "biology.key-concepts",
+      "label": "Microscopy, magnification and cell size",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology", "paper-2-biology"],
+      "aliases": ["electron microscopy", "light microscope", "magnification calculations", "labelled scientific drawings", "milli", "micro", "nano", "pico", "standard form", "size and scale", "1.3", "1.4", "1.5", "1.6"]
+    },
+    {
+      "id": "biology.key-concepts.enzymes",
+      "parentId": "biology.key-concepts",
+      "label": "Enzyme action, factors affecting activity and rate calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology", "paper-2-biology"],
+      "aliases": ["enzyme mechanism", "active site", "enzyme specificity", "denaturing", "temperature", "substrate concentration", "pH", "rate calculations", "biological catalysts", "synthesis", "breakdown", "carbohydrates", "proteins", "lipids", "sugars", "amino acids", "fatty acids", "glycerol", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]
+    },
+    {
+      "id": "biology.key-concepts.cell-transport",
+      "parentId": "biology.key-concepts",
+      "label": "Cell transport: diffusion, osmosis and active transport",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology", "paper-2-biology"],
+      "aliases": ["diffusion", "osmosis", "active transport", "osmosis in potatoes", "percentage gain", "percentage loss", "mass change", "concentration gradient", "1.15", "1.16", "1.17"]
+    },
+    {
+      "id": "biology.cells-control",
+      "parentId": "biology",
+      "label": "Cells and control",
+      "kind": "branch",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["topic 2"]
+    },
+    {
+      "id": "biology.cells-control.mitosis",
+      "parentId": "biology.cells-control",
+      "label": "Mitosis, cell cycle, growth and cell differentiation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["cell cycle", "interphase", "prophase", "metaphase", "anaphase", "telophase", "cytokinesis", "growth", "repair", "asexual reproduction", "daughter cells", "genetically identical", "diploid", "cancer", "uncontrolled cell division", "differentiation", "meristems", "percentile charts", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"]
+    },
+    {
+      "id": "biology.cells-control.stem-cells",
+      "parentId": "biology.cells-control",
+      "label": "Stem cells: types, uses and ethical considerations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["embryonic stem cells", "stem cells in animals", "meristems", "benefits", "risks", "medicine", "2.8", "2.9"]
+    },
+    {
+      "id": "biology.cells-control.nervous-system",
+      "parentId": "biology.cells-control",
+      "label": "Nervous system: neurones, synapses and reflex arcs",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["sensory receptors", "sensory neurones", "relay neurones", "motor neurones", "synapses", "CNS", "axon", "dendron", "myelin sheath", "neurotransmitters", "electrical impulses", "reflex arc", "2.13", "2.14"]
+    },
+    {
+      "id": "biology.genetics",
+      "parentId": "biology",
+      "label": "Genetics",
+      "kind": "branch",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["topic 3"]
+    },
+    {
+      "id": "biology.genetics.dna-genome",
+      "parentId": "biology.genetics",
+      "label": "DNA structure, genome, genes and DNA extraction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["meiosis", "haploid gametes", "DNA", "double helix", "complementary base pairs", "hydrogen bonds", "nucleotides", "sugar", "phosphate", "bases", "genome", "gene", "protein", "DNA extraction from fruit", "3.3", "3.4", "3.5", "3.6"]
+    },
+    {
+      "id": "biology.genetics.inheritance",
+      "parentId": "biology.genetics",
+      "label": "Inheritance: alleles, monohybrid crosses and sex determination",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["alleles", "chromosome", "gene", "dominant", "recessive", "homozygous", "heterozygous", "genotype", "phenotype", "gamete", "zygote", "monohybrid inheritance", "genetic diagrams", "Punnett squares", "family pedigrees", "sex determination", "probabilities", "ratios", "percentages", "3.12", "3.13", "3.14", "3.15", "3.16"]
+    },
+    {
+      "id": "biology.genetics.variation-mutation",
+      "parentId": "biology.genetics",
+      "label": "Variation: genetic, environmental and mutations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["multiple genes", "genetic variation", "environmental variation", "acquired characteristics", "continuous variation", "discontinuous variation", "mutations", "sexual reproduction", "phenotypic features", "3.19", "3.20", "3.21", "3.22", "3.23"]
+    },
+    {
+      "id": "biology.natural-selection",
+      "parentId": "biology",
+      "label": "Natural selection and genetic modification",
+      "kind": "branch",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["topic 4", "evolution"]
+    },
+    {
+      "id": "biology.natural-selection.evolution",
+      "parentId": "biology.natural-selection",
+      "label": "Evolution by natural selection and evidence for human evolution",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["Charles Darwin", "natural selection", "antibiotic resistance", "resistant organisms", "human evolution", "fossils", "Ardi", "Lucy", "Richard Leakey", "stone tools", "dating", "4.2", "4.3", "4.4", "4.5"]
+    },
+    {
+      "id": "biology.natural-selection.classification",
+      "parentId": "biology.natural-selection",
+      "label": "Classification systems: kingdoms and domains",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["genetic analysis", "three domains", "five kingdoms", "classification", "4.7"]
+    },
+    {
+      "id": "biology.natural-selection.genetic-modification",
+      "parentId": "biology.natural-selection",
+      "label": "Selective breeding and genetic engineering",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["selective breeding", "genetic engineering", "genome modification", "restriction enzymes", "ligase", "sticky ends", "vectors", "benefits", "risks", "agriculture", "medicine", "ethical implications", "4.8", "4.10", "4.11", "4.14"]
+    },
+    {
+      "id": "biology.health-disease",
+      "parentId": "biology",
+      "label": "Health, disease and the development of medicines",
+      "kind": "branch",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["topic 5"]
+    },
+    {
+      "id": "biology.health-disease.disease-types",
+      "parentId": "biology.health-disease",
+      "label": "Communicable and non-communicable diseases",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["WHO definition", "health", "communicable diseases", "non-communicable diseases", "susceptibility", "pathogens", "viruses", "bacteria", "fungi", "protists", "cholera", "tuberculosis", "Chalara ash dieback", "malaria", "HIV", "AIDS", "STIs", "Chlamydia", "5.1", "5.2", "5.3", "5.4", "5.5", "5.6", "5.8"]
+    },
+    {
+      "id": "biology.health-disease.defences",
+      "parentId": "biology.health-disease",
+      "label": "Body defences: barriers, immune system and immunisation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["physical barriers", "chemical defences", "mucus", "cilia", "skin", "lysozymes", "hydrochloric acid", "immune system", "antigens", "antibodies", "memory lymphocytes", "secondary response", "immunisation", "inactive pathogen", "5.12", "5.13", "5.14"]
+    },
+    {
+      "id": "biology.health-disease.treatments",
+      "parentId": "biology.health-disease",
+      "label": "Antibiotics, medicine development and disease treatments",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["antibiotics", "bacterial infections", "medicine development", "preclinical testing", "clinical testing", "cardiovascular disease", "life-long medication", "surgical procedures", "lifestyle changes", "5.16", "5.20"]
+    },
+    {
+      "id": "biology.health-disease.lifestyle-diseases",
+      "parentId": "biology.health-disease",
+      "label": "Lifestyle factors and non-communicable diseases",
+      "kind": "leaf",
+      "paperCodes": ["paper-1-biology"],
+      "aliases": ["cardiovascular diseases", "cancer", "lung diseases", "liver diseases", "nutrition", "exercise", "diet", "obesity", "malnutrition", "BMI", "waist:hip", "alcohol", "smoking", "5.23", "5.24", "5.25"]
+    },
+    {
+      "id": "biology.plant-structures",
+      "parentId": "biology",
+      "label": "Plant structures and their functions",
+      "kind": "branch",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["topic 6"]
+    },
+    {
+      "id": "biology.plant-structures.photosynthesis",
+      "parentId": "biology.plant-structures",
+      "label": "Photosynthesis: process, limiting factors and investigations",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["producers", "biomass", "endothermic reaction", "light energy", "carbon dioxide", "water", "glucose", "oxygen", "temperature", "light intensity", "limiting factors", "inverse square law", "rate of photosynthesis", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6"]
+    },
+    {
+      "id": "biology.plant-structures.transport",
+      "parentId": "biology.plant-structures",
+      "label": "Plant transport: xylem, phloem, transpiration and translocation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["root hair cells", "water absorption", "mineral ions", "xylem", "phloem", "lignified", "transpiration", "stomata", "translocation", "sucrose", "light intensity", "air movement", "water uptake", "6.7", "6.8", "6.9", "6.10", "6.12", "6.13"]
+    },
+    {
+      "id": "biology.animal-coordination",
+      "parentId": "biology",
+      "label": "Animal coordination, control and homeostasis",
+      "kind": "branch",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["topic 7", "hormones", "homeostasis"]
+    },
+    {
+      "id": "biology.animal-coordination.endocrine-system",
+      "parentId": "biology.animal-coordination",
+      "label": "Endocrine system: glands, hormones and negative feedback",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["pituitary gland", "thyroid gland", "pancreas", "adrenal glands", "ovaries", "testes", "adrenalin", "fight or flight", "heart rate", "blood pressure", "blood sugar", "glycogen", "thyroxine", "metabolic rate", "TRH", "TSH", "negative feedback", "7.1", "7.2", "7.3"]
+    },
+    {
+      "id": "biology.animal-coordination.menstrual-cycle",
+      "parentId": "biology.animal-coordination",
+      "label": "Menstrual cycle, hormones and contraception",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["menstrual cycle", "oestrogen", "progesterone", "FSH", "LH", "uterus wall", "ovulation", "menstruation", "hormonal contraception", "barrier methods", "ART", "IVF", "clomifene therapy", "7.4", "7.5", "7.6", "7.7", "7.8"]
+    },
+    {
+      "id": "biology.animal-coordination.homeostasis",
+      "parentId": "biology.animal-coordination",
+      "label": "Homeostasis: blood glucose, thermoregulation and kidney function",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["constant internal environment", "insulin", "blood glucose", "glucagon", "thermoregulation", "vasodilation", "vasoconstriction", "sweating", "shivering", "kidney function", "dialysis", "transplant", "type 2 diabetes", "7.9", "7.13", "7.14", "7.15", "7.16", "7.17"]
+    },
+    {
+      "id": "biology.exchange-transport",
+      "parentId": "biology",
+      "label": "Exchange and transport in animals",
+      "kind": "branch",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["topic 8", "circulatory system"]
+    },
+    {
+      "id": "biology.exchange-transport.gas-exchange",
+      "parentId": "biology.exchange-transport",
+      "label": "Gas exchange: alveoli and surface area to volume",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["transport substances", "oxygen", "carbon dioxide", "water", "urea", "exchange surfaces", "surface area to volume ratio", "alveoli", "diffusion", "8.1", "8.2", "8.3"]
+    },
+    {
+      "id": "biology.exchange-transport.blood",
+      "parentId": "biology.exchange-transport",
+      "label": "Blood composition and blood vessel structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["red blood cells", "erythrocytes", "white blood cells", "phagocytes", "lymphocytes", "plasma", "platelets", "arteries", "veins", "capillaries", "8.6", "8.7"]
+    },
+    {
+      "id": "biology.exchange-transport.heart-circulation",
+      "parentId": "biology.exchange-transport",
+      "label": "Heart structure, circulatory system and cardiac output",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["heart structure", "major blood vessels", "valves", "chamber walls", "heart rate", "stroke volume", "cardiac output", "8.8", "8.12"]
+    },
+    {
+      "id": "biology.exchange-transport.respiration",
+      "parentId": "biology.exchange-transport",
+      "label": "Cellular respiration: aerobic and anaerobic",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["exothermic reaction", "aerobic respiration", "anaerobic respiration", "metabolic processes", "rate of respiration", "8.9", "8.10", "8.11"]
+    },
+    {
+      "id": "biology.ecosystems",
+      "parentId": "biology",
+      "label": "Ecosystems and material cycles",
+      "kind": "branch",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["topic 9", "ecology"]
+    },
+    {
+      "id": "biology.ecosystems.organisations",
+      "parentId": "biology.ecosystems",
+      "label": "Ecosystem organisation: populations, communities and factors",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["organisms", "populations", "communities", "ecosystem", "abiotic factors", "biotic factors", "temperature", "light", "water", "pollutants", "competition", "predation", "interdependence", "parasitism", "mutualism", "9.1", "9.2", "9.3", "9.4"]
+    },
+    {
+      "id": "biology.ecosystems.fieldwork",
+      "parentId": "biology.ecosystems",
+      "label": "Fieldwork techniques: quadrats, transects and population estimation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["quadrats", "belt transects", "fieldwork", "sampling", "determine number", "raw data", "9.5", "9.6"]
+    },
+    {
+      "id": "biology.ecosystems.human-impacts",
+      "parentId": "biology.ecosystems",
+      "label": "Human impacts on ecosystems and biodiversity conservation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["fish farming", "non-indigenous species", "eutrophication", "biodiversity", "conservation", "reforestation", "9.9", "9.10"]
+    },
+    {
+      "id": "biology.ecosystems.cycles",
+      "parentId": "biology.ecosystems",
+      "label": "Material cycles: carbon, water and nitrogen cycles",
+      "kind": "leaf",
+      "paperCodes": ["paper-2-biology"],
+      "aliases": ["carbon cycle", "water cycle", "nitrogen cycle", "decomposers", "microorganisms", "potable water", "desalination", "fertilisers", "crop rotation", "nitrifying bacteria", "nitrogen-fixing bacteria", "denitrifying bacteria", "decay", "9.12", "9.13", "9.14", "9.15"]
+    },
+    {
+      "id": "chemistry",
+      "parentId": null,
+      "label": "Chemistry",
+      "kind": "branch",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["chem"]
+    },
+    {
+      "id": "chemistry.formulae-equations",
+      "parentId": "chemistry",
+      "label": "Formulae, equations and hazard symbols",
+      "kind": "branch",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["topic 0"]
+    },
+    {
+      "id": "chemistry.formulae-equations.equations",
+      "parentId": "chemistry.formulae-equations",
+      "label": "Chemical formulae, word equations and balanced equations",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["formulae", "elements", "simple compounds", "ions", "word equations", "balanced chemical equations", "state symbols", "ionic equations", "0.1", "0.2", "0.3", "0.4"]
+    },
+    {
+      "id": "chemistry.formulae-equations.hazards",
+      "parentId": "chemistry.formulae-equations",
+      "label": "Hazard symbols and risk assessment",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["hazard symbols", "dangers", "safe-working precautions", "risk evaluation", "precautions", "0.5", "0.6"]
+    },
+    {
+      "id": "chemistry.key-concepts",
+      "parentId": "chemistry",
+      "label": "Key concepts in chemistry",
+      "kind": "branch",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["topic 1"]
+    },
+    {
+      "id": "chemistry.key-concepts.atomic-structure",
+      "parentId": "chemistry.key-concepts",
+      "label": "Atomic structure: subatomic particles, isotopes and relative atomic mass",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["Dalton model", "subatomic particles", "nucleus", "protons", "neutrons", "electrons", "shells", "relative charge", "relative mass", "atomic number", "mass number", "isotopes", "relative atomic mass", "1.1", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7", "1.8", "1.9", "1.10", "1.11", "1.12"]
+    },
+    {
+      "id": "chemistry.key-concepts.periodic-table",
+      "parentId": "chemistry.key-concepts",
+      "label": "Periodic table: Mendeleev, atomic number and electronic configurations",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["Dmitri Mendeleev", "periodic table", "atomic number", "periods", "groups", "metals", "non-metals", "electronic configurations", "first 20 elements", "2.8.1", "1.13", "1.14", "1.15", "1.16", "1.17", "1.18", "1.19", "1.20"]
+    },
+    {
+      "id": "chemistry.key-concepts.ionic-bonding",
+      "parentId": "chemistry.key-concepts",
+      "label": "Ionic bonding: formation, ions and lattice structures",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["ionic bonds", "transfer of electrons", "cations", "anions", "dot and cross diagrams", "ions", "ionic compounds", "formulae", "oxides", "hydroxides", "halides", "nitrates", "carbonates", "sulfates", "lattice structure", "electrostatic forces", "1.21", "1.22", "1.23", "1.24", "1.25", "1.26", "1.27"]
+    },
+    {
+      "id": "chemistry.key-concepts.covalent-bonding",
+      "parentId": "chemistry.key-concepts",
+      "label": "Covalent bonding: shared electrons and molecular substances",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["covalent bond", "shared electrons", "molecules", "hydrogen", "hydrogen chloride", "water", "methane", "oxygen", "carbon dioxide", "dot and cross diagrams", "1.28", "1.29", "1.30", "1.31"]
+    },
+    {
+      "id": "chemistry.key-concepts.types-substances",
+      "parentId": "chemistry.key-concepts",
+      "label": "Types of substances: ionic, molecular, giant covalent and metallic",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["ionic compounds", "simple molecular", "giant covalent", "metallic", "melting points", "boiling points", "solubility", "electrical conductivity", "graphite", "diamond", "fullerenes", "C60", "graphene", "polymers", "poly(ethene)", "malleability", "alloys", "limitations of models", "1.32", "1.33", "1.34", "1.35", "1.36", "1.37", "1.38", "1.39", "1.40", "1.41", "1.42"]
+    },
+    {
+      "id": "chemistry.key-concepts.mass-calculations",
+      "parentId": "chemistry.key-concepts",
+      "label": "Calculations involving masses: formula mass, empirical formula, moles and concentration",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry", "paper-4-chemistry"],
+      "aliases": ["relative formula mass", "percentage by mass", "empirical formula", "molecular formula", "reacting masses", "law of conservation of mass", "concentration", "g dm-3", "moles", "Avogadro constant", "6.02 x 10^23", "stoichiometry", "limiting reactant", "1.43", "1.44", "1.45", "1.46", "1.47", "1.48", "1.49", "1.50", "1.51", "1.52", "1.53"]
+    },
+    {
+      "id": "chemistry.states-matter",
+      "parentId": "chemistry",
+      "label": "States of matter and mixtures",
+      "kind": "branch",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["topic 2"]
+    },
+    {
+      "id": "chemistry.states-matter.particle-model",
+      "parentId": "chemistry.states-matter",
+      "label": "Particle model and changes of state",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["solid", "liquid", "gas", "arrangement", "movement", "energy", "melting", "freezing", "boiling", "condensing", "sublimation", "physical changes", "chemical changes", "predict physical state", "2.1", "2.2", "2.3", "2.4"]
+    },
+    {
+      "id": "chemistry.states-matter.separation",
+      "parentId": "chemistry.states-matter",
+      "label": "Separation and purification techniques",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["pure substance", "mixture", "melting point data", "simple distillation", "fractional distillation", "filtration", "crystallisation", "paper chromatography", "chromatogram", "Rf values", "potable water", "sedimentation", "filtration", "chlorination", "desalination", "2.5", "2.6", "2.7", "2.8", "2.9", "2.10", "2.11", "2.12"]
+    },
+    {
+      "id": "chemistry.chemical-changes",
+      "parentId": "chemistry",
+      "label": "Chemical changes",
+      "kind": "branch",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["topic 3", "acids", "electrolysis"]
+    },
+    {
+      "id": "chemistry.chemical-changes.acids",
+      "parentId": "chemistry.chemical-changes",
+      "label": "Acids, alkalis, pH and neutralisation",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["hydrogen ions", "hydroxide ions", "pH", "litmus", "methyl orange", "phenolphthalein", "dilute", "concentrated", "weak acids", "strong acids", "degree of dissociation", "base", "alkali", "soluble base", "metal oxides", "metal hydroxides", "metal carbonates", "neutralisation", "titration", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15", "3.16", "3.17", "3.18"]
+    },
+    {
+      "id": "chemistry.chemical-changes.salts",
+      "parentId": "chemistry.chemical-changes",
+      "label": "Salt preparation and solubility rules",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["soluble salts", "insoluble salts", "precipitation", "solubility rules", "sodium salts", "potassium salts", "ammonium salts", "nitrates", "chlorides", "sulfates", "carbonates", "hydroxides", "pure dry salt", "3.19", "3.20", "3.21"]
+    },
+    {
+      "id": "chemistry.chemical-changes.electrolysis",
+      "parentId": "chemistry.chemical-changes",
+      "label": "Electrolysis: processes, products and half equations",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["electrolytes", "molten state", "direct current", "cations", "anions", "cathode", "anode", "copper chloride", "sodium chloride", "sodium sulfate", "acidified water", "molten lead bromide", "half equations", "oxidation", "reduction", "electrons", "copper sulfate", "purify copper", "inert electrodes", "copper electrodes", "3.22", "3.23", "3.24", "3.25", "3.26", "3.27", "3.28", "3.29", "3.30", "3.31"]
+    },
+    {
+      "id": "chemistry.extracting-metals",
+      "parentId": "chemistry",
+      "label": "Extracting metals and equilibria",
+      "kind": "branch",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["topic 4"]
+    },
+    {
+      "id": "chemistry.extracting-metals.reactivity",
+      "parentId": "chemistry.extracting-metals",
+      "label": "Reactivity series and metal extraction methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["reactivity series", "potassium", "sodium", "calcium", "magnesium", "aluminium", "carbon", "zinc", "iron", "hydrogen", "copper", "silver", "gold", "displacement reactions", "redox", "electrons", "ores", "unreactive metals", "oxidation", "reduction", "heating with carbon", "electrolysis", "blast furnace", "biological methods", "bacterial extraction", "phytoextraction", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8"]
+    },
+    {
+      "id": "chemistry.extracting-metals.recycling-corrosion",
+      "parentId": "chemistry.extracting-metals",
+      "label": "Metal recycling, corrosion and life-cycle assessment",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["recycling metals", "economic implications", "environment", "raw materials", "oxidation resistance", "corrosion", "rusting", "prevention", "painting", "greasing", "galvanising", "sacrificial protection", "life-cycle assessment", "environmental impact", "4.9", "4.10", "4.11", "4.12"]
+    },
+    {
+      "id": "chemistry.extracting-metals.equilibria",
+      "parentId": "chemistry.extracting-metals",
+      "label": "Reversible reactions and dynamic equilibrium",
+      "kind": "leaf",
+      "paperCodes": ["paper-3-chemistry"],
+      "aliases": ["reversible reactions", "dynamic equilibrium", "ammonia", "Haber process", "nitrogen", "hydrogen", "450°C", "200 atmospheres", "iron catalyst", "temperature", "pressure", "concentration", "Le Chatelier", "4.13", "4.14", "4.15", "4.16", "4.17"]
+    },
+    {
+      "id": "chemistry.groups-periodic",
+      "parentId": "chemistry",
+      "label": "Groups in the periodic table",
+      "kind": "branch",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["topic 6"]
+    },
+    {
+      "id": "chemistry.groups-periodic.group1",
+      "parentId": "chemistry.groups-periodic",
+      "label": "Group 1: alkali metals properties and reactions",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["alkali metals", "soft", "low melting points", "lithium", "sodium", "potassium", "reactions with water", "reactivity pattern", "electronic configurations", "6.1", "6.2", "6.3", "6.4", "6.5"]
+    },
+    {
+      "id": "chemistry.groups-periodic.group7",
+      "parentId": "chemistry.groups-periodic",
+      "label": "Group 7: halogens properties, reactions and displacement",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["halogens", "chlorine", "bromine", "iodine", "colours", "physical states", "physical properties pattern", "test for chlorine", "reactions with metals", "metal halides", "hydrogen halides", "acidic solutions", "displacement reactions", "halide ions", "redox", "electrons", "oxidised", "reduced", "reactivity pattern", "electronic configurations", "6.6", "6.7", "6.8", "6.9", "6.10", "6.11", "6.12", "6.13"]
+    },
+    {
+      "id": "chemistry.groups-periodic.group0",
+      "parentId": "chemistry.groups-periodic",
+      "label": "Group 0: noble gases properties and uses",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["noble gases", "inert", "electronic configurations", "uses", "non-flammability", "low density", "physical properties pattern", "6.14", "6.15", "6.16"]
+    },
+    {
+      "id": "chemistry.rates-energy",
+      "parentId": "chemistry",
+      "label": "Rates of reaction and energy changes",
+      "kind": "branch",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["topic 7"]
+    },
+    {
+      "id": "chemistry.rates-energy.rates",
+      "parentId": "chemistry.rates-energy",
+      "label": "Rates of reaction: collision theory and factors affecting rate",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["collision theory", "frequency", "energy", "temperature", "concentration", "surface area to volume ratio", "pressure", "catalysts", "activation energy", "enzymes", "biological catalysts", "rate measurement", "gas production", "colour change", "graphs", "gradient", "marble chips", "sodium thiosulfate", "7.1", "7.2", "7.3", "7.4", "7.5", "7.6", "7.7", "7.8"]
+    },
+    {
+      "id": "chemistry.rates-energy.energy-changes",
+      "parentId": "chemistry.rates-energy",
+      "label": "Energy changes: exothermic, endothermic, bond energy and reaction profiles",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["heat energy", "exothermic", "endothermic", "bond breaking", "bond making", "bond energy", "kJ mol-1", "activation energy", "reaction profiles", "temperature changes", "salts dissolving", "neutralisation", "displacement", "precipitation", "7.9", "7.10", "7.11", "7.12", "7.13", "7.14", "7.15", "7.16"]
+    },
+    {
+      "id": "chemistry.fuels-earth",
+      "parentId": "chemistry",
+      "label": "Fuels and Earth science",
+      "kind": "branch",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["topic 8"]
+    },
+    {
+      "id": "chemistry.fuels-earth.hydrocarbons",
+      "parentId": "chemistry.fuels-earth",
+      "label": "Hydrocarbons: crude oil, fractional distillation and properties",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["hydrocarbons", "crude oil", "mixture", "chains", "rings", "finite resource", "fractional distillation", "gases", "petrol", "kerosene", "diesel oil", "fuel oil", "bitumen", "carbon atoms", "hydrogen atoms", "boiling points", "ease of ignition", "viscosity", "alkanes", "homologous series", "general formula", "CH2", "physical properties", "chemical properties", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6"]
+    },
+    {
+      "id": "chemistry.fuels-earth.combustion-pollution",
+      "parentId": "chemistry.fuels-earth",
+      "label": "Combustion, pollution and fuel alternatives",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["complete combustion", "carbon dioxide", "water", "incomplete combustion", "carbon", "carbon monoxide", "toxic gas", "soot", "sulfur dioxide", "acid rain", "oxides of nitrogen", "high temperatures", "hydrogen fuel", "non-renewable", "fossil fuels", "natural gas", "methane", "8.7", "8.8", "8.9", "8.10", "8.11", "8.12", "8.13", "8.14", "8.15"]
+    },
+    {
+      "id": "chemistry.fuels-earth.cracking",
+      "parentId": "chemistry.fuels-earth",
+      "label": "Cracking hydrocarbons into smaller molecules",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["cracking", "breaking down", "saturated", "alkanes", "unsaturated", "alkenes", "8.16", "8.17"]
+    },
+    {
+      "id": "chemistry.fuels-earth.earth-atmosphere",
+      "parentId": "chemistry.fuels-earth",
+      "label": "Earth's atmosphere: evolution, composition and climate change",
+      "kind": "leaf",
+      "paperCodes": ["paper-4-chemistry"],
+      "aliases": ["volcanic activity", "early atmosphere", "oxygen", "carbon dioxide", "water vapour", "oceans", "condensation", "primitive plants", "photosynthesis", "test for oxygen", "greenhouse effect", "greenhouse gases", "methane", "water vapour", "climate change", "fossil fuels", "temperature change", "uncertainties", "today's atmosphere", "human activity", "livestock farming", "mitigation", "8.18", "8.19", "8.20", "8.21", "8.22", "8.23", "8.24", "8.25", "8.26"]
+    },
+    {
+      "id": "physics",
+      "parentId": null,
+      "label": "Physics",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics", "paper-6-physics"],
+      "aliases": ["phys"]
+    },
+    {
+      "id": "physics.key-concepts",
+      "parentId": "physics",
+      "label": "Key concepts of physics",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics", "paper-6-physics"],
+      "aliases": ["topic 1"]
+    },
+    {
+      "id": "physics.key-concepts.units",
+      "parentId": "physics.key-concepts",
+      "label": "SI units, prefixes, conversions and significant figures",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics", "paper-6-physics"],
+      "aliases": ["topic 2", "kinematics", "dynamics"]
+    },
+    {
+      "id": "physics.motion-forces",
+      "parentId": "physics",
+      "label": "Motion and forces",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["topic 2", "kinematics", "dynamics"]
+    },
+    {
+      "id": "physics.motion-forces.scalar-vector",
+      "parentId": "physics.motion-forces",
+      "label": "Scalar and vector quantities",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["scalar", "vector", "magnitude", "direction", "displacement", "distance", "velocity", "speed", "acceleration", "force", "weight", "mass", "momentum", "energy", "2.1", "2.2", "2.3", "2.4", "2.5"]
+    },
+    {
+      "id": "physics.motion-forces.speed-distance",
+      "parentId": "physics.motion-forces",
+      "label": "Speed, distance, time and distance-time graphs",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["average speed", "distance", "time", "distance/time graphs", "gradient", "speed from gradient", "typical speeds", "wind", "sound", "walking", "running", "cycling", "transportation", "light gates", "2.6", "2.7", "2.11", "2.12"]
+    },
+    {
+      "id": "physics.motion-forces.acceleration",
+      "parentId": "physics.motion-forces",
+      "label": "Acceleration, velocity-time graphs and free fall",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["acceleration", "change in velocity", "v-u/t", "v²-u²=2ax", "velocity/time graphs", "gradient", "area under graph", "uniform acceleration", "free fall", "g=10 m/s²", "estimate accelerations", "2.8", "2.9", "2.10", "2.13"]
+    },
+    {
+      "id": "physics.motion-forces.newton-laws",
+      "parentId": "physics.motion-forces",
+      "label": "Newton's laws of motion, weight and inertial mass",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["Newton's first law", "Newton's second law", "F=ma", "resultant force", "constant velocity", "at rest", "weight", "W=mg", "gravitational field strength", "inertial mass", "force over acceleration", "2.14", "2.15", "2.16", "2.17", "2.18", "2.19", "2.22"]
+    },
+    {
+      "id": "physics.motion-forces.momentum",
+      "parentId": "physics.motion-forces",
+      "label": "Momentum, collisions and Newton's third law",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["momentum", "p=mv", "collisions", "conservation of momentum", "Newton's third law", "equilibrium", "F=change in momentum/time", "large decelerations", "forces involved", "2.23", "2.24", "2.25", "2.26", "2.31"]
+    },
+    {
+      "id": "physics.motion-forces.stopping-distance",
+      "parentId": "physics.motion-forces",
+      "label": "Stopping distance: thinking, braking and factors",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["stopping distance", "thinking distance", "braking distance", "reaction time", "mass", "speed", "brakes", "road conditions", "friction", "tyres", "drugs", "distractions", "human reaction times", "2.27", "2.28", "2.29", "2.30"]
+    },
+    {
+      "id": "physics.motion-forces.circular-motion",
+      "parentId": "physics.motion-forces",
+      "label": "Circular motion and centripetal force",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["circular motion", "centripetal force", "centre of circle", "resultant force", "2.21"]
+    },
+    {
+      "id": "physics.conservation-energy",
+      "parentId": "physics",
+      "label": "Conservation of energy",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["topic 3"]
+    },
+    {
+      "id": "physics.conservation-energy.energy-stores",
+      "parentId": "physics.conservation-energy",
+      "label": "Energy stores, transfers and conservation",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["gravitational potential energy", "GPE=mgh", "kinetic energy", "KE=½mv²", "energy transfers", "conservation of energy", "closed system", "system changes", "projected upwards", "moving object", "accelerated", "slowing down", "boiling water", "3.1", "3.2", "3.3", "3.4", "3.5", "3.6"]
+    },
+    {
+      "id": "physics.conservation-energy.dissipation",
+      "parentId": "physics.conservation-energy",
+      "label": "Energy dissipation, efficiency and power",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["dissipation", "wasteful", "temperature rise", "lubrication", "thermal insulation", "efficiency", "useful energy", "total energy supplied", "power", "energy resources", "fossil fuels", "nuclear fuel", "bio-fuel", "wind", "hydroelectricity", "tides", "sun", "renewable", "non-renewable", "patterns and trends", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+    },
+    {
+      "id": "physics.waves",
+      "parentId": "physics",
+      "label": "Waves",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["topic 4"]
+    },
+    {
+      "id": "physics.waves.properties",
+      "parentId": "physics.waves",
+      "label": "Wave properties: frequency, wavelength, amplitude and speed",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["transfer energy", "transfer information", "frequency", "wavelength", "amplitude", "period", "wave velocity", "wavefront", "longitudinal", "transverse", "sound waves", "electromagnetic waves", "seismic waves", "water waves", "v=fλ", "v=x/t", "measure velocity", "sound in air", "ripples on water", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7"]
+    },
+    {
+      "id": "physics.waves.refraction",
+      "parentId": "physics.waves",
+      "label": "Wave refraction and interaction with substances",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["refraction", "boundary", "change of direction", "change of speed", "absorb", "transmit", "reflect", "wavelength", "4.10", "4.11", "4.17"]
+    },
+    {
+      "id": "physics.light-em",
+      "parentId": "physics",
+      "label": "Light and the electromagnetic spectrum",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["topic 5", "EM spectrum"]
+    },
+    {
+      "id": "physics.light-em.em-waves",
+      "parentId": "physics.light-em",
+      "label": "Electromagnetic waves: spectrum, properties and refraction",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["transverse waves", "same speed in vacuum", "energy transfer", "refraction", "glass blocks", "interaction with matter", "continuous spectrum", "radio waves", "microwaves", "infrared", "visible light", "ultraviolet", "x-rays", "gamma rays", "decreasing wavelength", "increasing frequency", "visible spectrum colours", "eyes detect limited range", "absorb", "transmit", "refract", "reflect", "velocity differences", "5.7", "5.8", "5.9", "5.10", "5.11", "5.12", "5.13", "5.14"]
+    },
+    {
+      "id": "physics.light-em.uses-dangers",
+      "parentId": "physics.light-em",
+      "label": "EM radiation uses, dangers and atomic origins",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["danger", "increasing frequency", "microwaves", "internal heating", "infrared", "skin burns", "ultraviolet", "skin cancer", "eye conditions", "x-rays", "gamma rays", "mutation", "cell damage", "broadcasting", "communications", "satellite", "cooking", "thermal imaging", "optical fibres", "remote controls", "security", "vision", "photography", "fluorescent lamps", "sterilising", "radio waves", "oscillations", "circuits", "atoms", "nuclei", "generate radiations", "absorption", "5.20", "5.21", "5.22", "5.23", "5.24"]
+    },
+    {
+      "id": "physics.radioactivity",
+      "parentId": "physics",
+      "label": "Radioactivity",
+      "kind": "branch",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["topic 6", "nuclear"]
+    },
+    {
+      "id": "physics.radioactivity.atomic-model",
+      "parentId": "physics.radioactivity",
+      "label": "Atomic model: nucleus, isotopes and electron orbits",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["nucleus", "protons", "neutrons", "electrons", "nuclear radius", "atom size", "isotopes", "atomic number", "mass number", "nucleon number", "characteristic positive charge", "relative masses", "relative charges", "positrons", "neutral atom", "electron orbits", "set distances", "electron orbit change", "absorption", "emission", "positive ions", "plum pudding model", "Rutherford scattering", "Bohr model", "6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "6.7", "6.8", "6.9", "6.17"]
+    },
+    {
+      "id": "physics.radioactivity.radiation-types",
+      "parentId": "physics.radioactivity",
+      "label": "Types of radiation: alpha, beta, gamma and neutron",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["alpha particles", "beta minus", "beta plus", "positron", "gamma rays", "neutron radiation", "unstable nuclei", "random process", "ionising radiation", "helium nucleus", "high-speed electron", "electromagnetic wave", "penetrating power", "ionising power", "stopped by", "paper", "aluminium", "lead", "air", "deflection", "electric field", "magnetic field", "6.10", "6.11", "6.15", "6.16"]
+    },
+    {
+      "id": "physics.radioactivity.background-detection",
+      "parentId": "physics.radioactivity",
+      "label": "Background radiation and detection methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["background radiation", "Earth origins", "space origins", "photographic film", "Geiger-Müller tube", "measuring radioactivity", "6.12", "6.13", "6.14"]
+    },
+    {
+      "id": "physics.radioactivity.decay",
+      "parentId": "physics.radioactivity",
+      "label": "Radioactive decay: equations, half-life and activity",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["beta minus decay", "neutron becomes proton", "beta plus decay", "proton becomes neutron", "atomic number change", "mass number change", "nuclear rearrangement", "balance nuclear equations", "mass", "charge", "activity decreases", "Becquerel", "Bq", "half-life", "undecayed nuclei", "random decay", "predict activity", "half-life calculations", "graphical representations", "6.18", "6.19", "6.20", "6.21", "6.22", "6.23", "6.24", "6.25", "6.26", "6.27"]
+    },
+    {
+      "id": "physics.radioactivity.safety-uses",
+      "parentId": "physics.radioactivity",
+      "label": "Radiation safety, hazards and medical uses",
+      "kind": "leaf",
+      "paperCodes": ["paper-5-physics"],
+      "aliases": ["ionising radiation dangers", "tissue damage", "mutations", "precautions", "dose limits", "medical personnel", "medical uses", "diagnosis", "treatment", "sterilisation", "tracers", "6.29", "6.31", "6.32"]
+    },
+    {
+      "id": "physics.energy-forces-work",
+      "parentId": "physics",
+      "label": "Energy - forces doing work",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 8"]
+    },
+    {
+      "id": "physics.energy-forces-work.work-energy",
+      "parentId": "physics.energy-forces-work",
+      "label": "Work done, energy transfers and power",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["energy stores", "energy transfers", "closed system", "work done by forces", "electrical equipment", "heating", "E=F×d", "joule", "gravitational potential energy", "kinetic energy", "dissipation", "wasteful", "power", "rate", "P=E/t", "watt", "joule per second", "efficiency", "useful energy", "total energy", "8.1", "8.2", "8.3", "8.4", "8.5", "8.6", "8.7", "8.8", "8.9", "8.10", "8.11", "8.12", "8.13", "8.14", "8.15"]
+    },
+    {
+      "id": "physics.forces-effects",
+      "parentId": "physics",
+      "label": "Forces and their effects",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 9"]
+    },
+    {
+      "id": "physics.forces-effects.interactions",
+      "parentId": "physics.forces-effects",
+      "label": "Force interactions: contact, non-contact and vector diagrams",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["distance without contact", "gravitational field", "electrostatic field", "magnetic field", "contact force", "normal contact force", "friction", "vector pairs", "vector diagrams", "resolution of forces", "net force", "equilibrium", "free body force diagrams", "resultant force", "balanced forces", "lubrication", "9.1", "9.2", "9.3", "9.4", "9.5", "9.10"]
+    },
+    {
+      "id": "physics.electricity-circuits",
+      "parentId": "physics",
+      "label": "Electricity and circuits",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 10"]
+    },
+    {
+      "id": "physics.electricity-circuits.basics",
+      "parentId": "physics.electricity-circuits",
+      "label": "Circuit components, series and parallel circuits",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["atom structure", "circuit diagrams", "positive terminal", "negative terminal", "cell", "battery", "switch", "voltmeter", "ammeter", "resistor", "variable resistor", "lamp", "motor", "diode", "thermistor", "LDR", "LED", "series circuits", "parallel circuits", "voltmeter in parallel", "ammeter in series", "10.1", "10.2", "10.3", "10.4", "10.7"]
+    },
+    {
+      "id": "physics.electricity-circuits.current-charge",
+      "parentId": "physics.electricity-circuits",
+      "label": "Current, charge and potential difference",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["potential difference", "voltage", "energy per unit charge", "joule per coulomb", "E=Q×V", "current", "rate of flow", "electron flow", "Q=I×t", "current conserved", "junction", "10.5", "10.6", "10.8", "10.9", "10.10", "10.11"]
+    },
+    {
+      "id": "physics.electricity-circuits.resistance-ohm",
+      "parentId": "physics.electricity-circuits",
+      "label": "Resistance, Ohm's law and I-V characteristics",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["resistance", "variable resistor", "V=IR", "Ohm's law", "series circuits", "parallel circuits", "filament lamps", "diodes", "fixed resistors", "current varies with potential difference", "linear", "non-linear", "LDR", "light intensity", "thermistor", "temperature", "negative temperature coefficient", "10.12", "10.13", "10.14", "10.15", "10.16", "10.17", "10.18", "10.19", "10.20", "10.21"]
+    },
+    {
+      "id": "physics.electricity-circuits.energy-power",
+      "parentId": "physics.electricity-circuits",
+      "label": "Electrical energy, power and domestic electricity",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["heating effect", "electron collisions", "ions", "lattice", "low resistance wires", "E=I×V×t", "power", "P=E/t", "P=I×V", "P=I²×R", "batteries", "AC mains", "motors", "heating devices", "direct current", "alternating voltage", "d.c.", "a.c.", "50 Hz", "230 V", "live wire", "neutral wire", "earth wire", "fuses", "circuit breakers", "safety", "potential differences", "danger", "power ratings", "domestic appliances", "10.22", "10.23", "10.24", "10.25", "10.26", "10.27", "10.28", "10.29", "10.30", "10.31", "10.32", "10.33", "10.34", "10.35", "10.36", "10.37", "10.38", "10.39", "10.40", "10.41", "10.42"]
+    },
+    {
+      "id": "physics.magnetism-motor",
+      "parentId": "physics",
+      "label": "Magnetism and the motor effect",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 12"]
+    },
+    {
+      "id": "physics.magnetism-motor.magnetic-fields",
+      "parentId": "physics.magnetism-motor",
+      "label": "Magnetic fields, permanent and induced magnets",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["unlike poles attract", "like poles repel", "permanent magnets", "temporary magnets", "cobalt", "steel", "iron", "nickel", "induced magnets", "magnetic field shape", "bar magnets", "uniform field", "field lines", "plotting compass", "Earth's magnetic field", "magnetic core", "12.1", "12.2", "12.3", "12.4", "12.5", "12.6"]
+    },
+    {
+      "id": "physics.magnetism-motor.electromagnetism",
+      "parentId": "physics.magnetism-motor",
+      "label": "Electromagnets and the motor effect",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["current creates magnetic field", "straight conductor", "field strength", "current size", "distance", "solenoid", "electromagnet", "uniform field", "current carrying conductor", "force", "equal and opposite", "magnetic field interactions", "Fleming's left-hand rule", "force", "current", "magnetic field", "mutually perpendicular", "F=BIl", "motor effect", "d.c. motor", "split-ring commutator", "loudspeaker", "12.7", "12.8", "12.9", "12.10", "12.11", "12.12", "12.13", "12.14", "12.15"]
+    },
+    {
+      "id": "physics.em-induction",
+      "parentId": "physics",
+      "label": "Electromagnetic induction",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 13", "transformers", "national grid"]
+    },
+    {
+      "id": "physics.em-induction.induction",
+      "parentId": "physics.em-induction",
+      "label": "Generator effect, induced potential and transformers",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["generator effect", "induced potential difference", "induced current", "magnetic field opposes", "alternating current", "transformer", "alternating voltage", "step-up transformer", "step-down transformer", "national grid", "high voltage", "low voltage", "efficiency", "heat loss", "transmission lines", "Vp×Ip=Vs×Is", "100% efficiency", "13.2", "13.5", "13.6", "13.8", "13.9", "13.10"]
+    },
+    {
+      "id": "physics.particle-model",
+      "parentId": "physics",
+      "label": "Particle model",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 14", "density", "specific heat"]
+    },
+    {
+      "id": "physics.particle-model.states-density",
+      "parentId": "physics.particle-model",
+      "label": "Kinetic theory, states of matter and density",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["kinetic theory", "particle model", "solids", "liquids", "gases", "movement", "arrangement", "density", "ρ=m/V", "differences in density", "atoms", "molecules", "14.1", "14.2", "14.3", "14.4"]
+    },
+    {
+      "id": "physics.particle-model.changes-state",
+      "parentId": "physics.particle-model",
+      "label": "Changes of state, specific heat capacity and latent heat",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["melting", "freezing", "evaporating", "boiling", "condensing", "sublimating", "mass conserved", "physical changes", "chemical changes", "heating", "energy stored", "temperature", "specific heat capacity", "specific latent heat", "ΔQ=mcΔθ", "Q=mL", "thermal insulation", "specific heat capacity of water", "melting ice", "temperature-time graph", "14.5", "14.6", "14.7", "14.8", "14.9", "14.10", "14.11"]
+    },
+    {
+      "id": "physics.particle-model.gas-pressure",
+      "parentId": "physics.particle-model",
+      "label": "Gas pressure, temperature and absolute zero",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["gas pressure", "particle motion", "temperature change", "velocity", "fixed mass", "constant volume", "absolute zero", "-273°C", "lack of movement", "kelvin", "Celsius", "conversion", "14.12", "14.13", "14.14", "14.15"]
+    },
+    {
+      "id": "physics.forces-matter",
+      "parentId": "physics",
+      "label": "Forces and matter",
+      "kind": "branch",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["topic 15", "springs", "Hooke's law"]
+    },
+    {
+      "id": "physics.forces-matter.elastic-distortion",
+      "parentId": "physics.forces-matter",
+      "label": "Elastic and inelastic distortion, Hooke's law",
+      "kind": "leaf",
+      "paperCodes": ["paper-6-physics"],
+      "aliases": ["springs", "elastic objects", "more than one force", "elastic distortion", "inelastic distortion", "Hooke's law", "F=kx", "spring constant", "extension", "linear relationship", "non-linear relationship", "force-extension graphs", "work done stretching", "E=½kx²", "15.1", "15.2", "15.3", "15.4", "15.5", "15.6"]
+    }
+  ]
+}

@@ -1,0 +1,513 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "english-language",
+    "specCode": "1EN0",
+    "version": "2024.1",
+    "scope": "pearson-edexcel-gcse-english-language-2015-issue-6",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part",
+    "sourceUrls": [
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/English%20Language/2015/specification-and-sample-assessments/gcse-english-language-2015-specification.pdf",
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/English%20Language/2015/specification-and-sample-assessments/gcse-english-language-2015-sample-assessments.pdf",
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/English%20Language/2015/teaching-and-learning-materials/gcse-english-language-spoken-language-endorsement.pdf",
+      "https://qualifications.pearson.com/en/qualifications/edexcel-gcses/english-language-2015.html"
+    ]
+  },
+  "topics": [
+    {
+      "id": "reading",
+      "parentId": null,
+      "label": "Reading",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["reading skills", "Component 1 Section A", "Component 2 Section A"]
+    },
+    {
+      "id": "reading.fiction-19th-century",
+      "parentId": "reading",
+      "label": "Unseen 19th-century fiction reading",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["Component 1 reading", "19th-century prose fiction", "unseen fiction extract"]
+    },
+    {
+      "id": "reading.fiction-19th-century.retrieve-explicit-implicit",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Identify and interpret explicit and implicit information in unseen fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "Paper 1 Question 1", "retrieval", "inference", "explicit and implicit meaning"]
+    },
+    {
+      "id": "reading.fiction-19th-century.select-supporting-evidence",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Select precise textual references to support interpretations in fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "supporting quotations", "short references", "textual evidence selection"]
+    },
+    {
+      "id": "reading.fiction-19th-century.language-methods-analysis",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Analyse how language choices create effects in fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "Paper 1 Question 2", "word-level analysis", "methods", "subject terminology"]
+    },
+    {
+      "id": "reading.fiction-19th-century.language-connotations",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Explain how word and phrase connotations shape meaning and mood",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "close language analysis", "semantic field", "connotations"]
+    },
+    {
+      "id": "reading.fiction-19th-century.language-effects-on-reader",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Analyse effects of language choices on readers in fiction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "reader effect", "impact analysis", "interpretive effect"]
+    },
+    {
+      "id": "reading.fiction-19th-century.structure-analysis",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Analyse structural features and shifts in fiction extracts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "Paper 1 Question 3", "structure", "narrative focus", "sequence and progression"]
+    },
+    {
+      "id": "reading.fiction-19th-century.structure-focus-shifts",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Track narrative focus shifts across beginning, middle and end",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "structural shift", "extract progression", "focus movement"]
+    },
+    {
+      "id": "reading.fiction-19th-century.structure-tension-pacing",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Explain how structure controls tension, pace and revelation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "pacing", "withholding information", "structural effect"]
+    },
+    {
+      "id": "reading.fiction-19th-century.critical-evaluation",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Evaluate fiction critically with supported judgements",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO4", "Paper 1 Question 4", "critical evaluation", "textual references", "how far do you agree"]
+    },
+    {
+      "id": "reading.fiction-19th-century.evaluate-viewpoint",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Evaluate ideas and viewpoints in relation to a critical statement",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO4", "critical viewpoint", "how far", "judgement"]
+    },
+    {
+      "id": "reading.fiction-19th-century.evaluate-methods-evidence",
+      "parentId": "reading.fiction-19th-century",
+      "label": "Support evaluative judgements with references to language and structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO4", "evaluation support", "methods in evidence", "critical references"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century",
+      "parentId": "reading",
+      "label": "Unseen 20th- and 21st-century non-fiction reading",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["Component 2 reading", "Text 1 and Text 2", "literary non-fiction included"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text1-retrieval",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Retrieve and interpret explicit/implicit ideas from Text 1",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "Paper 2 Question 1", "Paper 2 Question 2", "Text 1 retrieval"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text1-summary",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Summarise explicit and implicit information from Text 1",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "summary skill", "Text 1 summary", "key points"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text1-language-analysis",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Analyse writer's language and structure in Text 1",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "Paper 2 Question 3", "effects on readers", "non-fiction language analysis"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text1-structure-analysis",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Analyse structural choices in Text 1 and their effects",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO2", "non-fiction structure", "sequence and emphasis", "Text 1 structure"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text2-retrieval",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Retrieve and interpret explicit/implicit ideas from Text 2",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "Paper 2 Question 4", "Paper 2 Question 5", "Text 2 retrieval"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text2-summary",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Summarise explicit and implicit information from Text 2",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "Text 2 summary", "summary skill", "key ideas"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text2-evaluation",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Evaluate writer's methods and viewpoints in Text 2",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO4", "Paper 2 Question 6", "critical evaluation", "supported response"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.text2-views-perspectives",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Evaluate how viewpoints and perspectives are conveyed in Text 2",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO4", "viewpoints", "perspectives", "writer stance"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.synthesise-comparison",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Synthesise and compare ideas, perspectives and methods across two texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO1", "AO3", "Paper 2 Question 7a", "Paper 2 Question 7b", "comparison across texts"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.compare-ideas-perspectives",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Compare writers' ideas and perspectives across two non-fiction texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO3", "cross-text comparison", "ideas and perspectives", "Paper 2 Question 7a"]
+    },
+    {
+      "id": "reading.nonfiction-20th-21st-century.compare-methods",
+      "parentId": "reading.nonfiction-20th-21st-century",
+      "label": "Compare writers' methods including language and structure across texts",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["AO3", "methods comparison", "Paper 2 Question 7b", "language and structure across texts"]
+    },
+    {
+      "id": "writing",
+      "parentId": null,
+      "label": "Writing",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["writing skills", "AO5", "AO6", "Section B writing"]
+    },
+    {
+      "id": "writing.imaginative",
+      "parentId": "writing",
+      "label": "Imaginative writing from thematic stimulus",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["Component 1 Section B", "Paper 1 Question 5 or 6", "creative writing"]
+    },
+    {
+      "id": "writing.imaginative.narrative-description",
+      "parentId": "writing.imaginative",
+      "label": "Produce narrative or descriptive writing that engages the reader",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "imaginative response", "narrative", "description", "reader engagement"]
+    },
+    {
+      "id": "writing.imaginative.content-organisation",
+      "parentId": "writing.imaginative",
+      "label": "Structure imaginative writing with purposeful openings, development and endings",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "content and organisation", "narrative arc", "cohesive development"]
+    },
+    {
+      "id": "writing.imaginative.tone-style-register",
+      "parentId": "writing.imaginative",
+      "label": "Select and adapt tone, style and register for imaginative purpose",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "voice", "stylistic control", "fit to purpose"]
+    },
+    {
+      "id": "writing.imaginative.vocabulary-sentence-crafting",
+      "parentId": "writing.imaginative",
+      "label": "Craft vocabulary and sentence forms for effect in imaginative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "sentence crafting", "diction", "stylistic effects"]
+    },
+    {
+      "id": "writing.imaginative.structural-devices",
+      "parentId": "writing.imaginative",
+      "label": "Use structural devices to guide reader response in creative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "foreshadowing", "flashback", "paragraph transitions"]
+    },
+    {
+      "id": "writing.imaginative.technical-accuracy",
+      "parentId": "writing.imaginative",
+      "label": "Use accurate spelling, punctuation, vocabulary and sentence structures",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO6", "SPaG", "technical accuracy", "sentence variety"]
+    },
+    {
+      "id": "writing.imaginative.punctuation-control",
+      "parentId": "writing.imaginative",
+      "label": "Control punctuation and sentence boundaries accurately in imaginative writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO6", "punctuation control", "sentence demarcation", "accuracy"]
+    },
+    {
+      "id": "writing.imaginative.spelling-grammar-control",
+      "parentId": "writing.imaginative",
+      "label": "Maintain accurate spelling and grammar with varied sentence forms",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO6", "spelling accuracy", "grammar control", "sentence variety"]
+    },
+    {
+      "id": "writing.transactional",
+      "parentId": "writing",
+      "label": "Transactional writing for form, purpose and audience",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["Component 2 Section B", "Paper 2 Question 8 or 9", "transactional writing"]
+    },
+    {
+      "id": "writing.transactional.form-demands",
+      "parentId": "writing.transactional",
+      "label": "Meet form conventions for transactional text types",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["article", "letter", "speech", "leaflet", "essay", "online post"]
+    },
+    {
+      "id": "writing.transactional.formal-conventions",
+      "parentId": "writing.transactional",
+      "label": "Use conventions appropriate to transactional form and context",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["form conventions", "salutation and sign-off", "headline and subheading", "format control"]
+    },
+    {
+      "id": "writing.transactional.audience-purpose",
+      "parentId": "writing.transactional",
+      "label": "Write clearly for explicit audience, purpose and viewpoint",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "viewpoint writing", "persuade", "argue", "inform"]
+    },
+    {
+      "id": "writing.transactional.register-tone",
+      "parentId": "writing.transactional",
+      "label": "Adopt register and tone suited to audience and purpose",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "tone control", "formal register", "voice for purpose"]
+    },
+    {
+      "id": "writing.transactional.viewpoint-argument",
+      "parentId": "writing.transactional",
+      "label": "Develop and sustain a clear viewpoint or line of argument",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "viewpoint", "argument line", "positioning"]
+    },
+    {
+      "id": "writing.transactional.structure-cohesion",
+      "parentId": "writing.transactional",
+      "label": "Organise ideas with coherent structure and paragraphing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "cohesion", "structural features", "sequencing of argument"]
+    },
+    {
+      "id": "writing.transactional.paragraphing-linking",
+      "parentId": "writing.transactional",
+      "label": "Use clear paragraphing and linking to shape coherent progression",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "paragraph cohesion", "logical progression", "discourse markers"]
+    },
+    {
+      "id": "writing.transactional.rhetorical-devices",
+      "parentId": "writing.transactional",
+      "label": "Deploy rhetorical and persuasive devices for deliberate impact",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO5", "persuasion", "rhetorical questions", "triples and contrast"]
+    },
+    {
+      "id": "writing.transactional.technical-accuracy",
+      "parentId": "writing.transactional",
+      "label": "Apply accurate grammar, punctuation, spelling and controlled syntax",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO6", "SPaG", "sentence control", "vocabulary range"]
+    },
+    {
+      "id": "writing.transactional.sentence-grammar-control",
+      "parentId": "writing.transactional",
+      "label": "Control sentence structures and grammar accurately in transactional writing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO6", "grammar", "syntax control", "sentence variety"]
+    },
+    {
+      "id": "writing.transactional.spelling-punctuation-control",
+      "parentId": "writing.transactional",
+      "label": "Maintain accurate spelling and punctuation in transactional responses",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["AO6", "spelling", "punctuation", "technical accuracy"]
+    },
+    {
+      "id": "spoken-language",
+      "parentId": null,
+      "label": "Spoken Language Endorsement",
+      "kind": "branch",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["1EN0/03", "speaking and listening", "internally assessed"]
+    },
+    {
+      "id": "spoken-language.presentation-skills",
+      "parentId": "spoken-language",
+      "label": "Deliver a prepared spoken presentation in a formal setting",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO7", "formal presentation", "up to 10 minutes", "Pass Merit Distinction"]
+    },
+    {
+      "id": "spoken-language.presentation-organisation",
+      "parentId": "spoken-language",
+      "label": "Organise and develop spoken content logically for the presentation purpose",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO7", "content organisation", "line of development", "spoken structure"]
+    },
+    {
+      "id": "spoken-language.presentation-delivery-control",
+      "parentId": "spoken-language",
+      "label": "Use controlled delivery features such as pace, tone and clarity",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO7", "delivery", "prosody", "clarity"]
+    },
+    {
+      "id": "spoken-language.listen-respond",
+      "parentId": "spoken-language",
+      "label": "Listen and respond appropriately to questions and feedback",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO8", "response to audience", "discussion handling"]
+    },
+    {
+      "id": "spoken-language.respond-develop-ideas",
+      "parentId": "spoken-language",
+      "label": "Respond to questions by clarifying and extending spoken ideas",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO8", "question response", "development of ideas", "interactive discussion"]
+    },
+    {
+      "id": "spoken-language.standard-english",
+      "parentId": "spoken-language",
+      "label": "Use spoken Standard English effectively in presentation and responses",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO9", "spoken Standard English", "clarity and control"]
+    },
+    {
+      "id": "spoken-language.standard-english-consistency",
+      "parentId": "spoken-language",
+      "label": "Sustain spoken Standard English consistently across presentation and responses",
+      "kind": "leaf",
+      "paperCodes": ["spoken-language-endorsement"],
+      "sectionCodes": ["endorsement"],
+      "aliases": ["AO9", "consistency", "standard spoken forms", "accuracy in speech"]
+    }
+  ]
+}

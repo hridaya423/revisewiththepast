@@ -1,0 +1,184 @@
+{
+  "metadata": {
+    "boardCode": "ocr",
+    "subjectSlug": "english-literature",
+    "specCode": "J352",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Exploring modern and literary heritage texts (Component 01)",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "totalMarks": 80,
+      "weighting": "50%",
+      "assessmentMode": "written exam",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Modern prose or drama",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Two-part response on one studied modern prose or drama text: analysis linked to an unseen extract and a whole-text essay response.",
+          "coreTopicIds": [
+            "paper-1.section-a-modern-prose-or-drama.extract-linked-unseen-comparison",
+            "paper-1.section-a-modern-prose-or-drama.whole-text-essay"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-a-modern-text-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "modern-anita-and-me",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-modern-prose-or-drama.text-choice.anita-and-me"]
+                },
+                {
+                  "id": "modern-never-let-me-go",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-modern-prose-or-drama.text-choice.never-let-me-go"]
+                },
+                {
+                  "id": "modern-animal-farm",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-modern-prose-or-drama.text-choice.animal-farm"]
+                },
+                {
+                  "id": "modern-an-inspector-calls",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-modern-prose-or-drama.text-choice.an-inspector-calls"]
+                },
+                {
+                  "id": "modern-leave-taking",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-modern-prose-or-drama.text-choice.leave-taking"]
+                },
+                {
+                  "id": "modern-dna",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-modern-prose-or-drama.text-choice.dna"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "19th-century prose",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Two-part response on one studied 19th-century prose text: analysis linked to an unseen extract and a whole-text essay response.",
+          "coreTopicIds": [
+            "paper-1.section-b-19th-century-prose.extract-linked-unseen-comparison",
+            "paper-1.section-b-19th-century-prose.whole-text-essay"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-b-heritage-text-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "heritage-great-expectations",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-prose.text-choice.great-expectations"]
+                },
+                {
+                  "id": "heritage-a-christmas-carol",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-prose.text-choice.a-christmas-carol"]
+                },
+                {
+                  "id": "heritage-pride-and-prejudice",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-prose.text-choice.pride-and-prejudice"]
+                },
+                {
+                  "id": "heritage-the-war-of-the-worlds",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-prose.text-choice.the-war-of-the-worlds"]
+                },
+                {
+                  "id": "heritage-jekyll-and-hyde",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-prose.text-choice.jekyll-and-hyde"]
+                },
+                {
+                  "id": "heritage-jane-eyre",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-prose.text-choice.jane-eyre"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: Exploring poetry and Shakespeare (Component 02)",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "totalMarks": 80,
+      "weighting": "50%",
+      "assessmentMode": "written exam",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Poetry across time",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Two-part response in the chosen OCR anthology cluster: analysis of a named poem and comparison with a linked unseen poem.",
+          "coreTopicIds": [
+            "paper-2.section-a-poetry-across-time.named-poem-analysis",
+            "paper-2.section-a-poetry-across-time.linked-unseen-comparison"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-a-poetry-cluster-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "poetry-love-and-relationships",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-poetry-across-time.cluster-choice.love-and-relationships"]
+                },
+                {
+                  "id": "poetry-conflict",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-poetry-across-time.cluster-choice.conflict"]
+                },
+                {
+                  "id": "poetry-youth-and-age",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-poetry-across-time.cluster-choice.youth-and-age"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Shakespeare",
+          "marks": 40,
+          "mode": "mandatory-with-single-option",
+          "description": "Two-part response on one studied Shakespeare play: extract analysis linked to unseen material and a whole-play essay response.",
+          "coreTopicIds": [
+            "paper-2.section-b-shakespeare.extract-linked-unseen-comparison",
+            "paper-2.section-b-shakespeare.whole-play-essay"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-b-shakespeare-play-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "shakespeare-romeo-and-juliet",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-shakespeare.text-choice.romeo-and-juliet"]
+                },
+                {
+                  "id": "shakespeare-the-merchant-of-venice",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-shakespeare.text-choice.the-merchant-of-venice"]
+                },
+                {
+                  "id": "shakespeare-macbeth",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-shakespeare.text-choice.macbeth"]
+                },
+                {
+                  "id": "shakespeare-much-ado-about-nothing",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-shakespeare.text-choice.much-ado-about-nothing"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

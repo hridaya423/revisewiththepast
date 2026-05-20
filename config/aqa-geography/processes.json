@@ -1,0 +1,66 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "geography",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of processes for AQA GCSE Geography"
+  },
+  "processes": {
+    "weather-hazards": [
+      "global-atmospheric-circulation",
+      "tropical-storm-formation",
+      "extreme-weather",
+      "climate-change-mitigation",
+      "climate-change-adaptation"
+    ],
+    "climate-change": [
+      "greenhouse-effect",
+      "enhanced-greenhouse-effect",
+      "carbon-capture",
+      "afforestation",
+      "international-agreement"
+    ],
+    "living-world": [
+      "nutrient-cycling",
+      "food-chain",
+      "food-web",
+      "interdependence",
+      "deforestation",
+      "desertification",
+      "conservation"
+    ],
+    "physical-landscapes": [
+      "weathering",
+      "mass-movement",
+      "erosion",
+      "transportation",
+      "deposition",
+      "longshore-drift",
+      "hydraulic-action",
+      "abrasion",
+      "attrition",
+      "solution"
+    ],
+    "urban-issues-challenges": [
+      "urbanisation",
+      "migration",
+      "urban-sprawl",
+      "social-opportunity",
+      "economic-opportunity"
+    ],
+    "changing-economic-world": [
+      "industrial-development",
+      "transnational-corporation",
+      "north-south-divide",
+      "economic-hub"
+    ],
+    "resource-management": [
+      "global-demand",
+      "resource-inequality",
+      "water-transfer",
+      "energy-security",
+      "energy-mix",
+      "food-mile-reduction"
+    ]
+  }
+}

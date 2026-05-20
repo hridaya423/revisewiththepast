@@ -1,0 +1,708 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "mathematics",
+    "specCode": "1MA1",
+    "version": "2024.1",
+    "scope": "edexcel-mathematics-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "number",
+      "parentId": null,
+      "label": "Number",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["number"]
+    },
+    {
+      "id": "number.structure-calculation",
+      "parentId": "number",
+      "label": "Structure and calculation",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["structure", "calculation"]
+    },
+    {
+      "id": "number.structure-calculation.order-operations",
+      "parentId": "number.structure-calculation",
+      "label": "Order, four operations, inverse operations, priority of operations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["order integers", "order decimals", "order fractions", "number line", "four operations", "written methods", "inverse operations", "cancellation", "BIDMAS", "order of operations", "brackets", "powers", "roots", "reciprocals", "N1", "N2", "N3"]
+    },
+    {
+      "id": "number.structure-calculation.prime-factors",
+      "parentId": "number.structure-calculation",
+      "label": "Prime numbers, factors, multiples, HCF, LCM, prime factorisation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["prime numbers", "factors", "divisors", "multiples", "common factors", "common multiples", "HCF", "LCM", "prime factorisation", "product notation", "unique factorisation theorem", "N4"]
+    },
+    {
+      "id": "number.structure-calculation.systematic-listing",
+      "parentId": "number.structure-calculation",
+      "label": "Systematic listing strategies and product rule for counting",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["systematic listing", "product rule for counting", "m times n ways", "N5"]
+    },
+    {
+      "id": "number.structure-calculation.powers-roots",
+      "parentId": "number.structure-calculation",
+      "label": "Integer and fractional powers, roots, powers of 2/3/4/5, estimate powers and roots",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["powers", "roots", "square roots", "cube roots", "powers of 2", "powers of 3", "estimate powers", "estimate roots", "N6"]
+    },
+    {
+      "id": "number.structure-calculation.indices",
+      "parentId": "number.structure-calculation",
+      "label": "Integer and fractional indices, laws of indices",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["indices", "fractional indices", "integer indices", "laws of indices", "N7"]
+    },
+    {
+      "id": "number.structure-calculation.fractions-surd",
+      "parentId": "number.structure-calculation",
+      "label": "Exact calculations with fractions, surds, multiples of pi, rationalising denominators",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["fractions", "surds", "rationalise denominators", "simplify surds", "multiples of pi", "exact calculations", "N8"]
+    },
+    {
+      "id": "number.structure-calculation.standard-form",
+      "parentId": "number.structure-calculation",
+      "label": "Standard form calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["standard form", "A x 10^n", "N9"]
+    },
+    {
+      "id": "number.fractions-decimals-percentages",
+      "parentId": "number",
+      "label": "Fractions, decimals and percentages",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["fractions", "decimals", "percentages"]
+    },
+    {
+      "id": "number.fractions-decimals-percentages.interconversion",
+      "parentId": "number.fractions-decimals-percentages",
+      "label": "Terminating decimals, recurring decimals and fraction conversion",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["terminating decimals", "recurring decimals", "fraction conversion", "ordering", "N10"]
+    },
+    {
+      "id": "number.fractions-decimals-percentages.fraction-operators",
+      "parentId": "number.fractions-decimals-percentages",
+      "label": "Fractions in ratio problems, fractions and percentages as operators",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["fractions as operators", "percentages as operators", "percentage multiplier", "ratio problems", "N11", "N12"]
+    },
+    {
+      "id": "number.measures-accuracy",
+      "parentId": "number",
+      "label": "Measures and accuracy",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["measures", "accuracy"]
+    },
+    {
+      "id": "number.measures-accuracy.units-measures",
+      "parentId": "number.measures-accuracy",
+      "label": "Standard units, compound units, metric and imperial conversions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["standard units", "mass", "length", "time", "money", "compound measures", "metric conversion", "N13"]
+    },
+    {
+      "id": "number.measures-accuracy.rounding-bounds",
+      "parentId": "number.measures-accuracy",
+      "label": "Estimation, rounding, error intervals, limits of accuracy, upper and lower bounds",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["estimation", "rounding", "decimal places", "significant figures", "error intervals", "truncation", "limits of accuracy", "upper bounds", "lower bounds", "N14", "N15", "N16"]
+    },
+    {
+      "id": "algebra",
+      "parentId": null,
+      "label": "Algebra",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["algebra"]
+    },
+    {
+      "id": "algebra.notation-manipulation",
+      "parentId": "algebra",
+      "label": "Notation, vocabulary and manipulation",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["notation", "manipulation"]
+    },
+    {
+      "id": "algebra.notation-manipulation.algebraic-notation",
+      "parentId": "algebra.notation-manipulation",
+      "label": "Algebraic notation, substitution, expressions, equations, formulae, identities",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["algebraic notation", "substitution", "expressions", "equations", "formulae", "identities", "terms", "factors", "A1", "A2", "A3"]
+    },
+    {
+      "id": "algebra.notation-manipulation.simplification-expansion",
+      "parentId": "algebra.notation-manipulation",
+      "label": "Simplifying, collecting like terms, expanding brackets, factorising quadratics, algebraic fractions, surds",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["simplify", "collect like terms", "expand brackets", "factorise", "quadratic expressions", "difference of two squares", "algebraic fractions", "surds", "laws of indices", "A4"]
+    },
+    {
+      "id": "algebra.notation-manipulation.rearranging-formulae",
+      "parentId": "algebra.notation-manipulation",
+      "label": "Rearranging formulae, changing the subject",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["rearrange formulae", "change subject", "mathematical formulae", "A5"]
+    },
+    {
+      "id": "algebra.notation-manipulation.equations-identities",
+      "parentId": "algebra.notation-manipulation",
+      "label": "Equation vs identity, algebraic equivalence, algebraic proof",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["equation", "identity", "algebraic equivalence", "algebraic proof", "construct arguments", "A6"]
+    },
+    {
+      "id": "algebra.notation-manipulation.functions",
+      "parentId": "algebra.notation-manipulation",
+      "label": "Functions, inverse functions, composite functions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["functions", "f(x)", "inverse function", "f^-1(x)", "composite function", "fg(x)", "A7"]
+    },
+    {
+      "id": "algebra.graphs",
+      "parentId": "algebra",
+      "label": "Graphs",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["graphs"]
+    },
+    {
+      "id": "algebra.graphs.coordinates",
+      "parentId": "algebra.graphs",
+      "label": "Coordinates in all four quadrants",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["coordinates", "four quadrants", "A8"]
+    },
+    {
+      "id": "algebra.graphs.straight-lines",
+      "parentId": "algebra.graphs",
+      "label": "Straight line graphs, y=mx+c, parallel and perpendicular lines, equation of a line",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["straight line", "y=mx+c", "parallel lines", "perpendicular lines", "gradient", "intercept", "equation of line", "A9", "A10"]
+    },
+    {
+      "id": "algebra.graphs.quadratic-graphs",
+      "parentId": "algebra.graphs",
+      "label": "Quadratic, cubic, reciprocal, exponential and trigonometric graphs, roots, intercepts, turning points",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["quadratic graphs", "cubic functions", "reciprocal function", "1/x", "exponential functions", "sin x", "cos x", "tan x", "roots", "intercepts", "turning points", "completing the square", "A11", "A12"]
+    },
+    {
+      "id": "algebra.graphs.real-context-graphs",
+      "parentId": "algebra.graphs",
+      "label": "Graphs in real contexts, kinematics, distance-time, velocity-time, gradients and areas under graphs",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["distance-time graphs", "velocity-time graphs", "kinematics", "gradient of graph", "area under graph", "rate of change", "financial graphs", "A14", "A15"]
+    },
+    {
+      "id": "algebra.graphs.circle-graphs",
+      "parentId": "algebra.graphs",
+      "label": "Equation of a circle, tangent to a circle",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["circle equation", "tangent to circle", "centre at origin", "A16"]
+    },
+    {
+      "id": "algebra.solving-equations",
+      "parentId": "algebra",
+      "label": "Solving equations and inequalities",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["equations", "inequalities"]
+    },
+    {
+      "id": "algebra.solving-equations.linear-equations",
+      "parentId": "algebra.solving-equations",
+      "label": "Linear equations in one unknown, unknown on both sides",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["linear equations", "unknown on both sides", "graphical solution", "A17"]
+    },
+    {
+      "id": "algebra.solving-equations.quadratic-equations",
+      "parentId": "algebra.solving-equations",
+      "label": "Quadratic equations: factorising, completing the square, quadratic formula",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["quadratic equations", "factorising", "completing the square", "quadratic formula", "A18"]
+    },
+    {
+      "id": "algebra.solving-equations.simultaneous-equations",
+      "parentId": "algebra.solving-equations",
+      "label": "Simultaneous equations: linear/linear and linear/quadratic",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["simultaneous equations", "linear simultaneous", "linear/quadratic simultaneous", "A19"]
+    },
+    {
+      "id": "algebra.solving-equations.iteration",
+      "parentId": "algebra.solving-equations",
+      "label": "Numerical solutions using iteration",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["iteration", "numerical solutions", "recursive formulae", "A20"]
+    },
+    {
+      "id": "algebra.solving-equations.algebraic-modelling",
+      "parentId": "algebra.solving-equations",
+      "label": "Translating situations into algebra, deriving and solving equations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["algebraic modelling", "word problems", "geometrical problems", "context problems", "A21"]
+    },
+    {
+      "id": "algebra.solving-equations.inequalities",
+      "parentId": "algebra.solving-equations",
+      "label": "Linear and quadratic inequalities, number line, set notation, graphical representation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["inequalities", "linear inequalities", "quadratic inequalities", "number line", "set notation", "graphical inequalities", "A22"]
+    },
+    {
+      "id": "algebra.sequences",
+      "parentId": "algebra",
+      "label": "Sequences",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["sequences"]
+    },
+    {
+      "id": "algebra.sequences.generating-sequences",
+      "parentId": "algebra.sequences",
+      "label": "Generating sequences from term-to-term and position-to-term rules",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["term-to-term", "position-to-term", "generating sequences", "A23"]
+    },
+    {
+      "id": "algebra.sequences.special-sequences",
+      "parentId": "algebra.sequences",
+      "label": "Triangular, square, cube, arithmetic, Fibonacci, quadratic, geometric progressions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["triangular numbers", "square numbers", "cube numbers", "arithmetic progressions", "Fibonacci", "quadratic sequences", "geometric progressions", "A24"]
+    },
+    {
+      "id": "algebra.sequences.nth-term",
+      "parentId": "algebra.sequences",
+      "label": "nth term of linear and quadratic sequences",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["nth term", "linear sequences", "quadratic sequences", "A25"]
+    },
+    {
+      "id": "ratio-proportion",
+      "parentId": null,
+      "label": "Ratio, proportion and rates of change",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["ratio", "proportion", "rates of change"]
+    },
+    {
+      "id": "ratio-proportion.units-conversion",
+      "parentId": "ratio-proportion",
+      "label": "Unit conversion, compound units, scale factors, scale diagrams",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["unit conversion", "compound units", "speed", "density", "pressure", "scale factors", "scale diagrams", "maps", "R1", "R2", "R11"]
+    },
+    {
+      "id": "ratio-proportion.ratio-notation",
+      "parentId": "ratio-proportion",
+      "label": "Ratio notation, dividing quantities, part:part and part:whole",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["ratio notation", "simplest form", "dividing quantities", "part:part", "part:whole", "best buy", "better value", "R4", "R5", "R6"]
+    },
+    {
+      "id": "ratio-proportion.fractions-percentages",
+      "parentId": "ratio-proportion",
+      "label": "Quantity as fraction/percentage of another, percentage change, simple interest",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["fraction of another", "percentage of another", "percentage change", "percentage increase", "percentage decrease", "original value", "simple interest", "financial mathematics", "R3", "R9"]
+    },
+    {
+      "id": "ratio-proportion.proportion",
+      "parentId": "ratio-proportion",
+      "label": "Direct and inverse proportion, graphical and algebraic representations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["direct proportion", "inverse proportion", "proportionality", "X proportional to Y", "X inversely proportional to Y", "R7", "R10", "R13"]
+    },
+    {
+      "id": "ratio-proportion.rates-of-change",
+      "parentId": "ratio-proportion",
+      "label": "Gradient as rate of change, average and instantaneous rate of change",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["rate of change", "gradient", "instantaneous rate", "average rate", "chords", "tangents", "R14", "R15"]
+    },
+    {
+      "id": "ratio-proportion.growth-decay",
+      "parentId": "ratio-proportion",
+      "label": "Growth and decay problems, compound interest, iterative processes",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["growth", "decay", "compound interest", "iterative processes", "R16"]
+    },
+    {
+      "id": "ratio-proportion.similarity-lengths",
+      "parentId": "ratio-proportion",
+      "label": "Lengths, areas and volumes in similar figures, similarity and trigonometric ratios",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["similar figures", "lengths ratio", "areas ratio", "volumes ratio", "similarity", "R12"]
+    },
+    {
+      "id": "geometry-measures",
+      "parentId": null,
+      "label": "Geometry and measures",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["geometry", "measures"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions",
+      "parentId": "geometry-measures",
+      "label": "Properties and constructions",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["properties", "constructions"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.terms-notations",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Geometric terms, notation, labelling, drawing from descriptions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["points", "lines", "vertices", "edges", "planes", "parallel", "perpendicular", "polygons", "regular polygons", "symmetry", "labelling", "G1"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.ruler-compass",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Ruler and compass constructions, perpendicular bisector, angle bisector, loci",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["ruler compass constructions", "perpendicular bisector", "perpendicular from point", "angle bisector", "60 degree angle", "loci", "G2"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.angle-facts",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Angle facts: point, straight line, vertically opposite, parallel lines, polygon angle sums",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["angles at a point", "angles on straight line", "vertically opposite", "alternate angles", "corresponding angles", "triangle angle sum", "polygon angle sum", "regular polygons", "G3"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.quadrilaterals-triangles",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Properties of quadrilaterals and triangles",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["square", "rectangle", "parallelogram", "trapezium", "kite", "rhombus", "isosceles", "equilateral", "scalene", "right-angled", "G4"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.congruence",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Congruence criteria: SSS, SAS, ASA, RHS",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["congruence", "SSS", "SAS", "ASA", "RHS", "congruent triangles", "G5"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.geometric-proofs",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Geometric proofs: angle facts, congruence, similarity, Pythagoras, isosceles base angles",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["geometric proofs", "Pythagoras theorem", "isosceles base angles", "derive results", "G6"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.transformations",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Congruent and similar shapes: rotation, reflection, translation, enlargement, fractional and negative scale factors",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["rotation", "reflection", "translation", "enlargement", "fractional scale factors", "negative scale factors", "column vectors", "invariance", "G7", "G8"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.circle-definitions",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Circle definitions: centre, radius, chord, diameter, circumference, tangent, arc, sector, segment",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["circle", "centre", "radius", "chord", "diameter", "circumference", "tangent", "arc", "sector", "segment", "G9"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.circle-theorems",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Circle theorems: angles, radii, tangents, chords, alternate segment theorem",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["circle theorems", "angle at centre", "angle in semicircle", "angles in same segment", "cyclic quadrilateral", "tangent perpendicular to radius", "tangents from external point", "perpendicular from centre to chord", "alternate segment theorem", "G10"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.coordinate-geometry",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "Geometrical problems on coordinate axes",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["coordinate geometry", "geometrical problems", "coordinate axes", "G11"]
+    },
+    {
+      "id": "geometry-measures.properties-constructions.3d-shapes",
+      "parentId": "geometry-measures.properties-constructions",
+      "label": "3D shape properties: faces, surfaces, edges, vertices, plans and elevations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["3D shapes", "cubes", "cuboids", "prisms", "cylinders", "pyramids", "cones", "spheres", "plans", "elevations", "G12", "G13"]
+    },
+    {
+      "id": "geometry-measures.mensuration",
+      "parentId": "geometry-measures",
+      "label": "Mensuration and calculation",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["mensuration", "calculation"]
+    },
+    {
+      "id": "geometry-measures.mensuration.area-volume-formulae",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Area and volume formulae: triangles, parallelograms, trapezia, cuboids, prisms, cylinders",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["area of triangles", "area of parallelograms", "area of trapezia", "volume of cuboids", "volume of prisms", "volume of cylinders", "G16"]
+    },
+    {
+      "id": "geometry-measures.mensuration.circles-spheres",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Circumference, area of circles, surface area and volume of spheres, pyramids, cones, composite solids",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["circumference", "2πr", "πd", "area of circle", "πr²", "surface area", "volume of spheres", "volume of pyramids", "volume of cones", "frustums", "composite solids", "G17"]
+    },
+    {
+      "id": "geometry-measures.mensuration.arc-sectors",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Arc lengths, sector angles and areas",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["arc length", "sector area", "sector angles", "G18"]
+    },
+    {
+      "id": "geometry-measures.mensuration.pythagoras-trigonometry",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Pythagoras' theorem and trigonometric ratios in 2D and 3D",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["Pythagoras", "a²+b²=c²", "sin", "cos", "tan", "right-angled triangles", "3D trigonometry", "general triangles", "G20"]
+    },
+    {
+      "id": "geometry-measures.mensuration.exact-trig-values",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Exact trigonometric values for 0°, 30°, 45°, 60°, 90°",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["exact values", "sin 30", "cos 45", "tan 60", "special angles", "G21"]
+    },
+    {
+      "id": "geometry-measures.mensuration.sine-cosine-rules",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Sine rule, cosine rule, area = ½ab sin C",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["sine rule", "cosine rule", "a/sinA", "a²=b²+c²-2bc cosA", "area of triangle", "½ab sinC", "G22", "G23"]
+    },
+    {
+      "id": "geometry-measures.mensuration.bearings-maps",
+      "parentId": "geometry-measures.mensuration",
+      "label": "Measurements, maps, scale drawings, bearings",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["measure lengths", "measure angles", "maps", "scale drawings", "bearings", "compass point bearings", "three-figure bearings", "G15"]
+    },
+    {
+      "id": "geometry-measures.vectors",
+      "parentId": "geometry-measures",
+      "label": "Vectors",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["vectors"]
+    },
+    {
+      "id": "geometry-measures.vectors.vector-operations",
+      "parentId": "geometry-measures.vectors",
+      "label": "Vector notation, addition, subtraction, scalar multiplication, column vectors, geometric proofs",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["vectors", "column vectors", "vector addition", "vector subtraction", "scalar multiplication", "translations", "geometric proofs", "G24", "G25"]
+    },
+    {
+      "id": "probability",
+      "parentId": null,
+      "label": "Probability",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["probability"]
+    },
+    {
+      "id": "probability.experiments-frequency",
+      "parentId": "probability",
+      "label": "Probability experiments, frequency tables, frequency trees",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["probability experiments", "frequency tables", "frequency trees", "P1"]
+    },
+    {
+      "id": "probability.randomness-fairness",
+      "parentId": "probability",
+      "label": "Randomness, fairness, equally likely events, expected outcomes",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["randomness", "fairness", "equally likely", "expected outcomes", "P2"]
+    },
+    {
+      "id": "probability.relative-frequency",
+      "parentId": "probability",
+      "label": "Relative frequency, theoretical probability, 0 to 1 scale",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["relative frequency", "theoretical probability", "probability scale", "P3"]
+    },
+    {
+      "id": "probability.exhaustive-mutually-exclusive",
+      "parentId": "probability",
+      "label": "Exhaustive outcomes sum to 1, mutually exclusive events",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["exhaustive set", "mutually exclusive", "sum to 1", "P4"]
+    },
+    {
+      "id": "probability.sample-size",
+      "parentId": "probability",
+      "label": "Empirical samples, sample size and theoretical probability",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["empirical samples", "unbiased samples", "sample size", "P5"]
+    },
+    {
+      "id": "probability.enumeration",
+      "parentId": "probability",
+      "label": "Systematic enumeration: tables, grids, Venn diagrams, tree diagrams",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["systematic enumeration", "tables", "grids", "Venn diagrams", "tree diagrams", "P6"]
+    },
+    {
+      "id": "probability.possibility-spaces",
+      "parentId": "probability",
+      "label": "Theoretical possibility spaces, single and combined experiments",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["possibility spaces", "combined experiments", "theoretical probability", "P7"]
+    },
+    {
+      "id": "probability.combined-events",
+      "parentId": "probability",
+      "label": "Independent and dependent combined events, tree diagrams, adding and multiplying probabilities",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["independent events", "dependent events", "combined events", "tree diagrams", "add probabilities", "multiply probabilities", "P8"]
+    },
+    {
+      "id": "probability.conditional",
+      "parentId": "probability",
+      "label": "Conditional probability, two-way tables, Venn diagrams",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["conditional probability", "two-way tables", "Venn diagrams", "expected frequencies", "P9"]
+    },
+    {
+      "id": "statistics",
+      "parentId": null,
+      "label": "Statistics",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["statistics"]
+    },
+    {
+      "id": "statistics.sampling",
+      "parentId": "statistics",
+      "label": "Sampling, populations, distributions, limitations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["sampling", "populations", "distributions", "limitations", "S1"]
+    },
+    {
+      "id": "statistics.tables-charts",
+      "parentId": "statistics",
+      "label": "Frequency tables, bar charts, pie charts, pictograms, vertical line charts, time series",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["frequency tables", "bar charts", "pie charts", "pictograms", "vertical line charts", "discrete data", "time series", "S2"]
+    },
+    {
+      "id": "statistics.histograms-cumulative",
+      "parentId": "statistics",
+      "label": "Histograms with equal and unequal class intervals, cumulative frequency graphs",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["histograms", "equal class intervals", "unequal class intervals", "cumulative frequency", "grouped data", "continuous data", "S3"]
+    },
+    {
+      "id": "statistics.distributions",
+      "parentId": "statistics",
+      "label": "Distributions: box plots, median, mean, mode, range, quartiles, inter-quartile range, outliers",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["box plots", "median", "mean", "mode", "modal class", "range", "quartiles", "inter-quartile range", "outliers", "central tendency", "spread", "S4"]
+    },
+    {
+      "id": "statistics.describe-population",
+      "parentId": "statistics",
+      "label": "Using statistics to describe a population",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["describe population", "statistics", "S5"]
+    },
+    {
+      "id": "statistics.scatter-graphs",
+      "parentId": "statistics",
+      "label": "Scatter graphs, correlation, line of best fit, interpolation, extrapolation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2", "paper-3"],
+      "aliases": ["scatter graphs", "correlation", "positive correlation", "negative correlation", "no correlation", "weak correlation", "strong correlation", "line of best fit", "interpolation", "extrapolation", "bivariate data", "causation", "S6"]
+    }
+  ]
+}

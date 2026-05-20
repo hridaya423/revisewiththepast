@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "mathematics",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of data representations for Edexcel GCSE Mathematics"
+  },
+  "representations": {
+    "statistics": [
+      "histogram",
+      "cumulative-frequency",
+      "box-plot",
+      "scatter-graph",
+      "frequency-table",
+      "pie-chart",
+      "bar-chart",
+      "stem-and-leaf"
+    ]
+  }
+}

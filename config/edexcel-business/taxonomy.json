@@ -1,0 +1,471 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "business",
+    "specCode": "1BS0",
+    "version": "2024.1",
+    "scope": "edexcel-gcse-business-1bs0-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "theme-1",
+      "parentId": null,
+      "label": "Theme 1: Investigating small business",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["theme 1", "investigating small business", "1bs0/01"]
+    },
+    {
+      "id": "theme-1.1-1-enterprise-and-entrepreneurship",
+      "parentId": "theme-1",
+      "label": "Topic 1.1 Enterprise and entrepreneurship",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["1.1", "enterprise and entrepreneurship"]
+    },
+    {
+      "id": "theme-1.1-1-enterprise-and-entrepreneurship.dynamic-nature-of-business",
+      "parentId": "theme-1.1-1-enterprise-and-entrepreneurship",
+      "label": "1.1.1 The dynamic nature of business",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["new business ideas", "changes in technology", "changes in consumer wants", "obsolete products", "adapting existing products"]
+    },
+    {
+      "id": "theme-1.1-1-enterprise-and-entrepreneurship.risk-and-reward",
+      "parentId": "theme-1.1-1-enterprise-and-entrepreneurship",
+      "label": "1.1.2 Risk and reward",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business failure", "financial loss", "lack of security", "business success", "profit", "independence"]
+    },
+    {
+      "id": "theme-1.1-1-enterprise-and-entrepreneurship.role-of-business-enterprise",
+      "parentId": "theme-1.1-1-enterprise-and-entrepreneurship",
+      "label": "1.1.3 The role of business enterprise",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["purpose of business activity", "goods and services", "meet customer needs", "add value", "entrepreneur"]
+    },
+    {
+      "id": "theme-1.2-spotting-a-business-opportunity",
+      "parentId": "theme-1",
+      "label": "Topic 1.2 Spotting a business opportunity",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["1.2", "spotting a business opportunity"]
+    },
+    {
+      "id": "theme-1.2-spotting-a-business-opportunity.customer-needs",
+      "parentId": "theme-1.2-spotting-a-business-opportunity",
+      "label": "1.2.1 Customer needs",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["price quality choice convenience", "understanding customers", "generating sales", "business survival"]
+    },
+    {
+      "id": "theme-1.2-spotting-a-business-opportunity.market-research",
+      "parentId": "theme-1.2-spotting-a-business-opportunity",
+      "label": "1.2.2 Market research",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["primary research", "secondary research", "qualitative data", "quantitative data", "social media data", "reliability of data"]
+    },
+    {
+      "id": "theme-1.2-spotting-a-business-opportunity.market-segmentation",
+      "parentId": "theme-1.2-spotting-a-business-opportunity",
+      "label": "1.2.3 Market segmentation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["target customers", "location demographics", "lifestyle income age", "market mapping", "gap in the market"]
+    },
+    {
+      "id": "theme-1.2-spotting-a-business-opportunity.competitive-environment",
+      "parentId": "theme-1.2-spotting-a-business-opportunity",
+      "label": "1.2.4 The competitive environment",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["competitor strengths", "competitor weaknesses", "price quality location product range customer service", "impact of competition"]
+    },
+    {
+      "id": "theme-1.3-putting-a-business-idea-into-practice",
+      "parentId": "theme-1",
+      "label": "Topic 1.3 Putting a business idea into practice",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["1.3", "putting a business idea into practice"]
+    },
+    {
+      "id": "theme-1.3-putting-a-business-idea-into-practice.business-aims-and-objectives",
+      "parentId": "theme-1.3-putting-a-business-idea-into-practice",
+      "label": "1.3.1 Business aims and objectives",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["financial objectives", "survival", "profit", "sales", "market share", "non-financial objectives", "social objectives"]
+    },
+    {
+      "id": "theme-1.3-putting-a-business-idea-into-practice.business-revenues-costs-and-profits",
+      "parentId": "theme-1.3-putting-a-business-idea-into-practice",
+      "label": "1.3.2 Business revenues, costs and profits",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["revenue", "fixed costs", "variable costs", "total costs", "profit", "loss", "break even", "margin of safety", "break-even diagrams"]
+    },
+    {
+      "id": "theme-1.3-putting-a-business-idea-into-practice.cash-and-cash-flow",
+      "parentId": "theme-1.3-putting-a-business-idea-into-practice",
+      "label": "1.3.3 Cash and cash-flow",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["cash inflows", "cash outflows", "net cash flow", "opening balance", "closing balance", "cash-flow forecast", "cash vs profit"]
+    },
+    {
+      "id": "theme-1.3-putting-a-business-idea-into-practice.sources-of-business-finance",
+      "parentId": "theme-1.3-putting-a-business-idea-into-practice",
+      "label": "1.3.4 Sources of business finance",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["overdraft", "trade credit", "personal savings", "venture capital", "share capital", "loans", "retained profit", "crowd funding"]
+    },
+    {
+      "id": "theme-1.4-making-the-business-effective",
+      "parentId": "theme-1",
+      "label": "Topic 1.4 Making the business effective",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["1.4", "making the business effective"]
+    },
+    {
+      "id": "theme-1.4-making-the-business-effective.options-for-start-up-and-small-businesses",
+      "parentId": "theme-1.4-making-the-business-effective",
+      "label": "1.4.1 The options for start-up and small businesses",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["limited liability", "unlimited liability", "sole trader", "partnership", "private limited company", "franchising"]
+    },
+    {
+      "id": "theme-1.4-making-the-business-effective.business-location",
+      "parentId": "theme-1.4-making-the-business-effective",
+      "label": "1.4.2 Business location",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["proximity to market", "proximity to labour", "proximity to materials", "proximity to competitors", "e-commerce location decisions"]
+    },
+    {
+      "id": "theme-1.4-making-the-business-effective.marketing-mix",
+      "parentId": "theme-1.4-making-the-business-effective",
+      "label": "1.4.3 The marketing mix",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["4ps", "price product promotion place", "balancing the marketing mix", "consumer needs", "technology and marketing mix"]
+    },
+    {
+      "id": "theme-1.4-making-the-business-effective.business-plans",
+      "parentId": "theme-1.4-making-the-business-effective",
+      "label": "1.4.4 Business plans",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business plan", "minimising risk", "obtaining finance", "planning business activity"]
+    },
+    {
+      "id": "theme-1.5-understanding-external-influences-on-business",
+      "parentId": "theme-1",
+      "label": "Topic 1.5 Understanding external influences on business",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["1.5", "external influences on business"]
+    },
+    {
+      "id": "theme-1.5-understanding-external-influences-on-business.business-stakeholders",
+      "parentId": "theme-1.5-understanding-external-influences-on-business",
+      "label": "1.5.1 Business stakeholders",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["shareholders", "employees", "customers", "managers", "suppliers", "local community", "pressure groups", "government", "stakeholder conflict"]
+    },
+    {
+      "id": "theme-1.5-understanding-external-influences-on-business.technology-and-business",
+      "parentId": "theme-1.5-understanding-external-influences-on-business",
+      "label": "1.5.2 Technology and business",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["e-commerce", "social media", "digital communication", "payment systems", "technology impact on sales costs marketing mix"]
+    },
+    {
+      "id": "theme-1.5-understanding-external-influences-on-business.legislation-and-business",
+      "parentId": "theme-1.5-understanding-external-influences-on-business",
+      "label": "1.5.3 Legislation and business",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["consumer law", "consumer rights", "employment law", "recruitment pay discrimination health and safety", "cost of compliance"]
+    },
+    {
+      "id": "theme-1.5-understanding-external-influences-on-business.economy-and-business",
+      "parentId": "theme-1.5-understanding-external-influences-on-business",
+      "label": "1.5.4 The economy and business",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["unemployment", "consumer income", "inflation", "interest rates", "government taxation", "exchange rates"]
+    },
+    {
+      "id": "theme-1.5-understanding-external-influences-on-business.external-influences",
+      "parentId": "theme-1.5-understanding-external-influences-on-business",
+      "label": "1.5.5 External influences",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business responses", "changes in technology", "changes in legislation", "changes in economic climate"]
+    },
+    {
+      "id": "theme-2",
+      "parentId": null,
+      "label": "Theme 2: Building a business",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["theme 2", "building a business", "1bs0/02"]
+    },
+    {
+      "id": "theme-2.1-growing-the-business",
+      "parentId": "theme-2",
+      "label": "Topic 2.1 Growing the business",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["2.1", "growing the business"]
+    },
+    {
+      "id": "theme-2.1-growing-the-business.business-growth",
+      "parentId": "theme-2.1-growing-the-business",
+      "label": "2.1.1 Business growth",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["organic growth", "inorganic growth", "innovation", "research and development", "merger", "takeover", "plc", "stock market flotation", "sources of finance for growth"]
+    },
+    {
+      "id": "theme-2.1-growing-the-business.changes-in-business-aims-and-objectives",
+      "parentId": "theme-2.1-growing-the-business",
+      "label": "2.1.2 Changes in business aims and objectives",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["evolving objectives", "market conditions", "technology", "performance", "legislation", "entering and exiting markets", "workforce changes", "product range changes"]
+    },
+    {
+      "id": "theme-2.1-growing-the-business.business-and-globalisation",
+      "parentId": "theme-2.1-growing-the-business",
+      "label": "2.1.3 Business and globalisation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["imports", "exports", "changing locations", "multinationals", "tariffs", "trade blocs", "international competition"]
+    },
+    {
+      "id": "theme-2.1-growing-the-business.ethics-environment-and-business",
+      "parentId": "theme-2.1-growing-the-business",
+      "label": "2.1.4 Ethics, the environment and business",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["ethics vs profit", "environment vs profit", "sustainability", "pressure groups", "impact on marketing mix"]
+    },
+    {
+      "id": "theme-2.2-making-marketing-decisions",
+      "parentId": "theme-2",
+      "label": "Topic 2.2 Making marketing decisions",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["2.2", "making marketing decisions"]
+    },
+    {
+      "id": "theme-2.2-making-marketing-decisions.product",
+      "parentId": "theme-2.2-making-marketing-decisions",
+      "label": "2.2.1 Product",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["design mix", "function aesthetics cost", "product life cycle", "extension strategies", "differentiation"]
+    },
+    {
+      "id": "theme-2.2-making-marketing-decisions.price",
+      "parentId": "theme-2.2-making-marketing-decisions",
+      "label": "2.2.2 Price",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["pricing strategies", "influences on pricing", "technology competition segments", "product life cycle pricing"]
+    },
+    {
+      "id": "theme-2.2-making-marketing-decisions.promotion",
+      "parentId": "theme-2.2-making-marketing-decisions",
+      "label": "2.2.3 Promotion",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["advertising", "sponsorship", "product trials", "special offers", "branding", "targeted advertising", "viral advertising", "e-newsletters"]
+    },
+    {
+      "id": "theme-2.2-making-marketing-decisions.place",
+      "parentId": "theme-2.2-making-marketing-decisions",
+      "label": "2.2.4 Place",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["distribution", "retailers", "e-tailers", "e-commerce channels"]
+    },
+    {
+      "id": "theme-2.2-making-marketing-decisions.using-the-marketing-mix-to-make-business-decisions",
+      "parentId": "theme-2.2-making-marketing-decisions",
+      "label": "2.2.5 Using the marketing mix to make business decisions",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["integrated marketing mix", "competitive advantage", "interdependence of 4ps"]
+    },
+    {
+      "id": "theme-2.3-making-operational-decisions",
+      "parentId": "theme-2",
+      "label": "Topic 2.3 Making operational decisions",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["2.3", "making operational decisions"]
+    },
+    {
+      "id": "theme-2.3-making-operational-decisions.business-operations",
+      "parentId": "theme-2.3-making-operational-decisions",
+      "label": "2.3.1 Business operations",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["production of goods", "provision of services", "job batch flow production", "technology and productivity", "cost quality flexibility"]
+    },
+    {
+      "id": "theme-2.3-making-operational-decisions.working-with-suppliers",
+      "parentId": "theme-2.3-making-operational-decisions",
+      "label": "2.3.2 Working with suppliers",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["stock management", "bar gate stock graphs", "just in time", "procurement", "logistics", "supplier relationships"]
+    },
+    {
+      "id": "theme-2.3-making-operational-decisions.managing-quality",
+      "parentId": "theme-2.3-making-operational-decisions",
+      "label": "2.3.3 Managing quality",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["quality control", "quality assurance", "quality in goods and services", "competitive advantage through quality"]
+    },
+    {
+      "id": "theme-2.3-making-operational-decisions.sales-process",
+      "parentId": "theme-2.3-making-operational-decisions",
+      "label": "2.3.4 The sales process",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["product knowledge", "speed of service", "customer engagement", "feedback responses", "post-sales service", "customer service"]
+    },
+    {
+      "id": "theme-2.4-making-financial-decisions",
+      "parentId": "theme-2",
+      "label": "Topic 2.4 Making financial decisions",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["2.4", "making financial decisions"]
+    },
+    {
+      "id": "theme-2.4-making-financial-decisions.business-calculations",
+      "parentId": "theme-2.4-making-financial-decisions",
+      "label": "2.4.1 Business calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["gross profit", "net profit", "gross profit margin", "net profit margin", "average rate of return"]
+    },
+    {
+      "id": "theme-2.4-making-financial-decisions.understanding-business-performance",
+      "parentId": "theme-2.4-making-financial-decisions",
+      "label": "2.4.2 Understanding business performance",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["graphs and charts", "financial data", "marketing data", "market data", "limitations of financial information"]
+    },
+    {
+      "id": "theme-2.5-making-human-resource-decisions",
+      "parentId": "theme-2",
+      "label": "Topic 2.5 Making human resource decisions",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["2.5", "making human resource decisions"]
+    },
+    {
+      "id": "theme-2.5-making-human-resource-decisions.organisational-structures",
+      "parentId": "theme-2.5-making-human-resource-decisions",
+      "label": "2.5.1 Organisational structures",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["hierarchical and flat", "centralised and decentralised", "effective communication", "ways of working", "remote working"]
+    },
+    {
+      "id": "theme-2.5-making-human-resource-decisions.effective-recruitment",
+      "parentId": "theme-2.5-making-human-resource-decisions",
+      "label": "2.5.2 Effective recruitment",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["job roles and responsibilities", "person specification", "job description", "application form", "cv", "internal recruitment", "external recruitment"]
+    },
+    {
+      "id": "theme-2.5-making-human-resource-decisions.effective-training-and-development",
+      "parentId": "theme-2.5-making-human-resource-decisions",
+      "label": "2.5.3 Effective training and development",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["formal training", "informal training", "self-learning", "performance reviews", "motivation and retention", "retraining"]
+    },
+    {
+      "id": "theme-2.5-making-human-resource-decisions.motivation",
+      "parentId": "theme-2.5-making-human-resource-decisions",
+      "label": "2.5.4 Motivation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["financial methods", "remuneration", "bonus", "commission", "fringe benefits", "non-financial methods", "job rotation", "job enrichment", "autonomy"]
+    }
+  ]
+}

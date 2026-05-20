@@ -1,0 +1,290 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "geography",
+    "specCode": "8035",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Living with the physical environment",
+      "durationMinutes": 90,
+      "totalMarks": 88,
+      "contexts": ["physical-geography"],
+      "sections": [
+        {
+          "code": "A",
+          "name": "The challenge of natural hazards",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "natural-hazards.overview",
+            "tectonic-hazards.plate-margins",
+            "tectonic-hazards.effects-responses",
+            "tectonic-hazards.management",
+            "weather-hazards.global-circulation",
+            "weather-hazards.tropical-storms",
+            "weather-hazards.uk-extreme-weather",
+            "climate-change.evidence-causes",
+            "climate-change.effects-management",
+            "applications.skills.cartographic",
+            "applications.skills.graphical-statistical",
+            "applications.skills.visual-resource-interpretation"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "content",
+            "resourceBookletExpected": false
+          }
+        },
+        {
+          "code": "B",
+          "name": "The living world",
+          "mode": "mandatory-with-single-option",
+          "requiredQuestionCount": "all-core-plus-one-option",
+          "coreTopicIds": [
+            "living-world.ecosystems",
+            "living-world.tropical-rainforests.characteristics",
+            "living-world.tropical-rainforests.deforestation"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-b-biome-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "hot-deserts-option",
+                  "allowedPrimaryTopicIds": [
+                    "living-world.hot-deserts.characteristics",
+                    "living-world.hot-deserts.development-desertification"
+                  ]
+                },
+                {
+                  "id": "cold-environments-option",
+                  "allowedPrimaryTopicIds": [
+                    "living-world.cold-environments.characteristics",
+                    "living-world.cold-environments.development-conservation"
+                  ]
+                }
+              ]
+            }
+          ],
+          "defaultFacets": {
+            "assessmentContext": "content",
+            "resourceBookletExpected": false
+          }
+        },
+        {
+          "code": "C",
+          "name": "Physical landscapes in the UK",
+          "mode": "mandatory-with-two-options",
+          "requiredQuestionCount": "all-core-plus-two-options",
+          "coreTopicIds": [
+            "physical-landscapes-uk.overview"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-c-landscape-option",
+              "choose": 2,
+              "options": [
+                {
+                  "id": "coasts-option",
+                  "allowedPrimaryTopicIds": [
+                    "coasts.processes",
+                    "coasts.management"
+                  ]
+                },
+                {
+                  "id": "rivers-option",
+                  "allowedPrimaryTopicIds": [
+                    "rivers.profiles-and-processes",
+                    "rivers.flood-risk-management"
+                  ]
+                },
+                {
+                  "id": "glacial-option",
+                  "allowedPrimaryTopicIds": [
+                    "glacial-landscapes.processes-and-landforms",
+                    "glacial-landscapes.management"
+                  ]
+                }
+              ]
+            }
+          ],
+          "defaultFacets": {
+            "assessmentContext": "content",
+            "resourceBookletExpected": false
+          }
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Challenges in the human environment",
+      "durationMinutes": 90,
+      "totalMarks": 88,
+      "contexts": ["human-geography"],
+      "sections": [
+        {
+          "code": "A",
+          "name": "Urban issues and challenges",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "urban-issues.global-urbanisation",
+            "urban-issues.lic-nee-city",
+            "urban-issues.uk-city",
+            "urban-issues.strategies",
+            "applications.skills.cartographic",
+            "applications.skills.graphical-statistical",
+            "applications.skills.visual-resource-interpretation"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "content",
+            "resourceBookletExpected": false
+          }
+        },
+        {
+          "code": "B",
+          "name": "The changing economic world",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "changing-economic-world.development-gap",
+            "changing-economic-world.reducing-gap",
+            "changing-economic-world.nee-case-study",
+            "changing-economic-world.uk-economy",
+            "applications.skills.cartographic",
+            "applications.skills.graphical-statistical",
+            "applications.skills.visual-resource-interpretation"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "content",
+            "resourceBookletExpected": false
+          }
+        },
+        {
+          "code": "C",
+          "name": "The challenge of resource management",
+          "mode": "mandatory-with-single-option",
+          "requiredQuestionCount": "all-core-plus-one-option",
+          "coreTopicIds": [
+            "resource-management.overview"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-c-resource-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "food-option",
+                  "allowedPrimaryTopicIds": [
+                    "resource-management.food"
+                  ]
+                },
+                {
+                  "id": "water-option",
+                  "allowedPrimaryTopicIds": [
+                    "resource-management.water"
+                  ]
+                },
+                {
+                  "id": "energy-option",
+                  "allowedPrimaryTopicIds": [
+                    "resource-management.energy"
+                  ]
+                }
+              ]
+            }
+          ],
+          "defaultFacets": {
+            "assessmentContext": "content",
+            "resourceBookletExpected": false
+          }
+        }
+      ]
+    },
+    {
+      "code": "paper-3",
+      "name": "Geographical applications",
+      "durationMinutes": 90,
+      "totalMarks": 76,
+      "contexts": ["applications", "skills"],
+      "sections": [
+        {
+          "code": "A",
+          "name": "Issue evaluation",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "natural-hazards.overview",
+            "tectonic-hazards.plate-margins",
+            "tectonic-hazards.effects-responses",
+            "tectonic-hazards.management",
+            "weather-hazards.global-circulation",
+            "weather-hazards.tropical-storms",
+            "weather-hazards.uk-extreme-weather",
+            "climate-change.evidence-causes",
+            "climate-change.effects-management",
+            "living-world.ecosystems",
+            "living-world.tropical-rainforests.characteristics",
+            "living-world.tropical-rainforests.deforestation",
+            "living-world.hot-deserts.characteristics",
+            "living-world.hot-deserts.development-desertification",
+            "living-world.cold-environments.characteristics",
+            "living-world.cold-environments.development-conservation",
+            "physical-landscapes-uk.overview",
+            "coasts.processes",
+            "coasts.management",
+            "rivers.profiles-and-processes",
+            "rivers.flood-risk-management",
+            "glacial-landscapes.processes-and-landforms",
+            "glacial-landscapes.management",
+            "urban-issues.global-urbanisation",
+            "urban-issues.lic-nee-city",
+            "urban-issues.uk-city",
+            "urban-issues.strategies",
+            "changing-economic-world.development-gap",
+            "changing-economic-world.reducing-gap",
+            "changing-economic-world.nee-case-study",
+            "changing-economic-world.uk-economy",
+            "resource-management.overview",
+            "resource-management.food",
+            "resource-management.water",
+            "resource-management.energy",
+            "applications.issue-evaluation.physical",
+            "applications.issue-evaluation.human",
+            "applications.issue-evaluation.synoptic",
+            "applications.skills.cartographic",
+            "applications.skills.graphical-statistical",
+            "applications.skills.visual-resource-interpretation"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "issue-evaluation",
+            "resourceBookletExpected": true
+          }
+        },
+        {
+          "code": "B",
+          "name": "Fieldwork",
+          "mode": "mandatory",
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "applications.fieldwork-question-design",
+            "applications.fieldwork-data-collection",
+            "applications.fieldwork-presentation",
+            "applications.fieldwork-analysis",
+            "applications.fieldwork-evaluation",
+            "applications.skills.cartographic",
+            "applications.skills.graphical-statistical",
+            "applications.skills.visual-resource-interpretation"
+          ],
+          "defaultFacets": {
+            "assessmentContext": "fieldwork",
+            "resourceBookletExpected": false
+          }
+        }
+      ]
+    }
+  ]
+}

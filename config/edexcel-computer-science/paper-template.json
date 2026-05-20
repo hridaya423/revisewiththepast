@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "computer-science",
+    "specCode": "1CP2",
+    "version": "2024.1",
+    "scope": "edexcel-computer-science-1cp2-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "qualification": {
+    "tier": "single-tier",
+    "totalMarks": 150,
+    "paperSplit": "2 x 50%"
+  },
+  "papers": [
+    {
+      "id": "paper-1",
+      "paperCode": "paper-1",
+      "label": "Paper 1: Principles of Computer Science",
+      "officialCode": "1CP2/01",
+      "tier": "single-tier",
+      "durationMinutes": 90,
+      "duration": "1h 30m",
+      "marks": 75,
+      "weighting": "50%",
+      "structure": {
+        "questionCount": 5,
+        "questionPattern": "five compulsory questions, one per topic"
+      },
+      "sections": [
+        {
+          "sectionCode": "Q1",
+          "sectionName": "Topic 1: Computational thinking",
+          "topicRefs": [
+            "topic-1.decomposition-abstraction",
+            "topic-1.algorithms-control-structures",
+            "topic-1.algorithms-data-operators-trace-errors",
+            "topic-1.standard-algorithms-evaluation",
+            "topic-1.truth-tables"
+          ]
+        },
+        {
+          "sectionCode": "Q2",
+          "sectionName": "Topic 2: Data",
+          "topicRefs": [
+            "topic-2.binary-representation-conversion",
+            "topic-2.binary-arithmetic-shifts-overflow-hex",
+            "topic-2.character-image-sound-representation",
+            "topic-2.data-representation-limitations",
+            "topic-2.data-storage-units-file-size-capacity",
+            "topic-2.data-compression"
+          ]
+        },
+        {
+          "sectionCode": "Q3",
+          "sectionName": "Topic 3: Computers",
+          "topicRefs": [
+            "topic-3.hardware-von-neumann-fde",
+            "topic-3.secondary-storage-and-embedded",
+            "topic-3.operating-systems",
+            "topic-3.utility-software-and-robustness",
+            "topic-3.programming-languages-and-translation"
+          ]
+        },
+        {
+          "sectionCode": "Q4",
+          "sectionName": "Topic 4: Networks",
+          "topicRefs": [
+            "topic-4.network-purpose-types-internet-connectivity",
+            "topic-4.protocols-tcpip-topologies",
+            "topic-4.network-security"
+          ]
+        },
+        {
+          "sectionCode": "Q5",
+          "sectionName": "Topic 5: Issues and impact",
+          "topicRefs": [
+            "topic-5.environmental-issues",
+            "topic-5.data-ethics-and-law",
+            "topic-5.ai-ml-robotics-ethics-legal",
+            "topic-5.intellectual-property",
+            "topic-5.cybersecurity-threats",
+            "topic-5.cybersecurity-protection"
+          ]
+        }
+      ],
+      "topics": [
+        "topic-1.decomposition-abstraction",
+        "topic-1.algorithms-control-structures",
+        "topic-1.algorithms-data-operators-trace-errors",
+        "topic-1.standard-algorithms-evaluation",
+        "topic-1.truth-tables",
+        "topic-2.binary-representation-conversion",
+        "topic-2.binary-arithmetic-shifts-overflow-hex",
+        "topic-2.character-image-sound-representation",
+        "topic-2.data-representation-limitations",
+        "topic-2.data-storage-units-file-size-capacity",
+        "topic-2.data-compression",
+        "topic-3.hardware-von-neumann-fde",
+        "topic-3.secondary-storage-and-embedded",
+        "topic-3.operating-systems",
+        "topic-3.utility-software-and-robustness",
+        "topic-3.programming-languages-and-translation",
+        "topic-4.network-purpose-types-internet-connectivity",
+        "topic-4.protocols-tcpip-topologies",
+        "topic-4.network-security",
+        "topic-5.environmental-issues",
+        "topic-5.data-ethics-and-law",
+        "topic-5.ai-ml-robotics-ethics-legal",
+        "topic-5.intellectual-property",
+        "topic-5.cybersecurity-threats",
+        "topic-5.cybersecurity-protection"
+      ]
+    },
+    {
+      "id": "paper-2",
+      "paperCode": "paper-2",
+      "label": "Paper 2: Application of Computational Thinking",
+      "officialCode": "1CP2/02",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "duration": "2h",
+      "marks": 75,
+      "weighting": "50%",
+      "structure": {
+        "questionCount": 6,
+        "questionPattern": "six compulsory practical programming questions"
+      },
+      "sections": [
+        {
+          "sectionCode": "T6",
+          "sectionName": "Topic 6: Problem solving with programming",
+          "topicRefs": [
+            "topic-6.develop-code",
+            "topic-6.constructs",
+            "topic-6.data-types-and-structures",
+            "topic-6.input-output-validation-authentication",
+            "topic-6.operators",
+            "topic-6.subprograms"
+          ]
+        }
+      ],
+      "topics": [
+        "topic-6.develop-code",
+        "topic-6.constructs",
+        "topic-6.data-types-and-structures",
+        "topic-6.input-output-validation-authentication",
+        "topic-6.operators",
+        "topic-6.subprograms"
+      ]
+    }
+  ]
+}

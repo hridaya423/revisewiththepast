@@ -1,0 +1,114 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "geography",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of case studies per unit for Edexcel GCSE Geography"
+  },
+  "caseStudies": {
+    "changing-landscapes-uk": [
+      "holderness-coast",
+      "lyme-regis",
+      "flamborough-head",
+      "spurn-head",
+      "river-severn",
+      "river-thames",
+      "lake-district",
+      "snowdonia",
+      "peak-district"
+    ],
+    "weather-hazards": [
+      "hurricane-katrina-2005",
+      "typhoon-haiyan-philippines-2013",
+      "cyclone-nargis-myanmar-2008",
+      "haiti-earthquake-2010",
+      "christchurch-earthquake-2011",
+      "horn-of-africa-drought",
+      "california-drought",
+      "australia-millennium-drought"
+    ],
+    "uk-weather-climate": [
+      "summer-2018-heatwave",
+      "winter-2013-14-floods",
+      "storm-ciara-2020"
+    ],
+    "ecosystems-biodiversity": [
+      "amazon-rainforest",
+      "borneo-rainforest",
+      "new-forest",
+      "sheffield-urban-woodland",
+      "great-barrier-reef"
+    ],
+    "changing-cities": [
+      "london",
+      "manchester",
+      "birmingham",
+      "mumbai",
+      "rio-de-janeiro",
+      "lagos",
+      "nairobi",
+      "dhaka"
+    ],
+    "global-development": [
+      "india",
+      "nigeria",
+      "kenya",
+      "bangladesh",
+      "ethiopia",
+      "peru"
+    ],
+    "resource-management-energy": [
+      "uk-energy-mix",
+      "fracking-lancashire",
+      "hinkley-point-c",
+      "hornsea-wind-farm",
+      "dinorwig-power-station",
+      "middle-east-oil",
+      "norway-oil-gas",
+      "china-coal-reliance",
+      "iceland-geothermal",
+      "brazil-ethanol"
+    ],
+    "resource-management-water": [
+      "uk-water-supply",
+      "kielder-water-transfer",
+      "lesotho-highlands-water-project",
+      "south-north-water-transfer-china",
+      "colorado-river-depletion",
+      "aral-sea-depletion",
+      "india-groundwater-crisis"
+    ],
+    "fieldwork-river": [
+      "river-channel-change",
+      "river-discharge",
+      "river-velocity",
+      "river-bedload"
+    ],
+    "fieldwork-coast": [
+      "beach-profile",
+      "sediment-analysis",
+      "wave-frequency",
+      "coastal-management-effectiveness"
+    ],
+    "fieldwork-urban": [
+      "urban-environmental-quality",
+      "land-use-change",
+      "pedestrian-flow",
+      "socio-economic-contrast"
+    ],
+    "fieldwork-rural": [
+      "rural-settlement-change",
+      "tourism-impact",
+      "service-provision",
+      "village-hall-use"
+    ],
+    "uk-challenges": [
+      "peak-district-tourism",
+      "somerset-levels-flooding",
+      "london-housing",
+      "northern-powerhouse",
+      "hs2-impact",
+      "uk-climate-adaptation"
+    ]
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "business",
+    "specCode": "1BS0",
+    "version": "2024.1",
+    "assessmentModel": "linear-single-tier",
+    "tier": "single"
+  },
+  "qualification": {
+    "type": "GCSE",
+    "totalScaledMarks": 180,
+    "assessmentSeries": "all-assessments-at-end-of-course"
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Theme 1: Investigating small business",
+      "examCode": "1BS0/01",
+      "durationMinutes": 105,
+      "totalMarks": 90,
+      "weightingPercent": 50,
+      "contentSplit": {
+        "theme": "Theme 1",
+        "focus": "Investigating small business"
+      },
+      "sections": [
+        {
+          "code": "A",
+          "name": "Section A",
+          "mode": "mandatory",
+          "marks": 35,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "theme-1.1-1-enterprise-and-entrepreneurship.dynamic-nature-of-business",
+            "theme-1.1-1-enterprise-and-entrepreneurship.risk-and-reward",
+            "theme-1.1-1-enterprise-and-entrepreneurship.role-of-business-enterprise",
+            "theme-1.2-spotting-a-business-opportunity.customer-needs",
+            "theme-1.2-spotting-a-business-opportunity.market-research",
+            "theme-1.2-spotting-a-business-opportunity.market-segmentation",
+            "theme-1.2-spotting-a-business-opportunity.competitive-environment",
+            "theme-1.3-putting-a-business-idea-into-practice.business-aims-and-objectives",
+            "theme-1.3-putting-a-business-idea-into-practice.business-revenues-costs-and-profits",
+            "theme-1.3-putting-a-business-idea-into-practice.cash-and-cash-flow",
+            "theme-1.3-putting-a-business-idea-into-practice.sources-of-business-finance",
+            "theme-1.4-making-the-business-effective.options-for-start-up-and-small-businesses",
+            "theme-1.4-making-the-business-effective.business-location",
+            "theme-1.4-making-the-business-effective.marketing-mix",
+            "theme-1.4-making-the-business-effective.business-plans",
+            "theme-1.5-understanding-external-influences-on-business.business-stakeholders",
+            "theme-1.5-understanding-external-influences-on-business.technology-and-business",
+            "theme-1.5-understanding-external-influences-on-business.legislation-and-business",
+            "theme-1.5-understanding-external-influences-on-business.economy-and-business",
+            "theme-1.5-understanding-external-influences-on-business.external-influences"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": false,
+            "questionStyle": ["calculations", "multiple-choice", "short-answer", "extended-writing"]
+          }
+        },
+        {
+          "code": "B",
+          "name": "Section B",
+          "mode": "mandatory",
+          "marks": 30,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "theme-1.1-1-enterprise-and-entrepreneurship.dynamic-nature-of-business",
+            "theme-1.1-1-enterprise-and-entrepreneurship.risk-and-reward",
+            "theme-1.1-1-enterprise-and-entrepreneurship.role-of-business-enterprise",
+            "theme-1.2-spotting-a-business-opportunity.customer-needs",
+            "theme-1.2-spotting-a-business-opportunity.market-research",
+            "theme-1.2-spotting-a-business-opportunity.market-segmentation",
+            "theme-1.2-spotting-a-business-opportunity.competitive-environment",
+            "theme-1.3-putting-a-business-idea-into-practice.business-aims-and-objectives",
+            "theme-1.3-putting-a-business-idea-into-practice.business-revenues-costs-and-profits",
+            "theme-1.3-putting-a-business-idea-into-practice.cash-and-cash-flow",
+            "theme-1.3-putting-a-business-idea-into-practice.sources-of-business-finance",
+            "theme-1.4-making-the-business-effective.options-for-start-up-and-small-businesses",
+            "theme-1.4-making-the-business-effective.business-location",
+            "theme-1.4-making-the-business-effective.marketing-mix",
+            "theme-1.4-making-the-business-effective.business-plans",
+            "theme-1.5-understanding-external-influences-on-business.business-stakeholders",
+            "theme-1.5-understanding-external-influences-on-business.technology-and-business",
+            "theme-1.5-understanding-external-influences-on-business.legislation-and-business",
+            "theme-1.5-understanding-external-influences-on-business.economy-and-business",
+            "theme-1.5-understanding-external-influences-on-business.external-influences"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["context-based", "short-answer", "extended-writing"]
+          }
+        },
+        {
+          "code": "C",
+          "name": "Section C",
+          "mode": "mandatory",
+          "marks": 25,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "theme-1.1-1-enterprise-and-entrepreneurship.dynamic-nature-of-business",
+            "theme-1.1-1-enterprise-and-entrepreneurship.risk-and-reward",
+            "theme-1.1-1-enterprise-and-entrepreneurship.role-of-business-enterprise",
+            "theme-1.2-spotting-a-business-opportunity.customer-needs",
+            "theme-1.2-spotting-a-business-opportunity.market-research",
+            "theme-1.2-spotting-a-business-opportunity.market-segmentation",
+            "theme-1.2-spotting-a-business-opportunity.competitive-environment",
+            "theme-1.3-putting-a-business-idea-into-practice.business-aims-and-objectives",
+            "theme-1.3-putting-a-business-idea-into-practice.business-revenues-costs-and-profits",
+            "theme-1.3-putting-a-business-idea-into-practice.cash-and-cash-flow",
+            "theme-1.3-putting-a-business-idea-into-practice.sources-of-business-finance",
+            "theme-1.4-making-the-business-effective.options-for-start-up-and-small-businesses",
+            "theme-1.4-making-the-business-effective.business-location",
+            "theme-1.4-making-the-business-effective.marketing-mix",
+            "theme-1.4-making-the-business-effective.business-plans",
+            "theme-1.5-understanding-external-influences-on-business.business-stakeholders",
+            "theme-1.5-understanding-external-influences-on-business.technology-and-business",
+            "theme-1.5-understanding-external-influences-on-business.legislation-and-business",
+            "theme-1.5-understanding-external-influences-on-business.economy-and-business",
+            "theme-1.5-understanding-external-influences-on-business.external-influences"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["context-based", "short-answer", "extended-writing"]
+          }
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Theme 2: Building a business",
+      "examCode": "1BS0/02",
+      "durationMinutes": 105,
+      "totalMarks": 90,
+      "weightingPercent": 50,
+      "contentSplit": {
+        "theme": "Theme 2",
+        "focus": "Building a business"
+      },
+      "sections": [
+        {
+          "code": "A",
+          "name": "Section A",
+          "mode": "mandatory",
+          "marks": 35,
+          "requiredQuestionCount": "all",
+          "allowedPrimaryTopicIds": [
+            "theme-2.1-growing-the-business.business-growth",
+            "theme-2.1-growing-the-business.changes-in-business-aims-and-objectives",
+            "theme-2.1-growing-the-business.business-and-globalisation",
+            "theme-2.1-growing-the-business.ethics-environment-and-business",
+            "theme-2.2-making-marketing-decisions.product",
+            "theme-2.2-making-marketing-decisions.price",
+            "theme-2.2-making-marketing-decisions.promotion",
+            "theme-2.2-making-marketing-decisions.place",
+            "theme-2.2-making-marketing-decisions.using-the-marketing-mix-to-make-business-decisions",
+            "theme-2.3-making-operational-decisions.business-operations",
+            "theme-2.3-making-operational-decisions.working-with-suppliers",
+            "theme-2.3-making-operational-decisions.managing-quality",
+            "theme-2.3-making-operational-decisions.sales-process",
+            "theme-2.4-making-financial-decisions.business-calculations",
+            "theme-2.4-making-financial-decisions.understanding-business-performance",
+            "theme-2.5-making-human-resource-decisions.organisational-structures",
+            "theme-2.5-making-human-resource-decisions.effective-recruitment",
+            "theme-2.5-making-human-resource-decisions.effective-training-and-development",
+            "theme-2.5-making-human-resource-decisions.motivation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": false,
+            "questionStyle": ["calculations", "multiple-choice", "short-answer", "extended-writing"]
+          }
+        },
+        {
+          "code": "B",
+          "name": "Section B",
+          "mode": "mandatory",
+          "marks": 30,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "theme-2.1-growing-the-business.business-growth",
+            "theme-2.1-growing-the-business.changes-in-business-aims-and-objectives",
+            "theme-2.1-growing-the-business.business-and-globalisation",
+            "theme-2.1-growing-the-business.ethics-environment-and-business",
+            "theme-2.2-making-marketing-decisions.product",
+            "theme-2.2-making-marketing-decisions.price",
+            "theme-2.2-making-marketing-decisions.promotion",
+            "theme-2.2-making-marketing-decisions.place",
+            "theme-2.2-making-marketing-decisions.using-the-marketing-mix-to-make-business-decisions",
+            "theme-2.3-making-operational-decisions.business-operations",
+            "theme-2.3-making-operational-decisions.working-with-suppliers",
+            "theme-2.3-making-operational-decisions.managing-quality",
+            "theme-2.3-making-operational-decisions.sales-process",
+            "theme-2.4-making-financial-decisions.business-calculations",
+            "theme-2.4-making-financial-decisions.understanding-business-performance",
+            "theme-2.5-making-human-resource-decisions.organisational-structures",
+            "theme-2.5-making-human-resource-decisions.effective-recruitment",
+            "theme-2.5-making-human-resource-decisions.effective-training-and-development",
+            "theme-2.5-making-human-resource-decisions.motivation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["context-based", "short-answer", "extended-writing"]
+          }
+        },
+        {
+          "code": "C",
+          "name": "Section C",
+          "mode": "mandatory",
+          "marks": 25,
+          "requiredQuestionCount": 1,
+          "allowedPrimaryTopicIds": [
+            "theme-2.1-growing-the-business.business-growth",
+            "theme-2.1-growing-the-business.changes-in-business-aims-and-objectives",
+            "theme-2.1-growing-the-business.business-and-globalisation",
+            "theme-2.1-growing-the-business.ethics-environment-and-business",
+            "theme-2.2-making-marketing-decisions.product",
+            "theme-2.2-making-marketing-decisions.price",
+            "theme-2.2-making-marketing-decisions.promotion",
+            "theme-2.2-making-marketing-decisions.place",
+            "theme-2.2-making-marketing-decisions.using-the-marketing-mix-to-make-business-decisions",
+            "theme-2.3-making-operational-decisions.business-operations",
+            "theme-2.3-making-operational-decisions.working-with-suppliers",
+            "theme-2.3-making-operational-decisions.managing-quality",
+            "theme-2.3-making-operational-decisions.sales-process",
+            "theme-2.4-making-financial-decisions.business-calculations",
+            "theme-2.4-making-financial-decisions.understanding-business-performance",
+            "theme-2.5-making-human-resource-decisions.organisational-structures",
+            "theme-2.5-making-human-resource-decisions.effective-recruitment",
+            "theme-2.5-making-human-resource-decisions.effective-training-and-development",
+            "theme-2.5-making-human-resource-decisions.motivation"
+          ],
+          "defaultFacets": {
+            "resourceBookletExpected": true,
+            "questionStyle": ["context-based", "short-answer", "extended-writing"]
+          }
+        }
+      ]
+    }
+  ]
+}

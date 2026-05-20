@@ -1,0 +1,372 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "sociology",
+    "specCode": "8192",
+    "version": "2024.1",
+    "scope": "aqa-gcse-sociology-8192-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "sociological-approach",
+      "parentId": null,
+      "label": "3.1 The sociological approach",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["3.1", "sociological approach"]
+    },
+    {
+      "id": "sociological-approach.debates-conflict-consensus",
+      "parentId": "sociological-approach",
+      "label": "3.1 Debates within sociology: conflict vs consensus",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["conflict and consensus", "sociological debates"]
+    },
+    {
+      "id": "sociological-approach.classical-sociologists",
+      "parentId": "sociological-approach",
+      "label": "3.1 Contextualised work of Durkheim, Marx and Weber",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["Durkheim", "Marx", "Weber", "classical sociologists"]
+    },
+    {
+      "id": "sociological-approach.perspectives",
+      "parentId": "sociological-approach",
+      "label": "3.1 Key sociological perspectives",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["functionalism", "Marxism", "feminism", "interactionism"]
+    },
+    {
+      "id": "sociological-approach.core-terms",
+      "parentId": "sociological-approach",
+      "label": "3.1 Core sociological terms and concepts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["socialisation", "norms", "values", "roles", "labelling", "discrimination", "power", "authority"]
+    },
+    {
+      "id": "social-structures-processes-issues",
+      "parentId": null,
+      "label": "3.2 Social structures, social processes and social issues",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["3.2", "social structures", "social processes", "social issues"]
+    },
+    {
+      "id": "social-structures-processes-issues.comparison-and-evaluation",
+      "parentId": "social-structures-processes-issues",
+      "label": "3.2 Evaluate and compare explanations across topic areas",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["compare and contrast theories", "evaluation of explanations"]
+    },
+    {
+      "id": "social-structures-processes-issues.methods-in-context",
+      "parentId": "social-structures-processes-issues",
+      "label": "3.2 Methods and methodological issues in topic contexts",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["methods in context", "methodological issues", "official statistics", "mixed methods"]
+    },
+    {
+      "id": "social-structures-processes-issues.contemporary-debates",
+      "parentId": "social-structures-processes-issues",
+      "label": "3.2 Contemporary social issues and debates",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["contemporary social issues", "challenge common sense"]
+    },
+    {
+      "id": "families",
+      "parentId": null,
+      "label": "3.3 Families",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["3.3", "sociology of families"]
+    },
+    {
+      "id": "families.functions",
+      "parentId": "families",
+      "label": "3.3.1 Functions of families",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["functions of family", "primary socialisation", "stabilisation of adult personalities", "Parsons"]
+    },
+    {
+      "id": "families.forms-diversity",
+      "parentId": "families",
+      "label": "3.3.2 Family forms and diversity",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["nuclear family", "extended family", "reconstituted family", "lone parent", "single sex family", "Rapoports"]
+    },
+    {
+      "id": "families.conjugal-role-relationships",
+      "parentId": "families",
+      "label": "3.3.3 Conjugal role relationships",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["joint conjugal roles", "segregated conjugal roles", "domestic division of labour", "Oakley"]
+    },
+    {
+      "id": "families.changing-relationships",
+      "parentId": "families",
+      "label": "3.3.4 Changing relationships within families",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["symmetrical family", "stratified diffusion", "Willmott and Young", "pre-industrial family", "industrial family", "modern family"]
+    },
+    {
+      "id": "families.criticisms",
+      "parentId": "families",
+      "label": "3.3.5 Criticisms of families",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["Zaretsky", "Delphy and Leonard", "dysfunctional families", "marital breakdown"]
+    },
+    {
+      "id": "families.divorce",
+      "parentId": "families",
+      "label": "3.3.6 Divorce patterns, reasons and consequences",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A"],
+      "aliases": ["divorce since 1945", "changes in divorce law", "secularisation", "lone parent families"]
+    },
+    {
+      "id": "education",
+      "parentId": null,
+      "label": "3.4 Education",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["3.4", "sociology of education"]
+    },
+    {
+      "id": "education.roles-and-functions",
+      "parentId": "education",
+      "label": "3.4.1 Roles and functions of education",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["education and economy", "social mobility", "social cohesion", "Durkheim", "Parsons", "meritocracy"]
+    },
+    {
+      "id": "education.relationship-with-capitalism",
+      "parentId": "education",
+      "label": "3.4.2 Relationship between education and capitalism",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["correspondence principle", "Bowles and Gintis", "education and capitalism"]
+    },
+    {
+      "id": "education.achievement-factors",
+      "parentId": "education",
+      "label": "3.4.3 Factors affecting educational achievement",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["class and achievement", "gender and achievement", "ethnicity and achievement", "Halsey", "Ball"]
+    },
+    {
+      "id": "education.processes-within-schools",
+      "parentId": "education",
+      "label": "3.4.4 Processes within schools affecting achievement",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["B"],
+      "aliases": ["streaming", "setting", "mixed ability teaching", "labelling", "self-fulfilling prophecy", "teacher expectations", "counter school cultures", "Willis"]
+    },
+    {
+      "id": "crime-and-deviance",
+      "parentId": null,
+      "label": "3.5 Crime and deviance",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["3.5", "sociology of crime and deviance"]
+    },
+    {
+      "id": "crime-and-deviance.social-construction",
+      "parentId": "crime-and-deviance",
+      "label": "3.5.1 Social construction of crime and deviance",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["anomie", "labelling theory", "subcultural theory", "Merton", "Becker"]
+    },
+    {
+      "id": "crime-and-deviance.social-control",
+      "parentId": "crime-and-deviance",
+      "label": "3.5.2 Social control",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["formal social control", "informal social control", "sanctions", "Heidensohn", "female conformity"]
+    },
+    {
+      "id": "crime-and-deviance.criminal-and-deviant-behaviour",
+      "parentId": "crime-and-deviance",
+      "label": "3.5.3 Criminal and deviant behaviour",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["class gender ethnicity and crime", "age and crime", "public debates about crime", "Albert Cohen", "Carlen"]
+    },
+    {
+      "id": "crime-and-deviance.data-on-crime",
+      "parentId": "crime-and-deviance",
+      "label": "3.5.4 Data on crime",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A"],
+      "aliases": ["official crime statistics", "victim surveys", "dark figure of crime", "crime patterns and trends"]
+    },
+    {
+      "id": "social-stratification",
+      "parentId": null,
+      "label": "3.6 Social stratification",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["3.6", "sociology of social stratification"]
+    },
+    {
+      "id": "social-stratification.functionalist-theory",
+      "parentId": "social-stratification",
+      "label": "3.6.1 Functionalist theory of stratification",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["role allocation", "rewards and stratification", "Davis and Moore"]
+    },
+    {
+      "id": "social-stratification.socio-economic-class",
+      "parentId": "social-stratification",
+      "label": "3.6.2 Socio-economic class",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["class divisions", "Marx on class", "Weber on class"]
+    },
+    {
+      "id": "social-stratification.life-chances",
+      "parentId": "social-stratification",
+      "label": "3.6.3 Life chances",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["factors affecting life chances", "class and life chances", "gender and life chances", "ethnicity and life chances", "Devine"]
+    },
+    {
+      "id": "social-stratification.poverty",
+      "parentId": "social-stratification",
+      "label": "3.6.4 Poverty as a social issue",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["culture of poverty", "material deprivation", "relative deprivation", "Townsend", "Murray", "underclass", "globalisation and poverty"]
+    },
+    {
+      "id": "social-stratification.power-and-authority",
+      "parentId": "social-stratification",
+      "label": "3.6.5 Power and authority",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["traditional authority", "charismatic authority", "rational-legal authority", "Weber on authority"]
+    },
+    {
+      "id": "social-stratification.power-relationships",
+      "parentId": "social-stratification",
+      "label": "3.6.6 Power relationships",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["B"],
+      "aliases": ["factors affecting power relationships", "patriarchy", "Walby"]
+    },
+    {
+      "id": "sociological-research-methods",
+      "parentId": null,
+      "label": "3.7 Sociological research methods",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["3.7", "research methods", "methodology"]
+    },
+    {
+      "id": "sociological-research-methods.research-design",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Research design",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["aims", "hypotheses", "pilot studies", "sampling", "analysis of data"]
+    },
+    {
+      "id": "sociological-research-methods.qualitative-and-quantitative-methods",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Qualitative and quantitative methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["questionnaires", "interviews", "observations", "mixed methods"]
+    },
+    {
+      "id": "sociological-research-methods.types-of-data",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Different types of data",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["qualitative data", "quantitative data", "official statistics", "non-official statistics"]
+    },
+    {
+      "id": "sociological-research-methods.primary-and-secondary-sources",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Primary and secondary sources",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["primary sources", "secondary sources"]
+    },
+    {
+      "id": "sociological-research-methods.interpretation-of-data",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Interpretation of data",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["graphs", "charts", "tables", "patterns and trends"]
+    },
+    {
+      "id": "sociological-research-methods.practical-issues",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Practical issues",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["time", "cost", "access"]
+    },
+    {
+      "id": "sociological-research-methods.ethical-issues",
+      "parentId": "sociological-research-methods",
+      "label": "3.7 Ethical issues",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B"],
+      "aliases": ["consent", "confidentiality", "harm to participants"]
+    }
+  ]
+}

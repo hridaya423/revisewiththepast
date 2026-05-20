@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "geography",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of case studies for AQA GCSE Geography"
+  },
+  "caseStudies": {
+    "weather-hazards": [
+      "typhoon-haiyan-2013",
+      "hurricane-katrina-2005",
+      "somerset-levels-floods-2014",
+      "uk-heatwave-2022"
+    ],
+    "climate-change": [
+      "paris-agreement-2015",
+      "cop26-glasgow-2021"
+    ],
+    "living-world": [
+      "amazon-rainforest",
+      "thar-desert",
+      "svalbard"
+    ],
+    "physical-landscapes": [
+      "jurassic-coast",
+      "holderness-coast",
+      "river-tees"
+    ],
+    "urban-issues-challenges": [
+      "rio-de-janeiro",
+      "london"
+    ],
+    "changing-economic-world": [
+      "nigeria",
+      "united-kingdom"
+    ],
+    "resource-management": [
+      "severn-trent-transfer",
+      "kielder-water-scheme",
+      "hinkley-point-c",
+      "fracking-lancashire"
+    ]
+  }
+}

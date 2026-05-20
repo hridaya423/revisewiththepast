@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "mathematics",
+    "specCode": "1MA1",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1 (Non-calculator)",
+      "tier": "foundation/higher",
+      "durationMinutes": 90,
+      "totalMarks": 80,
+      "weighting": "33.33%",
+      "calculatorAllowed": false,
+      "sections": []
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2 (Calculator)",
+      "tier": "foundation/higher",
+      "durationMinutes": 90,
+      "totalMarks": 80,
+      "weighting": "33.33%",
+      "calculatorAllowed": true,
+      "sections": []
+    },
+    {
+      "paperCode": "paper-3",
+      "paperName": "Paper 3 (Calculator)",
+      "tier": "foundation/higher",
+      "durationMinutes": 90,
+      "totalMarks": 80,
+      "weighting": "33.33%",
+      "calculatorAllowed": true,
+      "sections": []
+    }
+  ],
+  "topicWeightings": {
+    "foundation": {
+      "number": "22-28%",
+      "algebra": "17-23%",
+      "ratio-proportion": "22-28%",
+      "geometry-measures": "12-18%",
+      "statistics-probability": "12-18%"
+    },
+    "higher": {
+      "number": "12-18%",
+      "algebra": "27-33%",
+      "ratio-proportion": "17-23%",
+      "geometry-measures": "17-23%",
+      "statistics-probability": "12-18%"
+    }
+  }
+}

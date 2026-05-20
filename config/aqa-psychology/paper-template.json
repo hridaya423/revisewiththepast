@@ -1,0 +1,232 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "psychology",
+    "specCode": "8182",
+    "version": "2024.1",
+    "scope": "aqa-gcse-psychology-8182-paper-structure",
+    "taggingRule": "primary-topic-tag-from-section-topic-block-use-cross-topic-skills-as-secondary-tags",
+    "sourceUrls": [
+      "https://www.aqa.org.uk/subjects/psychology/gcse/psychology-8182/specification/specification-at-a-glance",
+      "https://www.aqa.org.uk/subjects/psychology/gcse/psychology-8182/specification/subject-content/cognition-and-behaviour",
+      "https://www.aqa.org.uk/subjects/psychology/gcse/psychology-8182/specification/subject-content/social-context-and-behaviour",
+      "https://www.aqa.org.uk/subjects/psychology/gcse/psychology-8182/specification/scheme-of-assessment"
+    ]
+  },
+  "qualification": {
+    "level": "GCSE",
+    "linear": true,
+    "availability": "May/June"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Cognition and behaviour",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weighting": "50%",
+      "questionTypes": ["multiple-choice", "short answer", "extended writing"],
+      "coverage": {
+        "topicRange": "Memory; Perception; Development; Research methods",
+        "topicIds": [
+          "cognition-behaviour.memory.processes",
+          "cognition-behaviour.memory.types",
+          "cognition-behaviour.memory.multi-store-model",
+          "cognition-behaviour.memory.serial-position",
+          "cognition-behaviour.memory.reconstructive-memory",
+          "cognition-behaviour.memory.memory-accuracy",
+          "cognition-behaviour.perception.sensation-vs-perception",
+          "cognition-behaviour.perception.visual-cues-constancies",
+          "cognition-behaviour.perception.gibson-direct-theory",
+          "cognition-behaviour.perception.visual-illusions",
+          "cognition-behaviour.perception.gregory-constructivist-theory",
+          "cognition-behaviour.perception.factors-affecting-perception",
+          "cognition-behaviour.development.early-brain-development",
+          "cognition-behaviour.development.piaget-theory",
+          "cognition-behaviour.development.piaget-education",
+          "cognition-behaviour.development.dweck-mindset",
+          "cognition-behaviour.development.learning-styles-willingham",
+          "cognition-behaviour.research-methods.hypotheses-variables",
+          "cognition-behaviour.research-methods.sampling",
+          "cognition-behaviour.research-methods.research-designs",
+          "cognition-behaviour.research-methods.correlation",
+          "cognition-behaviour.research-methods.procedures-controls",
+          "cognition-behaviour.research-methods.planning-validity-reliability",
+          "cognition-behaviour.research-methods.ethics",
+          "cognition-behaviour.research-methods.data-types",
+          "cognition-behaviour.research-methods.computation-descriptive-stats",
+          "cognition-behaviour.research-methods.data-display",
+          "cognition-behaviour.research-methods.normal-distribution"
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Memory",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "cognition-behaviour.memory.processes",
+            "cognition-behaviour.memory.types",
+            "cognition-behaviour.memory.multi-store-model",
+            "cognition-behaviour.memory.serial-position",
+            "cognition-behaviour.memory.reconstructive-memory",
+            "cognition-behaviour.memory.memory-accuracy"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Perception",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "cognition-behaviour.perception.sensation-vs-perception",
+            "cognition-behaviour.perception.visual-cues-constancies",
+            "cognition-behaviour.perception.gibson-direct-theory",
+            "cognition-behaviour.perception.visual-illusions",
+            "cognition-behaviour.perception.gregory-constructivist-theory",
+            "cognition-behaviour.perception.factors-affecting-perception"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Development",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "cognition-behaviour.development.early-brain-development",
+            "cognition-behaviour.development.piaget-theory",
+            "cognition-behaviour.development.piaget-education",
+            "cognition-behaviour.development.dweck-mindset",
+            "cognition-behaviour.development.learning-styles-willingham"
+          ]
+        },
+        {
+          "sectionCode": "D",
+          "sectionName": "Research methods",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "cognition-behaviour.research-methods.hypotheses-variables",
+            "cognition-behaviour.research-methods.sampling",
+            "cognition-behaviour.research-methods.research-designs",
+            "cognition-behaviour.research-methods.correlation",
+            "cognition-behaviour.research-methods.procedures-controls",
+            "cognition-behaviour.research-methods.planning-validity-reliability",
+            "cognition-behaviour.research-methods.ethics",
+            "cognition-behaviour.research-methods.data-types",
+            "cognition-behaviour.research-methods.computation-descriptive-stats",
+            "cognition-behaviour.research-methods.data-display",
+            "cognition-behaviour.research-methods.normal-distribution"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: Social context and behaviour",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 100,
+      "weighting": "50%",
+      "questionTypes": ["multiple-choice", "short answer", "extended writing"],
+      "coverage": {
+        "topicRange": "Social influence; Language, thought and communication; Brain and neuropsychology; Psychological problems",
+        "topicIds": [
+          "social-context-behaviour.social-influence.conformity",
+          "social-context-behaviour.social-influence.obedience",
+          "social-context-behaviour.social-influence.prosocial-behaviour",
+          "social-context-behaviour.social-influence.crowd-behaviour",
+          "social-context-behaviour.language-thought-communication.language-thought-relationship",
+          "social-context-behaviour.language-thought-communication.human-animal-communication",
+          "social-context-behaviour.language-thought-communication.non-verbal-communication",
+          "social-context-behaviour.language-thought-communication.explanations-non-verbal",
+          "social-context-behaviour.brain-neuropsychology.nervous-system",
+          "social-context-behaviour.brain-neuropsychology.neurons-synapses",
+          "social-context-behaviour.brain-neuropsychology.brain-structure-localisation",
+          "social-context-behaviour.brain-neuropsychology.neuropsychology-scanning-damage",
+          "social-context-behaviour.psychological-problems.introduction-mental-health",
+          "social-context-behaviour.psychological-problems.effects-on-individual-society",
+          "social-context-behaviour.psychological-problems.depression-characteristics",
+          "social-context-behaviour.psychological-problems.depression-theories-therapies",
+          "social-context-behaviour.psychological-problems.addiction-characteristics",
+          "social-context-behaviour.psychological-problems.addiction-theories-therapies"
+        ],
+        "crossTopicSkillIds": [
+          "cognition-behaviour.research-methods.hypotheses-variables",
+          "cognition-behaviour.research-methods.sampling",
+          "cognition-behaviour.research-methods.research-designs",
+          "cognition-behaviour.research-methods.correlation",
+          "cognition-behaviour.research-methods.procedures-controls",
+          "cognition-behaviour.research-methods.planning-validity-reliability",
+          "cognition-behaviour.research-methods.ethics",
+          "cognition-behaviour.research-methods.data-types",
+          "cognition-behaviour.research-methods.computation-descriptive-stats",
+          "cognition-behaviour.research-methods.data-display",
+          "cognition-behaviour.research-methods.normal-distribution"
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Social influence",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "social-context-behaviour.social-influence.conformity",
+            "social-context-behaviour.social-influence.obedience",
+            "social-context-behaviour.social-influence.prosocial-behaviour",
+            "social-context-behaviour.social-influence.crowd-behaviour"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Language, thought and communication",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "social-context-behaviour.language-thought-communication.language-thought-relationship",
+            "social-context-behaviour.language-thought-communication.human-animal-communication",
+            "social-context-behaviour.language-thought-communication.non-verbal-communication",
+            "social-context-behaviour.language-thought-communication.explanations-non-verbal"
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Brain and neuropsychology",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "social-context-behaviour.brain-neuropsychology.nervous-system",
+            "social-context-behaviour.brain-neuropsychology.neurons-synapses",
+            "social-context-behaviour.brain-neuropsychology.brain-structure-localisation",
+            "social-context-behaviour.brain-neuropsychology.neuropsychology-scanning-damage"
+          ]
+        },
+        {
+          "sectionCode": "D",
+          "sectionName": "Psychological problems",
+          "mode": "mandatory",
+          "marks": 25,
+          "questionMix": "multiple-choice, short answer and extended writing",
+          "allowedPrimaryTopicIds": [
+            "social-context-behaviour.psychological-problems.introduction-mental-health",
+            "social-context-behaviour.psychological-problems.effects-on-individual-society",
+            "social-context-behaviour.psychological-problems.depression-characteristics",
+            "social-context-behaviour.psychological-problems.depression-theories-therapies",
+            "social-context-behaviour.psychological-problems.addiction-characteristics",
+            "social-context-behaviour.psychological-problems.addiction-theories-therapies"
+          ]
+        }
+      ]
+    }
+  ]
+}

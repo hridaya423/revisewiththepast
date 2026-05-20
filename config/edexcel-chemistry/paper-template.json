@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "chemistry",
+    "specCode": "1CH0",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "id": "paper-1",
+      "label": "Paper 1",
+      "code": "1CH0/1F, 1CH0/1H",
+      "tier": ["foundation", "higher"],
+      "duration": "1h 45m",
+      "marks": 100,
+      "weight": 50,
+      "topics": [
+        "formulae-equations-hazards.formulae-equations",
+        "formulae-equations-hazards.hazards-risk",
+        "key-concepts-chemistry.atomic-structure",
+        "key-concepts-chemistry.periodic-table",
+        "key-concepts-chemistry.ionic-bonding",
+        "key-concepts-chemistry.covalent-bonding",
+        "key-concepts-chemistry.types-of-substance",
+        "key-concepts-chemistry.quantitative-chemistry",
+        "states-of-matter-mixtures.particle-model-state-change",
+        "states-of-matter-mixtures.pure-substances-separation",
+        "states-of-matter-mixtures.chromatography-potable-water",
+        "chemical-changes.acids-alkalis-ph",
+        "chemical-changes.acid-reactions-neutralisation-tests",
+        "chemical-changes.salt-preparation-solubility-precipitation",
+        "chemical-changes.electrolysis-redox",
+        "extracting-metals-equilibria.reactivity-series-redox-displacement",
+        "extracting-metals-equilibria.metal-extraction-sustainability",
+        "extracting-metals-equilibria.reversible-reactions-haber",
+        "separate-chemistry-1.transition-metals-alloys-corrosion",
+        "separate-chemistry-1.quantitative-analysis",
+        "separate-chemistry-1.dynamic-equilibria-fertilisers",
+        "separate-chemistry-1.chemical-cells-fuel-cells"
+      ]
+    },
+    {
+      "id": "paper-2",
+      "label": "Paper 2",
+      "code": "1CH0/2F, 1CH0/2H",
+      "tier": ["foundation", "higher"],
+      "duration": "1h 45m",
+      "marks": 100,
+      "weight": 50,
+      "topics": [
+        "formulae-equations-hazards.formulae-equations",
+        "formulae-equations-hazards.hazards-risk",
+        "key-concepts-chemistry.atomic-structure",
+        "key-concepts-chemistry.periodic-table",
+        "key-concepts-chemistry.ionic-bonding",
+        "key-concepts-chemistry.covalent-bonding",
+        "key-concepts-chemistry.types-of-substance",
+        "key-concepts-chemistry.quantitative-chemistry",
+        "groups-periodic-table.group1-alkali-metals",
+        "groups-periodic-table.group7-halogens",
+        "groups-periodic-table.group0-noble-gases",
+        "rates-and-energy-changes.rates-factors-collision-theory",
+        "rates-and-energy-changes.energy-transfers-reaction-profiles",
+        "fuels-and-earth-science.crude-oil-fractions-hydrocarbons",
+        "fuels-and-earth-science.combustion-pollutants-hydrogen-fuel",
+        "fuels-and-earth-science.cracking-and-alkene-production",
+        "fuels-and-earth-science.earth-atmosphere-greenhouse-climate",
+        "separate-chemistry-2.qualitative-analysis-ion-tests",
+        "separate-chemistry-2.hydrocarbons-alkanes-alkenes",
+        "separate-chemistry-2.polymers-and-biopolymers",
+        "separate-chemistry-2.alcohols-carboxylic-acids-fermentation",
+        "separate-chemistry-2.nanoparticles-material-selection"
+      ]
+    }
+  ]
+}

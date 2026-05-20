@@ -1,0 +1,708 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "history",
+    "specCode": "1HI0",
+    "version": "2024.1",
+    "scope": "edexcel-history-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "paper1.thematic",
+      "parentId": null,
+      "label": "Paper 1: Thematic study and historic environment",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["thematic study", "historic environment"]
+    },
+    {
+      "id": "paper1.thematic.option10",
+      "parentId": "paper1.thematic",
+      "label": "Option 10: Crime and punishment in Britain, c1000–present",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["option 10", "crime and punishment"]
+    },
+    {
+      "id": "paper1.thematic.option10.process-change",
+      "parentId": "paper1.thematic.option10",
+      "label": "Process of change: factors influencing crime and punishment",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["attitudes in society", "individuals and institutions", "Church and government", "science and technology", "patterns of change", "trends", "turning points"]
+    },
+    {
+      "id": "paper1.thematic.option10.medieval",
+      "parentId": "paper1.thematic.option10",
+      "label": "Medieval crime and punishment, c1000–c1500",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["crimes against the person", "property", "authority", "poaching", "social crime", "Norman Conquest", "Forest Laws", "tithings", "hue and cry", "parish constable", "deterrence", "retribution", "fines", "corporal punishment", "capital punishment", "Saxon Wergild", "trial by ordeal", "forest courts"]
+    },
+    {
+      "id": "paper1.thematic.option10.early-modern",
+      "parentId": "paper1.thematic.option10",
+      "label": "Early modern crime and punishment, c1500–c1700",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["heresy", "treason", "vagabondage", "witchcraft", "town watchmen", "Bloody Code", "transportation", "Gunpowder Plotters", "Matthew Hopkins", "witch-hunts", "1645-47"]
+    },
+    {
+      "id": "paper1.thematic.option10.18th-19th",
+      "parentId": "paper1.thematic.option10",
+      "label": "18th and 19th century crime and punishment, c1700–c1900",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["highway robbery", "smuggling", "Tolpuddle Martyrs", "Fielding brothers", "police forces", "CID", "public execution", "prison reform", "John Howard", "Elizabeth Fry", "Pentonville prison", "separate system", "Robert Peel", "Metropolitan Police Act", "Bow Street Runners"]
+    },
+    {
+      "id": "paper1.thematic.option10.modern",
+      "parentId": "paper1.thematic.option10",
+      "label": "Modern crime and punishment, c1900–present",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["organised crime", "Kray twins", "computer crime", "identity theft", "youth crime", "street gangs", "hooliganism", "forensic methods", "DNA profiling", "CCTV", "computerised databases", "HM Prison Service", "borstals", "detention centres", "community service", "electronic tagging", "rehabilitation", "conscientious objection", "capital punishment abolition"]
+    },
+    {
+      "id": "paper1.thematic.option10.whitechapel",
+      "parentId": "paper1.thematic.option10",
+      "label": "Whitechapel historic environment, c1870–c1900: crime, policing and the inner city",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Whitechapel", "housing", "overcrowding", "Peabody Estate", "workhouses", "poverty", "lodging houses", "pubs", "Irish migration", "Eastern Europe", "Jewish migration", "1880s", "beat constable", "H division", "rookeries", "alleys", "courts", "alcohol", "prostitution", "protection rackets", "gangs", "Jack the Ripper", "Whitechapel Vigilance Committee", "Metropolitan Police", "City of London Police", "Scotland Yard", "detective investigation", "sketches", "photographs", "interviews", "media reporting", "Sir Charles Warren", "Home Secretary"]
+    },
+    {
+      "id": "paper1.thematic.option11",
+      "parentId": "paper1.thematic",
+      "label": "Option 11: Medicine in Britain, c1250–present",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["option 11", "medicine"]
+    },
+    {
+      "id": "paper1.thematic.option11.process-change",
+      "parentId": "paper1.thematic.option11",
+      "label": "Process of change: factors influencing medical development",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["individuals and institutions", "Church and government", "science and technology", "attitudes in society", "patterns of change", "trends", "turning points"]
+    },
+    {
+      "id": "paper1.thematic.option11.medieval",
+      "parentId": "paper1.thematic.option11",
+      "label": "Medieval medicine, c1250–c1500",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["supernatural explanations", "religious explanations", "Four Humours", "miasma theory", "Galen", "bloodletting", "purging", "physician", "apothecary", "barber surgeon", "hospitals", "community care", "wise women", "Church role", "Islamic medicine", "Black Death", "Regimen Sanitatis", "John of Arderne"]
+    },
+    {
+      "id": "paper1.thematic.option11.renaissance",
+      "parentId": "paper1.thematic.option11",
+      "label": "Medical Renaissance, c1500–c1700",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Thomas Sydenham", "printing press", "Royal Society", "Vesalius", "William Harvey", "circulation of the blood", "Great Plague", "London 1665", "medical training", "hospitals"]
+    },
+    {
+      "id": "paper1.thematic.option11.18th-19th",
+      "parentId": "paper1.thematic.option11",
+      "label": "18th and 19th century medicine, c1700–c1900",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Pasteur", "Germ Theory", "Koch", "microbes", "Nightingale", "nursing", "hospital care", "anaesthetics", "antiseptics", "surgery", "vaccinations", "Jenner", "Public Health Act 1875", "Cholera", "John Snow", "Broad Street pump", "1854"]
+    },
+    {
+      "id": "paper1.thematic.option11.modern",
+      "parentId": "paper1.thematic.option11",
+      "label": "Modern medicine, c1900–present",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["genetic factors", "lifestyle factors", "pharmaceutical industry", "penicillin", "Fleming", "antibiotic resistance", "plastic surgery", "blood transfusions", "X-rays", "transplant surgery", "keyhole surgery", "lasers", "radiation therapy", "Booth", "Rowntree", "Boer War", "Liberal reforms", "Beveridge Report", "Welfare State", "NHS", "healthcare 21st century"]
+    },
+    {
+      "id": "paper1.thematic.option11.western-front",
+      "parentId": "paper1.thematic.option11",
+      "label": "Western Front historic environment, 1914–18: injuries, treatment and the trenches",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Western Front", "Flanders", "Ypres salient", "the Somme", "Arras", "Cambrai", "trench system", "frontline trenches", "support trenches", "terrain", "transport", "communications", "RAMC", "nurses", "stretcher bearers", "horse ambulances", "motor ambulances", "aid post", "field ambulance", "dressing station", "casualty clearing station", "base hospital", "underground hospital Arras", "Thomas splint", "mobile x-ray", "blood bank", "aseptic surgery", "wound infection", "shrapnel", "gas attacks", "rifle wounds", "explosives"]
+    },
+    {
+      "id": "paper1.thematic.option12",
+      "parentId": "paper1.thematic",
+      "label": "Option 12: Warfare and British society, c1250–present",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["option 12", "warfare"]
+    },
+    {
+      "id": "paper1.thematic.option12.process-change",
+      "parentId": "paper1.thematic.option12",
+      "label": "Process of change: factors influencing warfare",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["governments and individuals", "science technology and communications", "attitudes in society", "patterns of change", "trends", "turning points"]
+    },
+    {
+      "id": "paper1.thematic.option12.medieval",
+      "parentId": "paper1.thematic.option12",
+      "label": "Medieval warfare, c1250–c1500",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["infantry", "archer", "mounted knight", "social structure", "army command", "longbow", "schiltrons", "gunpowder", "cannon", "decline of mounted knight", "feudal army", "recruitment", "training", "civilians", "feudal duties", "army plunder", "Battle of Falkirk 1298", "William Wallace", "Battle of Agincourt 1415", "Henry V", "Battle of Towton 1461", "Wars of the Roses"]
+    },
+    {
+      "id": "paper1.thematic.option12.early-modern",
+      "parentId": "paper1.thematic.option12",
+      "label": "Early modern warfare, c1500–c1700",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["musketeer", "pikemen", "dragoons", "cavalry", "standing army", "muskets", "pistols", "New Model Army", "requisitioning", "Battle of Naseby 1645", "Oliver Cromwell"]
+    },
+    {
+      "id": "paper1.thematic.option12.18th-19th",
+      "parentId": "paper1.thematic.option12",
+      "label": "18th and 19th century warfare, c1700–c1900",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["decline of cavalry", "rifles", "bullets", "field guns", "heavy artillery", "industrialisation", "steam-powered transport", "mass production", "Cardwell's reforms", "professionalisation", "newspaper reporting", "photography", "Crimean War", "Boer War", "Battle of Waterloo 1815", "Duke of Wellington", "Battle of Balaclava 1854", "Lord Raglan", "Florence Nightingale"]
+    },
+    {
+      "id": "paper1.thematic.option12.modern",
+      "parentId": "paper1.thematic.option12",
+      "label": "Modern warfare, c1900–present",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["trench warfare", "machine guns", "artillery", "tanks", "aeroplanes", "conscription", "volunteers", "Pals battalions", "conscientious objectors", "total war", "civilians", "home front", "rationing", "propaganda", "censorship", "Women's Land Army", "nuclear weapons", "Gulf War", "technological developments", "drones", "cyber warfare"]
+    },
+    {
+      "id": "paper1.thematic.option12.london-ww2",
+      "parentId": "paper1.thematic.option12",
+      "label": "London and the Second World War historic environment, 1939–45",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["London WW2", "national government", "port", "industrial centre", "evacuation", "Anderson shelters", "gas masks", "Black Saturday", "7 September 1940", "V2 attack", "Deptford 1944", "incendiaries", "V1 rockets", "V2 rockets", "underground stations", "Mickey's shelter", "South Hallsville School 1940", "Bethnal Green 1943", "Royal Family", "Cabinet War Rooms", "Dig for Victory", "Victoria Park", "Tower of London", "propaganda", "censorship", "Blitz", "morale"]
+    },
+    {
+      "id": "paper1.thematic.option13",
+      "parentId": "paper1.thematic",
+      "label": "Option 13: Migrants in Britain, c800–present",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["option 13", "migration", "migrants"]
+    },
+    {
+      "id": "paper1.thematic.option13.process-change",
+      "parentId": "paper1.thematic.option13",
+      "label": "Process of change: factors influencing migration",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["government and Church", "religion", "economic influences", "attitudes in society", "pull factors", "push factors", "voluntary migration", "forced migration", "temporary migrants", "internal migrants"]
+    },
+    {
+      "id": "paper1.thematic.option13.medieval",
+      "parentId": "paper1.thematic.option13",
+      "label": "Medieval migration, c800–c1500",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Vikings", "Normans", "Jews", "European traders", "craftsmen", "landownership", "towns", "wool industry", "persecution", "expulsion of Jews 1290", "Edward I", "statute of Jewry"]
+    },
+    {
+      "id": "paper1.thematic.option13.early-modern",
+      "parentId": "paper1.thematic.option13",
+      "label": "Early modern migration, c1500–c1700",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["migrants from Europe", "migrants from Africa", "cloth industry", "global trading companies", "privateering", "Protestant nation", "Flemish migrants", "Walloon migrants", "Sandwich", "Canterbury", "Huguenots", "relations with authorities"]
+    },
+    {
+      "id": "paper1.thematic.option13.18th-19th",
+      "parentId": "paper1.thematic.option13",
+      "label": "18th and 19th century migration, c1700–c1900",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Irish migrants", "Empire migrants", "Industrial Revolution", "urbanisation", "transatlantic slavery", "British Empire", "civil liberties", "Liverpool", "Jewish migrants", "East End London", "media role", "culture", "trade", "industry", "politics"]
+    },
+    {
+      "id": "paper1.thematic.option13.modern",
+      "parentId": "paper1.thematic.option13",
+      "label": "Modern migration, c1900–present",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Commonwealth migrants", "Windrush", "Caribbean migrants", "Asian migrants", "African migrants", "European migrants", "refugees", "asylum seekers", "EU membership", "British Nationality Act", "Commonwealth Immigrants Act", "racism", "integration", "multiculturalism", "Claudia Jones", "Notting Hill Carnival"]
+    },
+    {
+      "id": "paper1.thematic.option13.notting-hill",
+      "parentId": "paper1.thematic.option13",
+      "label": "Notting Hill historic environment, c1948–c1970",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["Notting Hill", "Caribbean migration", "HMOs", "overcrowding", "slum landlords", "Peter Rachman", "Bruce Kenrick", "Notting Hill Housing Trust", "Portobello Road market", "Caribbean cultures", "shops", "markets", "cafes", "restaurants", "shebeens", "nightclubs", "All Saints Road", "pardner schemes", "Notting Hill Riots 1958", "Kelso Cochrane", "Oswald Mosley", "Union Movement", "Claudia Jones", "West Indian Gazette", "Caribbean Carnival 1959", "Frank Crichlow", "Mangrove Restaurant", "British Black Panthers", "Mangrove Nine", "Swinging Sixties"]
+    },
+    {
+      "id": "paper2.period",
+      "parentId": null,
+      "label": "Paper 2: Period study and British depth study",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["period study", "british depth study"]
+    },
+    {
+      "id": "paper2.depth.b1",
+      "parentId": "paper2.period",
+      "label": "British depth study B1: Anglo-Saxon and Norman England, c1060–88",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["B1", "Anglo-Saxon", "Norman England"]
+    },
+    {
+      "id": "paper2.depth.b1.norman-conquest",
+      "parentId": "paper2.depth.b1",
+      "label": "Anglo-Saxon England and the Norman Conquest, 1060–66",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Anglo-Saxon government", "monarchy", "earldoms", "local government", "legal system", "economy", "social system", "towns", "villages", "Church influence", "Edward the Confessor", "house of Godwin", "Harold Godwinson", "Earl of Wessex", "embassy to Normandy", "Tostig", "succession crisis", "William of Normandy", "Harald Hardrada", "Edgar the Aethling", "Witan", "Battle of Gate Fulford", "Battle of Stamford Bridge", "Battle of Hastings", "Norman tactics", "English tactics"]
+    },
+    {
+      "id": "paper2.depth.b1.william-control",
+      "parentId": "paper2.depth.b1",
+      "label": "William I in power: securing the kingdom, 1066–87",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["submission of the earls", "Marcher earldoms", "castle building", "Anglo-Saxon resistance", "Earls Edwin and Morcar", "rebellions in the North 1069", "Hereward the Wake", "Ely", "Harrying of the North", "1069-70", "feudal system", "rewards to followers"]
+    },
+    {
+      "id": "paper2.depth.b1.norman-england",
+      "parentId": "paper2.depth.b1",
+      "label": "Norman England, 1066–88",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["feudal hierarchy", "tenants-in-chief", "knights", "homage", "knight service", "labour service", "forfeiture", "Church reform", "Stigand", "Lanfranc", "Normanisation", "centralised power", "regents", "sheriff", "demesne", "forest", "Domesday Book", "Domesday survey", "Norman aristocracy", "culture", "language", "Bishop Odo", "William Rufus", "Robert's revolt", "disputed succession"]
+    },
+    {
+      "id": "paper2.depth.b2",
+      "parentId": "paper2.period",
+      "label": "British depth study B2: The reigns of King Richard I and King John, 1189–1216",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["B2", "Richard I", "King John"]
+    },
+    {
+      "id": "paper2.depth.b2.life-government",
+      "parentId": "paper2.depth.b2",
+      "label": "Life and government in England, 1189–1216",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["feudal hierarchy", "kingship", "duties", "rights", "rituals", "Richard I claim", "John claim", "Prince Arthur murder", "royal revenues", "royal demesne", "sheriffs", "scutage", "taxation", "agriculture", "peasant life", "towns", "Jews in Medieval England", "moneylending", "antisemitism", "pogroms 1189-90"]
+    },
+    {
+      "id": "paper2.depth.b2.overseas",
+      "parentId": "paper2.depth.b2",
+      "label": "Involvements overseas, 1189–1204",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["crusading", "Third Crusade", "Philip II", "Acre", "Arsuf", "Jerusalem", "Richard's capture", "ransom", "John's accession", "William Marshal", "Brittany", "Normandy", "Anjou", "Arthur of Brittany", "Mirebeau", "loss of Normandy 1204", "Chinon", "Chateau Gaillard"]
+    },
+    {
+      "id": "paper2.depth.b2.john-downfall",
+      "parentId": "paper2.depth.b2",
+      "label": "King John's downfall, 1205–16",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["dispute with Papacy", "Interdict", "Innocent III", "reconciliation", "barons", "financial impositions", "arbitrary power", "plot of 1212", "failure to regain Normandy 1214", "rebellion of 1215", "Magna Carta", "Runnymede", "First Barons' War", "Rochester", "Prince Louis", "William Marshal", "Protector", "succession"]
+    },
+    {
+      "id": "paper2.depth.b3",
+      "parentId": "paper2.period",
+      "label": "British depth study B3: Henry VIII and his ministers, 1509–40",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["B3", "Henry VIII", "Wolsey", "Cromwell"]
+    },
+    {
+      "id": "paper2.depth.b3.wolsey",
+      "parentId": "paper2.depth.b3",
+      "label": "Henry VIII and Wolsey, 1509–29",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["England 1509", "Henry VIII character", "sovereignty", "monarchy", "Wolsey rise to power", "Wolsey reforms", "enclosures", "finance", "justice", "Eltham Ordinances", "Amicable Grant", "foreign policy", "Treaty of London 1518", "Field of the Cloth of Gold 1520", "Catherine of Aragon", "succession", "annulment", "Pope Clement VII", "Boleyns", "Wolsey fall from power"]
+    },
+    {
+      "id": "paper2.depth.b3.cromwell",
+      "parentId": "paper2.depth.b3",
+      "label": "Henry VIII and Cromwell, 1529–40",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Cromwell rise", "Royal Council", "Chief Minister", "Anne Boleyn fall", "Jane Seymour", "Anne of Cleves", "government reform", "royal finance", "managing opposition", "Pilgrimage of Grace 1536", "Robert Aske", "Duke of Norfolk", "Lincolnshire", "Yorkshire"]
+    },
+    {
+      "id": "paper2.depth.b3.reformation",
+      "parentId": "paper2.depth.b3",
+      "label": "The Reformation and its impact, 1529–40",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Defender of the Faith", "break with Rome", "Act of Succession 1534", "Act of Supremacy 1534", "treason laws", "oaths", "Elizabeth Barton", "John Fisher", "Thomas More", "Thomas Cranmer", "dissolution of the monasteries", "commissions 1535", "local communities"]
+    },
+    {
+      "id": "paper2.depth.b4",
+      "parentId": "paper2.period",
+      "label": "British depth study B4: Early Elizabethan England, 1558–88",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["B4", "Elizabeth I", "Elizabethan"]
+    },
+    {
+      "id": "paper2.depth.b4.accession",
+      "parentId": "paper2.depth.b4",
+      "label": "Queen, government and religion, 1558–69",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Elizabethan England 1558", "Virgin Queen", "legitimacy", "gender", "marriage", "financial weaknesses", "religious divisions", "French threat", "religious settlement 1559", "Church of England", "Puritan challenge", "Catholic challenge", "nobility", "Papacy", "foreign powers", "Mary Queen of Scots", "claim to throne", "1568-69"]
+    },
+    {
+      "id": "paper2.depth.b4.challenges",
+      "parentId": "paper2.depth.b4",
+      "label": "Challenges to Elizabeth at home and abroad, 1569–88",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Revolt of the Northern Earls 1569-70", "Ridolfi plot", "Throckmorton plot", "Babington plot", "Walsingham", "spies", "Mary Queen of Scots execution 1587", "Spain", "privateering", "Drake", "Netherlands", "Robert Dudley", "Cadiz raid", "Spanish Armada", "English victory"]
+    },
+    {
+      "id": "paper2.depth.b4.society",
+      "parentId": "paper2.depth.b4",
+      "label": "Elizabethan society in the Age of Exploration, 1558–88",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["education", "schools", "sport", "pastimes", "theatre", "poverty", "vagabondage", "exploration", "new technology", "ships", "sailing", "trade", "Drake circumnavigation", "Virginia", "Raleigh", "colonisation failure"]
+    },
+    {
+      "id": "paper2.period.p1",
+      "parentId": "paper2.period",
+      "label": "Period study P1: Spain and the 'New World', c1490–c1555",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["P1", "Spain", "New World", "Columbus"]
+    },
+    {
+      "id": "paper2.period.p1.spain-americas",
+      "parentId": "paper2.period.p1",
+      "label": "Spain reaches the Americas, c1490–1512",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Spain c1490", "crusading spirit", "Columbus sponsorship", "Queen Isabella", "Christianity", "first voyage 1492", "Bahamas", "Caribbean", "La Navidad", "Tainos", "Caribs", "Treaty of Tordesillas 1494", "Santo Domingo 1496", "smallpox", "indigenous peoples", "monopoly on trade", "slavery", "Catholic missionaries"]
+    },
+    {
+      "id": "paper2.period.p1.conquistadors",
+      "parentId": "paper2.period.p1",
+      "label": "The conquistadors, 1513–c1528",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Balboa", "Pacific 1513", "Cuba conquest", "Magellan", "Philippines", "Cortes", "Mexico 1519", "Montezuma", "Aztecs", "Tlaxcalans", "Tenochtitlan", "Governor of New Spain", "Cortes administration", "encomienda system", "Cortes downfall"]
+    },
+    {
+      "id": "paper2.period.p1.empire",
+      "parentId": "paper2.period.p1",
+      "label": "The Spanish Empire c1528–c1555",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Pizarro", "Incas", "Huayna Capac", "Atahuallpa", "Huascar", "Battle of Cajamarca", "Cuzco siege 1536-37", "viceroys", "encomiendas", "Las Casas", "New Laws 1542", "silver", "Bolivia", "La Paz 1548", "gold", "Spanish economy", "slave trade", "House of Trade", "Council of the Indies"]
+    },
+    {
+      "id": "paper2.period.p2",
+      "parentId": "paper2.period",
+      "label": "Period study P2: British America, 1713–83: empire and revolution",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["P2", "British America", "American Revolution"]
+    },
+    {
+      "id": "paper2.period.p2.settlement",
+      "parentId": "paper2.period.p2",
+      "label": "British settlement in North America, 1713–41",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["colonial society", "expansion", "immigration", "trade", "West Indies", "tobacco", "piracy", "Black Sam Bellamy", "Blackbeard", "King George I Proclamation", "Piracy Act 1717", "Governor Spotswood", "transatlantic slave trade", "Atlantic trade triangle", "plantations", "enslaved people", "Stono Rebellion 1739", "New York Conspiracy 1741", "smuggling", "customs revenue", "fur trade"]
+    },
+    {
+      "id": "paper2.period.p2.disrupted",
+      "parentId": "paper2.period.p2",
+      "label": "A disrupted society, 1742–64",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Great Awakening", "revivalist preachers", "Enlightenment", "education", "newspapers", "public libraries", "Benjamin Franklin", "French and Indian War 1754-63", "Wolfe", "Canada", "Treaty of Paris 1763", "Proclamation Line 1763", "Pontiac's Rebellion", "indigenous peoples"]
+    },
+    {
+      "id": "paper2.period.p2.loss-empire",
+      "parentId": "paper2.period.p2",
+      "label": "The loss of an empire, 1765–83",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Stamp Act", "Sons of Liberty", "Boston Massacre 1770", "Boston Tea Party 1773", "Intolerable Acts 1774", "Continental Congress 1774-75", "Thomas Paine", "Common Sense", "Declaration of Independence", "Thomas Jefferson", "Saratoga 1777", "Yorktown 1781", "Washington", "Peace of Paris 1783", "Franklin", "slavery consequences", "indigenous peoples consequences", "Loyalists", "Nova Scotia", "Niagara"]
+    },
+    {
+      "id": "paper2.period.p3",
+      "parentId": "paper2.period",
+      "label": "Period study P3: The American West, c1835–c1895",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["P3", "American West", "Wild West"]
+    },
+    {
+      "id": "paper2.period.p3.early-settlement",
+      "parentId": "paper2.period.p3",
+      "label": "Early settlement of the West, c1835–c1862",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Plains Indians", "beliefs", "ways of life", "land and nature", "war and property", "Oregon Trail 1836", "Manifest Destiny", "California Gold Rush 1849", "Donner Party", "Mormon migration 1846-47", "Fort Laramie Treaty 1851", "Indian Appropriations Act 1851", "lawlessness", "early towns"]
+    },
+    {
+      "id": "paper2.period.p3.development",
+      "parentId": "paper2.period.p3",
+      "label": "Development of the Plains, c1862–c1876",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["railroads", "Pacific Railroad Act 1862", "Transcontinental Railroad 1869", "Homestead Act 1862", "Timber Culture Act 1873", "homesteaders", "new technology", "law officers", "cattle industry", "Iliff", "McCoy", "Goodnight", "Abilene", "cowboys", "range wars", "Red River", "Plains Indians", "Sand Creek Massacre 1864", "Battle of Washita 1868", "reservation policy", "Fort Laramie Treaty 1868", "George Custer", "Black Hills", "Sioux"]
+    },
+    {
+      "id": "paper2.period.p3.later-developments",
+      "parentId": "paper2.period.p3",
+      "label": "Later developments in the West, c1876–c1895",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["new farming technology", "winter 1886-87", "open range end", "Exoduster movement 1879", "Kansas", "Oklahoma Land Rush 1893", "Indian Frontier closure", "Billy the Kid", "Wyatt Earp", "OK Corral 1881", "Johnson County War 1892", "Battle of Little Big Horn 1876", "Wounded Knee Massacre 1890", "buffalo extermination", "reservations", "Dawes Act 1887"]
+    },
+    {
+      "id": "paper2.period.p4",
+      "parentId": "paper2.period",
+      "label": "Period study P4: Superpower relations and the Cold War, 1941–91",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["P4", "Cold War", "superpowers"]
+    },
+    {
+      "id": "paper2.period.p4.origins",
+      "parentId": "paper2.period.p4",
+      "label": "Origins of the Cold War, 1941–58",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Grand Alliance", "Tehran", "Yalta", "Potsdam", "ideological differences", "Stalin", "Truman", "Churchill", "atomic bomb", "Long Telegram", "Novikov Telegram", "Soviet satellite states", "Truman Doctrine", "Marshall Plan 1947", "Cominform 1947", "Comecon 1949", "NATO 1949", "Berlin division", "Berlin Crisis 1948-49", "Berlin Airlift", "FRG", "GDR", "arms race", "Warsaw Pact", "Hungarian Uprising 1956", "Khrushchev"]
+    },
+    {
+      "id": "paper2.period.p4.crises",
+      "parentId": "paper2.period.p4",
+      "label": "Cold War crises, 1958–70",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Berlin ultimatum 1958", "summit meetings 1959-61", "Cuban Revolution", "Castro", "Bay of Pigs", "Berlin Wall 1961", "Cuban Missile Crisis", "Prague Spring", "Brezhnev Doctrine", "Czechoslovakia 1968"]
+    },
+    {
+      "id": "paper2.period.p4.end-cold-war",
+      "parentId": "paper2.period.p4",
+      "label": "The end of the Cold War, 1970–91",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["detente", "SALT 1", "Helsinki Accords", "SALT 2", "Soviet invasion Afghanistan", "Carter Doctrine", "Olympic boycotts", "Reagan", "Second Cold War", "SDI", "Gorbachev", "new thinking", "Berlin Wall fall", "Soviet Union collapse", "Warsaw Pact end"]
+    },
+    {
+      "id": "paper2.period.p5",
+      "parentId": "paper2.period",
+      "label": "Period study P5: Conflict in the Middle East, 1945–95",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["P5", "Middle East", "Israel"]
+    },
+    {
+      "id": "paper2.period.p5.israel-birth",
+      "parentId": "paper2.period.p5",
+      "label": "Birth of the state of Israel, 1945–63",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["British Mandate", "Jews and Arabs", "King David Hotel bombing", "UN Resolution 181", "Arab-Israeli war 1948-49", "territorial changes", "Palestinian refugees", "Israeli Defence Forces", "Law of Return", "US aid", "Nasser", "Gaza 1955", "Sinai 1956", "Suez Crisis 1956", "UAR 1958"]
+    },
+    {
+      "id": "paper2.period.p5.escalation",
+      "parentId": "paper2.period.p5",
+      "label": "Escalating conflict, 1964–73",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Cairo Conference 1964", "Six Day War 1967", "Syria", "Jordan", "Samu raid", "USSR", "UN Resolution 242", "Suez Canal", "occupied territories", "Golan Heights", "Gaza Strip", "West Bank", "Sinai", "East Jerusalem", "PLO", "Fatah", "Black September", "Munich Olympics", "Yom Kippur War 1973", "Operation Badr"]
+    },
+    {
+      "id": "paper2.period.p5.solution",
+      "parentId": "paper2.period.p5",
+      "label": "Attempts at a solution, 1974–95",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["oil crisis", "shuttle diplomacy", "Kissinger", "Sadat visit to Israel 1977", "Begin visit to Egypt", "Carter", "Camp David 1978", "Treaty of Washington 1979", "Arafat UN speech 1974", "Lebanon invasion 1982", "First Intifada 1987-93", "Arafat renunciation of terrorism 1988", "Gulf War 1991", "Oslo Accords 1993", "Palestinian National Authority", "Israel-Jordan peace treaty 1994", "Oslo II 1995", "Rabin"]
+    },
+    {
+      "id": "paper3.modern",
+      "parentId": null,
+      "label": "Paper 3: Modern depth study",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "aliases": ["modern depth study"]
+    },
+    {
+      "id": "paper3.modern.russia",
+      "parentId": "paper3.modern",
+      "label": "Option 30: Russia and the Soviet Union, 1917–41",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "aliases": ["option 30", "Russia", "Soviet Union", "Lenin", "Stalin"]
+    },
+    {
+      "id": "paper3.modern.russia.revolutions",
+      "parentId": "paper3.modern.russia",
+      "label": "The revolutions of 1917",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["discontent peasants", "town workers", "WWI impact", "military defeats", "February Revolution", "Petrograd", "strikes", "army mutiny", "Tsar abdication", "Provisional Government", "Dual Control", "Soviet Order Number 1", "Kerensky", "Kornilov Revolt", "Lenin return", "April Theses", "July Days", "October Revolution 1917", "Bolshevik seizure of power", "Trotsky"]
+    },
+    {
+      "id": "paper3.modern.russia.bolsheviks",
+      "parentId": "paper3.modern.russia",
+      "label": "Bolsheviks in power, 1917–24",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["early Bolshevik decrees", "Constituent Assembly", "Tsar Nicholas II execution", "Treaty of Brest-Litovsk", "Civil War 1918-21", "Reds vs Whites", "Trotsky role", "foreign intervention", "Red Terror", "Cheka", "Kronstadt Mutiny", "War Communism", "NEP", "totalitarianism", "ban on factions"]
+    },
+    {
+      "id": "paper3.modern.russia.stalin",
+      "parentId": "paper3.modern.russia",
+      "label": "Stalin's rise to power and dictatorship, 1924–41",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["power struggle 1924-28", "Trotsky", "Kamenev", "Zinoviev", "Bukharin", "purges", "armed forces purges", "NKVD", "labour camps", "show trials 1936-38", "propaganda", "censorship", "socialist realism", "education control", "religion control", "Constitution 1936", "Cult of Stalin"]
+    },
+    {
+      "id": "paper3.modern.russia.economic",
+      "parentId": "paper3.modern.russia",
+      "label": "Economic and social changes, 1924–41",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["collectivisation", "kulaks", "famine Ukraine", "Gosplan", "Five-Year Plans", "Stakhanovite Movement", "industrialisation", "living conditions", "working conditions", "women position", "family life", "ethnic minorities persecution"]
+    },
+    {
+      "id": "paper3.modern.germany",
+      "parentId": "paper3.modern",
+      "label": "Option 31: Weimar and Nazi Germany, 1918–39",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "aliases": ["option 31", "Weimar", "Nazi Germany", "Hitler"]
+    },
+    {
+      "id": "paper3.modern.germany.weimar",
+      "parentId": "paper3.modern.germany",
+      "label": "The Weimar Republic, 1918–29",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["Weimar Constitution", "stab in the back", "Treaty of Versailles", "Spartacists", "Freikorps", "Kapp Putsch", "hyperinflation", "Ruhr occupation", "Stresemann", "Rentenmark", "Dawes Plan", "Young Plan", "American loans", "Locarno Pact", "League of Nations", "standard of living", "women position", "architecture", "art", "cinema"]
+    },
+    {
+      "id": "paper3.modern.germany.hitler-rise",
+      "parentId": "paper3.modern.germany",
+      "label": "Hitler's rise to power, 1919–33",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["German Workers' Party", "Nazi Party", "Twenty-Five Point Programme", "SA", "Munich Putsch", "Mein Kampf", "Bamberg Conference 1926", "Depression impact", "Nazi support growth", "election results", "Goebbels", "presidential elections", "von Papen", "von Schleicher", "Hindenburg", "Chancellor appointment"]
+    },
+    {
+      "id": "paper3.modern.germany.nazi-control",
+      "parentId": "paper3.modern.germany",
+      "label": "Nazi control and dictatorship, 1933–39",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["Reichstag Fire", "Enabling Act", "banning parties", "trade unions", "Rohm", "Night of the Long Knives", "Hindenburg death", "Fuhrer", "army oath", "Gestapo", "SS", "concentration camps", "legal system control", "Goebbels", "Ministry of Propaganda", "censorship", "media", "rallies", "sport", "Berlin Olympics 1936", "culture control", "Concordat", "Reich Church", "Pastor Niemoller", "Swing Youth", "Edelweiss Pirates"]
+    },
+    {
+      "id": "paper3.modern.germany.life",
+      "parentId": "paper3.modern.germany",
+      "label": "Life in Nazi Germany, 1933–39",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["women policies", "family", "employment", "appearance", "youth policies", "Hitler Youth", "League of German Maidens", "education control", "curriculum", "teachers", "unemployment", "labour service", "autobahns", "rearmament", "invisible unemployment", "Labour Front", "Strength Through Joy", "Beauty of Labour", "persecution of minorities", "racial beliefs", "Nuremberg Laws", "Kristallnacht", "emigration"]
+    },
+    {
+      "id": "paper3.modern.china",
+      "parentId": "paper3.modern",
+      "label": "Option 32: Mao's China, 1945–76",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "aliases": ["option 32", "Mao", "China", "communist"]
+    },
+    {
+      "id": "paper3.modern.china.communist-rule",
+      "parentId": "paper3.modern.china",
+      "label": "Establishing communist rule, 1945–59",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["Civil War 1945-49", "CCP", "Guomindang", "Mao ideology", "democratic centralism", "terror against opponents", "three antis", "five antis", "Hundred Flowers campaign 1956-57", "Anti-Rightist purge"]
+    },
+    {
+      "id": "paper3.modern.china.economic",
+      "parentId": "paper3.modern.china",
+      "label": "Economic policy, 1949–65",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["landlordism", "land redistribution", "agricultural cooperation", "collectivisation", "Five-Year Plan 1953-57", "USSR support", "Great Leap Forward", "communes", "Lushan Conference 1959", "Lysenkoism", "Great Famine", "Liu Shaoqi", "economic recovery"]
+    },
+    {
+      "id": "paper3.modern.china.cultural",
+      "parentId": "paper3.modern.china",
+      "label": "Cultural Revolution and aftermath, 1966–76",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["power struggle", "Liu Shaoqi", "Deng Xiaoping", "Socialist Education Movement", "Red Guards", "Red Terror", "mass rallies 1966", "Jiang Qing", "four olds", "cultural destruction", "CCP purging", "Lin Biao", "education impact", "PLA restoration", "Up to the mountains and down to the villages", "Gang of Four", "Mao death"]
+    },
+    {
+      "id": "paper3.modern.china.life",
+      "parentId": "paper3.modern.china",
+      "label": "Life in Mao's China, 1949–76",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["propaganda", "censorship", "cult of Mao", "thought control", "Reform Through Labour", "family life", "women status", "foot binding", "Marriage Law 1950", "education changes", "literacy", "Pinyin", "education collapse", "health care", "barefoot doctors", "minorities", "Tibet", "Dalai Lama"]
+    },
+    {
+      "id": "paper3.modern.usa",
+      "parentId": "paper3.modern",
+      "label": "Option 33: The USA, 1954–75: conflict at home and abroad",
+      "kind": "branch",
+      "paperCodes": ["paper-3"],
+      "aliases": ["option 33", "USA", "civil rights", "Vietnam"]
+    },
+    {
+      "id": "paper3.modern.usa.civil-rights",
+      "parentId": "paper3.modern.usa",
+      "label": "Development of the civil rights movement, 1954–60",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["segregation", "discrimination", "voting rights", "Southern states", "NAACP", "CORE", "Brown v. Topeka 1954", "Little Rock High School 1957", "Montgomery Bus Boycott", "Rosa Parks", "Supreme Court ruling", "Civil Rights Act 1957", "Martin Luther King", "SCLC", "Ku Klux Klan", "Emmett Till 1955", "Dixiecrats", "White Citizens' Councils"]
+    },
+    {
+      "id": "paper3.modern.usa.protest",
+      "parentId": "paper3.modern.usa",
+      "label": "Protest, progress and radicalism, 1960–75",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["Greensboro sit-ins", "Freedom Riders", "Anniston bomb 1961", "James Meredith 1962", "Birmingham march", "Washington march", "Freedom Summer", "Mississippi murders", "Civil Rights Act 1964", "Selma", "Voting Rights Act 1965", "Malcolm X", "Black Power", "Nation of Islam", "Black Panthers", "Huey Newton", "Bobby Seale", "Watts riots", "ghetto conditions", "de facto segregation", "de jure segregation", "busing", "affirmative action", "EEOC", "poverty", "ghetto riots"]
+    },
+    {
+      "id": "paper3.modern.usa.vietnam",
+      "parentId": "paper3.modern.usa",
+      "label": "US involvement in the Vietnam War, 1954–75",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["domino theory", "Diem government", "Kennedy", "Strategic Hamlet Program", "Gulf of Tonkin 1964", "Vietcong", "guerrilla tactics", "Search and Destroy", "Operation Rolling Thunder", "chemical weapons", "Tet Offensive 1968", "Vietnamisation", "Nixon Doctrine", "Cambodia 1970", "Laos 1971", "bombing North Vietnam 1972"]
+    },
+    {
+      "id": "paper3.modern.usa.end-vietnam",
+      "parentId": "paper3.modern.usa",
+      "label": "Reactions to, and the end of, US involvement in Vietnam, 1964–75",
+      "kind": "leaf",
+      "paperCodes": ["paper-3"],
+      "aliases": ["opposition to war", "student movement", "TV coverage", "media", "draft system", "My Lai Massacre 1968", "Lt. Calley", "Kent State 1970", "support for war", "fear of communism", "hard hats", "silent majority", "peace negotiations", "Paris Peace Agreement 1973", "economic costs", "human costs", "fall of Saigon 1975", "Vietnam defeat reasons"]
+    }
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "english-literature",
+    "specCode": "8702",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: Shakespeare and the 19th-century novel",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 64,
+      "weighting": "40%",
+      "assessmentMode": "written exam, closed book",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Shakespeare",
+          "marks": 34,
+          "mode": "mandatory-with-single-option",
+          "description": "One question on one studied Shakespeare play; requires detailed response to an extract and the play as a whole.",
+          "coreTopicIds": [
+            "paper-1.section-a-shakespeare.extract-analysis",
+            "paper-1.section-a-shakespeare.whole-text-response"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-a-shakespeare-text-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "shakespeare-macbeth",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.macbeth"]
+                },
+                {
+                  "id": "shakespeare-romeo-and-juliet",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.romeo-and-juliet"]
+                },
+                {
+                  "id": "shakespeare-the-tempest",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.the-tempest"]
+                },
+                {
+                  "id": "shakespeare-the-merchant-of-venice",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.the-merchant-of-venice"]
+                },
+                {
+                  "id": "shakespeare-much-ado-about-nothing",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.much-ado-about-nothing"]
+                },
+                {
+                  "id": "shakespeare-julius-caesar",
+                  "allowedPrimaryTopicIds": ["paper-1.section-a-shakespeare.text-choice.julius-caesar"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "The 19th-century novel",
+          "marks": 30,
+          "mode": "mandatory-with-single-option",
+          "description": "One question on one studied 19th-century novel; requires detailed response to an extract and the novel as a whole.",
+          "coreTopicIds": [
+            "paper-1.section-b-19th-century-novel.extract-analysis",
+            "paper-1.section-b-19th-century-novel.whole-text-response"
+          ],
+          "optionGroups": [
+            {
+              "id": "paper-1-section-b-novel-text-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "novel-jekyll-and-hyde",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.jekyll-and-hyde"]
+                },
+                {
+                  "id": "novel-a-christmas-carol",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.a-christmas-carol"]
+                },
+                {
+                  "id": "novel-great-expectations",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.great-expectations"]
+                },
+                {
+                  "id": "novel-jane-eyre",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.jane-eyre"]
+                },
+                {
+                  "id": "novel-frankenstein",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.frankenstein"]
+                },
+                {
+                  "id": "novel-pride-and-prejudice",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.pride-and-prejudice"]
+                },
+                {
+                  "id": "novel-the-sign-of-four",
+                  "allowedPrimaryTopicIds": ["paper-1.section-b-19th-century-novel.text-choice.the-sign-of-four"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: Modern texts and poetry",
+      "tier": "single-tier",
+      "durationMinutes": 135,
+      "totalMarks": 96,
+      "weighting": "60%",
+      "assessmentMode": "written exam, closed book",
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Modern texts",
+          "marks": 34,
+          "mode": "mandatory-with-single-option",
+          "description": "One essay question from a choice of two on one studied modern prose or drama text.",
+          "coreTopicIds": ["paper-2.section-a-modern-texts.essay-choice"],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-a-modern-text-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "modern-an-inspector-calls",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.drama.an-inspector-calls"]
+                },
+                {
+                  "id": "modern-blood-brothers",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.drama.blood-brothers"]
+                },
+                {
+                  "id": "modern-dna",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.drama.dna"]
+                },
+                {
+                  "id": "modern-a-taste-of-honey",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.drama.a-taste-of-honey"]
+                },
+                {
+                  "id": "modern-princess-and-the-hustler",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.drama.princess-and-the-hustler"]
+                },
+                {
+                  "id": "modern-leave-taking",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.drama.leave-taking"]
+                },
+                {
+                  "id": "modern-lord-of-the-flies",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.prose.lord-of-the-flies"]
+                },
+                {
+                  "id": "modern-telling-tales",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.prose.telling-tales"]
+                },
+                {
+                  "id": "modern-animal-farm",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.prose.animal-farm"]
+                },
+                {
+                  "id": "modern-anita-and-me",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.prose.anita-and-me"]
+                },
+                {
+                  "id": "modern-pigeon-english",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.prose.pigeon-english"]
+                },
+                {
+                  "id": "modern-my-name-is-leon",
+                  "allowedPrimaryTopicIds": ["paper-2.section-a-modern-texts.text-choice.prose.my-name-is-leon"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Poetry anthology",
+          "marks": 30,
+          "mode": "mandatory-with-single-option",
+          "description": "One comparative question on one named printed poem and one other poem from the chosen anthology cluster.",
+          "coreTopicIds": ["paper-2.section-b-poetry-anthology.comparative-question"],
+          "optionGroups": [
+            {
+              "id": "paper-2-section-b-anthology-cluster-option",
+              "choose": 1,
+              "options": [
+                {
+                  "id": "cluster-love-and-relationships",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-anthology.cluster-choice.love-and-relationships"]
+                },
+                {
+                  "id": "cluster-power-and-conflict",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-anthology.cluster-choice.power-and-conflict"]
+                },
+                {
+                  "id": "cluster-worlds-and-lives",
+                  "allowedPrimaryTopicIds": ["paper-2.section-b-poetry-anthology.cluster-choice.worlds-and-lives"]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "sectionCode": "C",
+          "sectionName": "Unseen poetry",
+          "marks": 32,
+          "mode": "mandatory",
+          "description": "One question on one unseen poem and one question comparing it with a second unseen poem.",
+          "allowedPrimaryTopicIds": [
+            "paper-2.section-c-unseen-poetry.single-poem-analysis",
+            "paper-2.section-c-unseen-poetry.comparative-analysis"
+          ]
+        }
+      ]
+    }
+  ]
+}

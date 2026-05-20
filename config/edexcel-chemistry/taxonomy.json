@@ -1,0 +1,426 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "chemistry",
+    "specCode": "1CH0",
+    "version": "2024.1",
+    "scope": "edexcel-chemistry-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "formulae-equations-hazards",
+      "parentId": null,
+      "label": "Formulae, equations and hazards",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["0"],
+      "aliases": ["topic common", "topic 0"]
+    },
+    {
+      "id": "formulae-equations-hazards.formulae-equations",
+      "parentId": "formulae-equations-hazards",
+      "label": "Formulae, word equations, balanced equations and ionic equations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["0"],
+      "aliases": ["0.1", "0.2", "0.3", "0.4", "state symbols", "balanced ionic equations"]
+    },
+    {
+      "id": "formulae-equations-hazards.hazards-risk",
+      "parentId": "formulae-equations-hazards",
+      "label": "Hazard symbols, risk evaluation and practical precautions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["0"],
+      "aliases": ["0.5", "0.6", "laboratory safety", "risk assessment"]
+    },
+    {
+      "id": "key-concepts-chemistry",
+      "parentId": null,
+      "label": "Topic 1 - Key concepts in chemistry",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["topic 1"]
+    },
+    {
+      "id": "key-concepts-chemistry.atomic-structure",
+      "parentId": "key-concepts-chemistry",
+      "label": "Atomic structure, isotopes, relative atomic mass and subatomic calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["1.1-1.12", "Dalton model", "protons neutrons electrons", "isotopes"]
+    },
+    {
+      "id": "key-concepts-chemistry.periodic-table",
+      "parentId": "key-concepts-chemistry",
+      "label": "Periodic table development, arrangement, metals/non-metals and electronic configuration",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["1.13-1.20", "Dmitri Mendeleev", "atomic number", "groups and periods"]
+    },
+    {
+      "id": "key-concepts-chemistry.ionic-bonding",
+      "parentId": "key-concepts-chemistry",
+      "label": "Ionic bonding, ion formation, ion charges, ionic formulae and lattice structure",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["1.21-1.27", "dot and cross", "cations", "anions", "ionic compounds"]
+    },
+    {
+      "id": "key-concepts-chemistry.covalent-bonding",
+      "parentId": "key-concepts-chemistry",
+      "label": "Covalent bonding, simple molecules and bonding models",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["1.28-1.31", "shared pair", "simple molecular", "methane", "carbon dioxide"]
+    },
+    {
+      "id": "key-concepts-chemistry.types-of-substance",
+      "parentId": "key-concepts-chemistry",
+      "label": "Ionic, simple molecular, giant covalent and metallic substances and their properties",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["1.32-1.42", "graphite", "diamond", "graphene", "fullerenes", "poly(ethene)"]
+    },
+    {
+      "id": "key-concepts-chemistry.quantitative-chemistry",
+      "parentId": "key-concepts-chemistry",
+      "label": "Relative formula mass, empirical formula, moles, concentrations and reacting masses",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["1"],
+      "aliases": ["1.43-1.53", "Avogadro constant", "stoichiometry", "conservation of mass", "g dm-3"]
+    },
+    {
+      "id": "states-of-matter-mixtures",
+      "parentId": null,
+      "label": "Topic 2 - States of matter and mixtures",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2"],
+      "aliases": ["topic 2"]
+    },
+    {
+      "id": "states-of-matter-mixtures.particle-model-state-change",
+      "parentId": "states-of-matter-mixtures",
+      "label": "Particle model, state changes and physical/chemical change distinction",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2"],
+      "aliases": ["2.1-2.4", "solid liquid gas", "interconversions", "particle energy"]
+    },
+    {
+      "id": "states-of-matter-mixtures.pure-substances-separation",
+      "parentId": "states-of-matter-mixtures",
+      "label": "Pure substances, mixtures and separation methods",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2"],
+      "aliases": ["2.5-2.8", "simple distillation", "fractional distillation", "filtration", "crystallisation"]
+    },
+    {
+      "id": "states-of-matter-mixtures.chromatography-potable-water",
+      "parentId": "states-of-matter-mixtures",
+      "label": "Paper chromatography, Rf values, core practical 2.11 and potable water treatment",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["2"],
+      "aliases": ["2.9-2.12", "Rf", "core practical 2.11", "desalination", "chlorination"]
+    },
+    {
+      "id": "chemical-changes",
+      "parentId": null,
+      "label": "Topic 3 - Chemical changes",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3"],
+      "aliases": ["topic 3"]
+    },
+    {
+      "id": "chemical-changes.acids-alkalis-ph",
+      "parentId": "chemical-changes",
+      "label": "Acids, alkalis, pH scale, concentration/strength and core practical 3.6",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3"],
+      "aliases": ["3.1-3.10", "indicators", "weak and strong acids", "core practical 3.6"]
+    },
+    {
+      "id": "chemical-changes.acid-reactions-neutralisation-tests",
+      "parentId": "chemical-changes",
+      "label": "Acid reactions, gas tests and neutralisation chemistry",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3"],
+      "aliases": ["3.11-3.14", "hydrogen test", "carbon dioxide test", "neutralisation"]
+    },
+    {
+      "id": "chemical-changes.salt-preparation-solubility-precipitation",
+      "parentId": "chemical-changes",
+      "label": "Preparing salts, titration method, solubility rules and precipitation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3"],
+      "aliases": ["3.15-3.21", "core practical 3.17", "acid-alkali titration", "insoluble salts"]
+    },
+    {
+      "id": "chemical-changes.electrolysis-redox",
+      "parentId": "chemical-changes",
+      "label": "Electrolysis, half equations, products at electrodes, oxidation/reduction and copper purification",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["3"],
+      "aliases": ["3.22-3.31", "core practical 3.31", "cathode", "anode", "molten and aqueous electrolysis"]
+    },
+    {
+      "id": "extracting-metals-equilibria",
+      "parentId": null,
+      "label": "Topic 4 - Extracting metals and equilibria",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4"],
+      "aliases": ["topic 4"]
+    },
+    {
+      "id": "extracting-metals-equilibria.reactivity-series-redox-displacement",
+      "parentId": "extracting-metals-equilibria",
+      "label": "Reactivity series, displacement reactions and redox (oxygen/electron models)",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4"],
+      "aliases": ["4.1-4.6", "metal reactivity", "oxidation", "reduction"]
+    },
+    {
+      "id": "extracting-metals-equilibria.metal-extraction-sustainability",
+      "parentId": "extracting-metals-equilibria",
+      "label": "Extraction methods, biological extraction, corrosion resistance, recycling and life-cycle assessment",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4"],
+      "aliases": ["4.7-4.12", "heating with carbon", "electrolysis", "bacterial extraction", "phytoextraction"]
+    },
+    {
+      "id": "extracting-metals-equilibria.reversible-reactions-haber",
+      "parentId": "extracting-metals-equilibria",
+      "label": "Reversible reactions, dynamic equilibrium and Haber process conditions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["4"],
+      "aliases": ["4.13-4.17", "equilibrium position", "ammonia synthesis", "temperature pressure concentration"]
+    },
+    {
+      "id": "separate-chemistry-1",
+      "parentId": null,
+      "label": "Topic 5 - Separate chemistry 1",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5"],
+      "aliases": ["topic 5", "triple chemistry paper 1"]
+    },
+    {
+      "id": "separate-chemistry-1.transition-metals-alloys-corrosion",
+      "parentId": "separate-chemistry-1",
+      "label": "Transition metals, corrosion prevention, electroplating and alloys",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5"],
+      "aliases": ["5.1C-5.7C", "rusting", "sacrificial protection", "magnalium", "brass"]
+    },
+    {
+      "id": "separate-chemistry-1.quantitative-analysis",
+      "parentId": "separate-chemistry-1",
+      "label": "Mol dm-3 concentrations, titration calculations, yield, atom economy, molar gas volume and Avogadro law",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5"],
+      "aliases": ["5.8C-5.18C", "core practical 5.9C", "percentage yield", "atom economy", "24 dm3"]
+    },
+    {
+      "id": "separate-chemistry-1.dynamic-equilibria-fertilisers",
+      "parentId": "separate-chemistry-1",
+      "label": "Industrial equilibrium trade-offs, Haber process applications and fertiliser chemistry",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5"],
+      "aliases": ["5.19C-5.24C", "ammonium sulfate", "ammonium nitrate", "industrial conditions"]
+    },
+    {
+      "id": "separate-chemistry-1.chemical-cells-fuel-cells",
+      "parentId": "separate-chemistry-1",
+      "label": "Chemical cells and hydrogen-oxygen fuel cells",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["5"],
+      "aliases": ["5.25C-5.27C", "fuel cell evaluation", "cell voltage"]
+    },
+    {
+      "id": "groups-periodic-table",
+      "parentId": null,
+      "label": "Topic 6 - Groups in the periodic table",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["6"],
+      "aliases": ["topic 6"]
+    },
+    {
+      "id": "groups-periodic-table.group1-alkali-metals",
+      "parentId": "groups-periodic-table",
+      "label": "Group 1 alkali metals: properties, reactions with water and reactivity trends",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["6"],
+      "aliases": ["6.1-6.5", "lithium sodium potassium", "alkali metals"]
+    },
+    {
+      "id": "groups-periodic-table.group7-halogens",
+      "parentId": "groups-periodic-table",
+      "label": "Group 7 halogens: properties, displacement reactions, hydrogen halides and redox",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["6"],
+      "aliases": ["6.6-6.13", "chlorine bromine iodine", "halide ions", "astatine prediction"]
+    },
+    {
+      "id": "groups-periodic-table.group0-noble-gases",
+      "parentId": "groups-periodic-table",
+      "label": "Group 0 noble gases: inertness, uses and physical property trends",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["6"],
+      "aliases": ["6.14-6.16", "noble gases", "electronic configuration"]
+    },
+    {
+      "id": "rates-and-energy-changes",
+      "parentId": null,
+      "label": "Topic 7 - Rates of reaction and energy changes",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7"],
+      "aliases": ["topic 7"]
+    },
+    {
+      "id": "rates-and-energy-changes.rates-factors-collision-theory",
+      "parentId": "rates-and-energy-changes",
+      "label": "Rate measurements, collision theory, factors affecting rate and catalysts",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7"],
+      "aliases": ["7.1-7.8", "core practical 7.1", "surface area", "pressure", "enzymes"]
+    },
+    {
+      "id": "rates-and-energy-changes.energy-transfers-reaction-profiles",
+      "parentId": "rates-and-energy-changes",
+      "label": "Exothermic/endothermic changes, bond energies, activation energy and reaction profiles",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["7"],
+      "aliases": ["7.9-7.16", "bond energy calculations", "reaction profile", "activation energy"]
+    },
+    {
+      "id": "fuels-and-earth-science",
+      "parentId": null,
+      "label": "Topic 8 - Fuels and Earth science",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8"],
+      "aliases": ["topic 8"]
+    },
+    {
+      "id": "fuels-and-earth-science.crude-oil-fractions-hydrocarbons",
+      "parentId": "fuels-and-earth-science",
+      "label": "Crude oil composition, fractional distillation, fractions, alkanes and homologous series",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8"],
+      "aliases": ["8.1-8.6", "hydrocarbons", "alkanes", "fraction properties"]
+    },
+    {
+      "id": "fuels-and-earth-science.combustion-pollutants-hydrogen-fuel",
+      "parentId": "fuels-and-earth-science",
+      "label": "Combustion chemistry, pollutants, acid rain and hydrogen as an alternative fuel",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8"],
+      "aliases": ["8.7-8.15", "complete combustion", "incomplete combustion", "carbon monoxide", "oxides of nitrogen"]
+    },
+    {
+      "id": "fuels-and-earth-science.cracking-and-alkene-production",
+      "parentId": "fuels-and-earth-science",
+      "label": "Cracking long-chain hydrocarbons to produce smaller alkanes and alkenes",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8"],
+      "aliases": ["8.16-8.17", "cracking", "alkenes", "feedstock"]
+    },
+    {
+      "id": "fuels-and-earth-science.earth-atmosphere-greenhouse-climate",
+      "parentId": "fuels-and-earth-science",
+      "label": "Evolution of Earth's atmosphere, greenhouse effect, evidence and climate change evaluation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["8"],
+      "aliases": ["8.18-8.26", "early atmosphere", "photosynthesis", "greenhouse gases", "climate evidence"]
+    },
+    {
+      "id": "separate-chemistry-2",
+      "parentId": null,
+      "label": "Topic 9 - Separate chemistry 2",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9"],
+      "aliases": ["topic 9", "triple chemistry paper 2"]
+    },
+    {
+      "id": "separate-chemistry-2.qualitative-analysis-ion-tests",
+      "parentId": "separate-chemistry-2",
+      "label": "Flame tests, ion tests, unknown salts and instrumental analysis",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9"],
+      "aliases": ["9.1C-9.9C", "core practical 9.6C", "flame photometer", "cation tests", "anion tests"]
+    },
+    {
+      "id": "separate-chemistry-2.hydrocarbons-alkanes-alkenes",
+      "parentId": "separate-chemistry-2",
+      "label": "Alkanes and alkenes, structures, complete combustion and bromine water test",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9"],
+      "aliases": ["9.10C-9.16C", "saturated", "unsaturated", "addition reaction", "ethene with bromine"]
+    },
+    {
+      "id": "separate-chemistry-2.polymers-and-biopolymers",
+      "parentId": "separate-chemistry-2",
+      "label": "Addition and condensation polymers, recycling and biological polymers",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9"],
+      "aliases": ["9.17C-9.25C", "poly(ethene)", "PVC", "PTFE", "polyesters", "DNA"]
+    },
+    {
+      "id": "separate-chemistry-2.alcohols-carboxylic-acids-fermentation",
+      "parentId": "separate-chemistry-2",
+      "label": "Alcohols and carboxylic acids: structures, reactions, fermentation and distillation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9"],
+      "aliases": ["9.26C-9.34C", "core practical 9.28C", "oxidation of ethanol", "functional groups"]
+    },
+    {
+      "id": "separate-chemistry-2.nanoparticles-material-selection",
+      "parentId": "separate-chemistry-2",
+      "label": "Nanoparticles, bulk/surface properties and materials selection",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["9"],
+      "aliases": ["9.35C-9.39C", "surface area to volume ratio", "nanoparticles"]
+    }
+  ]
+}

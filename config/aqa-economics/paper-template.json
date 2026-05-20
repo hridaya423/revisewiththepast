@@ -1,0 +1,196 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "economics",
+    "specCode": "8136",
+    "version": "2024.1"
+  },
+  "qualification": {
+    "tier": "single-tier",
+    "assessmentModel": "linear",
+    "totalMarks": 160,
+    "notes": [
+      "Students sit both papers at the end of the course in the same series.",
+      "Each paper can draw on knowledge and understanding from the full course to develop deeper understanding."
+    ]
+  },
+  "papers": [
+    {
+      "paperCode": "paper-1",
+      "paperName": "Paper 1: How markets work",
+      "durationMinutes": 105,
+      "totalMarks": 80,
+      "weighting": "50%",
+      "contentCoverage": {
+        "contentSections": ["1", "2", "3", "4", "5", "6"],
+        "topicIds": [
+          "economic-foundations.economic-activity",
+          "economic-foundations.factors-of-production",
+          "economic-foundations.making-choices-opportunity-cost",
+          "resource-allocation.markets-allocation-factor-product",
+          "resource-allocation.economic-sectors-goods-services",
+          "resource-allocation.specialisation-division-labour-exchange",
+          "how-prices-are-determined.demand",
+          "how-prices-are-determined.supply",
+          "how-prices-are-determined.equilibrium-price-revenue",
+          "how-prices-are-determined.intermarket-relationships",
+          "how-prices-are-determined.ped",
+          "how-prices-are-determined.pes",
+          "production-costs-revenue-profit.business-objectives-costs-revenue-profit",
+          "production-costs-revenue-profit.production-productivity",
+          "production-costs-revenue-profit.economies-diseconomies-scale",
+          "competitive-and-concentrated-markets.market-structures",
+          "competitive-and-concentrated-markets.competitive-markets",
+          "competitive-and-concentrated-markets.non-competitive-markets",
+          "competitive-and-concentrated-markets.labour-market-wages",
+          "market-failure.misallocation-government-intervention",
+          "market-failure.externalities"
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Multiple choice and structured responses",
+          "questionFormat": "10 multiple choice questions followed by a range of calculation, short and extended response questions.",
+          "coverage": "content-1-to-6",
+          "allowedPrimaryTopicIds": [
+            "economic-foundations.economic-activity",
+            "economic-foundations.factors-of-production",
+            "economic-foundations.making-choices-opportunity-cost",
+            "resource-allocation.markets-allocation-factor-product",
+            "resource-allocation.economic-sectors-goods-services",
+            "resource-allocation.specialisation-division-labour-exchange",
+            "how-prices-are-determined.demand",
+            "how-prices-are-determined.supply",
+            "how-prices-are-determined.equilibrium-price-revenue",
+            "how-prices-are-determined.intermarket-relationships",
+            "how-prices-are-determined.ped",
+            "how-prices-are-determined.pes",
+            "production-costs-revenue-profit.business-objectives-costs-revenue-profit",
+            "production-costs-revenue-profit.production-productivity",
+            "production-costs-revenue-profit.economies-diseconomies-scale",
+            "competitive-and-concentrated-markets.market-structures",
+            "competitive-and-concentrated-markets.competitive-markets",
+            "competitive-and-concentrated-markets.non-competitive-markets",
+            "competitive-and-concentrated-markets.labour-market-wages",
+            "market-failure.misallocation-government-intervention",
+            "market-failure.externalities"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Data/context questions",
+          "questionFormat": "Five questions involving a mix of calculations, short and extended responses.",
+          "coverage": "content-1-to-6",
+          "allowedPrimaryTopicIds": [
+            "economic-foundations.economic-activity",
+            "economic-foundations.factors-of-production",
+            "economic-foundations.making-choices-opportunity-cost",
+            "resource-allocation.markets-allocation-factor-product",
+            "resource-allocation.economic-sectors-goods-services",
+            "resource-allocation.specialisation-division-labour-exchange",
+            "how-prices-are-determined.demand",
+            "how-prices-are-determined.supply",
+            "how-prices-are-determined.equilibrium-price-revenue",
+            "how-prices-are-determined.intermarket-relationships",
+            "how-prices-are-determined.ped",
+            "how-prices-are-determined.pes",
+            "production-costs-revenue-profit.business-objectives-costs-revenue-profit",
+            "production-costs-revenue-profit.production-productivity",
+            "production-costs-revenue-profit.economies-diseconomies-scale",
+            "competitive-and-concentrated-markets.market-structures",
+            "competitive-and-concentrated-markets.competitive-markets",
+            "competitive-and-concentrated-markets.non-competitive-markets",
+            "competitive-and-concentrated-markets.labour-market-wages",
+            "market-failure.misallocation-government-intervention",
+            "market-failure.externalities"
+          ]
+        }
+      ]
+    },
+    {
+      "paperCode": "paper-2",
+      "paperName": "Paper 2: How the economy works",
+      "durationMinutes": 105,
+      "totalMarks": 80,
+      "weighting": "50%",
+      "contentCoverage": {
+        "contentSections": ["7", "8", "9", "10", "11"],
+        "topicIds": [
+          "introduction-to-the-national-economy.interest-rates-saving-borrowing-spending-investment",
+          "introduction-to-the-national-economy.government-income-expenditure-taxation",
+          "government-objectives.objectives-conflicts",
+          "government-objectives.economic-growth-gdp-real-gdp-per-capita",
+          "government-objectives.employment-unemployment",
+          "government-objectives.inflation-price-stability",
+          "government-objectives.balance-of-payments",
+          "government-objectives.distribution-of-income-wealth",
+          "government-manages-economy.fiscal-policy-budget",
+          "government-manages-economy.monetary-policy",
+          "government-manages-economy.supply-side-policies",
+          "government-manages-economy.policies-correct-externalities",
+          "international-trade-global-economy.why-countries-trade-uk-exports-imports",
+          "international-trade-global-economy.exchange-rates",
+          "international-trade-global-economy.free-trade-agreements-eu",
+          "international-trade-global-economy.globalisation-benefits-drawbacks",
+          "role-of-money-and-financial-markets.role-of-money",
+          "role-of-money-and-financial-markets.financial-sector-bank-of-england"
+        ]
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Multiple choice and structured responses",
+          "questionFormat": "10 multiple choice questions followed by a range of calculation, short and extended response questions.",
+          "coverage": "content-7-to-11",
+          "allowedPrimaryTopicIds": [
+            "introduction-to-the-national-economy.interest-rates-saving-borrowing-spending-investment",
+            "introduction-to-the-national-economy.government-income-expenditure-taxation",
+            "government-objectives.objectives-conflicts",
+            "government-objectives.economic-growth-gdp-real-gdp-per-capita",
+            "government-objectives.employment-unemployment",
+            "government-objectives.inflation-price-stability",
+            "government-objectives.balance-of-payments",
+            "government-objectives.distribution-of-income-wealth",
+            "government-manages-economy.fiscal-policy-budget",
+            "government-manages-economy.monetary-policy",
+            "government-manages-economy.supply-side-policies",
+            "government-manages-economy.policies-correct-externalities",
+            "international-trade-global-economy.why-countries-trade-uk-exports-imports",
+            "international-trade-global-economy.exchange-rates",
+            "international-trade-global-economy.free-trade-agreements-eu",
+            "international-trade-global-economy.globalisation-benefits-drawbacks",
+            "role-of-money-and-financial-markets.role-of-money",
+            "role-of-money-and-financial-markets.financial-sector-bank-of-england"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Data/context questions",
+          "questionFormat": "Five questions involving a mix of calculations, short and extended responses.",
+          "coverage": "content-7-to-11",
+          "allowedPrimaryTopicIds": [
+            "introduction-to-the-national-economy.interest-rates-saving-borrowing-spending-investment",
+            "introduction-to-the-national-economy.government-income-expenditure-taxation",
+            "government-objectives.objectives-conflicts",
+            "government-objectives.economic-growth-gdp-real-gdp-per-capita",
+            "government-objectives.employment-unemployment",
+            "government-objectives.inflation-price-stability",
+            "government-objectives.balance-of-payments",
+            "government-objectives.distribution-of-income-wealth",
+            "government-manages-economy.fiscal-policy-budget",
+            "government-manages-economy.monetary-policy",
+            "government-manages-economy.supply-side-policies",
+            "government-manages-economy.policies-correct-externalities",
+            "international-trade-global-economy.why-countries-trade-uk-exports-imports",
+            "international-trade-global-economy.exchange-rates",
+            "international-trade-global-economy.free-trade-agreements-eu",
+            "international-trade-global-economy.globalisation-benefits-drawbacks",
+            "role-of-money-and-financial-markets.role-of-money",
+            "role-of-money-and-financial-markets.financial-sector-bank-of-england"
+          ]
+        }
+      ]
+    }
+  ]
+}

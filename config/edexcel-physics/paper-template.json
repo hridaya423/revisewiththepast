@@ -1,0 +1,82 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "physics",
+    "specCode": "1PH0",
+    "version": "2024.1"
+  },
+  "papers": [
+    {
+      "id": "paper-1",
+      "label": "Paper 1",
+      "code": "1PH0/1F, 1PH0/1H",
+      "tier": ["foundation", "higher"],
+      "duration": "1h 45m",
+      "marks": 100,
+      "weight": 50,
+      "topics": [
+        "key-concepts.units-prefixes",
+        "key-concepts.significant-standard-form",
+        "motion-forces.scalars-vectors",
+        "motion-forces.speed-graphs",
+        "motion-forces.acceleration-graphs",
+        "motion-forces.newton-laws-weight",
+        "motion-forces.circular-momentum",
+        "conservation-energy.stores-transfers",
+        "conservation-energy.calculation-work",
+        "conservation-energy.dissipation-efficiency",
+        "waves.properties-equation",
+        "waves.reflection-refraction",
+        "waves.sound-ultrasound",
+        "waves.seismic",
+        "light-em-spectrum.properties-order",
+        "light-em-spectrum.uses-risks",
+        "light-em-spectrum.light-behaviour",
+        "radioactivity.atomic-model-isotopes",
+        "radioactivity.radiation-types",
+        "radioactivity.decay-half-life",
+        "radioactivity.background-safety-uses",
+        "astronomy.solar-system-formation",
+        "astronomy.orbits-gravity",
+        "astronomy.stars-lifecycle",
+        "astronomy.cosmology-redshift"
+      ]
+    },
+    {
+      "id": "paper-2",
+      "label": "Paper 2",
+      "code": "1PH0/2F, 1PH0/2H",
+      "tier": ["foundation", "higher"],
+      "duration": "1h 45m",
+      "marks": 100,
+      "weight": 50,
+      "topics": [
+        "key-concepts.units-prefixes",
+        "key-concepts.significant-standard-form",
+        "energy-forces-work.stores-transfers",
+        "energy-forces-work.work-gpe-ke",
+        "energy-forces-work.power-efficiency",
+        "forces-effects.interactions-vectors",
+        "forces-effects.moments-levers-gears",
+        "forces-effects.friction-lubrication",
+        "electricity-circuits.components-layout",
+        "electricity-circuits.charge-current-voltage",
+        "electricity-circuits.resistance-iv",
+        "electricity-circuits.power-heating",
+        "static-electricity.charging-fields",
+        "static-electricity.hazards-applications",
+        "magnetism-motor-effect.fields-permanent",
+        "magnetism-motor-effect.current-fields",
+        "magnetism-motor-effect.motor-force",
+        "electromagnetic-induction.generator-principle",
+        "electromagnetic-induction.transformers-national-grid",
+        "particle-model.states-density",
+        "particle-model.internal-energy-changes",
+        "particle-model-gases-pressure",
+        "forces-matter.elastic-behaviour",
+        "forces-matter.hooke-law-spring-energy",
+        "forces-matter.force-extension-graphs"
+      ]
+    }
+  ]
+}

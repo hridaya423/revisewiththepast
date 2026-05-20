@@ -1,0 +1,238 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "mathematics",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of subskills per subtopic for Edexcel GCSE Mathematics"
+  },
+  "subskills": {
+    "histograms": [
+      "missing_scale",
+      "frequency_density",
+      "class_width",
+      "reading_values",
+      "interpolation",
+      "drawing_histogram",
+      "unequal_class_intervals",
+      "equal_class_intervals",
+      "frequency_from_area",
+      "total_frequency"
+    ],
+    "cumulative-frequency": [
+      "median_from_graph",
+      "interquartile_range",
+      "percentile",
+      "drawing_cf_curve",
+      "reading_cf_values",
+      "lower_quartile",
+      "upper_quartile",
+      "box_plot_from_cf"
+    ],
+    "box-plots": [
+      "reading_box_plot",
+      "drawing_box_plot",
+      "comparing_box_plots",
+      "median_from_box_plot",
+      "range_from_box_plot",
+      "outliers"
+    ],
+    "scatter-graphs": [
+      "correlation_type",
+      "line_of_best_fit",
+      "interpolation",
+      "extrapolation",
+      "identifying_outliers",
+      "describing_correlation",
+      "prediction_from_line"
+    ],
+    "averages": [
+      "mean_from_list",
+      "median_from_list",
+      "mode_from_list",
+      "range_from_list",
+      "mean_from_grouped_data",
+      "median_from_grouped_data",
+      "modal_class",
+      "mean_from_frequency_table",
+      "combined_mean",
+      "missing_value_from_mean"
+    ],
+    "probability": [
+      "single_event_probability",
+      "complementary_probability",
+      "sample_space",
+      "relative_frequency",
+      "expected_frequency",
+      "independent_events",
+      "dependent_events",
+      "tree_diagrams",
+      "venn_diagrams",
+      "conditional_probability",
+      "set_notation"
+    ],
+    "standard-form": [
+      "conversion_to_standard_form",
+      "conversion_from_standard_form",
+      "calculation_with_standard_form",
+      "ordering_standard_form",
+      "addition_subtraction_standard_form",
+      "multiplication_division_standard_form"
+    ],
+    "quadratic-equations": [
+      "factorising_quadratic",
+      "quadratic_formula",
+      "completing_the_square",
+      "solving_by_graph",
+      "simultaneous_quadratic_linear",
+      "quadratic_inequalities"
+    ],
+    "simultaneous-equations": [
+      "elimination_method",
+      "substitution_method",
+      "graphical_solution",
+      "linear_linear",
+      "linear_quadratic"
+    ],
+    "straight-lines": [
+      "gradient_calculation",
+      "y_intercept",
+      "equation_from_two_points",
+      "parallel_lines",
+      "perpendicular_lines",
+      "midpoint",
+      "equation_from_graph",
+      "real_context_interpretation"
+    ],
+    "trigonometry": [
+      "sohcahtoa_right_triangle",
+      "sine_rule",
+      "cosine_rule",
+      "area_of_triangle_trig",
+      "exact_trig_values",
+      "trig_graphs",
+      "inverse_trig",
+      "3d_trigonometry",
+      "bearings_trig"
+    ],
+    "circle-theorems": [
+      "angle_at_centre",
+      "angle_in_semicircle",
+      "angles_in_same_segment",
+      "opposite_angles_cyclic_quad",
+      "tangent_radius",
+      "alternate_segment",
+      "tangent_lengths",
+      "proof_using_theorems"
+    ],
+    "algebraic_fractions": [
+      "simplifying_algebraic_fractions",
+      "adding_algebraic_fractions",
+      "subtracting_algebraic_fractions",
+      "multiplying_algebraic_fractions",
+      "dividing_algebraic_fractions",
+      "solving_equations_with_fractions"
+    ],
+    "iteration": [
+      "iterative_formula",
+      "showing_root_exists",
+      "finding_approximation",
+      "decimal_places_accuracy"
+    ],
+    "sequences": [
+      "nth_term_linear",
+      "nth_term_quadratic",
+      "nth_term_geometric",
+      "arithmetic_sequence",
+      "geometric_progression",
+      "triangular_numbers",
+      "square_numbers",
+      "fibonacci",
+      "term_to_term_rule"
+    ],
+    "proportion": [
+      "direct_proportion_formula",
+      "inverse_proportion_formula",
+      "proportion_graphs",
+      "proportion_word_problems",
+      "scale_factors"
+    ],
+    "bounds": [
+      "error_intervals",
+      "upper_bound",
+      "lower_bound",
+      "bounds_calculations",
+      "bounds_in_context",
+      "rounding_bounds"
+    ],
+    "surds": [
+      "simplifying_surds",
+      "adding_surds",
+      "multiplying_surds",
+      "rationalising_denominator",
+      "expanding_brackets_with_surds"
+    ],
+    "functions": [
+      "function_notation",
+      "evaluating_functions",
+      "inverse_functions",
+      "composite_functions",
+      "solving_with_functions"
+    ],
+    "vectors": [
+      "vector_addition",
+      "vector_subtraction",
+      "scalar_multiplication",
+      "magnitude",
+      "geometric_vectors",
+      "vectors_in_proof"
+    ],
+    "transformations": [
+      "reflection",
+      "rotation",
+      "translation",
+      "enlargement",
+      "combined_transformations",
+      "invariant_points",
+      "vector_description"
+    ],
+    "area_volume": [
+      "area_compound_shapes",
+      "volume_prisms",
+      "volume_cylinder",
+      "volume_cone",
+      "volume_sphere",
+      "surface_area",
+      "arc_length",
+      "sector_area"
+    ],
+    "pythagoras": [
+      "pythagoras_2d",
+      "pythagoras_3d",
+      "pythagoras_in_context",
+      "pythagoras_with_algebra"
+    ],
+    "ratios": [
+      "simplifying_ratios",
+      "dividing_in_ratio",
+      "ratio_word_problems",
+      "ratio_with_algebra",
+      "best_buy",
+      "best_value"
+    ],
+    "percentages": [
+      "percentage_of_amount",
+      "percentage_change",
+      "reverse_percentage",
+      "compound_interest",
+      "simple_interest",
+      "percentage_increase_decrease"
+    ],
+    "indices": [
+      "laws_of_indices",
+      "negative_indices",
+      "fractional_indices",
+      "zero_index",
+      "solving_index_equations"
+    ]
+  }
+}

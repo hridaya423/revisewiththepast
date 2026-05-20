@@ -1,0 +1,187 @@
+{
+  "metadata": {
+    "boardCode": "ocr",
+    "subjectSlug": "english-language",
+    "specCode": "J351",
+    "version": "2024.1",
+    "scope": "ocr-gcse-english-language-j351-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "qualification": {
+    "tier": "single-tier",
+    "totalMarks": 160,
+    "paperSplit": "2 x 50%"
+  },
+  "papers": [
+    {
+      "id": "paper-1",
+      "paperCode": "paper-1",
+      "label": "Paper 1: Communicating information and ideas",
+      "officialCode": "Component 01",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "duration": "2h",
+      "marks": 80,
+      "weighting": "50%",
+      "structure": {
+        "parts": 2,
+        "questionPattern": "Part A reading and comparison of two unseen non-fiction texts; Part B one original non-fiction writing task"
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Reading",
+          "marks": 40,
+          "description": "Read and compare two unseen non-fiction texts (one 19th century, one 20th or 21st century); analyse language and structure; compare and evaluate",
+          "topicRefs": [
+            "reading.non-fiction.comprehension.retrieve-explicit",
+            "reading.non-fiction.comprehension.infer-implicit",
+            "reading.non-fiction.comprehension.evidence-selection",
+            "reading.non-fiction.comprehension.summary-synthesis",
+            "reading.non-fiction.analysis-methods.language-diction-connotation",
+            "reading.non-fiction.analysis-methods.language-rhetorical-devices",
+            "reading.non-fiction.analysis-methods.structure-organisation",
+            "reading.non-fiction.analysis-methods.structure-development-shifts",
+            "reading.non-fiction.comparison-evaluation.compare-viewpoints",
+            "reading.non-fiction.comparison-evaluation.compare-methods",
+            "reading.non-fiction.comparison-evaluation.evaluate-statement"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Writing",
+          "marks": 40,
+          "description": "Produce one original non-fiction response for a specified audience and purpose",
+          "topicRefs": [
+            "writing.non-fiction.forms.article",
+            "writing.non-fiction.forms.letter",
+            "writing.non-fiction.forms.speech",
+            "writing.non-fiction.forms.leaflet-guide",
+            "writing.non-fiction.craft.purpose-audience-register",
+            "writing.non-fiction.craft.argument-line",
+            "writing.non-fiction.craft.paragraph-cohesion",
+            "writing.non-fiction.craft.rhetorical-crafting",
+            "writing.non-fiction.craft.tone-control",
+            "writing.technical-accuracy.vocabulary-precision",
+            "writing.technical-accuracy.sentence-variety-control",
+            "writing.technical-accuracy.punctuation-clarity-effect",
+            "writing.technical-accuracy.grammar-accuracy",
+            "writing.technical-accuracy.spelling-accuracy"
+          ]
+        }
+      ],
+      "topics": [
+        "reading.non-fiction.comprehension.retrieve-explicit",
+        "reading.non-fiction.comprehension.infer-implicit",
+        "reading.non-fiction.comprehension.evidence-selection",
+        "reading.non-fiction.comprehension.summary-synthesis",
+        "reading.non-fiction.analysis-methods.language-diction-connotation",
+        "reading.non-fiction.analysis-methods.language-rhetorical-devices",
+        "reading.non-fiction.analysis-methods.structure-organisation",
+        "reading.non-fiction.analysis-methods.structure-development-shifts",
+        "reading.non-fiction.comparison-evaluation.compare-viewpoints",
+        "reading.non-fiction.comparison-evaluation.compare-methods",
+        "reading.non-fiction.comparison-evaluation.evaluate-statement",
+        "writing.non-fiction.forms.article",
+        "writing.non-fiction.forms.letter",
+        "writing.non-fiction.forms.speech",
+        "writing.non-fiction.forms.leaflet-guide",
+        "writing.non-fiction.craft.purpose-audience-register",
+        "writing.non-fiction.craft.argument-line",
+        "writing.non-fiction.craft.paragraph-cohesion",
+        "writing.non-fiction.craft.rhetorical-crafting",
+        "writing.non-fiction.craft.tone-control",
+        "writing.technical-accuracy.vocabulary-precision",
+        "writing.technical-accuracy.sentence-variety-control",
+        "writing.technical-accuracy.punctuation-clarity-effect",
+        "writing.technical-accuracy.grammar-accuracy",
+        "writing.technical-accuracy.spelling-accuracy"
+      ]
+    },
+    {
+      "id": "paper-2",
+      "paperCode": "paper-2",
+      "label": "Paper 2: Exploring effects and impact",
+      "officialCode": "Component 02",
+      "tier": "single-tier",
+      "durationMinutes": 120,
+      "duration": "2h",
+      "marks": 80,
+      "weighting": "50%",
+      "structure": {
+        "parts": 2,
+        "questionPattern": "Part A reading and comparison of two unseen prose texts; Part B one original creative writing task"
+      },
+      "sections": [
+        {
+          "sectionCode": "A",
+          "sectionName": "Reading",
+          "marks": 40,
+          "description": "Read and compare two unseen prose texts (20th or 21st century; one may be literary non-fiction); analyse language and structure; compare and evaluate",
+          "topicRefs": [
+            "reading.literary-prose.comprehension.retrieve-explicit",
+            "reading.literary-prose.comprehension.infer-implicit",
+            "reading.literary-prose.comprehension.evidence-selection",
+            "reading.literary-prose.comprehension.summary-synthesis",
+            "reading.literary-prose.analysis-methods.language-diction-imagery",
+            "reading.literary-prose.analysis-methods.language-tone-atmosphere",
+            "reading.literary-prose.analysis-methods.structure-narrative-organisation",
+            "reading.literary-prose.analysis-methods.structure-focus-shifts",
+            "reading.literary-prose.comparison-evaluation.compare-ideas-feelings",
+            "reading.literary-prose.comparison-evaluation.compare-methods",
+            "reading.literary-prose.comparison-evaluation.evaluate-statement"
+          ]
+        },
+        {
+          "sectionCode": "B",
+          "sectionName": "Writing",
+          "marks": 40,
+          "description": "Produce one original creative writing response",
+          "topicRefs": [
+            "writing.creative.composition.narrative-shaping",
+            "writing.creative.composition.descriptive-crafted-imagery",
+            "writing.creative.composition.setting-atmosphere",
+            "writing.creative.composition.characterisation-voice",
+            "writing.creative.composition.structural-control",
+            "writing.creative.style.perspective-viewpoint",
+            "writing.creative.style.tense-control",
+            "writing.creative.style.sensory-detail",
+            "writing.creative.style.figurative-language-effects",
+            "writing.technical-accuracy.vocabulary-precision",
+            "writing.technical-accuracy.sentence-variety-control",
+            "writing.technical-accuracy.punctuation-clarity-effect",
+            "writing.technical-accuracy.grammar-accuracy",
+            "writing.technical-accuracy.spelling-accuracy"
+          ]
+        }
+      ],
+      "topics": [
+        "reading.literary-prose.comprehension.retrieve-explicit",
+        "reading.literary-prose.comprehension.infer-implicit",
+        "reading.literary-prose.comprehension.evidence-selection",
+        "reading.literary-prose.comprehension.summary-synthesis",
+        "reading.literary-prose.analysis-methods.language-diction-imagery",
+        "reading.literary-prose.analysis-methods.language-tone-atmosphere",
+        "reading.literary-prose.analysis-methods.structure-narrative-organisation",
+        "reading.literary-prose.analysis-methods.structure-focus-shifts",
+        "reading.literary-prose.comparison-evaluation.compare-ideas-feelings",
+        "reading.literary-prose.comparison-evaluation.compare-methods",
+        "reading.literary-prose.comparison-evaluation.evaluate-statement",
+        "writing.creative.composition.narrative-shaping",
+        "writing.creative.composition.descriptive-crafted-imagery",
+        "writing.creative.composition.setting-atmosphere",
+        "writing.creative.composition.characterisation-voice",
+        "writing.creative.composition.structural-control",
+        "writing.creative.style.perspective-viewpoint",
+        "writing.creative.style.tense-control",
+        "writing.creative.style.sensory-detail",
+        "writing.creative.style.figurative-language-effects",
+        "writing.technical-accuracy.vocabulary-precision",
+        "writing.technical-accuracy.sentence-variety-control",
+        "writing.technical-accuracy.punctuation-clarity-effect",
+        "writing.technical-accuracy.grammar-accuracy",
+        "writing.technical-accuracy.spelling-accuracy"
+      ]
+    }
+  ]
+}

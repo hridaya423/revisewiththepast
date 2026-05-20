@@ -1,0 +1,399 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "business",
+    "specCode": "8132",
+    "version": "2024.1",
+    "scope": "aqa-gcse-business-8132-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "business-in-the-real-world",
+      "parentId": null,
+      "label": "3.1 Business in the real world",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business in the real world", "3.1"]
+    },
+    {
+      "id": "business-in-the-real-world.purpose-and-nature",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.1 The purpose and nature of businesses",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["purpose of business", "goods and services", "needs and wants", "factors of production", "opportunity cost", "enterprise", "entrepreneur", "three sectors", "dynamic business environment"]
+    },
+    {
+      "id": "business-in-the-real-world.business-ownership",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.2 Business ownership",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["sole trader", "partnership", "private limited company", "public limited company", "not-for-profit", "limited liability", "legal structures"]
+    },
+    {
+      "id": "business-in-the-real-world.aims-and-objectives",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.3 Setting business aims and objectives",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business aims", "business objectives", "survival", "profit maximisation", "growth", "market share", "customer satisfaction", "social objectives", "shareholder value"]
+    },
+    {
+      "id": "business-in-the-real-world.stakeholders",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.4 Stakeholders",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["stakeholder", "owners", "employees", "customers", "local community", "suppliers", "stakeholder conflict"]
+    },
+    {
+      "id": "business-in-the-real-world.business-location",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.5 Business location",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["location decision", "proximity to market", "raw materials", "labour", "competition", "costs"]
+    },
+    {
+      "id": "business-in-the-real-world.business-planning",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.6 Business planning",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business plan", "sections of business plan", "fixed costs", "variable costs", "total costs", "revenue", "profit", "loss"]
+    },
+    {
+      "id": "business-in-the-real-world.expanding-a-business",
+      "parentId": "business-in-the-real-world",
+      "label": "3.1.7 Expanding a business",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["growth", "organic growth", "franchising", "e-commerce", "outsourcing", "merger", "takeover", "economies of scale", "diseconomies of scale", "average unit cost"]
+    },
+    {
+      "id": "influences-on-business",
+      "parentId": null,
+      "label": "3.2 Influences on business",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["influences on business", "3.2"]
+    },
+    {
+      "id": "influences-on-business.technology",
+      "parentId": "influences-on-business",
+      "label": "3.2.1 Technology",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["ict", "e-commerce", "digital communication", "technology impact"]
+    },
+    {
+      "id": "influences-on-business.ethical-and-environmental-considerations",
+      "parentId": "influences-on-business",
+      "label": "3.2.2 Ethical and environmental considerations",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["ethics", "trade-off between ethics and profit", "environmental responsibility", "sustainability", "global warming", "scarce resources"]
+    },
+    {
+      "id": "influences-on-business.economic-climate",
+      "parentId": "influences-on-business",
+      "label": "3.2.3 The economic climate on businesses",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["interest rates", "employment levels", "consumer spending", "economic climate"]
+    },
+    {
+      "id": "influences-on-business.globalisation",
+      "parentId": "influences-on-business",
+      "label": "3.2.4 Globalisation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["international competition", "import", "export", "exchange rates"]
+    },
+    {
+      "id": "influences-on-business.legislation",
+      "parentId": "influences-on-business",
+      "label": "3.2.5 Legislation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["employment law", "minimum wage", "equality act", "health and safety at work act", "consumer law", "trade descriptions"]
+    },
+    {
+      "id": "influences-on-business.competitive-environment",
+      "parentId": "influences-on-business",
+      "label": "3.2.6 Competitive environment",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["market", "competition", "risk", "uncertainty", "risk management"]
+    },
+    {
+      "id": "business-operations",
+      "parentId": null,
+      "label": "3.3 Business operations",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["business operations", "3.3"]
+    },
+    {
+      "id": "business-operations.production-processes",
+      "parentId": "business-operations",
+      "label": "3.3.1 Production processes",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["job production", "flow production", "lean production", "just in time production", "production efficiency"]
+    },
+    {
+      "id": "business-operations.procurement",
+      "parentId": "business-operations",
+      "label": "3.3.2 The role of procurement",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["stock management", "jit stock", "jic stock", "supplier choice", "logistics", "supply chain management"]
+    },
+    {
+      "id": "business-operations.quality",
+      "parentId": "business-operations",
+      "label": "3.3.3 The concept of quality",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["quality issues", "total quality management", "tqm", "quality costs and benefits", "quality control"]
+    },
+    {
+      "id": "business-operations.customer-service",
+      "parentId": "business-operations",
+      "label": "3.3.4 Good customer services",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["customer service", "post-sales service", "customer loyalty", "customer satisfaction", "poor customer service", "digital customer service"]
+    },
+    {
+      "id": "human-resources",
+      "parentId": null,
+      "label": "3.4 Human resources",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["human resources", "hr", "3.4"]
+    },
+    {
+      "id": "human-resources.organisational-structures",
+      "parentId": "human-resources",
+      "label": "3.4.1 Organisational structures",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["span of control", "chain of command", "delayering", "delegation", "tall structure", "flat structure", "centralisation", "decentralisation"]
+    },
+    {
+      "id": "human-resources.recruitment-and-selection",
+      "parentId": "human-resources",
+      "label": "3.4.2 Recruitment and selection of employees",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["recruitment", "internal recruitment", "external recruitment", "job analysis", "job description", "person specification", "selection methods", "contracts of employment", "zero hour contracts"]
+    },
+    {
+      "id": "human-resources.motivating-employees",
+      "parentId": "human-resources",
+      "label": "3.4.3 Motivating employees",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["motivation", "salary", "wage", "commission", "profit sharing", "non-financial motivation", "management styles", "fringe benefits"]
+    },
+    {
+      "id": "human-resources.training",
+      "parentId": "human-resources",
+      "label": "3.4.4 Training",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["induction training", "on the job training", "off the job training", "training benefits"]
+    },
+    {
+      "id": "marketing",
+      "parentId": null,
+      "label": "3.5 Marketing",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["marketing", "3.5"]
+    },
+    {
+      "id": "marketing.identifying-and-understanding-customers",
+      "parentId": "marketing",
+      "label": "3.5.1 Identifying and understanding customers",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["customer needs", "customer wants", "satisfying customers", "marketing importance"]
+    },
+    {
+      "id": "marketing.segmentation",
+      "parentId": "marketing",
+      "label": "3.5.2 Segmentation",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["market segmentation", "target market", "demographic segmentation", "geographic segmentation", "income segmentation"]
+    },
+    {
+      "id": "marketing.market-research",
+      "parentId": "marketing",
+      "label": "3.5.3 The purpose and methods of market research",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["primary research", "secondary research", "qualitative data", "quantitative data", "questionnaires", "surveys", "focus groups", "market share", "market size"]
+    },
+    {
+      "id": "marketing.marketing-mix",
+      "parentId": "marketing",
+      "label": "3.5.4 The marketing mix (4Ps)",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["4ps", "marketing mix", "price product promotion place"]
+    },
+    {
+      "id": "marketing.marketing-mix.pricing",
+      "parentId": "marketing.marketing-mix",
+      "label": "3.5.4 Pricing methods and pricing decisions",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["price skimming", "penetration pricing", "competitive pricing", "loss leader", "cost-plus pricing", "price and demand"]
+    },
+    {
+      "id": "marketing.marketing-mix.product",
+      "parentId": "marketing.marketing-mix",
+      "label": "3.5.4 Product, product life cycle and portfolio",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["product design", "new product development", "usp", "brand image", "product life cycle", "extension strategies", "boston matrix", "boston box"]
+    },
+    {
+      "id": "marketing.marketing-mix.promotion",
+      "parentId": "marketing.marketing-mix",
+      "label": "3.5.4 Promotion and promotional mix",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["advertising", "public relations", "sales promotion", "sponsorship", "social media promotion", "promotion objectives"]
+    },
+    {
+      "id": "marketing.marketing-mix.place",
+      "parentId": "marketing.marketing-mix",
+      "label": "3.5.4 Place and channels of distribution",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["distribution", "retailers", "wholesalers", "telesales", "channel of distribution", "e-commerce", "m-commerce"]
+    },
+    {
+      "id": "marketing.marketing-mix.integration",
+      "parentId": "marketing.marketing-mix",
+      "label": "3.5.4 Integrated nature of the marketing mix",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["integrated marketing mix", "coordinating 4ps", "implementing marketing decisions"]
+    },
+    {
+      "id": "finance",
+      "parentId": null,
+      "label": "3.6 Finance",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["finance", "3.6"]
+    },
+    {
+      "id": "finance.sources-of-finance",
+      "parentId": "finance",
+      "label": "3.6.1 Sources of finance",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["internal finance", "external finance", "retained profit", "share issue", "loan", "mortgage", "overdraft", "trade credit", "hire purchase", "government grants"]
+    },
+    {
+      "id": "finance.cash-flow",
+      "parentId": "finance",
+      "label": "3.6.2 Cash flow",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["cash flow forecast", "cash inflow", "cash outflow", "net cash flow", "opening balance", "closing balance", "cash vs profit"]
+    },
+    {
+      "id": "finance.financial-terms-and-calculations",
+      "parentId": "finance",
+      "label": "3.6.3 Financial terms and calculations",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["fixed costs", "variable costs", "total costs", "revenue", "profit", "loss", "average rate of return", "break-even", "margin of safety"]
+    },
+    {
+      "id": "finance.financial-performance",
+      "parentId": "finance",
+      "label": "3.6.4 Analysing the financial performance of a business",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["income statement", "statement of financial position", "assets", "liabilities", "gross profit margin", "net profit margin", "financial statements"]
+    },
+    {
+      "id": "quantitative-skills",
+      "parentId": null,
+      "label": "Appendix: quantitative skills in business",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["appendix quantitative skills", "business maths skills"]
+    },
+    {
+      "id": "quantitative-skills.calculation",
+      "parentId": "quantitative-skills",
+      "label": "6.1 Calculation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["percentages", "percentage change", "averages", "ratios", "arr", "cash flow calculations", "profit calculations"]
+    },
+    {
+      "id": "quantitative-skills.interpretation",
+      "parentId": "quantitative-skills",
+      "label": "6.2 Interpretation",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "sectionCodes": ["A", "B", "C"],
+      "aliases": ["data interpretation", "graphs and charts", "financial data interpretation", "market research interpretation", "market share interpretation"]
+    }
+  ]
+}

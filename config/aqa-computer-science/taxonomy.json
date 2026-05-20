@@ -1,0 +1,356 @@
+{
+  "metadata": {
+    "boardCode": "aqa",
+    "subjectSlug": "computer-science",
+    "specCode": "8525",
+    "version": "2024.1",
+    "scope": "aqa-computer-science-only",
+    "taggingRule": "one-canonical-leaf-topic-per-question-part"
+  },
+  "topics": [
+    {
+      "id": "algorithms",
+      "parentId": null,
+      "label": "Fundamentals of algorithms",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["algorithms"]
+    },
+    {
+      "id": "algorithms.decomposition-abstraction",
+      "parentId": "algorithms",
+      "label": "Computational thinking: decomposition, abstraction, algorithmic thinking",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["computational thinking", "decomposition", "abstraction", "algorithmic thinking", "3.1.1"]
+    },
+    {
+      "id": "algorithms.searching-sorting",
+      "parentId": "algorithms",
+      "label": "Searching and sorting algorithms: binary search, linear search, bubble sort, merge sort",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["binary search", "linear search", "bubble sort", "merge sort", "searching", "sorting", "3.1.2"]
+    },
+    {
+      "id": "algorithms.design-representation",
+      "parentId": "algorithms",
+      "label": "Algorithm design and representation: pseudocode, structure diagrams, flowcharts, trace tables",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["pseudocode", "structure diagrams", "flowcharts", "trace tables", "algorithm design", "3.1.3"]
+    },
+    {
+      "id": "algorithms.complexity",
+      "parentId": "algorithms",
+      "label": "Algorithm efficiency and complexity",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["algorithm efficiency", "complexity", "performance", "3.1.4"]
+    },
+    {
+      "id": "programming",
+      "parentId": null,
+      "label": "Programming",
+      "kind": "branch",
+      "paperCodes": ["paper-1"],
+      "aliases": ["programming", "coding"]
+    },
+    {
+      "id": "programming.variables-constants",
+      "parentId": "programming",
+      "label": "Variables, constants, data types and operators",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["variables", "constants", "data types", "integer", "real", "boolean", "string", "char", "operators", "3.2.1"]
+    },
+    {
+      "id": "programming.constructs",
+      "parentId": "programming",
+      "label": "Programming constructs: sequence, selection, iteration",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["sequence", "selection", "iteration", "for loop", "while loop", "if statement", "if-else", "case statement", "3.2.2"]
+    },
+    {
+      "id": "programming.strings-arrays",
+      "parentId": "programming",
+      "label": "Strings and arrays: manipulation, traversal, 1D and 2D arrays",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["strings", "arrays", "1D arrays", "2D arrays", "string manipulation", "array traversal", "3.2.3"]
+    },
+    {
+      "id": "programming.subprograms",
+      "parentId": "programming",
+      "label": "Subprograms: procedures, functions, parameters, local and global scope",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["procedures", "functions", "parameters", "arguments", "return values", "local variables", "global variables", "scope", "3.2.4"]
+    },
+    {
+      "id": "programming.file-handling",
+      "parentId": "programming",
+      "label": "File handling: reading, writing, appending text files",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["file handling", "read file", "write file", "append", "text files", "3.2.5"]
+    },
+    {
+      "id": "programming.testing-debugging",
+      "parentId": "programming",
+      "label": "Testing and debugging: normal, boundary, erroneous data, test plans",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["testing", "debugging", "normal data", "boundary data", "erroneous data", "test plans", "test data", "3.2.6"]
+    },
+    {
+      "id": "programming.defensive-programming",
+      "parentId": "programming",
+      "label": "Defensive programming: input validation, authentication, error handling",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["defensive programming", "input validation", "authentication", "error handling", "range check", "length check", "type check", "presence check", "format check", "3.2.7"]
+    },
+    {
+      "id": "programming.sql-programming",
+      "parentId": "programming",
+      "label": "SQL within programs: executing queries, handling results",
+      "kind": "leaf",
+      "paperCodes": ["paper-1"],
+      "aliases": ["SQL in programs", "executing queries", "SQL results", "3.2.8"]
+    },
+    {
+      "id": "data-representation",
+      "parentId": null,
+      "label": "Fundamentals of data representation",
+      "kind": "branch",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["data representation"]
+    },
+    {
+      "id": "data-representation.number-systems",
+      "parentId": "data-representation",
+      "label": "Number systems: binary, decimal, hexadecimal, conversions",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["binary", "decimal", "hexadecimal", "base 2", "base 10", "base 16", "conversions", "3.3.1"]
+    },
+    {
+      "id": "data-representation.binary-arithmetic",
+      "parentId": "data-representation",
+      "label": "Binary arithmetic: addition, subtraction, shifts, overflow",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["binary addition", "binary subtraction", "binary shifts", "overflow", "3.3.2"]
+    },
+    {
+      "id": "data-representation.character-encoding",
+      "parentId": "data-representation",
+      "label": "Character encoding: ASCII, Unicode",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["ASCII", "Unicode", "character encoding", "character set", "3.3.3"]
+    },
+    {
+      "id": "data-representation.image-sound",
+      "parentId": "data-representation",
+      "label": "Image and sound representation: pixels, resolution, colour depth, sample rate, bit depth",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["pixels", "resolution", "colour depth", "sample rate", "bit depth", "image representation", "sound representation", "bitmap", "3.3.4"]
+    },
+    {
+      "id": "data-representation.compression",
+      "parentId": "data-representation",
+      "label": "Data compression: lossy and lossless compression",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["compression", "lossy compression", "lossless compression", "RLE", "3.3.5"]
+    },
+    {
+      "id": "data-representation.logic-gates",
+      "parentId": "data-representation",
+      "label": "Logic gates and truth tables: AND, OR, NOT, NAND, NOR, XOR",
+      "kind": "leaf",
+      "paperCodes": ["paper-1", "paper-2"],
+      "aliases": ["logic gates", "AND", "OR", "NOT", "NAND", "NOR", "XOR", "truth tables", "Boolean algebra", "logic circuits", "3.3.6"]
+    },
+    {
+      "id": "computer-systems",
+      "parentId": null,
+      "label": "Computer systems",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["computer systems", "hardware", "software"]
+    },
+    {
+      "id": "computer-systems.system-architecture",
+      "parentId": "computer-systems",
+      "label": "System architecture: CPU, von Neumann architecture, fetch-decode-execute cycle",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["CPU", "von Neumann", "fetch-decode-execute", "ALU", "CU", "registers", "PC", "MAR", "MDR", "ACC", "cache", "3.4.1"]
+    },
+    {
+      "id": "computer-systems.memory-storage",
+      "parentId": "computer-systems",
+      "label": "Memory and storage: RAM, ROM, virtual memory, HDD, SSD, optical, magnetic",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["RAM", "ROM", "virtual memory", "hard disk", "SSD", "optical storage", "magnetic storage", "flash memory", "3.4.2"]
+    },
+    {
+      "id": "computer-systems.embedded-systems",
+      "parentId": "computer-systems",
+      "label": "Embedded systems and microcontrollers",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["embedded systems", "microcontrollers", "sensors", "actuators", "3.4.3"]
+    },
+    {
+      "id": "computer-systems.system-software",
+      "parentId": "computer-systems",
+      "label": "System software: operating systems, utilities, compilers, interpreters, assemblers",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["operating systems", "OS", "utilities", "compilers", "interpreters", "assemblers", "system software", "3.4.4"]
+    },
+    {
+      "id": "computer-systems.ethics-emerging-tech",
+      "parentId": "computer-systems",
+      "label": "Ethical, legal and environmental impacts of emerging technologies",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["emerging technologies", "AI ethics", "robotics", "environmental impact", "e-waste", "3.4.5"]
+    },
+    {
+      "id": "networks",
+      "parentId": null,
+      "label": "Fundamentals of computer networks",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["networks"]
+    },
+    {
+      "id": "networks.types-topologies",
+      "parentId": "networks",
+      "label": "Network types and topologies: LAN, WAN, PAN, star, bus, mesh",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["LAN", "WAN", "PAN", "star topology", "bus topology", "mesh topology", "network types", "3.5.1"]
+    },
+    {
+      "id": "networks.layers-protocols",
+      "parentId": "networks",
+      "label": "Network layers and protocols: TCP/IP, HTTP, HTTPS, FTP, SMTP, POP3, IMAP",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["TCP/IP", "HTTP", "HTTPS", "FTP", "SMTP", "POP3", "IMAP", "protocols", "layers", "3.5.2"]
+    },
+    {
+      "id": "networks.wireless-wired",
+      "parentId": "networks",
+      "label": "Wired and wireless networks: Ethernet, Wi-Fi, Bluetooth, fibre optics",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Ethernet", "Wi-Fi", "Bluetooth", "fibre optics", "wired", "wireless", "3.5.3"]
+    },
+    {
+      "id": "networks.internet-concepts",
+      "parentId": "networks",
+      "label": "Internet concepts: DNS, IP addresses, MAC addresses, packet switching, routing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["DNS", "IP address", "MAC address", "packet switching", "routing", "IPv4", "IPv6", "3.5.4"]
+    },
+    {
+      "id": "cyber-security",
+      "parentId": null,
+      "label": "Cyber security",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["cyber security", "security"]
+    },
+    {
+      "id": "cyber-security.threats",
+      "parentId": "cyber-security",
+      "label": "Cyber security threats: malware, phishing, social engineering, DoS, brute force, SQL injection, zero-day",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["malware", "virus", "worm", "trojan", "ransomware", "phishing", "social engineering", "DoS", "DDoS", "brute force", "SQL injection", "zero-day", "3.6.1"]
+    },
+    {
+      "id": "cyber-security.prevention",
+      "parentId": "cyber-security",
+      "label": "Cyber security prevention: encryption, firewalls, access control, penetration testing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["encryption", "firewalls", "access control", "penetration testing", "authentication", "passwords", "biometrics", "3.6.2"]
+    },
+    {
+      "id": "databases",
+      "parentId": null,
+      "label": "Relational databases and SQL",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["databases", "SQL", "relational databases"]
+    },
+    {
+      "id": "databases.relational-model",
+      "parentId": "databases",
+      "label": "Relational database model: tables, primary keys, foreign keys, relationships",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["relational databases", "tables", "primary key", "foreign key", "relationships", "normalisation", "3.7.1"]
+    },
+    {
+      "id": "databases.sql-queries",
+      "parentId": "databases",
+      "label": "SQL queries: SELECT, WHERE, ORDER BY, GROUP BY, JOIN, INSERT, UPDATE, DELETE",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["SELECT", "WHERE", "ORDER BY", "GROUP BY", "JOIN", "INSERT", "UPDATE", "DELETE", "SQL queries", "aggregate functions", "3.7.2"]
+    },
+    {
+      "id": "ethical-legal",
+      "parentId": null,
+      "label": "Ethical, legal and environmental impacts",
+      "kind": "branch",
+      "paperCodes": ["paper-2"],
+      "aliases": ["ethics", "legal", "environmental", "privacy"]
+    },
+    {
+      "id": "ethical-legal.legislation",
+      "parentId": "ethical-legal",
+      "label": "Legislation: Computer Misuse Act, Data Protection Act, Copyright Designs and Patents Act, Freedom of Information Act",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["Computer Misuse Act", "Data Protection Act", "GDPR", "Copyright Designs and Patents Act", "Freedom of Information Act", "legislation", "3.8.1"]
+    },
+    {
+      "id": "ethical-legal.open-source",
+      "parentId": "ethical-legal",
+      "label": "Open source vs proprietary software, licensing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["open source", "proprietary", "licensing", "Creative Commons", "free software", "3.8.2"]
+    },
+    {
+      "id": "ethical-legal.privacy",
+      "parentId": "ethical-legal",
+      "label": "Privacy issues: data collection, surveillance, cookies, tracking",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["privacy", "data collection", "surveillance", "cookies", "tracking", "personal data", "3.8.3"]
+    },
+    {
+      "id": "ethical-legal.environmental",
+      "parentId": "ethical-legal",
+      "label": "Environmental impact: e-waste, energy consumption, sustainable computing",
+      "kind": "leaf",
+      "paperCodes": ["paper-2"],
+      "aliases": ["e-waste", "energy consumption", "sustainable computing", "carbon footprint", "green computing", "3.8.4"]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "english-language",
+    "specCode": "1EN0",
+    "version": "2024.1",
+    "assessmentModel": "linear-single-tier",
+    "tier": "single",
+    "sourceUrls": [
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/English%20Language/2015/specification-and-sample-assessments/gcse-english-language-2015-specification.pdf",
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/English%20Language/2015/specification-and-sample-assessments/gcse-english-language-2015-sample-assessments.pdf",
+      "https://qualifications.pearson.com/content/dam/pdf/GCSE/English%20Language/2015/teaching-and-learning-materials/gcse-english-language-spoken-language-endorsement.pdf",
+      "https://qualifications.pearson.com/en/qualifications/edexcel-gcses/english-language-2015.html"
+    ]
+  },
+  "qualification": {
+    "type": "GCSE",
+    "totalScaledMarks": 160,
+    "assessmentSeries": "all-assessments-at-end-of-course",
+    "spokenLanguageEndorsement": {
+      "examCode": "1EN0/03",
+      "assessmentType": "internal-controlled-conditions-external-monitoring",
+      "duration": "1 presentation up to 10 minutes",
+      "marks": 0,
+      "weightingPercent": 0,
+      "resultType": "Pass/Merit/Distinction"
+    }
+  },
+  "papers": [
+    {
+      "code": "paper-1",
+      "name": "Component 1: Fiction and Imaginative Writing",
+      "examCode": "1EN0/01",
+      "tier": "single-tier",
+      "durationMinutes": 105,
+      "totalMarks": 64,
+      "weightingPercent": 40,
+      "sections": [
+        {
+          "code": "A",
+          "name": "Section A - Reading",
+          "mode": "mandatory",
+          "marks": 24,
+          "requiredQuestionCount": "all",
+          "description": "Unseen 19th-century fiction extract; short and extended responses assessing retrieval, analysis and evaluation.",
+          "allowedPrimaryTopicIds": [
+            "reading.fiction-19th-century.retrieve-explicit-implicit",
+            "reading.fiction-19th-century.select-supporting-evidence",
+            "reading.fiction-19th-century.language-methods-analysis",
+            "reading.fiction-19th-century.language-connotations",
+            "reading.fiction-19th-century.language-effects-on-reader",
+            "reading.fiction-19th-century.structure-analysis",
+            "reading.fiction-19th-century.structure-focus-shifts",
+            "reading.fiction-19th-century.structure-tension-pacing",
+            "reading.fiction-19th-century.critical-evaluation",
+            "reading.fiction-19th-century.evaluate-viewpoint",
+            "reading.fiction-19th-century.evaluate-methods-evidence"
+          ]
+        },
+        {
+          "code": "B",
+          "name": "Section B - Imaginative Writing",
+          "mode": "mandatory",
+          "marks": 40,
+          "requiredQuestionCount": 1,
+          "choiceOf": 2,
+          "description": "Choice of two imaginative writing tasks linked by theme to the reading extract (Question 5 or 6).",
+          "allowedPrimaryTopicIds": [
+            "writing.imaginative.narrative-description",
+            "writing.imaginative.tone-style-register",
+            "writing.imaginative.content-organisation",
+            "writing.imaginative.vocabulary-sentence-crafting",
+            "writing.imaginative.structural-devices",
+            "writing.imaginative.technical-accuracy",
+            "writing.imaginative.punctuation-control",
+            "writing.imaginative.spelling-grammar-control"
+          ]
+        }
+      ]
+    },
+    {
+      "code": "paper-2",
+      "name": "Component 2: Non-fiction and Transactional Writing",
+      "examCode": "1EN0/02",
+      "tier": "single-tier",
+      "durationMinutes": 125,
+      "totalMarks": 96,
+      "weightingPercent": 60,
+      "sections": [
+        {
+          "code": "A",
+          "name": "Section A - Reading",
+          "mode": "mandatory",
+          "marks": 56,
+          "requiredQuestionCount": "all",
+          "description": "Two unseen, thematically linked 20th-/21st-century non-fiction extracts (one literary non-fiction); includes synthesis and comparison.",
+          "allowedPrimaryTopicIds": [
+            "reading.nonfiction-20th-21st-century.text1-retrieval",
+            "reading.nonfiction-20th-21st-century.text1-summary",
+            "reading.nonfiction-20th-21st-century.text1-language-analysis",
+            "reading.nonfiction-20th-21st-century.text1-structure-analysis",
+            "reading.nonfiction-20th-21st-century.text2-retrieval",
+            "reading.nonfiction-20th-21st-century.text2-summary",
+            "reading.nonfiction-20th-21st-century.text2-evaluation",
+            "reading.nonfiction-20th-21st-century.text2-views-perspectives",
+            "reading.nonfiction-20th-21st-century.synthesise-comparison",
+            "reading.nonfiction-20th-21st-century.compare-ideas-perspectives",
+            "reading.nonfiction-20th-21st-century.compare-methods"
+          ]
+        },
+        {
+          "code": "B",
+          "name": "Section B - Transactional Writing",
+          "mode": "mandatory",
+          "marks": 40,
+          "requiredQuestionCount": 1,
+          "choiceOf": 2,
+          "description": "Choice of two transactional writing tasks linked by theme to the reading extracts (Question 8 or 9).",
+          "allowedPrimaryTopicIds": [
+            "writing.transactional.form-demands",
+            "writing.transactional.formal-conventions",
+            "writing.transactional.audience-purpose",
+            "writing.transactional.register-tone",
+            "writing.transactional.viewpoint-argument",
+            "writing.transactional.structure-cohesion",
+            "writing.transactional.paragraphing-linking",
+            "writing.transactional.rhetorical-devices",
+            "writing.transactional.technical-accuracy",
+            "writing.transactional.sentence-grammar-control",
+            "writing.transactional.spelling-punctuation-control"
+          ]
+        }
+      ]
+    }
+  ]
+}

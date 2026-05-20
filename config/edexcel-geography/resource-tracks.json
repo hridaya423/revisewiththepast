@@ -1,0 +1,14 @@
+{
+  "metadata": {
+    "boardCode": "edexcel",
+    "subjectSlug": "geography",
+    "version": "2024.1",
+    "description": "Controlled vocabulary of resource tracks for Edexcel GCSE Geography"
+  },
+  "resourceTracks": {
+    "resource-management": [
+      "energy",
+      "water"
+    ]
+  }
+}
