@@ -1,26 +1,160 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f4f2ec;
+  --bg-warm: #ece9e1;
+  --bg-elevated: #ffffff;
+  --text: #1a2e1a;
+  --text-secondary: #3d5a3f;
+  --text-muted: #6b8a6d;
+  --text-subtle: #9ab09c;
+  --accent: #5a8a5c;
+  --accent-deep: #4a7a4c;
+  --accent-glow: rgba(90, 138, 92, 0.15);
+  --accent-warm: #a08050;
+  --accent-warm-deep: #8a6e40;
+  --border: rgba(26, 46, 26, 0.08);
+  --border-strong: rgba(26, 46, 26, 0.14);
+  --shadow: rgba(26, 46, 26, 0.06);
+  --shadow-lg: rgba(26, 46, 26, 0.1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-bg: var(--bg);
+  --color-bg-warm: var(--bg-warm);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-accent: var(--accent);
+  --color-accent-deep: var(--accent-deep);
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-deep: var(--accent-warm-deep);
+  --font-sans: var(--font-sans-ui);
+  --font-serif: var(--font-display);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans-ui), sans-serif;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::selection {
+  background: rgba(90, 138, 92, 0.2);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(26, 46, 26, 0.12);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 46, 26, 0.2);
+}
+
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1.15rem;
+  height: 1.15rem;
+  border: 1.5px solid rgba(26, 46, 26, 0.18);
+  border-radius: 0.35rem;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+input[type="checkbox"]:hover {
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--accent);
+  border-width: 0 1.5px 1.5px 0;
+  transform: rotate(45deg);
+}
+
+input[type="checkbox"]:indeterminate {
+  background: var(--accent-glow);
+  border-color: var(--accent);
+}
+
+input[type="checkbox"]:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  width: 8px;
+  height: 1.5px;
+  background: var(--accent);
+  border: none;
+  transform: none;
+}
+
+input[type="number"] {
+  appearance: none;
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.85); }
+}
+
+.status-breathe {
+  animation: breathe 2.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .status-breathe {
+    animation: none;
+  }
 }

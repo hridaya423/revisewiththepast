@@ -1,4 +1,5 @@
 import { GCSE_SUBJECTS } from "./gcseCatalog";
+import type { PaperDefinition, SubjectBoardConfig } from "../lib/gcse/types";
 
 export type SeedSubjectRow = {
   slug: string;
@@ -21,11 +22,11 @@ export const SUBJECT_CATALOG_SEED: SeedSubjectRow[] = GCSE_SUBJECTS.map((subject
   slug: subject.slug,
   name: subject.name,
   category: subject.category,
-  boardConfigs: subject.boardConfigs.map((config) => ({
+  boardConfigs: subject.boardConfigs.map((config: SubjectBoardConfig) => ({
     boardCode: config.boardCode,
     qualificationTitle: config.qualificationTitle,
     tierMode: config.tierMode,
-    papers: config.papers.map((paper) => ({
+    papers: config.papers.map((paper: PaperDefinition) => ({
       code: paper.code,
       name: paper.name,
       defaultDurationMinutes: paper.defaultDurationMinutes,

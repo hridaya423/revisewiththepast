@@ -5,7 +5,7 @@ import type {
   PaperDefinition,
   SubjectBoardConfig,
   TierMode,
-} from "@/lib/gcse/types";
+} from "../lib/gcse/types";
 
 export const GCSE_BOARDS: GcseBoard[] = [
   { code: "aqa", name: "AQA" },
@@ -138,9 +138,9 @@ export const GCSE_SUBJECTS: GcseSubject[] = [
       qualificationTitle: "GCSE Geography",
       tierMode: "none",
       papers: [
-        { code: "physical", name: "Physical Geography" },
-        { code: "human", name: "Human Geography" },
-        { code: "fieldwork", name: "Fieldwork and UK Challenges" },
+        { code: "paper-1", name: "Physical Geography" },
+        { code: "paper-2", name: "Human Geography" },
+        { code: "paper-3", name: "Fieldwork and UK Challenges" },
       ],
     }),
   },

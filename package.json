@@ -7,15 +7,25 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "papers:extract": "tsx scripts/extract-papers.ts",
+    "papers:tag": "tsx scripts/tag-papers.ts",
     "jobs:search": "tsx scripts/generate-search-jobs.ts",
     "papers:discover": "npm run jobs:search && tsx scripts/discover-and-download-papers.ts",
-    "downloads:analyze": "npm run jobs:search && tsx scripts/analyze-download-coverage.ts"
+    "downloads:analyze": "npm run jobs:search && tsx scripts/analyze-download-coverage.ts",
+    "cdn:upload-downloads": "tsx scripts/upload-downloads-to-hackclub-cdn.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@gsap/react": "^2.1.2",
+    "@openrouter/sdk": "^0.12.35",
     "cheerio": "^1.2.0",
     "convex": "^1.38.0",
     "dotenv": "^17.4.2",
+    "gsap": "^3.15.0",
+    "lucide-react": "^1.16.0",
     "next": "16.2.6",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^5.7.284",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },

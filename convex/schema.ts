@@ -46,6 +46,163 @@ export default defineSchema({
     .index("by_subject_board_config", ["subjectBoardConfigId"])
     .index("by_subject_board_config_code", ["subjectBoardConfigId", "code"]),
 
+  paperAssets: defineTable({
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    tier: v.union(v.literal("none"), v.literal("foundation"), v.literal("higher")),
+    year: v.number(),
+    session: v.string(),
+    paperCode: v.string(),
+    paperName: v.string(),
+    kind: v.union(v.literal("question_paper"), v.literal("mark_scheme"), v.literal("insert")),
+    source: v.union(v.literal("pmt"), v.literal("revisionworld"), v.literal("manual")),
+    relativePath: v.string(),
+    fileName: v.string(),
+    cdnUploadId: v.string(),
+    cdnUrl: v.string(),
+    fileSize: v.number(),
+    contentType: v.string(),
+    uploadedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_relative_path", ["relativePath"])
+    .index("by_subject", ["subjectSlug"])
+    .index("by_board_subject", ["boardCode", "subjectSlug"])
+    .index("by_paper_identity", ["boardCode", "subjectSlug", "tier", "year", "paperCode", "kind", "session"]),
+
+  questionPageAssets: defineTable({
+    sourceRelativePath: v.string(),
+    assetId: v.string(),
+    pageNumber: v.number(),
+    relativePath: v.string(),
+    fileName: v.string(),
+    cdnUploadId: v.string(),
+    cdnUrl: v.string(),
+    fileSize: v.number(),
+    contentType: v.string(),
+    uploadedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_relative_path", ["relativePath"])
+    .index("by_source_relative_path", ["sourceRelativePath"])
+    .index("by_source_relative_path_page", ["sourceRelativePath", "pageNumber"]),
+
+  taggedPapers: defineTable({
+    sourceFile: v.string(),
+    sourceRelativePath: v.optional(v.string()),
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    paperCode: v.string(),
+    year: v.union(v.number(), v.null()),
+    session: v.union(v.string(), v.null()),
+    parserVersion: v.string(),
+    taggerProvider: v.string(),
+    taggerModel: v.string(),
+    taxonomyVersion: v.string(),
+    questionCount: v.number(),
+    taggedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_source_file", ["sourceFile"])
+    .index("by_source_relative_path", ["sourceRelativePath"])
+    .index("by_board_subject", ["boardCode", "subjectSlug"])
+    .index("by_paper_identity", ["boardCode", "subjectSlug", "paperCode", "year", "session"]),
+
+  taggedQuestionParts: defineTable({
+    taggedPaperId: v.id("taggedPapers"),
+    questionId: v.string(),
+    questionNumber: v.string(),
+    questionPartNumber: v.union(v.string(), v.null()),
+    sectionCode: v.union(v.string(), v.null()),
+    sectionName: v.union(v.string(), v.null()),
+    pageNumber: v.number(),
+    pageNumbers: v.array(v.number()),
+    marks: v.union(v.number(), v.null()),
+    commandWord: v.union(v.string(), v.null()),
+    canonicalLeaf: v.string(),
+    knowledgePoints: v.array(v.string()),
+    skillsTested: v.array(v.string()),
+    bloomLevel: v.union(
+      v.literal("remember"),
+      v.literal("understand"),
+      v.literal("apply"),
+      v.literal("analyze"),
+      v.literal("evaluate"),
+      v.literal("create"),
+    ),
+    difficulty: v.union(v.literal("low"), v.literal("medium"), v.literal("high")),
+    questionType: v.union(
+      v.literal("multiple-choice"),
+      v.literal("short-answer"),
+      v.literal("structured"),
+      v.literal("extended-writing"),
+      v.literal("data-response"),
+      v.literal("case-study"),
+    ),
+    keyTerms: v.array(v.string()),
+    specReferences: v.array(v.string()),
+    confidence: v.number(),
+    evidenceSnippet: v.string(),
+    taxonomyVersion: v.string(),
+    promptText: v.optional(v.string()),
+    contextText: v.optional(v.union(v.string(), v.null())),
+    bbox: v.optional(v.union(
+      v.object({
+        x0: v.number(),
+        y0: v.number(),
+        x1: v.number(),
+        y1: v.number(),
+      }),
+      v.null(),
+    )),
+    sourceMode: v.string(),
+    assetIds: v.array(v.string()),
+
+    isChoiceQuestion: v.optional(v.boolean()),
+    choiceGroupId: v.optional(v.union(v.string(), v.null())),
+    choiceGroupType: v.optional(v.union(v.string(), v.null())),
+    choiceOptionLabel: v.optional(v.union(v.string(), v.null())),
+    choiceOptionIndex: v.optional(v.union(v.number(), v.null())),
+    choiceSiblingQuestionIds: v.optional(v.array(v.string())),
+    sharedChoiceStem: v.optional(v.union(v.string(), v.null())),
+
+    setText: v.optional(v.union(v.string(), v.null())),
+    cluster: v.optional(v.union(v.string(), v.null())),
+    namedPoem: v.optional(v.array(v.string())),
+    characters: v.optional(v.array(v.string())),
+    themes: v.optional(v.array(v.string())),
+    taskMode: v.optional(v.union(v.string(), v.null())),
+
+    domain: v.optional(v.union(v.string(), v.null())),
+    subtopic: v.optional(v.union(v.string(), v.null())),
+    representation: v.optional(v.union(v.string(), v.null())),
+    subskill: v.optional(v.array(v.string())),
+    errorTrap: v.optional(v.array(v.string())),
+
+    unit: v.optional(v.union(v.string(), v.null())),
+    caseStudy: v.optional(v.array(v.string())),
+    resourceTrack: v.optional(v.union(v.string(), v.null())),
+    process: v.optional(v.array(v.string())),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_tagged_paper", ["taggedPaperId"])
+    .index("by_question_id", ["questionId"])
+    .index("by_canonical_leaf", ["canonicalLeaf"])
+    .index("by_choice_group", ["choiceGroupId"])
+    .index("by_set_text", ["setText"])
+    .index("by_cluster", ["cluster"])
+    .index("by_themes", ["themes"])
+    .index("by_characters", ["characters"])
+    .index("by_subskill", ["subskill"])
+    .index("by_error_trap", ["errorTrap"])
+    .index("by_case_study", ["caseStudy"])
+    .index("by_resource_track", ["resourceTrack"]),
+
   papers: defineTable({
     subjectId: v.id("subjects"),
     boardId: v.id("examBoards"),

@@ -65,14 +65,22 @@ const REVISIONWORLD_SUPPORTED_SUBJECTS = new Set([
   "spanish",
 ]);
 
+function isSourceSupported(subjectSlug: string, source: "pmt" | "revisionworld") {
+  if (source === "pmt") return PMT_SUPPORTED_SUBJECTS.has(subjectSlug);
+  return REVISIONWORLD_SUPPORTED_SUBJECTS.has(subjectSlug);
+}
+
 const jobs: SearchJob[] = GCSE_SUBJECTS.flatMap((subject) =>
   subject.boardConfigs.flatMap((config) => {
-    const source = SUBJECT_SOURCE[subject.slug] ?? (PMT_SUPPORTED_SUBJECTS.has(subject.slug) ? "pmt" : undefined);
+    const preferredSource = TARGET_SOURCE && isSourceSupported(subject.slug, TARGET_SOURCE)
+      ? TARGET_SOURCE
+      : undefined;
+    const source = preferredSource ?? SUBJECT_SOURCE[subject.slug] ?? (PMT_SUPPORTED_SUBJECTS.has(subject.slug) ? "pmt" : undefined);
     if (!source) {
       return [];
     }
 
-    if (source === "revisionworld" && !REVISIONWORLD_SUPPORTED_SUBJECTS.has(subject.slug)) {
+    if (!isSourceSupported(subject.slug, source)) {
       return [];
     }
 
@@ -88,7 +96,7 @@ const jobs: SearchJob[] = GCSE_SUBJECTS.flatMap((subject) =>
       source,
     }));
   }),
-).filter((job) => (TARGET_SOURCE ? job.source === TARGET_SOURCE : true));
+);
 
 const payload = {
   generatedAt: new Date().toISOString(),
