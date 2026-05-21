@@ -26,6 +26,8 @@ type GeneratePaperRequest = {
   targetMode?: "marks" | "time";
   paperCodes?: string[];
   maxQuestions?: number;
+  excludeSourceQuestionKeys?: string[];
+  remainingPaperCount?: number;
 };
 
 function badRequest(message: string, status = 400) {
@@ -60,6 +62,12 @@ export async function POST(request: NextRequest) {
   const maxQuestions = typeof body.maxQuestions === "number" && Number.isFinite(body.maxQuestions)
     ? Math.max(1, Math.min(40, Math.round(body.maxQuestions)))
     : undefined;
+  const excludeSourceQuestionKeys = Array.isArray(body.excludeSourceQuestionKeys)
+    ? body.excludeSourceQuestionKeys.filter((value): value is string => typeof value === "string")
+    : [];
+  const remainingPaperCount = typeof body.remainingPaperCount === "number" && Number.isFinite(body.remainingPaperCount)
+    ? Math.max(1, Math.min(3, Math.round(body.remainingPaperCount)))
+    : 1;
 
   const subject = getPaperMakerSubject(subjectKey);
   if (!subject) {
@@ -102,6 +110,7 @@ export async function POST(request: NextRequest) {
       paperCodes,
       maxQuestions,
       tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -142,6 +151,7 @@ export async function POST(request: NextRequest) {
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
       },
     });
   }
@@ -185,6 +195,7 @@ export async function POST(request: NextRequest) {
       paperCodes,
       maxQuestions,
       tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -228,6 +239,7 @@ export async function POST(request: NextRequest) {
         "X-Selected-Tier": subjectTier,
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
       },
     });
   }
@@ -264,6 +276,7 @@ export async function POST(request: NextRequest) {
       paperCodes,
       maxQuestions,
       tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -304,6 +317,7 @@ export async function POST(request: NextRequest) {
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
       },
     });
   }
@@ -345,6 +359,7 @@ export async function POST(request: NextRequest) {
       paperCodes,
       maxQuestions,
       tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -386,6 +401,7 @@ export async function POST(request: NextRequest) {
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
       },
     });
   }

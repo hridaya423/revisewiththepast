@@ -244,7 +244,7 @@ function SuccessModal({
   onClose,
   onBuildAnother,
 }: {
-  result: { questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number };
+  result: { paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number };
   subjectLabel: string;
   tierLabel?: string;
   onClose: () => void;
@@ -255,14 +255,14 @@ function SuccessModal({
       <div className="w-full max-w-md rounded-[1.8rem] bg-white p-8 text-center shadow-[0_24px_60px_rgba(26,46,26,0.15)]">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-[#5a8a5c]">✓</div>
         <h3 className="mt-5 font-serif text-[1.5rem] text-[#1a2e1a]">Paper ready</h3>
-        <p className="mt-2 text-[0.88rem] text-[#3d5a3f]/60">Your custom paper has been generated and downloaded.</p>
+        <p className="mt-2 text-[0.88rem] text-[#3d5a3f]/60">Your custom {result.paperCount === 1 ? "paper has" : `${result.paperCount} papers have`} been generated and downloaded.</p>
 
         <div className="mt-5 rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[#f8f7f4] p-5 text-left">
           <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[#6b8a6d]">{subjectLabel}{tierLabel ? ` · ${tierLabel}` : ""}</p>
           <div className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div>
-              <p className="font-serif text-[1.35rem] text-[#1a2e1a]">{result.questionCount}</p>
-              <p className="text-[0.68rem] text-[#3d5a3f]/50">questions</p>
+              <p className="font-serif text-[1.35rem] text-[#1a2e1a]">{result.paperCount}</p>
+              <p className="text-[0.68rem] text-[#3d5a3f]/50">paper{result.paperCount === 1 ? "" : "s"}</p>
             </div>
             <div>
               <p className="font-serif text-[1.35rem] text-[#1a2e1a]">{result.totalMarks}</p>
@@ -324,7 +324,8 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
   const [selectedPaperCodes, setSelectedPaperCodes] = useState<Set<string>>(new Set(defaultSubject?.defaultPaperCodes ?? []));
   const [selectedTier, setSelectedTier] = useState<SubjectTierKey>("foundation");
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number } | null>(null);
+  const [paperCount, setPaperCount] = useState(1);
+  const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number } | null>(null);
   const [isPending, startTransition] = useTransition();
   const activeStepRef = useRef<HTMLDivElement | null>(null);
 
@@ -454,44 +455,68 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
 
     startTransition(async () => {
       try {
-        const response = await fetch("/api/paper-maker/generate", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subjectKey: selectedSubjectKey,
-            subjectTier: activeSubject?.key === "edexcel-combined-science" ? selectedTier : undefined,
-            selectedTopicNodeIds,
-            targetMarks,
-            timeMinutes,
-            targetMode,
-            paperCodes: Array.from(selectedPaperCodes),
-          }),
-        });
+        const excludedSourceQuestionKeys = new Set<string>();
+        let lastQuestionCount = 0;
+        let lastTotalMarks = 0;
+        let lastCoveredTopics = 0;
+        let lastTimeMinutes = timeMinutes;
 
-        if (!response.ok) {
-          const message = await response.text();
-          throw new Error(message || "Failed to generate paper.");
+        for (let paperIndex = 0; paperIndex < paperCount; paperIndex += 1) {
+          const response = await fetch("/api/paper-maker/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              subjectKey: selectedSubjectKey,
+              subjectTier: activeSubject?.tiers.length ? selectedTier : undefined,
+              selectedTopicNodeIds,
+              targetMarks,
+              timeMinutes,
+              targetMode,
+              paperCodes: Array.from(selectedPaperCodes),
+              excludeSourceQuestionKeys: Array.from(excludedSourceQuestionKeys),
+              remainingPaperCount: paperCount - paperIndex,
+            }),
+          });
+
+          if (!response.ok) {
+            const message = await response.text();
+            throw new Error(message || "Failed to generate paper.");
+          }
+
+          const blob = await response.blob();
+          lastQuestionCount = Number(response.headers.get("X-Question-Count") ?? 0);
+          lastTotalMarks = Number(response.headers.get("X-Total-Marks") ?? 0);
+          lastCoveredTopics = Number(response.headers.get("X-Covered-Topics") ?? 0);
+          lastTimeMinutes = Number(response.headers.get("X-Time-Minutes") ?? timeMinutes);
+          const encodedKeys = response.headers.get("X-Selected-Source-Question-Keys");
+          if (encodedKeys) {
+            for (const key of decodeURIComponent(encodedKeys).split("\n").filter(Boolean)) {
+              excludedSourceQuestionKeys.add(key);
+            }
+          }
+
+          const url = URL.createObjectURL(blob);
+          const anchor = document.createElement("a");
+          anchor.href = url;
+          anchor.download = `${selectedSubjectKey}-custom-paper-${targetMarks}m-${paperIndex + 1}.pdf`;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          URL.revokeObjectURL(url);
         }
 
-        const blob = await response.blob();
-        const questionCount = Number(response.headers.get("X-Question-Count") ?? 0);
-        const totalMarksValue = Number(response.headers.get("X-Total-Marks") ?? 0);
-        const coveredTopics = Number(response.headers.get("X-Covered-Topics") ?? 0);
-        const generatedTimeMinutes = Number(response.headers.get("X-Time-Minutes") ?? timeMinutes);
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = `${selectedSubjectKey}-custom-paper-${targetMarks}m.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
-        setResult({ questionCount, totalMarks: totalMarksValue, coveredTopics, timeMinutes: generatedTimeMinutes });
+        setResult({
+          paperCount,
+          questionCount: lastQuestionCount,
+          totalMarks: lastTotalMarks,
+          coveredTopics: lastCoveredTopics,
+          timeMinutes: lastTimeMinutes,
+        });
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
       }
     });
-  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, timeMinutes, targetMode, selectedPaperCodes]);
+  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, timeMinutes, targetMode, selectedPaperCodes, paperCount]);
 
   useEffect(() => {
     activeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -711,6 +736,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
                   <div className="mt-4 flex flex-wrap gap-2 text-[0.8rem] text-[#1a2e1a]">
                     {topicSelectionEnabled ? <span className="rounded-full bg-[#f8f7f4] px-3 py-1.5">{selectedTopicSummaries.length} selected topic{selectedTopicSummaries.length === 1 ? "" : "s"}</span> : null}
                     <span className="rounded-full bg-[#f8f7f4] px-3 py-1.5">{selectedPaperCodes.size} source paper{selectedPaperCodes.size === 1 ? "" : "s"}</span>
+                    <span className="rounded-full bg-[#f8f7f4] px-3 py-1.5">{paperCount} paper{paperCount === 1 ? "" : "s"}</span>
                     <span className="rounded-full bg-[#f8f7f4] px-3 py-1.5">{targetMarks} marks</span>
                     <span className="rounded-full bg-[#f8f7f4] px-3 py-1.5">{timeMinutes} minutes</span>
                   </div>
@@ -858,6 +884,27 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <p className="text-[0.78rem] font-medium text-[#1a2e1a]">How many papers</p>
+                  <p className="mt-1 text-[0.82rem] text-[#3d5a3f]/55">Generate up to 3 different papers from the same topic selection. Later papers avoid reusing the same source questions.</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3].map((count) => (
+                    <button
+                      key={count}
+                      type="button"
+                      onClick={() => setPaperCount(count)}
+                      className={`rounded-full border px-4 py-2 text-[0.82rem] transition ${paperCount === count ? "border-[#1a2e1a] bg-[#1a2e1a] text-white" : "border-[#1a2e1a]/10 bg-[#f8f7f4] text-[#1a2e1a] hover:bg-[#f1eee6]"}`}
+                    >
+                      {count} paper{count === 1 ? "" : "s"}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

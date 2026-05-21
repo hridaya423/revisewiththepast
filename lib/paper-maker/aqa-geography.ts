@@ -90,6 +90,7 @@ type SelectQuestionUnitsInput = {
   paperCodes?: string[];
   maxQuestions?: number;
   tolerance?: number;
+  excludedSourceQuestionKeys?: string[];
 };
 
 type MutableTopicNode = Omit<TopicTreeNode, "leafTopicIds"> & { leafTopicIds?: string[] };
@@ -354,12 +355,14 @@ export function buildTopicTreeWithCounts(units: QuestionUnit[]): TopicTreeNodeWi
   return AQA_GEOGRAPHY_TOPIC_TREE.map(attachCounts);
 }
 
-export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7 }: SelectQuestionUnitsInput) {
+export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [] }: SelectQuestionUnitsInput) {
   const selectedLeafSet = new Set(selectedLeafTopicIds);
   const allowedPaperCodes = paperCodes && paperCodes.length > 0 ? new Set(paperCodes) : null;
+  const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
   const candidates = units.filter((unit) => {
     if (!unit.questionPaperCdnUrl) return false;
     if (allowedPaperCodes && !allowedPaperCodes.has(unit.paperCode)) return false;
+    if (excludedSourceQuestionKeySet.has(unit.sourceQuestionKey)) return false;
     return unit.canonicalLeafs.some((leaf) => selectedLeafSet.has(leaf));
   });
   const safeTolerance = Math.max(3, Math.min(12, tolerance));
