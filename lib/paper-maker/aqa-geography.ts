@@ -394,6 +394,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     const coveredLeafs = new Set<string>();
     const sourcePaperCounts = new Map<string, number>();
     const sourceQuestionCounts = new Map<string, number>();
+    const selectedYearCounts = new Map<number, number>();
     const selectedPageKeys = new Set<string>();
     const remaining = new Set(candidates.map((unit) => unit.unitKey));
     const overshootAllowance = safeTolerance;
@@ -438,6 +439,9 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       currentMarks += unit.totalMarks;
       sourcePaperCounts.set(unit.sourceRelativePath, (sourcePaperCounts.get(unit.sourceRelativePath) ?? 0) + 1);
       sourceQuestionCounts.set(unit.sourceQuestionKey, (sourceQuestionCounts.get(unit.sourceQuestionKey) ?? 0) + 1);
+      if (typeof unit.year === "number") {
+        selectedYearCounts.set(unit.year, (selectedYearCounts.get(unit.year) ?? 0) + 1);
+      }
       for (const page of unit.pages) {
         selectedPageKeys.add(`${unit.sourceRelativePath}::${page.pageNumber}`);
       }
@@ -462,6 +466,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       const currentDelta = Math.abs(targetMarks - currentMarks);
       const deltaImprovement = currentDelta - nextDelta;
       const overshoot = Math.max(0, nextMarks - maximumAcceptableMarks);
+      const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
+      const yearSpreadBonus = typeof unit.year === "number"
+        ? Math.max(0, 4 - yearUsageCount) * (mode === "marks" ? 6 : 8)
+        : 0;
+      const randomTieBreaker = Math.random() * 0.2;
       const tinyPenalty = remainingMarks > 30
         ? (unit.totalMarks <= 2 ? 110 : unit.totalMarks <= 4 ? 40 : 0)
         : remainingMarks > 18
@@ -478,6 +487,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + (newLeafs.length * 90)
           + (matchedLeafs.length * 14)
           + bucketBonus
+          + yearSpreadBonus
+          + randomTieBreaker
           - (overshoot * 180)
           - (samePaperPenalty * 20)
           - (sameQuestionPenalty * 900)
@@ -490,6 +501,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         + (matchedLeafs.length * 120)
         + marksFitBonus
         + bucketBonus
+        + yearSpreadBonus
+        + randomTieBreaker
         - (samePaperPenalty * 40)
         - (sameQuestionPenalty * 600)
         - (pageOverlapCount * 1200)
@@ -565,12 +578,19 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         const softSamePaperPenalty = (sourcePaperCounts.get(unit.sourceRelativePath) ?? 0) * (mode === "marks" ? 12 : 18);
         const pageOverlapPenalty = pageOverlapCount * (mode === "marks" ? 120 : 90);
         const noveltyBonus = unit.canonicalLeafs.filter((leaf) => selectedLeafSet.has(leaf) && !coveredLeafs.has(leaf)).length * (mode === "marks" ? 10 : 18);
+        const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
+        const yearSpreadBonus = typeof unit.year === "number"
+          ? Math.max(0, 4 - yearUsageCount) * (mode === "marks" ? 4 : 6)
+          : 0;
+        const randomTieBreaker = Math.random() * 0.2;
         const score = (improvesDelta ? (mode === "marks" ? 900 : 600) : 0)
           - (nextDelta * (mode === "marks" ? 42 : 32))
           - hardOvershootPenalty
           - softSamePaperPenalty
           - pageOverlapPenalty
-          + noveltyBonus;
+          + noveltyBonus
+          + yearSpreadBonus
+          + randomTieBreaker;
 
         if (score > bestFillScore) {
           bestFillScore = score;
