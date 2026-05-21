@@ -1,6 +1,6 @@
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
-export type PaperMakerSubjectKey = "aqa-geography" | "edexcel-combined-science" | "aqa-business";
+export type PaperMakerSubjectKey = "aqa-geography" | "edexcel-combined-science" | "aqa-business" | "edexcel-mathematics-higher";
 
 export type PaperOption = {
   code: string;
@@ -98,6 +98,27 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
       { key: "foundation", label: "Foundation" },
       { key: "higher", label: "Higher" },
     ],
+  },
+  {
+    key: "edexcel-mathematics-higher",
+    label: "Edexcel Maths Higher",
+    boardLabel: "Edexcel",
+    boardCode: "edexcel",
+    subjectSlug: "mathematics",
+    coverTitle: "Mathematics",
+    codeLabel: "1MA1",
+    description: "Generate Edexcel GCSE Maths Higher papers from tagged source pages and specification topics.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build Higher papers by topic.",
+    recommendedMinutesPerMark: 1.125,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1 (Non-calculator)" },
+      { code: "paper-2", label: "Paper 2 (Calculator)" },
+      { code: "paper-3", label: "Paper 3 (Calculator)" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2", "paper-3"],
+    tiers: [],
   },
 ];
 

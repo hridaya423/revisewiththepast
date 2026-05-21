@@ -394,6 +394,13 @@ function normalizeText(text: string) {
   return text.replace(/\s+/g, " ").trim();
 }
 
+function inferTierDirFromPath(pdfPath: string) {
+  const normalized = pdfPath.replaceAll("\\", "/").toLowerCase();
+  if (normalized.includes("/foundation/")) return "foundation";
+  if (normalized.includes("/higher/")) return "higher";
+  return null;
+}
+
 function cleanedNormalizedText(text: string) {
   return normalizeText(text).toLowerCase();
 }
@@ -1290,7 +1297,10 @@ async function processDirectory(inputDir: string, outputDir: string, forcedBoard
     }
 
     const paperDirName = basename(pdfPath).replace(/\.pdf$/i, "");
-    const paperOutputDir = resolve(outputDir, boardCode, subjectSlug, paperDirName);
+    const tierDir = inferTierDirFromPath(pdfPath);
+    const paperOutputDir = tierDir
+      ? resolve(outputDir, boardCode, subjectSlug, tierDir, paperDirName)
+      : resolve(outputDir, boardCode, subjectSlug, paperDirName);
 
     console.log(`Extracting [${boardCode}/${subjectSlug}] ${basename(pdfPath)}`);
     try {

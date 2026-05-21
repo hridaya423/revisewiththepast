@@ -226,6 +226,7 @@ const AI_PER_MINUTE_LIMIT = Math.max(1, Number(process.env.AI_PER_MINUTE_LIMIT ?
 const AI_DAILY_CALL_LIMIT = Math.max(1, Number(process.env.AI_DAILY_CALL_LIMIT ?? "1000"));
 const AI_BATCH_MAX_PAPERS = Math.max(1, Math.min(3, Number(process.env.AI_BATCH_MAX_PAPERS ?? "3")));
 const AI_PAPER_CHUNK_SIZE = Math.max(1, Number(process.env.AI_PAPER_CHUNK_SIZE ?? "12"));
+const AI_MAX_OUTPUT_TOKENS = Math.max(1000, Number(process.env.AI_MAX_OUTPUT_TOKENS ?? "12000"));
 const RATE_STATE_PATH = resolve(process.cwd(), "data", ".tag-papers-rate-state.json");
 const DEBUG_RESPONSE_DIR = resolve(process.cwd(), "data", "tagger-debug");
 const PAPER_PRIORITY_ORDER = [
@@ -1135,6 +1136,7 @@ async function tagWholePaper(
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
+        maxTokens: AI_MAX_OUTPUT_TOKENS,
         responseFormat: { type: "json_object" },
       },
       `paper ${extracted.source_file}`,
@@ -1236,6 +1238,7 @@ async function tagPaperBatch(
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
+      maxTokens: AI_MAX_OUTPUT_TOKENS,
       responseFormat: { type: "json_object" },
     },
     `batch ${papers.length} papers`,

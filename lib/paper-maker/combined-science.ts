@@ -98,23 +98,39 @@ export function inferCombinedScienceTierFromPath(sourceRelativePath: string): Su
   return null;
 }
 
-export function filterCombinedScienceQuestionBankByTier(questionBank: QuestionBankPart[], tier: SubjectTierKey) {
-  return questionBank.filter((part) => inferCombinedScienceTierFromPath(part.sourceRelativePath) === tier);
+export function inferSubjectTierFromPath(sourceRelativePath: string): SubjectTierKey | null {
+  return inferCombinedScienceTierFromPath(sourceRelativePath);
 }
 
-export function filterCombinedScienceUnitsByTier(units: QuestionUnit[], tier: SubjectTierKey) {
-  return units.filter((unit) => inferCombinedScienceTierFromPath(unit.sourceRelativePath) === tier);
+export function filterQuestionBankByTier(questionBank: QuestionBankPart[], tier: SubjectTierKey) {
+  return questionBank.filter((part) => inferSubjectTierFromPath(part.sourceRelativePath) === tier);
 }
 
-export function countCombinedScienceUnitsByTier(units: QuestionUnit[]) {
+export function filterUnitsByTier(units: QuestionUnit[], tier: SubjectTierKey) {
+  return units.filter((unit) => inferSubjectTierFromPath(unit.sourceRelativePath) === tier);
+}
+
+export function countUnitsByTier(units: QuestionUnit[]) {
   return units.reduce(
     (counts, unit) => {
-      const tier = inferCombinedScienceTierFromPath(unit.sourceRelativePath);
+      const tier = inferSubjectTierFromPath(unit.sourceRelativePath);
       if (tier) counts[tier] += 1;
       return counts;
     },
     { foundation: 0, higher: 0 },
   );
+}
+
+export function filterCombinedScienceQuestionBankByTier(questionBank: QuestionBankPart[], tier: SubjectTierKey) {
+  return filterQuestionBankByTier(questionBank, tier);
+}
+
+export function filterCombinedScienceUnitsByTier(units: QuestionUnit[], tier: SubjectTierKey) {
+  return filterUnitsByTier(units, tier);
+}
+
+export function countCombinedScienceUnitsByTier(units: QuestionUnit[]) {
+  return countUnitsByTier(units);
 }
 
 export function collectLeafTopicIds(units: QuestionUnit[]) {

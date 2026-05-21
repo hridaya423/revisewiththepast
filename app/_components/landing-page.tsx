@@ -43,6 +43,11 @@ const SUBJECTS = [
     title: "Combined Science",
     desc: "Create revision papers from tagged Combined Science material with the same calm, source-first workflow.",
   },
+  {
+    board: "Edexcel",
+    title: "Maths Higher",
+    desc: "Build Higher Maths papers from real Edexcel source pages, using tagged specification topics and official paper structure.",
+  },
 ] as const;
 
 function FloatingNav() {
@@ -292,9 +297,9 @@ export function LandingPage() {
             <h2 className="font-serif text-[clamp(1.5rem,3vw,2.2rem)] leading-[1.15] tracking-[-0.03em] text-white">
               Ready to build your first paper?
             </h2>
-            <p className="mx-auto mt-4 max-w-md text-[0.9rem] leading-[1.7] text-white/55">
-              Start with AQA Geography today. More subjects are coming online as we tag and verify every source page.
-            </p>
+             <p className="mx-auto mt-4 max-w-md text-[0.9rem] leading-[1.7] text-white/55">
+              Start with Geography, Business, Combined Science, or Edexcel Maths Higher today.
+             </p>
             <div className="mt-7">
               <Link
                 href="/paper-maker"

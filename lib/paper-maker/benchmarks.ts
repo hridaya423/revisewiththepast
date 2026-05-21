@@ -32,9 +32,10 @@ function deriveExtractedPaperJsonPath(sourceRelativePath: string) {
   const segments = normalizedPath.split("/").filter(Boolean);
   const boardCode = segments[0] ?? "";
   const subjectSlug = segments[1] ?? "";
+  const extraDirs = segments.slice(2, -1).filter((segment) => segment !== "none");
   const fileName = segments.at(-1) ?? normalizedPath;
   const paperDirName = fileName.replace(/\.pdf$/i, "");
-  return resolve(process.cwd(), "data/extracted", boardCode, subjectSlug, paperDirName, "paper.json");
+  return resolve(process.cwd(), "data/extracted", boardCode, subjectSlug, ...extraDirs, paperDirName, "paper.json");
 }
 
 function parseTimeAllowedMinutes(text: string) {

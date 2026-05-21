@@ -80,6 +80,7 @@ const TARGET_SUBJECT_SLUG = process.env.TARGET_SUBJECT_SLUG;
 const TARGET_TIER = process.env.TARGET_TIER as Tier | undefined;
 const TARGET_PAPER_CODE = process.env.TARGET_PAPER_CODE;
 const TARGET_SOURCE = process.env.TARGET_SOURCE as "pmt" | "revisionworld" | undefined;
+const RESET_MATCHING_STATE = process.env.RESET_MATCHING_STATE === "1";
 
 const PMT_SUBJECT_PATHS: Partial<Record<string, string>> = {
   biology: "gcse-biology",
@@ -782,9 +783,22 @@ function persistDiscoveryState(state: DiscoveryState) {
   );
 }
 
+function matchesActiveFilters(record: PdfRecord) {
+  if (TARGET_SOURCE && record.jobKey.split("-").at(-1) !== TARGET_SOURCE) return false;
+  if (TARGET_BOARD_CODE && record.boardCode !== TARGET_BOARD_CODE) return false;
+  if (TARGET_SUBJECT_SLUG && record.subjectSlug !== TARGET_SUBJECT_SLUG) return false;
+  if (TARGET_TIER && record.tier !== TARGET_TIER) return false;
+  if (TARGET_PAPER_CODE && record.paperCode !== TARGET_PAPER_CODE) return false;
+  return true;
+}
+
 async function run() {
   const input: SearchJobsFile = JSON.parse(readFileSync(INPUT_PATH, "utf8"));
   const state = loadDiscoveryState();
+  if (RESET_MATCHING_STATE) {
+    state.records = state.records.filter((record) => !matchesActiveFilters(record));
+    persistDiscoveryState(state);
+  }
   const selectedJobs = input.jobs
     .filter((job) => (TARGET_SOURCE ? job.source === TARGET_SOURCE : true))
     .filter((job) => (TARGET_BOARD_CODE ? job.boardCode === TARGET_BOARD_CODE : true))
