@@ -1127,15 +1127,22 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
   outputDoc.setTitle(title);
   drawExamCoverPage(outputDoc, coverPage);
 
+  const orderedUnits = [...selectedUnits].sort((a, b) => {
+    if (a.totalMarks !== b.totalMarks) return a.totalMarks - b.totalMarks;
+    if (a.paperCode !== b.paperCode) return a.paperCode.localeCompare(b.paperCode, undefined, { numeric: true });
+    if (a.questionNumber !== b.questionNumber) return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
+    return (a.year ?? 0) - (b.year ?? 0);
+  });
+
   const sourcePdfCache = new Map<string, Uint8Array>();
   const sourceDocCache = new Map<string, PDFDocument>();
   const unitStartPages = buildUnitStartPageMap(allUnits);
   const renderPageNumbersByUnit = new Map(
-    selectedUnits.map((unit) => [unit.unitKey, determineRenderPageNumbers(unit, unitStartPages)]),
+    orderedUnits.map((unit) => [unit.unitKey, determineRenderPageNumbers(unit, unitStartPages)]),
   );
-  const selectedPageOccupancy = buildRenderPageOccupancyMap(selectedUnits, renderPageNumbersByUnit);
-  const shortUnits = selectedUnits.filter(shouldAttemptCompactLayout);
-  const standardUnits = selectedUnits.filter((unit) => !shouldAttemptCompactLayout(unit));
+  const selectedPageOccupancy = buildRenderPageOccupancyMap(orderedUnits, renderPageNumbersByUnit);
+  const shortUnits = orderedUnits.filter(shouldAttemptCompactLayout);
+  const standardUnits = orderedUnits.filter((unit) => !shouldAttemptCompactLayout(unit));
 
   if (shortUnits.length > 0) {
     let currentPage: import("pdf-lib").PDFPage | null = null;
