@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import { PDFDocument, rgb } from "pdf-lib";
@@ -10,6 +11,7 @@ type GeneratePaperPdfInput = {
   selectedUnits: QuestionUnit[];
   allUnits: QuestionUnit[];
   pageAssetsBySource: Map<string, SourcePageAsset[]>;
+  prefaceSourcePdfs?: string[];
   coverPage: {
     boardLabel: string;
     subjectLabel: string;
@@ -114,6 +116,7 @@ const FULL_PAGE_ANSWER_EXTENSION_BY_MARKS = [
 ];
 
 const extractedPaperCache = new Map<string, ExtractedPaper | null>();
+const TEMP_PDF_SPLIT_DIR = "/var/folders/w9/p_fpb3_x05n45_bt9_3wp5hw0000gn/T/opencode/pdf-split";
 
 function formatExamTime(timeMinutes: number) {
   const hours = Math.floor(timeMinutes / 60);
@@ -343,6 +346,26 @@ function deriveDownloadedSourcePdfPath(sourceRelativePath: string) {
   return resolve(process.cwd(), "data/downloads", normalizedPath);
 }
 
+function deriveDownloadedInsertPdfPaths(unit: QuestionUnit) {
+  if (!isEnglishLanguageUnit(unit)) return [];
+
+  const downloadsDir = resolve(process.cwd(), "data/downloads", unit.boardCode, unit.subjectSlug, "none");
+  if (!existsSync(downloadsDir)) return [];
+
+  const sessionNeedle = (unit.session ?? "").toLowerCase();
+  const paperNeedle = unit.paperCode.toLowerCase();
+  const yearNeedle = unit.year ? String(unit.year) : "";
+
+  return readdirSync(downloadsDir)
+    .filter((fileName) => fileName.toLowerCase().endsWith(".pdf"))
+    .filter((fileName) => fileName.toLowerCase().includes("insert"))
+    .filter((fileName) => (yearNeedle ? fileName.includes(yearNeedle) : true))
+    .filter((fileName) => fileName.toLowerCase().includes(paperNeedle))
+    .filter((fileName) => (sessionNeedle ? fileName.toLowerCase().includes(sessionNeedle) : true))
+    .sort((a, b) => a.localeCompare(b))
+    .map((fileName) => resolve(downloadsDir, fileName));
+}
+
 function deriveDownloadedPageAssetPath(relativePath: string) {
   const normalizedPath = relativePath.replaceAll("\\", "/").replace(/^\/+/, "");
   return resolve(process.cwd(), "data/downloads", normalizedPath);
@@ -485,6 +508,14 @@ function isCombinedScienceUnit(unit: QuestionUnit) {
 
 function isBusinessUnit(unit: QuestionUnit) {
   return unit.subjectSlug === "business";
+}
+
+function isMathematicsUnit(unit: QuestionUnit) {
+  return unit.subjectSlug === "mathematics";
+}
+
+function isEnglishLanguageUnit(unit: QuestionUnit) {
+  return unit.subjectSlug === "english-language";
 }
 
 function getReferencedFigureNumbers(unit: QuestionUnit) {
@@ -642,6 +673,10 @@ function resolvePreviousPageFigureSupportCropBox(
 }
 
 function shouldUseAnswerLayout(unit: QuestionUnit) {
+  if (isMathematicsUnit(unit)) {
+    return false;
+  }
+
   return unit.totalMarks >= 4;
 }
 
@@ -650,6 +685,10 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
   const figureNumbers = getReferencedFigureNumbers(unit);
   const firstPageNumber = rawPageNumbers[0];
   const actualFirstPageNumber = unit.pages[0]?.pageNumber;
+
+  if (isEnglishLanguageUnit(unit)) {
+    return actualFirstPageNumber ? [actualFirstPageNumber] : (firstPageNumber ? [firstPageNumber] : []);
+  }
 
   if (firstPageNumber && hasSupportDependency(unit)) {
     const firstPage = getExtractedPage(unit.sourceRelativePath, firstPageNumber);
@@ -751,6 +790,10 @@ function buildShortQuestionCropBoxWithSupportTop(
 function shouldPackShortSnippet(unit: QuestionUnit, pageHeight: number, cropBox: CropBox, includeFigureAbove: boolean) {
   const snippetHeight = cropBox.top - cropBox.bottom;
   const isScience = isCombinedScienceUnit(unit);
+  const isMaths = isMathematicsUnit(unit);
+  if (isMaths) {
+    return snippetHeight <= pageHeight * (includeFigureAbove ? 0.82 : 0.72);
+  }
   const maxRatio = includeFigureAbove
     ? (isScience ? MAX_SHORT_SNIPPET_WITH_FIGURE_PAGE_RATIO_SCIENCE : MAX_SHORT_SNIPPET_WITH_FIGURE_PAGE_RATIO)
     : (isScience ? MAX_SHORT_SNIPPET_PAGE_RATIO_SCIENCE : MAX_SHORT_SNIPPET_PAGE_RATIO);
@@ -759,6 +802,10 @@ function shouldPackShortSnippet(unit: QuestionUnit, pageHeight: number, cropBox:
 
 function shouldAttemptCompactLayout(unit: QuestionUnit) {
   if (isCombinedScienceUnit(unit) || isBusinessUnit(unit)) {
+    return false;
+  }
+
+  if (isMathematicsUnit(unit)) {
     return false;
   }
 
@@ -991,15 +1038,18 @@ function resolveStandardCropBox(
   unitStartPages: Map<string, QuestionUnit[]>,
 ) {
   const isFullPageSource = unit.parts.some((part) => part.sourceMode === "full_page");
+  if (isBusinessUnit(unit) || isEnglishLanguageUnit(unit)) {
+    const textCrop = resolveFullPageTextCropBox(unit, pageNumber, pageWidth, pageHeight, unitStartPages, { includeFigureSupport: false });
+    if (textCrop && isValidCropBox(textCrop, pageWidth, pageHeight)) {
+      return textCrop;
+    }
+  }
+
   if (isFullPageSource) {
     return { left: 0, right: pageWidth, bottom: 0, top: pageHeight };
   }
 
   if (isCombinedScienceUnit(unit)) {
-    return { left: 0, right: pageWidth, bottom: 0, top: pageHeight };
-  }
-
-  if (isBusinessUnit(unit)) {
     return { left: 0, right: pageWidth, bottom: 0, top: pageHeight };
   }
 
@@ -1088,6 +1138,23 @@ async function loadSourcePdfDocument(
   return sourceDoc;
 }
 
+async function copyLocalPdfPagesWithQpdfFallback(outputDoc: PDFDocument, filePath: string) {
+  const pageCount = Number(execFileSync("qpdf", ["--show-npages", filePath], { encoding: "utf8" }).trim());
+  if (!Number.isFinite(pageCount) || pageCount <= 0) {
+    throw new Error(`Unable to determine page count for ${filePath}`);
+  }
+
+  execFileSync("mkdir", ["-p", TEMP_PDF_SPLIT_DIR]);
+  for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
+    const splitPath = resolve(TEMP_PDF_SPLIT_DIR, `${Buffer.from(filePath).toString("base64url")}-${pageIndex + 1}.pdf`);
+    execFileSync("qpdf", ["--empty", "--pages", filePath, String(pageIndex + 1), "--", splitPath]);
+    const splitDocBytes = new Uint8Array(readFileSync(splitPath));
+    const splitDoc = await PDFDocument.load(splitDocBytes, { ignoreEncryption: true, throwOnInvalidObject: false });
+    const [copiedPage] = await outputDoc.copyPages(splitDoc, [0]);
+    outputDoc.addPage(copiedPage);
+  }
+}
+
 async function withSourcePdfCandidate<T>(
   unit: QuestionUnit,
   pageNumber: number,
@@ -1122,7 +1189,7 @@ async function withSourcePdfCandidate<T>(
   );
 }
 
-export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, coverPage }: GeneratePaperPdfInput) {
+export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, prefaceSourcePdfs = [], coverPage }: GeneratePaperPdfInput) {
   const outputDoc = await PDFDocument.create();
   outputDoc.setTitle(title);
   drawExamCoverPage(outputDoc, coverPage);
@@ -1136,6 +1203,21 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
 
   const sourcePdfCache = new Map<string, Uint8Array>();
   const sourceDocCache = new Map<string, PDFDocument>();
+  const prependedInsertBySource = new Set<string>();
+
+  for (const prefacePdfPath of Array.from(new Set(prefaceSourcePdfs))) {
+    try {
+      const insertDoc = await loadSourcePdfDocument(prefacePdfPath, sourcePdfCache, sourceDocCache);
+      const pageIndexes = Array.from({ length: insertDoc.getPageCount() }, (_, index) => index);
+      const copiedPages = await outputDoc.copyPages(insertDoc, pageIndexes);
+      for (const copiedPage of copiedPages) {
+        outputDoc.addPage(copiedPage);
+      }
+    } catch {
+      await copyLocalPdfPagesWithQpdfFallback(outputDoc, prefacePdfPath);
+    }
+  }
+
   const unitStartPages = buildUnitStartPageMap(allUnits);
   const renderPageNumbersByUnit = new Map(
     orderedUnits.map((unit) => [unit.unitKey, determineRenderPageNumbers(unit, unitStartPages)]),
@@ -1256,6 +1338,22 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
     if (renderPageNumbers.length === 0) continue;
     const firstPageNumber = unit.pages[0]?.pageNumber ?? renderPageNumbers[0];
 
+    if (isEnglishLanguageUnit(unit) && prefaceSourcePdfs.length === 0 && !prependedInsertBySource.has(unit.sourceRelativePath)) {
+      for (const insertPdfPath of deriveDownloadedInsertPdfPaths(unit)) {
+        try {
+          const insertDoc = await loadSourcePdfDocument(insertPdfPath, sourcePdfCache, sourceDocCache);
+          const pageIndexes = Array.from({ length: insertDoc.getPageCount() }, (_, index) => index);
+          const copiedPages = await outputDoc.copyPages(insertDoc, pageIndexes);
+          for (const copiedPage of copiedPages) {
+            outputDoc.addPage(copiedPage);
+          }
+        } catch {
+          await copyLocalPdfPagesWithQpdfFallback(outputDoc, insertPdfPath);
+        }
+      }
+      prependedInsertBySource.add(unit.sourceRelativePath);
+    }
+
     for (const pageNumber of renderPageNumbers) {
       const rendered = await withSourcePdfCandidate(
         unit,
@@ -1301,10 +1399,16 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
           await prepareSnippet(probeDoc, sourcePage.pdfUrl, cropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
           await probeDoc.save();
           const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, cropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-          const outputPage = outputDoc.addPage([pageWidth, pageHeight]);
+          const isMaths = isMathematicsUnit(unit);
+          const outputPageHeight = isMaths
+            ? Math.min(pageHeight, cropHeight + STANDARD_PAGE_TOP_MARGIN * 2)
+            : pageHeight;
+          const outputPage = outputDoc.addPage([pageWidth, outputPageHeight]);
           outputPage.drawPage(snippet.embeddedPage, {
-            x: cropBox.left,
-            y: Math.max(0, pageHeight - cropHeight - STANDARD_PAGE_TOP_MARGIN),
+            x: 0,
+            y: isMaths
+              ? STANDARD_PAGE_TOP_MARGIN
+              : Math.max(0, pageHeight - cropHeight - STANDARD_PAGE_TOP_MARGIN),
             width: cropWidth,
             height: cropHeight,
           });

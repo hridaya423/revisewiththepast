@@ -1,6 +1,9 @@
 import { NextRequest } from "next/server";
+import { readdirSync } from "node:fs";
+import { resolve } from "node:path";
 
 import { expandAqaBusinessTopicSelection } from "@/lib/paper-maker/aqa-business";
+import { expandAqaEnglishLanguageTopicSelection } from "@/lib/paper-maker/aqa-english-language";
 import { expandTopicSelection, groupQuestionPartsIntoUnits, selectQuestionUnits } from "@/lib/paper-maker/aqa-geography";
 import { buildRealPaperBenchmark, estimateMarksFromTimeMinutes } from "@/lib/paper-maker/benchmarks";
 import {
@@ -28,10 +31,39 @@ type GeneratePaperRequest = {
   maxQuestions?: number;
   excludeSourceQuestionKeys?: string[];
   remainingPaperCount?: number;
+  priorSelectedUnitMarks?: number[];
+  priorPaperCount?: number;
 };
 
 function badRequest(message: string, status = 400) {
   return new Response(message, { status });
+}
+
+function getAqaEnglishLanguageInsertPaths(units: ReturnType<typeof groupQuestionPartsIntoUnits>) {
+  const downloadsDir = resolve(process.cwd(), "data/downloads/aqa/english-language/none");
+  const fileNames = readdirSync(downloadsDir);
+  const relativePaths = new Set<string>();
+
+  for (const unit of units) {
+    if (unit.sectionCode !== "A") continue;
+    const year = unit.year;
+    const session = unit.session?.toLowerCase();
+    if (!year || !session) continue;
+
+    const match = fileNames.find((fileName) => {
+      const lower = fileName.toLowerCase();
+      return lower.includes(`${year}`)
+        && lower.includes(unit.paperCode)
+        && lower.includes("insert")
+        && lower.includes(session);
+    });
+
+    if (match) {
+      relativePaths.add(resolve(downloadsDir, match));
+    }
+  }
+
+  return Array.from(relativePaths).sort((a, b) => a.localeCompare(b));
 }
 
 export async function POST(request: NextRequest) {
@@ -65,6 +97,12 @@ export async function POST(request: NextRequest) {
   const excludeSourceQuestionKeys = Array.isArray(body.excludeSourceQuestionKeys)
     ? body.excludeSourceQuestionKeys.filter((value): value is string => typeof value === "string")
     : [];
+  const priorSelectedUnitMarks = Array.isArray(body.priorSelectedUnitMarks)
+    ? body.priorSelectedUnitMarks.filter((value): value is number => typeof value === "number" && Number.isFinite(value))
+    : [];
+  const priorPaperCount = typeof body.priorPaperCount === "number" && Number.isFinite(body.priorPaperCount)
+    ? Math.max(0, Math.min(2, Math.round(body.priorPaperCount)))
+    : 0;
   const remainingPaperCount = typeof body.remainingPaperCount === "number" && Number.isFinite(body.remainingPaperCount)
     ? Math.max(1, Math.min(3, Math.round(body.remainingPaperCount)))
     : 1;
@@ -112,6 +150,8 @@ export async function POST(request: NextRequest) {
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
       remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -153,6 +193,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
   }
@@ -198,6 +239,8 @@ export async function POST(request: NextRequest) {
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
       remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -242,6 +285,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
   }
@@ -280,6 +324,8 @@ export async function POST(request: NextRequest) {
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
       remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -321,6 +367,90 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
+      },
+    });
+  }
+
+  if (subject.key === "aqa-english-language") {
+    if (selectedTopicNodeIds.length === 0) {
+      return badRequest("Select at least one English Language topic.");
+    }
+
+    const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+    if (questionBank.length === 0) {
+      return badRequest("No tagged AQA English Language question bank is available in Convex.", 500);
+    }
+
+    const selectedLeafTopicIds = expandAqaEnglishLanguageTopicSelection(selectedTopicNodeIds);
+    if (selectedLeafTopicIds.length === 0) {
+      return badRequest("The selected English Language topics do not map to any question-bank topics.");
+    }
+
+    const allUnits = groupQuestionPartsIntoUnits(questionBank);
+    const filteredBenchmarkUnits = allUnits.filter((unit) => paperCodes.length === 0 || paperCodes.includes(unit.paperCode));
+    const benchmark = buildRealPaperBenchmark(filteredBenchmarkUnits);
+    const resolvedTargetMarks = targetMode === "time"
+      ? estimateMarksFromTimeMinutes(
+          requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, targetMarks),
+          benchmark.averageMinutesPerMark,
+          subject.recommendedMinutesPerMark,
+        )
+      : targetMarks;
+    const selection = selectQuestionUnits({
+      units: allUnits,
+      selectedLeafTopicIds,
+      targetMarks: resolvedTargetMarks,
+      paperCodes,
+      maxQuestions,
+      tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
+    });
+
+    if (selection.selectedUnits.length === 0) {
+      return badRequest("No source-page English Language questions matched the selected topics and filters.");
+    }
+
+    const pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(
+      selection.selectedUnits.map((unit) => unit.sourceRelativePath),
+    );
+
+    const pdfBytes = await generateStrictSourcePaperPdf({
+      title: `AQA English Language Custom Paper (${resolvedTargetMarks} marks target)`,
+      selectedUnits: selection.selectedUnits,
+      allUnits,
+      pageAssetsBySource,
+      prefaceSourcePdfs: getAqaEnglishLanguageInsertPaths(selection.selectedUnits),
+      coverPage: {
+        boardLabel: subject.boardLabel,
+        subjectLabel: subject.coverTitle,
+        codeLabel: subject.codeLabel,
+        totalMarks: selection.totalMarks,
+        timeMinutes: targetMode === "time"
+          ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+          : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks),
+        paperLabels: subject.paperOptions.filter((paper) => paperCodes.length === 0 || paperCodes.includes(paper.code)).map((paper) => paper.label),
+      },
+    });
+    const timeMinutes = targetMode === "time"
+      ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
+
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="aqa-english-language-custom-paper-${resolvedTargetMarks}m.pdf"`,
+        "X-Question-Count": String(selection.selectedUnits.length),
+        "X-Total-Marks": String(selection.totalMarks),
+        "X-Resolved-Target-Marks": String(resolvedTargetMarks),
+        "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Time-Minutes": String(timeMinutes),
+        "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
   }
@@ -364,6 +494,8 @@ export async function POST(request: NextRequest) {
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
       remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -406,6 +538,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
   }

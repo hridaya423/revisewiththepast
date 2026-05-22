@@ -1,6 +1,6 @@
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
-export type PaperMakerSubjectKey = "aqa-geography" | "edexcel-combined-science" | "aqa-business" | "edexcel-mathematics-higher";
+export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "edexcel-combined-science" | "edexcel-mathematics-higher";
 
 export type PaperOption = {
   code: string;
@@ -68,6 +68,26 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     paperOptions: [
       { code: "paper-1", label: "Paper 1" },
       { code: "paper-2", label: "Paper 2" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
+    tiers: [],
+  },
+  {
+    key: "aqa-english-language",
+    label: "AQA English Language",
+    boardLabel: "AQA",
+    boardCode: "aqa",
+    subjectSlug: "english-language",
+    coverTitle: "English Language",
+    codeLabel: "8700",
+    description: "Generate AQA English Language papers from tagged reading and writing source-page questions.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by paper and question type.",
+    recommendedMinutesPerMark: 1.3125,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1: Creative Reading and Writing" },
+      { code: "paper-2", label: "Paper 2: Writers' Viewpoints and Perspectives" },
     ],
     defaultPaperCodes: ["paper-1", "paper-2"],
     tiers: [],

@@ -65,6 +65,7 @@ export type QuestionUnitPage = {
 
 export type QuestionUnit = {
   unitKey: string;
+  groupUnitKey: string;
   sourceQuestionKey: string;
   sourceRelativePath: string;
   questionPaperCdnUrl: string | null;
@@ -92,6 +93,8 @@ type SelectQuestionUnitsInput = {
   tolerance?: number;
   excludedSourceQuestionKeys?: string[];
   remainingPaperCount?: number;
+  priorSelectedUnitMarks?: number[];
+  priorPaperCount?: number;
 };
 
 type MutableTopicNode = Omit<TopicTreeNode, "leafTopicIds"> & { leafTopicIds?: string[] };
@@ -269,6 +272,12 @@ function buildTopicIndex(nodes: TopicTreeNode[], map = new Map<string, TopicTree
   return map;
 }
 
+function getMarkCategory(totalMarks: number) {
+  if (totalMarks <= 2) return "low" as const;
+  if (totalMarks <= 5) return "medium" as const;
+  return "high" as const;
+}
+
 const TOPIC_INDEX = buildTopicIndex(AQA_GEOGRAPHY_TOPIC_TREE);
 
 export function expandTopicSelection(selectedNodeIds: string[]) {
@@ -277,13 +286,19 @@ export function expandTopicSelection(selectedNodeIds: string[]) {
 
 export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): QuestionUnit[] {
   const units = new Map<string, QuestionUnit>();
+  const relatedPartsByGroupUnitKey = new Map<string, QuestionBankPart[]>();
 
   for (const part of questionParts) {
     if ((part.marks ?? 0) <= 0) continue;
     if (hasQuestionNumberMismatch(part)) continue;
 
+     const relatedParts = relatedPartsByGroupUnitKey.get(part.unitKey) ?? [];
+     relatedParts.push(part);
+     relatedPartsByGroupUnitKey.set(part.unitKey, relatedParts);
+
     const existing = units.get(part.partKey) ?? {
       unitKey: part.partKey,
+      groupUnitKey: part.unitKey,
       sourceQuestionKey: `${part.sourceRelativePath}::${part.sectionCode ?? "-"}::q${part.questionNumber}`,
       sourceRelativePath: part.sourceRelativePath,
       questionPaperCdnUrl: part.questionPaperCdnUrl,
@@ -308,9 +323,41 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
     units.set(part.partKey, existing);
   }
 
+  const comparePartOrder = (left: QuestionBankPart, right: QuestionBankPart) => {
+    if (left.pageNumber !== right.pageNumber) return left.pageNumber - right.pageNumber;
+    if ((left.questionPartNumber ?? "") !== (right.questionPartNumber ?? "")) {
+      return (left.questionPartNumber ?? "").localeCompare(right.questionPartNumber ?? "", undefined, { numeric: true });
+    }
+    return left.questionId.localeCompare(right.questionId, undefined, { numeric: true });
+  };
+
+  const getBusinessRelevantParts = (unit: QuestionUnit) => {
+    if (unit.subjectSlug !== "business") return unit.parts;
+    if (unit.parts.some((part) => part.contextText)) return unit.parts;
+
+    const currentPart = unit.parts[0];
+    if (!currentPart) return unit.parts;
+
+    const relatedParts = [...(relatedPartsByGroupUnitKey.get(unit.groupUnitKey) ?? unit.parts)].sort(comparePartOrder);
+    const currentIndex = relatedParts.findIndex((part) => part.partKey === currentPart.partKey);
+    if (currentIndex <= 0) return unit.parts;
+
+    let anchorIndex = -1;
+    for (let index = currentIndex - 1; index >= 0; index -= 1) {
+      if (relatedParts[index]?.contextText) {
+        anchorIndex = index;
+        break;
+      }
+    }
+
+    if (anchorIndex < 0) return unit.parts;
+    const anchorPart = relatedParts[anchorIndex];
+    return anchorPart ? [anchorPart, currentPart] : unit.parts;
+  };
+
   for (const unit of units.values()) {
     const pageMap = new Map<number, QuestionBankPart[]>();
-    for (const part of unit.parts) {
+    for (const part of getBusinessRelevantParts(unit)) {
       for (const pageNumber of part.pageNumbers) {
         const parts = pageMap.get(pageNumber) ?? [];
         parts.push(part);
@@ -356,7 +403,7 @@ export function buildTopicTreeWithCounts(units: QuestionUnit[]): TopicTreeNodeWi
   return AQA_GEOGRAPHY_TOPIC_TREE.map(attachCounts);
 }
 
-export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1 }: SelectQuestionUnitsInput) {
+export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0 }: SelectQuestionUnitsInput) {
   const selectedLeafSet = new Set(selectedLeafTopicIds);
   const allowedPaperCodes = paperCodes && paperCodes.length > 0 ? new Set(paperCodes) : null;
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
@@ -370,6 +417,64 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const minimumAcceptableMarks = Math.max(0, targetMarks - safeTolerance);
   const maximumAcceptableMarks = targetMarks + safeTolerance;
   const futurePaperCount = Math.max(0, remainingPaperCount - 1);
+  const priorMarkBucketCounts = priorSelectedUnitMarks.reduce((map, marks) => {
+    map.set(marks, (map.get(marks) ?? 0) + 1);
+    return map;
+  }, new Map<number, number>());
+  const priorMarkCategoryCounts = priorSelectedUnitMarks.reduce((map, marks) => {
+    const category = getMarkCategory(marks);
+    map.set(category, (map.get(category) ?? 0) + 1);
+    return map;
+  }, new Map<"low" | "medium" | "high", number>());
+  const isMathsSelection = candidates.every((unit) => unit.subjectSlug === "mathematics");
+  const candidateMarkCategoryCounts = candidates.reduce((map, unit) => {
+    const category = getMarkCategory(unit.totalMarks);
+    map.set(category, (map.get(category) ?? 0) + 1);
+    return map;
+  }, new Map<"low" | "medium" | "high", number>());
+  const averageUnitMarks = candidates.length > 0
+    ? candidates.reduce((sum, unit) => sum + unit.totalMarks, 0) / candidates.length
+    : 0;
+  const estimatedMathQuestionCount = isMathsSelection
+    ? Math.max(4, Math.min(12, Math.round(targetMarks / Math.max(1.5, averageUnitMarks || 3))))
+    : 0;
+  const desiredMathCategoryCounts = (() => {
+    const counts = new Map<"low" | "medium" | "high", number>([
+      ["low", 0],
+      ["medium", 0],
+      ["high", 0],
+    ]);
+    if (!isMathsSelection || estimatedMathQuestionCount <= 0) return counts;
+
+    const totalCandidateCount = Math.max(1, candidates.length);
+    const baseLow = (candidateMarkCategoryCounts.get("low") ?? 0) / totalCandidateCount;
+    const baseMedium = (candidateMarkCategoryCounts.get("medium") ?? 0) / totalCandidateCount;
+    const baseHigh = (candidateMarkCategoryCounts.get("high") ?? 0) / totalCandidateCount;
+    const lowRatio = Math.min(0.38, Math.max(0.18, baseLow));
+    const mediumRatio = Math.min(0.62, Math.max(0.38, baseMedium || 0.5));
+    const highRatio = Math.min(0.28, Math.max(0.08, baseHigh || 0.12));
+    const ratioTotal = lowRatio + mediumRatio + highRatio;
+    counts.set("low", Math.round((estimatedMathQuestionCount * lowRatio) / ratioTotal));
+    counts.set("medium", Math.round((estimatedMathQuestionCount * mediumRatio) / ratioTotal));
+    counts.set("high", Math.round((estimatedMathQuestionCount * highRatio) / ratioTotal));
+
+    let allocated = (counts.get("low") ?? 0) + (counts.get("medium") ?? 0) + (counts.get("high") ?? 0);
+    while (allocated < estimatedMathQuestionCount) {
+      counts.set("medium", (counts.get("medium") ?? 0) + 1);
+      allocated += 1;
+    }
+    while (allocated > estimatedMathQuestionCount) {
+      if ((counts.get("low") ?? 0) > 0) {
+        counts.set("low", (counts.get("low") ?? 0) - 1);
+      } else if ((counts.get("high") ?? 0) > 0) {
+        counts.set("high", (counts.get("high") ?? 0) - 1);
+      } else {
+        counts.set("medium", Math.max(0, (counts.get("medium") ?? 0) - 1));
+      }
+      allocated -= 1;
+    }
+    return counts;
+  })();
 
   const finalizeSelection = (selected: QuestionUnit[], currentMarks: number) => {
     const finalCoveredLeafs = new Set<string>();
@@ -397,6 +502,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     const sourcePaperCounts = new Map<string, number>();
     const sourceQuestionCounts = new Map<string, number>();
     const selectedYearCounts = new Map<number, number>();
+    const selectedMarkBucketCounts = new Map<number, number>();
+    const selectedMarkCategoryCounts = new Map<"low" | "medium" | "high", number>();
     const selectedPageKeys = new Set<string>();
     const remaining = new Set(candidates.map((unit) => unit.unitKey));
     const overshootAllowance = safeTolerance;
@@ -461,6 +568,9 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       if (typeof unit.year === "number") {
         selectedYearCounts.set(unit.year, (selectedYearCounts.get(unit.year) ?? 0) + 1);
       }
+      selectedMarkBucketCounts.set(unit.totalMarks, (selectedMarkBucketCounts.get(unit.totalMarks) ?? 0) + 1);
+      const markCategory = getMarkCategory(unit.totalMarks);
+      selectedMarkCategoryCounts.set(markCategory, (selectedMarkCategoryCounts.get(markCategory) ?? 0) + 1);
       for (const page of unit.pages) {
         selectedPageKeys.add(`${unit.sourceRelativePath}::${page.pageNumber}`);
       }
@@ -487,18 +597,37 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       const overshoot = Math.max(0, nextMarks - maximumAcceptableMarks);
       const sourcePaperUsageCount = sourcePaperCounts.get(unit.sourceRelativePath) ?? 0;
       const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
+      const priorMarkUsageCount = priorMarkBucketCounts.get(unit.totalMarks) ?? 0;
+      const currentMarkUsageCount = selectedMarkBucketCounts.get(unit.totalMarks) ?? 0;
+      const markCategory = getMarkCategory(unit.totalMarks);
+      const priorMarkCategoryUsageCount = priorMarkCategoryCounts.get(markCategory) ?? 0;
+      const currentMarkCategoryUsageCount = selectedMarkCategoryCounts.get(markCategory) ?? 0;
       const sourcePaperSpreadBonus = Math.max(0, 4 - sourcePaperUsageCount) * (mode === "marks" ? 7 : 10);
       const yearSpreadBonus = typeof unit.year === "number"
         ? Math.max(0, 4 - yearUsageCount) * (mode === "marks" ? 6 : 8)
         : 0;
+      const markBucketPenalty = (priorMarkUsageCount * (mode === "marks" ? 14 : 10)) + (currentMarkUsageCount * (mode === "marks" ? 18 : 12));
+      const markCategoryPenalty = (priorMarkCategoryUsageCount * (mode === "marks" ? 18 : 14)) + (currentMarkCategoryUsageCount * (mode === "marks" ? 24 : 18));
       const randomTieBreaker = Math.random() * 0.2;
       const futureSetPenalty = getFutureSetPenalty(unit);
+      const isMaths = unit.subjectSlug === "mathematics";
+      const desiredCategoryCount = desiredMathCategoryCounts.get(markCategory) ?? 0;
+      const projectedCategoryCount = currentMarkCategoryUsageCount + 1;
+      const priorAverageCategoryCount = priorPaperCount > 0 ? priorMarkCategoryUsageCount / priorPaperCount : 0;
+      const mathCategoryQuotaBonus = isMaths
+        ? (projectedCategoryCount <= desiredCategoryCount
+          ? (desiredCategoryCount - currentMarkCategoryUsageCount) * 26
+          : -((projectedCategoryCount - desiredCategoryCount) * 42))
+        : 0;
+      const mathCrossPaperPenalty = isMaths
+        ? Math.max(0, projectedCategoryCount - Math.max(desiredCategoryCount, Math.ceil(priorAverageCategoryCount))) * 18
+        : 0;
       const tinyPenalty = remainingMarks > 30
-        ? (unit.totalMarks <= 2 ? 110 : unit.totalMarks <= 4 ? 40 : 0)
+        ? (unit.totalMarks <= 2 ? (isMaths ? 170 : 110) : unit.totalMarks <= 4 ? (isMaths ? 55 : 40) : 0)
         : remainingMarks > 18
-          ? (unit.totalMarks <= 2 ? 70 : 0)
+          ? (unit.totalMarks <= 2 ? (isMaths ? 100 : 70) : 0)
           : unit.totalMarks <= 2
-            ? 10
+            ? (isMaths ? 18 : 10)
             : 0;
       const bucketBonus = getBucketPreferenceBonus(unit);
 
@@ -511,7 +640,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + bucketBonus
           + sourcePaperSpreadBonus
           + yearSpreadBonus
+          + mathCategoryQuotaBonus
           + randomTieBreaker
+          - markBucketPenalty
+          - markCategoryPenalty
+          - mathCrossPaperPenalty
           - (futureSetPenalty * 18)
           - (overshoot * 180)
           - (samePaperPenalty * 20)
@@ -527,7 +660,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         + bucketBonus
         + sourcePaperSpreadBonus
         + yearSpreadBonus
+        + mathCategoryQuotaBonus
         + randomTieBreaker
+        - markBucketPenalty
+        - markCategoryPenalty
+        - mathCrossPaperPenalty
         - (futureSetPenalty * 14)
         - (samePaperPenalty * 40)
         - (sameQuestionPenalty * 600)
@@ -606,12 +743,31 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         const noveltyBonus = unit.canonicalLeafs.filter((leaf) => selectedLeafSet.has(leaf) && !coveredLeafs.has(leaf)).length * (mode === "marks" ? 10 : 18);
         const sourcePaperUsageCount = sourcePaperCounts.get(unit.sourceRelativePath) ?? 0;
         const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
+        const priorMarkUsageCount = priorMarkBucketCounts.get(unit.totalMarks) ?? 0;
+        const currentMarkUsageCount = selectedMarkBucketCounts.get(unit.totalMarks) ?? 0;
+        const markCategory = getMarkCategory(unit.totalMarks);
+        const priorMarkCategoryUsageCount = priorMarkCategoryCounts.get(markCategory) ?? 0;
+        const currentMarkCategoryUsageCount = selectedMarkCategoryCounts.get(markCategory) ?? 0;
         const sourcePaperSpreadBonus = Math.max(0, 4 - sourcePaperUsageCount) * (mode === "marks" ? 5 : 8);
         const yearSpreadBonus = typeof unit.year === "number"
           ? Math.max(0, 4 - yearUsageCount) * (mode === "marks" ? 4 : 6)
           : 0;
+        const markBucketPenalty = (priorMarkUsageCount * (mode === "marks" ? 10 : 8)) + (currentMarkUsageCount * (mode === "marks" ? 14 : 10));
+        const markCategoryPenalty = (priorMarkCategoryUsageCount * (mode === "marks" ? 10 : 8)) + (currentMarkCategoryUsageCount * (mode === "marks" ? 14 : 10));
         const randomTieBreaker = Math.random() * 0.2;
         const futureSetPenalty = getFutureSetPenalty(unit);
+        const isMaths = unit.subjectSlug === "mathematics";
+        const desiredCategoryCount = desiredMathCategoryCounts.get(markCategory) ?? 0;
+        const projectedCategoryCount = currentMarkCategoryUsageCount + 1;
+        const priorAverageCategoryCount = priorPaperCount > 0 ? priorMarkCategoryUsageCount / priorPaperCount : 0;
+        const mathCategoryQuotaBonus = isMaths
+          ? (projectedCategoryCount <= desiredCategoryCount
+            ? (desiredCategoryCount - currentMarkCategoryUsageCount) * 18
+            : -((projectedCategoryCount - desiredCategoryCount) * 28))
+          : 0;
+        const mathCrossPaperPenalty = isMaths
+          ? Math.max(0, projectedCategoryCount - Math.max(desiredCategoryCount, Math.ceil(priorAverageCategoryCount))) * 12
+          : 0;
         const score = (improvesDelta ? (mode === "marks" ? 900 : 600) : 0)
           - (nextDelta * (mode === "marks" ? 42 : 32))
           - hardOvershootPenalty
@@ -620,7 +776,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + noveltyBonus
           + sourcePaperSpreadBonus
           + yearSpreadBonus
+          + mathCategoryQuotaBonus
           + randomTieBreaker
+          - markBucketPenalty
+          - markCategoryPenalty
+          - mathCrossPaperPenalty
           - (futureSetPenalty * 8);
 
         if (score > bestFillScore) {

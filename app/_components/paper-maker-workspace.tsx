@@ -456,6 +456,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
     startTransition(async () => {
       try {
         const excludedSourceQuestionKeys = new Set<string>();
+        const priorSelectedUnitMarks: number[] = [];
         let lastQuestionCount = 0;
         let lastTotalMarks = 0;
         let lastCoveredTopics = 0;
@@ -475,6 +476,8 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
               paperCodes: Array.from(selectedPaperCodes),
               excludeSourceQuestionKeys: Array.from(excludedSourceQuestionKeys),
               remainingPaperCount: paperCount - paperIndex,
+              priorSelectedUnitMarks,
+              priorPaperCount: paperIndex,
             }),
           });
 
@@ -492,6 +495,15 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
           if (encodedKeys) {
             for (const key of decodeURIComponent(encodedKeys).split("\n").filter(Boolean)) {
               excludedSourceQuestionKeys.add(key);
+            }
+          }
+          const encodedMarks = response.headers.get("X-Selected-Unit-Marks");
+          if (encodedMarks) {
+            for (const value of decodeURIComponent(encodedMarks).split("\n").filter(Boolean)) {
+              const parsed = Number(value);
+              if (Number.isFinite(parsed)) {
+                priorSelectedUnitMarks.push(parsed);
+              }
             }
           }
 
