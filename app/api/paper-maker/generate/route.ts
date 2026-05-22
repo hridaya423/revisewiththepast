@@ -111,6 +111,7 @@ export async function POST(request: NextRequest) {
       maxQuestions,
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -196,6 +197,7 @@ export async function POST(request: NextRequest) {
       maxQuestions,
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -277,6 +279,7 @@ export async function POST(request: NextRequest) {
       maxQuestions,
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -360,6 +363,7 @@ export async function POST(request: NextRequest) {
       maxQuestions,
       tolerance: 7,
       excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
     });
 
     if (selection.selectedUnits.length === 0) {

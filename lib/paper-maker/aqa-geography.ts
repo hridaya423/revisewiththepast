@@ -91,6 +91,7 @@ type SelectQuestionUnitsInput = {
   maxQuestions?: number;
   tolerance?: number;
   excludedSourceQuestionKeys?: string[];
+  remainingPaperCount?: number;
 };
 
 type MutableTopicNode = Omit<TopicTreeNode, "leafTopicIds"> & { leafTopicIds?: string[] };
@@ -355,7 +356,7 @@ export function buildTopicTreeWithCounts(units: QuestionUnit[]): TopicTreeNodeWi
   return AQA_GEOGRAPHY_TOPIC_TREE.map(attachCounts);
 }
 
-export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [] }: SelectQuestionUnitsInput) {
+export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1 }: SelectQuestionUnitsInput) {
   const selectedLeafSet = new Set(selectedLeafTopicIds);
   const allowedPaperCodes = paperCodes && paperCodes.length > 0 ? new Set(paperCodes) : null;
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
@@ -368,6 +369,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const safeTolerance = Math.max(3, Math.min(12, tolerance));
   const minimumAcceptableMarks = Math.max(0, targetMarks - safeTolerance);
   const maximumAcceptableMarks = targetMarks + safeTolerance;
+  const futurePaperCount = Math.max(0, remainingPaperCount - 1);
 
   const finalizeSelection = (selected: QuestionUnit[], currentMarks: number) => {
     const finalCoveredLeafs = new Set<string>();
@@ -399,6 +401,23 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     const remaining = new Set(candidates.map((unit) => unit.unitKey));
     const overshootAllowance = safeTolerance;
     let currentMarks = 0;
+
+    const getRemainingCandidateMarks = () => candidates.reduce((sum, unit) => (
+      remaining.has(unit.unitKey) ? sum + unit.totalMarks : sum
+    ), 0);
+
+    const getFutureSetPenalty = (unit: QuestionUnit) => {
+      if (futurePaperCount <= 0) return 0;
+      const remainingCandidateMarks = getRemainingCandidateMarks();
+      const remainingAfterPick = Math.max(0, remainingCandidateMarks - unit.totalMarks);
+      const desiredFutureMarks = targetMarks * futurePaperCount;
+      const futureShortfall = Math.max(0, desiredFutureMarks - remainingAfterPick);
+      if (futureShortfall <= 0) return 0;
+
+      const progress = targetMarks > 0 ? currentMarks / targetMarks : 0;
+      const progressMultiplier = progress < 0.5 ? 1.15 : progress < 0.85 ? 0.85 : 0.45;
+      return futureShortfall * progressMultiplier;
+    };
 
     const getBucketPreferenceBonus = (unit: QuestionUnit) => {
       const progress = targetMarks > 0 ? currentMarks / targetMarks : 0;
@@ -466,11 +485,14 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       const currentDelta = Math.abs(targetMarks - currentMarks);
       const deltaImprovement = currentDelta - nextDelta;
       const overshoot = Math.max(0, nextMarks - maximumAcceptableMarks);
+      const sourcePaperUsageCount = sourcePaperCounts.get(unit.sourceRelativePath) ?? 0;
       const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
+      const sourcePaperSpreadBonus = Math.max(0, 4 - sourcePaperUsageCount) * (mode === "marks" ? 7 : 10);
       const yearSpreadBonus = typeof unit.year === "number"
         ? Math.max(0, 4 - yearUsageCount) * (mode === "marks" ? 6 : 8)
         : 0;
       const randomTieBreaker = Math.random() * 0.2;
+      const futureSetPenalty = getFutureSetPenalty(unit);
       const tinyPenalty = remainingMarks > 30
         ? (unit.totalMarks <= 2 ? 110 : unit.totalMarks <= 4 ? 40 : 0)
         : remainingMarks > 18
@@ -487,8 +509,10 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + (newLeafs.length * 90)
           + (matchedLeafs.length * 14)
           + bucketBonus
+          + sourcePaperSpreadBonus
           + yearSpreadBonus
           + randomTieBreaker
+          - (futureSetPenalty * 18)
           - (overshoot * 180)
           - (samePaperPenalty * 20)
           - (sameQuestionPenalty * 900)
@@ -501,8 +525,10 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         + (matchedLeafs.length * 120)
         + marksFitBonus
         + bucketBonus
+        + sourcePaperSpreadBonus
         + yearSpreadBonus
         + randomTieBreaker
+        - (futureSetPenalty * 14)
         - (samePaperPenalty * 40)
         - (sameQuestionPenalty * 600)
         - (pageOverlapCount * 1200)
@@ -578,19 +604,24 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         const softSamePaperPenalty = (sourcePaperCounts.get(unit.sourceRelativePath) ?? 0) * (mode === "marks" ? 12 : 18);
         const pageOverlapPenalty = pageOverlapCount * (mode === "marks" ? 120 : 90);
         const noveltyBonus = unit.canonicalLeafs.filter((leaf) => selectedLeafSet.has(leaf) && !coveredLeafs.has(leaf)).length * (mode === "marks" ? 10 : 18);
+        const sourcePaperUsageCount = sourcePaperCounts.get(unit.sourceRelativePath) ?? 0;
         const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
+        const sourcePaperSpreadBonus = Math.max(0, 4 - sourcePaperUsageCount) * (mode === "marks" ? 5 : 8);
         const yearSpreadBonus = typeof unit.year === "number"
           ? Math.max(0, 4 - yearUsageCount) * (mode === "marks" ? 4 : 6)
           : 0;
         const randomTieBreaker = Math.random() * 0.2;
+        const futureSetPenalty = getFutureSetPenalty(unit);
         const score = (improvesDelta ? (mode === "marks" ? 900 : 600) : 0)
           - (nextDelta * (mode === "marks" ? 42 : 32))
           - hardOvershootPenalty
           - softSamePaperPenalty
           - pageOverlapPenalty
           + noveltyBonus
+          + sourcePaperSpreadBonus
           + yearSpreadBonus
-          + randomTieBreaker;
+          + randomTieBreaker
+          - (futureSetPenalty * 8);
 
         if (score > bestFillScore) {
           bestFillScore = score;
