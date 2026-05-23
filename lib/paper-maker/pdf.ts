@@ -57,6 +57,13 @@ type ShortPageItem = {
   scaledHeight: number;
 };
 
+type VisiblePageGeometry = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 type SourcePdfCandidate = {
   pdfUrl: string;
   sourcePageIndex: number;
@@ -76,6 +83,8 @@ const MIN_VISIBLE_CROP_HEIGHT = 36;
 const LARGE_CROP_PAGE_RATIO = 0.9;
 const STANDARD_PAGE_TOP_MARGIN = 24;
 const SHORT_PAGE_BOTTOM_MARGIN = 48;
+const MATH_OUTPUT_PAGE_WIDTH = 595.28;
+const MATH_OUTPUT_PAGE_HEIGHT = 841.89;
 
 const SUPPORT_CONTEXT_PATTERN = /\bfigure\b|\bstudy\b|\bmap\b|\bdiagram\b|\bgraph\b|\bphoto\b|\bresource\b|\bapparatus\b|\btable\b|\bchart\b|\bmodel\b|\bspectrum\b|\bresults\b/i;
 
@@ -302,6 +311,165 @@ function findPromptLine(page: ExtractedPaperPage, promptText: string) {
   return bestScore >= Math.min(3, Math.max(1, Math.ceil(tokens.length / 3))) ? bestLine : null;
 }
 
+function findMathUnitStartLine(page: ExtractedPaperPage, unit: QuestionUnit) {
+  const part = unit.parts[0];
+  if (!part) return null;
+
+  const relevantLines = page.text_lines.filter((line) => !shouldIgnorePageLine(line.text));
+  if (part.questionPartNumber) {
+    const escaped = part.questionPartNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const directPartLine = relevantLines.find((line) => new RegExp(`^\(\s*${escaped}\s*\)`, "i").test(line.text.trim()));
+    if (directPartLine) return directPartLine;
+  }
+
+  const escapedQuestion = part.questionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const directQuestionLine = relevantLines.find((line) => {
+    const trimmed = line.text.trim();
+    if (!new RegExp(`^(?:0\s*)?${escapedQuestion}\b`, "i").test(trimmed)) return false;
+    const remainder = trimmed.replace(new RegExp(`^(?:0\s*)?${escapedQuestion}\b`, "i"), "").trim();
+    return /[A-Za-z(]/.test(remainder);
+  });
+  if (directQuestionLine) return directQuestionLine;
+
+  return findPromptLine(page, part.promptText);
+}
+
+function isMathContextBoundaryLine(text: string) {
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  if (/^\([a-z]\)/i.test(trimmed)) return true;
+  if (/^\(\d+\)$/.test(trimmed)) return true;
+  if (/^(?:0\s*)?\d+\b/.test(trimmed)) return true;
+  if (/\.{5,}/.test(trimmed)) return true;
+  if (/=\s*\.{5,}/.test(trimmed)) return true;
+  return false;
+}
+
+function getImmediateMathContextLinesAbove(page: ExtractedPaperPage, startLine: ExtractedTextLine) {
+  const aboveLines = page.text_lines
+    .filter((line) => line.bbox.y0 >= startLine.bbox.y1 - 4)
+    .filter((line) => line.bbox.y1 <= startLine.bbox.y1 + 180)
+    .sort((left, right) => left.bbox.y0 - right.bbox.y0);
+
+  const selected: ExtractedTextLine[] = [];
+  for (const line of aboveLines) {
+    if (shouldIgnorePageLine(line.text)) continue;
+    if (isMathContextBoundaryLine(line.text)) break;
+    selected.push(line);
+  }
+
+  return selected;
+}
+
+function getMathAnswerPadding(totalMarks: number) {
+  if (totalMarks <= 1) return 24;
+  if (totalMarks === 2) return 32;
+  if (totalMarks === 3) return 42;
+  if (totalMarks === 4) return 54;
+  if (totalMarks === 5) return 68;
+  return 90;
+}
+
+function getMathSupportUnit(targetUnit: QuestionUnit, allUnits: QuestionUnit[]) {
+  const currentPart = targetUnit.parts[0];
+  if (!isMathematicsUnit(targetUnit) || !currentPart?.questionPartNumber) return null;
+  if (!/part\s*\([a-z]\)|your answer to part|this graph|this equation|this table|this shape|the graph|the equation/i.test(currentPart.promptText)) {
+    return null;
+  }
+
+  const relatedUnits = allUnits
+    .filter((unit) => unit.sourceQuestionKey === targetUnit.sourceQuestionKey)
+    .sort((left, right) => {
+      const leftPage = left.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
+      const rightPage = right.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
+      if (leftPage !== rightPage) return leftPage - rightPage;
+      const leftPart = left.parts[0]?.questionPartNumber ?? "";
+      const rightPart = right.parts[0]?.questionPartNumber ?? "";
+      return leftPart.localeCompare(rightPart, undefined, { numeric: true });
+    });
+  const currentIndex = relatedUnits.findIndex((unit) => unit.unitKey === targetUnit.unitKey);
+  return currentIndex > 0 ? relatedUnits[currentIndex - 1] : null;
+}
+
+function resolveMathQuestionCropBox(
+  unit: QuestionUnit,
+  allUnits: QuestionUnit[],
+  pageNumber: number,
+  pageWidth: number,
+  pageHeight: number,
+  unitStartPages: Map<string, QuestionUnit[]>,
+) {
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  const matchingUnitPage = unit.pages.find((entry) => entry.pageNumber === pageNumber);
+  if (!extractedPage || !matchingUnitPage) {
+    return null;
+  }
+
+  const supportUnit = getMathSupportUnit(unit, allUnits);
+  const supportPage = supportUnit?.pages.find((entry) => entry.pageNumber === pageNumber) ?? null;
+  const supportBox = supportPage?.bboxUnion ? toCropBox(supportPage.bboxUnion) : null;
+
+  const relevantLines = extractedPage.text_lines
+    .filter((line) => !shouldIgnorePageLine(line.text))
+    .filter((line) => !/^\(total for question/i.test(line.text.trim()))
+    .filter((line) => !/^total for paper/i.test(line.text.trim()));
+  if (relevantLines.length === 0) {
+    return null;
+  }
+
+  const startLine = findMathUnitStartLine(extractedPage, unit);
+  if (!startLine) {
+    return null;
+  }
+
+  const immediateContextLines = supportBox ? [] : getImmediateMathContextLinesAbove(extractedPage, startLine);
+  const immediateContextTop = immediateContextLines.length > 0
+    ? Math.max(...immediateContextLines.map((line) => line.bbox.y1))
+    : null;
+
+  const excludedUnitKeys = new Set([unit.unitKey, ...matchingUnitPage.parts.map((part) => part.partKey)]);
+  const siblingStartLines = (unitStartPages.get(`${unit.sourceRelativePath}::${pageNumber}`) ?? [])
+    .filter((entry) => !excludedUnitKeys.has(entry.unitKey))
+    .map((entry) => findMathUnitStartLine(extractedPage, entry))
+    .filter((line): line is ExtractedTextLine => line !== null)
+    .sort((a, b) => b.bbox.y1 - a.bbox.y1);
+  const nextSiblingLine = siblingStartLines.find((line) => line.bbox.y1 < startLine.bbox.y0 - 4) ?? null;
+
+  const topCeiling = Math.min(
+    pageHeight,
+    supportBox
+      ? Math.max(startLine.bbox.y1 + 72, supportBox.top)
+      : (immediateContextTop ? immediateContextTop + 18 : startLine.bbox.y1 + 56),
+  );
+  const bottomFloor = nextSiblingLine ? nextSiblingLine.bbox.y1 : 0;
+  const regionLines = relevantLines.filter((line) => line.bbox.y0 < topCeiling && line.bbox.y1 > bottomFloor);
+  if (regionLines.length === 0) {
+    return null;
+  }
+
+  const highestTextY = Math.max(...regionLines.map((line) => line.bbox.y1));
+  const lowestTextY = Math.min(...regionLines.map((line) => line.bbox.y0));
+  const footerFloor = getFooterFloor(extractedPage, pageHeight, lowestTextY);
+  const bottom = nextSiblingLine
+    ? Math.max(footerFloor, nextSiblingLine.bbox.y1 + 24, lowestTextY - getMathAnswerPadding(unit.totalMarks))
+    : Math.max(footerFloor, lowestTextY - getMathAnswerPadding(unit.totalMarks));
+
+  const cropTop = supportBox?.top
+    ? supportBox.top + 18
+    : immediateContextTop
+      ? immediateContextTop + 18
+      : Math.max(startLine.bbox.y1 + 24, highestTextY + 12);
+
+  const cropBox = {
+    left: 0,
+    right: pageWidth,
+    bottom,
+    top: Math.min(pageHeight, cropTop),
+  } satisfies CropBox;
+
+  return isValidCropBox(cropBox, pageWidth, pageHeight) ? cropBox : null;
+}
+
 function getFullPageAnswerExtension(totalMarks: number) {
   for (const entry of FULL_PAGE_ANSWER_EXTENSION_BY_MARKS) {
     if (totalMarks <= entry.maxMarks) return entry.padding;
@@ -419,11 +587,12 @@ function getSourcePdfCandidatesForPage(
   pageNumber: number,
   pageAssetsBySource: Map<string, SourcePageAsset[]>,
 ) {
-  const candidates: SourcePdfCandidate[] = [];
+  const originalCandidates: SourcePdfCandidate[] = [];
+  const extractedCandidates: SourcePdfCandidate[] = [];
 
   const extractedPageAssetPdfPath = deriveExtractedPageAssetPdfPath(unit.sourceRelativePath, pageNumber);
   if (existsSync(extractedPageAssetPdfPath)) {
-    candidates.push({
+    extractedCandidates.push({
       pdfUrl: extractedPageAssetPdfPath,
       sourcePageIndex: 0,
     });
@@ -433,7 +602,7 @@ function getSourcePdfCandidatesForPage(
   if (pageAsset?.relativePath) {
     const localPageAssetPath = deriveDownloadedPageAssetPath(pageAsset.relativePath);
     if (existsSync(localPageAssetPath)) {
-      candidates.push({
+      extractedCandidates.push({
         pdfUrl: localPageAssetPath,
         sourcePageIndex: 0,
       });
@@ -442,25 +611,54 @@ function getSourcePdfCandidatesForPage(
 
   const localSourcePdfPath = deriveDownloadedSourcePdfPath(unit.sourceRelativePath);
   if (existsSync(localSourcePdfPath)) {
-    candidates.push({
+    originalCandidates.push({
       pdfUrl: localSourcePdfPath,
       sourcePageIndex: Math.max(0, pageNumber - 1),
     });
   }
 
   const primary = resolveSourcePdfForPage(unit, pageNumber, pageAssetsBySource);
-  if (primary) candidates.push(primary);
+  if (primary) {
+    if (primary.sourcePageIndex === 0 && primary.pdfUrl !== unit.questionPaperCdnUrl) {
+      extractedCandidates.push(primary);
+    } else {
+      originalCandidates.push(primary);
+    }
+  }
 
   if (unit.questionPaperCdnUrl) {
-    candidates.push({
+    originalCandidates.push({
       pdfUrl: unit.questionPaperCdnUrl,
       sourcePageIndex: Math.max(0, pageNumber - 1),
     });
   }
 
+  const candidates = isMathematicsUnit(unit)
+    ? [...originalCandidates, ...extractedCandidates]
+    : [...extractedCandidates, ...originalCandidates];
+
   return Array.from(
     new Map(candidates.map((candidate) => [`${candidate.pdfUrl}::${candidate.sourcePageIndex}`, candidate])).values(),
   );
+}
+
+function getVisiblePageGeometry(sourcePdfPage: import("pdf-lib").PDFPage): VisiblePageGeometry {
+  const cropBox = sourcePdfPage.getCropBox();
+  return {
+    x: cropBox.x,
+    y: cropBox.y,
+    width: cropBox.width,
+    height: cropBox.height,
+  };
+}
+
+function toPdfCropBox(cropBox: CropBox, geometry: VisiblePageGeometry): CropBox {
+  return {
+    left: geometry.x + cropBox.left,
+    right: geometry.x + cropBox.right,
+    bottom: geometry.y + cropBox.bottom,
+    top: geometry.y + cropBox.top,
+  } satisfies CropBox;
 }
 
 function clearSourcePdfCandidateCaches(
@@ -690,6 +888,10 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
     return actualFirstPageNumber ? [actualFirstPageNumber] : (firstPageNumber ? [firstPageNumber] : []);
   }
 
+  if (isMathematicsUnit(unit) && actualFirstPageNumber) {
+    return rawPageNumbers.filter((pageNumber) => pageNumber === actualFirstPageNumber || unit.totalMarks > 5);
+  }
+
   if (firstPageNumber && hasSupportDependency(unit)) {
     const firstPage = getExtractedPage(unit.sourceRelativePath, firstPageNumber);
     const previousPageNumber = firstPageNumber - 1;
@@ -738,16 +940,26 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
   });
 }
 
-function buildShortQuestionCropBox(pageWidth: number, pageHeight: number, selectedBox: CropBox, siblingBoxes: CropBox[], marks: number, includeFigureAbove: boolean) {
-  const answerExtension = marks <= 1
-    ? 140
-    : marks === 2
-      ? 190
-      : marks === 3
-        ? 240
-        : marks === 4
-          ? 290
-          : 340;
+function buildShortQuestionCropBox(pageWidth: number, pageHeight: number, selectedBox: CropBox, siblingBoxes: CropBox[], marks: number, includeFigureAbove: boolean, isMaths = false) {
+  const answerExtension = isMaths
+    ? (marks <= 1
+      ? 70
+      : marks === 2
+        ? 95
+        : marks === 3
+          ? 120
+          : marks === 4
+            ? 150
+            : 180)
+    : (marks <= 1
+      ? 140
+      : marks === 2
+        ? 190
+        : marks === 3
+          ? 240
+          : marks === 4
+            ? 290
+            : 340);
   const nearestBelow = getNearestSiblingBelow(selectedBox, siblingBoxes);
   const nearestAbove = includeFigureAbove ? getNearestSiblingAbove(selectedBox, siblingBoxes) : null;
   const bottom = nearestBelow
@@ -806,7 +1018,7 @@ function shouldAttemptCompactLayout(unit: QuestionUnit) {
   }
 
   if (isMathematicsUnit(unit)) {
-    return false;
+    return unit.totalMarks <= 5;
   }
 
   return unit.totalMarks <= 3;
@@ -1027,6 +1239,7 @@ function resolveFullPageTextCropBox(
 
 function resolveStandardCropBox(
   unit: QuestionUnit,
+  allUnits: QuestionUnit[],
   pageNumber: number,
   pageWidth: number,
   pageHeight: number,
@@ -1038,6 +1251,27 @@ function resolveStandardCropBox(
   unitStartPages: Map<string, QuestionUnit[]>,
 ) {
   const isFullPageSource = unit.parts.some((part) => part.sourceMode === "full_page");
+  if (isMathematicsUnit(unit)) {
+    const mathsCrop = resolveMathQuestionCropBox(unit, allUnits, pageNumber, pageWidth, pageHeight, unitStartPages);
+    if (mathsCrop && isValidCropBox(mathsCrop, pageWidth, pageHeight)) {
+      return mathsCrop;
+    }
+
+    const textCrop = resolveFullPageTextCropBox(unit, pageNumber, pageWidth, pageHeight, unitStartPages, { includeFigureSupport: false });
+    if (textCrop && isValidCropBox(textCrop, pageWidth, pageHeight)) {
+      return textCrop;
+    }
+
+    if (selectedBox) {
+      const mathsCrop = expandCropBox(selectedBox, pageWidth, pageHeight, 6);
+      if (isValidCropBox(mathsCrop, pageWidth, pageHeight)) {
+        return mathsCrop;
+      }
+    }
+
+    return { left: 0, right: pageWidth, bottom: 0, top: pageHeight };
+  }
+
   if (isBusinessUnit(unit) || isEnglishLanguageUnit(unit)) {
     const textCrop = resolveFullPageTextCropBox(unit, pageNumber, pageWidth, pageHeight, unitStartPages, { includeFigureSupport: false });
     if (textCrop && isValidCropBox(textCrop, pageWidth, pageHeight)) {
@@ -1194,7 +1428,9 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
   outputDoc.setTitle(title);
   drawExamCoverPage(outputDoc, coverPage);
 
-  const orderedUnits = [...selectedUnits].sort((a, b) => {
+  const orderedUnits = Array.from(
+    new Map(selectedUnits.map((unit) => [unit.sourceQuestionKey, unit])).values(),
+  ).sort((a, b) => {
     if (a.totalMarks !== b.totalMarks) return a.totalMarks - b.totalMarks;
     if (a.paperCode !== b.paperCode) return a.paperCode.localeCompare(b.paperCode, undefined, { numeric: true });
     if (a.questionNumber !== b.questionNumber) return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
@@ -1256,28 +1492,35 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
           sourcePdfCache,
           sourceDocCache,
           async (sourcePage, _sourceDoc, sourcePdfPage) => {
-            const pageWidth = sourcePdfPage.getWidth();
-            const pageHeight = sourcePdfPage.getHeight();
+            const pageGeometry = getVisiblePageGeometry(sourcePdfPage);
+            const pageWidth = pageGeometry.width;
+            const pageHeight = pageGeometry.height;
             const siblingBoxes = getSiblingBoxesForPage(unit, allUnits, pageNumber);
             const includeFigureAbove = hasFigureContext(unit);
             const isFullPageSource = unit.parts.some((part) => part.sourceMode === "full_page");
+            const isMaths = isMathematicsUnit(unit);
             const selectedBox = unitPage.bboxUnion ? toCropBox(unitPage.bboxUnion) : null;
             let candidateItem: ShortPageItem | null = null;
+            const targetPageWidth = isMaths ? MATH_OUTPUT_PAGE_WIDTH : pageGeometry.width;
+            const targetPageHeight = isMaths ? MATH_OUTPUT_PAGE_HEIGHT : pageGeometry.height;
+            const mathsCropBox = isMaths
+              ? resolveMathQuestionCropBox(unit, allUnits, pageNumber, pageWidth, pageHeight, unitStartPages)
+              : null;
 
             if (includeFigureAbove && selectedBox) {
               const supportCrop = resolveSamePageFigureSupportCropBox(unit, pageNumber, pageWidth, pageHeight, selectedBox, siblingBoxes);
               const questionCrop = isFullPageSource
                 ? resolveFullPageTextCropBox(unit, pageNumber, pageWidth, pageHeight, unitStartPages, { includeFigureSupport: false })
-                : buildShortQuestionCropBox(pageWidth, pageHeight, selectedBox, siblingBoxes, unit.totalMarks, false);
+                : buildShortQuestionCropBox(pageWidth, pageHeight, selectedBox, siblingBoxes, unit.totalMarks, false, isMaths);
 
               if (supportCrop && questionCrop && isValidCropBox(questionCrop, pageWidth, pageHeight)) {
                 const probeDoc = await PDFDocument.create();
-                await prepareSnippet(probeDoc, sourcePage.pdfUrl, supportCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-                await prepareSnippet(probeDoc, sourcePage.pdfUrl, questionCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+                await prepareSnippet(probeDoc, sourcePage.pdfUrl, toPdfCropBox(supportCrop, pageGeometry), sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+                await prepareSnippet(probeDoc, sourcePage.pdfUrl, toPdfCropBox(questionCrop, pageGeometry), sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                 await probeDoc.save();
-                const supportSnippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, supportCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-                const questionSnippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, questionCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-                candidateItem = buildShortPageItem(pageWidth, pageHeight, [supportSnippet, questionSnippet], true);
+                const supportSnippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, toPdfCropBox(supportCrop, pageGeometry), sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+                const questionSnippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, toPdfCropBox(questionCrop, pageGeometry), sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+                candidateItem = buildShortPageItem(targetPageWidth, targetPageHeight, [supportSnippet, questionSnippet], true);
               }
             }
 
@@ -1288,11 +1531,11 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             const supportTop = includeFigureAbove && selectedBox
               ? resolveSamePageFigureSupportTop(unit, pageNumber, pageHeight, selectedBox, siblingBoxes)
               : null;
-            const cropBox = isFullPageSource
+            const cropBox = mathsCropBox ?? (isFullPageSource
               ? resolveFullPageTextCropBox(unit, pageNumber, pageWidth, pageHeight, unitStartPages)
               : selectedBox
                 ? buildShortQuestionCropBoxWithSupportTop(pageWidth, pageHeight, selectedBox, siblingBoxes, unit.totalMarks, supportTop)
-                : null;
+                : null);
 
             if (
               !cropBox
@@ -1303,10 +1546,11 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             }
 
             const probeDoc = await PDFDocument.create();
-            await prepareSnippet(probeDoc, sourcePage.pdfUrl, cropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+            const pdfCropBox = toPdfCropBox(cropBox, pageGeometry);
+            await prepareSnippet(probeDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
             await probeDoc.save();
-            const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, cropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-            return buildShortPageItem(pageWidth, pageHeight, [snippet], false);
+            const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+            return buildShortPageItem(targetPageWidth, targetPageHeight, [snippet], false);
           },
         );
 
@@ -1362,8 +1606,12 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
         sourcePdfCache,
         sourceDocCache,
         async (sourcePage, sourceDoc, sourcePdfPage) => {
-          const pageWidth = sourcePdfPage.getWidth();
-          const pageHeight = sourcePdfPage.getHeight();
+          const pageGeometry = getVisiblePageGeometry(sourcePdfPage);
+          const pageWidth = pageGeometry.width;
+          const pageHeight = pageGeometry.height;
+          const isMaths = isMathematicsUnit(unit);
+          const targetPageWidth = isMaths ? MATH_OUTPUT_PAGE_WIDTH : pageWidth;
+          const targetPageHeight = isMaths ? MATH_OUTPUT_PAGE_HEIGHT : pageHeight;
           const matchingUnitPage = unit.pages.find((entry) => entry.pageNumber === pageNumber) ?? null;
           const siblingBoxes = getSiblingBoxesForPage(unit, allUnits, pageNumber);
           const selectedBox = matchingUnitPage?.bboxUnion ? toCropBox(matchingUnitPage.bboxUnion) : null;
@@ -1372,6 +1620,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
           const pageOccupancyCount = getPageOccupancyCount(selectedPageOccupancy, unit.sourceRelativePath, pageNumber);
           const cropBox = resolveStandardCropBox(
             unit,
+            allUnits,
             pageNumber,
             pageWidth,
             pageHeight,
@@ -1384,6 +1633,22 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
           );
 
           if (isFullPageCrop(cropBox, pageWidth, pageHeight)) {
+            if (isMathematicsUnit(unit)) {
+              const pdfCropBox = toPdfCropBox(cropBox, pageGeometry);
+              const probeDoc = await PDFDocument.create();
+              await prepareSnippet(probeDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+              await probeDoc.save();
+              const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+              const outputPage = outputDoc.addPage([targetPageWidth, targetPageHeight]);
+              outputPage.drawPage(snippet.embeddedPage, {
+                x: 0,
+                y: 0,
+                width: targetPageWidth,
+                height: targetPageHeight,
+              });
+              return true;
+            }
+
             const probeDoc = await PDFDocument.create();
             const [probePage] = await probeDoc.copyPages(sourceDoc, [sourcePage.sourcePageIndex]);
             probeDoc.addPage(probePage);
@@ -1395,20 +1660,15 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
 
           const cropWidth = cropBox.right - cropBox.left;
           const cropHeight = cropBox.top - cropBox.bottom;
+          const pdfCropBox = toPdfCropBox(cropBox, pageGeometry);
           const probeDoc = await PDFDocument.create();
-          await prepareSnippet(probeDoc, sourcePage.pdfUrl, cropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+          await prepareSnippet(probeDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
           await probeDoc.save();
-          const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, cropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-          const isMaths = isMathematicsUnit(unit);
-          const outputPageHeight = isMaths
-            ? Math.min(pageHeight, cropHeight + STANDARD_PAGE_TOP_MARGIN * 2)
-            : pageHeight;
-          const outputPage = outputDoc.addPage([pageWidth, outputPageHeight]);
+          const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
+          const outputPage = outputDoc.addPage([targetPageWidth, targetPageHeight]);
           outputPage.drawPage(snippet.embeddedPage, {
             x: 0,
-            y: isMaths
-              ? STANDARD_PAGE_TOP_MARGIN
-              : Math.max(0, pageHeight - cropHeight - STANDARD_PAGE_TOP_MARGIN),
+            y: Math.max(0, targetPageHeight - cropHeight - STANDARD_PAGE_TOP_MARGIN),
             width: cropWidth,
             height: cropHeight,
           });

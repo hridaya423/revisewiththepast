@@ -1,6 +1,30 @@
 import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 
+function compareTaggedPaperPriority(
+  left: {
+    questionCount: number;
+    taggedAt: number;
+    updatedAt: number;
+  },
+  right: {
+    questionCount: number;
+    taggedAt: number;
+    updatedAt: number;
+  },
+) {
+  if (left.questionCount !== right.questionCount) return right.questionCount - left.questionCount;
+  if (left.taggedAt !== right.taggedAt) return right.taggedAt - left.taggedAt;
+  return right.updatedAt - left.updatedAt;
+}
+
+function inferTierFromSourceRelativePath(sourceRelativePath: string | undefined) {
+  const normalizedPath = (sourceRelativePath ?? "").toLowerCase();
+  if (normalizedPath.includes("/foundation/")) return "foundation" as const;
+  if (normalizedPath.includes("/higher/")) return "higher" as const;
+  return "none" as const;
+}
+
 const taggedQuestionPartValidator = v.object({
   questionId: v.string(),
   questionNumber: v.string(),
@@ -94,10 +118,27 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    const existing = await ctx.db
+    const existingByIdentity = await ctx.db
+      .query("taggedPapers")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.and(
+        q.eq(q.field("subjectSlug"), args.subjectSlug),
+        q.eq(q.field("paperCode"), args.paperCode),
+        q.eq(q.field("year"), args.year),
+        q.eq(q.field("session"), args.session),
+      ))
+      .collect();
+    const existingBySourceFile = await ctx.db
       .query("taggedPapers")
       .withIndex("by_source_file", (q) => q.eq("sourceFile", args.sourceFile))
       .unique();
+
+    const existingCandidates = Array.from(new Map(
+      [...existingByIdentity, ...(existingBySourceFile ? [existingBySourceFile] : [])]
+        .map((paper) => [String(paper._id), paper]),
+    ).values());
+    const existing = existingCandidates
+      .sort(compareTaggedPaperPriority)[0] ?? null;
 
     let taggedPaperId;
     if (existing) {
@@ -118,13 +159,19 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
         updatedAt: now,
       });
 
-      const existingParts = await ctx.db
-        .query("taggedQuestionParts")
-        .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", existing._id))
-        .collect();
+      for (const candidate of existingCandidates) {
+        const existingParts = await ctx.db
+          .query("taggedQuestionParts")
+          .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", candidate._id))
+          .collect();
 
-      for (const part of existingParts) {
-        await ctx.db.delete(part._id);
+        for (const part of existingParts) {
+          await ctx.db.delete(part._id);
+        }
+
+        if (candidate._id !== existing._id) {
+          await ctx.db.delete(candidate._id);
+        }
       }
     } else {
       taggedPaperId = await ctx.db.insert("taggedPapers", {
@@ -158,6 +205,109 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
     return {
       taggedPaperId,
       questionCount: args.questionParts.length,
+    };
+  },
+});
+
+export const getDuplicateTaggedPapers = queryGeneric({
+  args: {
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const papers = await ctx.db
+      .query("taggedPapers")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .collect();
+
+    const groups = new Map<string, typeof papers>();
+    for (const paper of papers) {
+      const key = [paper.boardCode, paper.subjectSlug, paper.paperCode, paper.year ?? "-", paper.session ?? "-"].join("::");
+      const existing = groups.get(key) ?? [];
+      existing.push(paper);
+      groups.set(key, existing);
+    }
+
+    return Array.from(groups.entries())
+      .filter(([, records]) => records.length > 1)
+      .map(([key, records]) => ({
+        key,
+        count: records.length,
+        records: [...records]
+          .sort(compareTaggedPaperPriority)
+          .map((paper) => ({
+            id: String(paper._id),
+            sourceFile: paper.sourceFile,
+            sourceRelativePath: paper.sourceRelativePath ?? null,
+            questionCount: paper.questionCount,
+            taggedAt: paper.taggedAt,
+            updatedAt: paper.updatedAt,
+          })),
+      }))
+      .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+  },
+});
+
+export const dedupeTaggedPapersByIdentity = mutationGeneric({
+  args: {
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const papers = await ctx.db
+      .query("taggedPapers")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .collect();
+
+    const groups = new Map<string, typeof papers>();
+    for (const paper of papers) {
+      const key = [paper.boardCode, paper.subjectSlug, paper.paperCode, paper.year ?? "-", paper.session ?? "-"].join("::");
+      const existing = groups.get(key) ?? [];
+      existing.push(paper);
+      groups.set(key, existing);
+    }
+
+    let deletedPapers = 0;
+    let deletedQuestionParts = 0;
+    const dedupedGroups: Array<{ key: string; keptPaperId: string; removedPaperIds: string[] }> = [];
+
+    for (const [key, records] of groups.entries()) {
+      if (records.length <= 1) continue;
+
+      const [keeper, ...duplicates] = [...records].sort(compareTaggedPaperPriority);
+      const removedPaperIds: string[] = [];
+
+      for (const duplicate of duplicates) {
+        const parts = await ctx.db
+          .query("taggedQuestionParts")
+          .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", duplicate._id))
+          .collect();
+
+        for (const part of parts) {
+          await ctx.db.delete(part._id);
+          deletedQuestionParts += 1;
+        }
+
+        await ctx.db.delete(duplicate._id);
+        deletedPapers += 1;
+        removedPaperIds.push(String(duplicate._id));
+      }
+
+      dedupedGroups.push({
+        key,
+        keptPaperId: String(keeper._id),
+        removedPaperIds,
+      });
+    }
+
+    return {
+      boardCode: args.boardCode,
+      subjectSlug: args.subjectSlug,
+      deletedPapers,
+      deletedQuestionParts,
+      dedupedGroups,
     };
   },
 });
@@ -273,7 +423,34 @@ export const getPaperMakerQuestionBank = queryGeneric({
       .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
       .collect();
 
-    const paperAssetByRelativePath = new Map<string, { cdnUrl: string; relativePath: string; fileName: string } | null>();
+    const paperAssets = await ctx.db
+      .query("paperAssets")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .collect();
+
+    const paperAssetByRelativePath = new Map<string, { cdnUrl: string; relativePath: string; fileName: string }>();
+    const paperAssetByIdentity = new Map<string, { cdnUrl: string; relativePath: string; fileName: string }>();
+    for (const asset of paperAssets) {
+      if (asset.kind !== "question_paper") continue;
+      const normalized = {
+        cdnUrl: asset.cdnUrl,
+        relativePath: asset.relativePath,
+        fileName: asset.fileName,
+      };
+      paperAssetByRelativePath.set(asset.relativePath, normalized);
+      const identityKey = [
+        asset.boardCode,
+        asset.subjectSlug,
+        asset.tier,
+        asset.year,
+        asset.paperCode,
+        asset.kind,
+        asset.session,
+      ].join("::");
+      paperAssetByIdentity.set(identityKey, normalized);
+    }
+
     const questionParts: Array<{
       partKey: string;
       unitKey: string;
@@ -307,24 +484,17 @@ export const getPaperMakerQuestionBank = queryGeneric({
     }> = [];
 
     for (const paper of taggedPapers) {
-      if (!paperAssetByRelativePath.has(paper.sourceRelativePath)) {
-        const asset = await ctx.db
-          .query("paperAssets")
-          .withIndex("by_relative_path", (q) => q.eq("relativePath", paper.sourceRelativePath))
-          .unique();
-        paperAssetByRelativePath.set(
-          paper.sourceRelativePath,
-          asset
-            ? {
-              cdnUrl: asset.cdnUrl,
-              relativePath: asset.relativePath,
-              fileName: asset.fileName,
-            }
-            : null,
-        );
-      }
-
-      const paperAsset = paperAssetByRelativePath.get(paper.sourceRelativePath) ?? null;
+      const paperAsset = paperAssetByRelativePath.get(paper.sourceRelativePath)
+        ?? paperAssetByIdentity.get([
+          paper.boardCode,
+          paper.subjectSlug,
+          inferTierFromSourceRelativePath(paper.sourceRelativePath),
+          paper.year ?? 0,
+          paper.paperCode,
+          "question_paper",
+          paper.session ?? "",
+        ].join("::"))
+        ?? null;
       const questionPageAssets = await ctx.db
         .query("questionPageAssets")
         .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", paper.sourceRelativePath))

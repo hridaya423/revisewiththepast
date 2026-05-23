@@ -278,6 +278,26 @@ function getMarkCategory(totalMarks: number) {
   return "high" as const;
 }
 
+function buildStableSourceQuestionKey(part: QuestionBankPart) {
+  return [
+    part.boardCode,
+    part.subjectSlug,
+    part.paperCode,
+    part.year ?? "-",
+    part.session ?? "-",
+    part.sectionCode ?? "-",
+    `q${part.questionNumber}`,
+  ].join("::");
+}
+
+function isLikelyBrokenMathematicsUnit(unit: QuestionUnit) {
+  if (unit.subjectSlug !== "mathematics") return false;
+  const part = unit.parts[0];
+  if (!part?.questionPartNumber) return false;
+  if (unit.totalMarks > 12) return true;
+  return unit.totalMarks > 6 && part.promptText.trim().length < 80;
+}
+
 const TOPIC_INDEX = buildTopicIndex(AQA_GEOGRAPHY_TOPIC_TREE);
 
 export function expandTopicSelection(selectedNodeIds: string[]) {
@@ -299,7 +319,7 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
     const existing = units.get(part.partKey) ?? {
       unitKey: part.partKey,
       groupUnitKey: part.unitKey,
-      sourceQuestionKey: `${part.sourceRelativePath}::${part.sectionCode ?? "-"}::q${part.questionNumber}`,
+      sourceQuestionKey: buildStableSourceQuestionKey(part),
       sourceRelativePath: part.sourceRelativePath,
       questionPaperCdnUrl: part.questionPaperCdnUrl,
       questionPaperFileName: part.questionPaperFileName,
@@ -355,9 +375,32 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
     return anchorPart ? [anchorPart, currentPart] : unit.parts;
   };
 
+  const getMathematicsRelevantParts = (unit: QuestionUnit) => {
+    if (unit.subjectSlug !== "mathematics") return unit.parts;
+
+    const currentPart = unit.parts[0];
+    if (!currentPart?.questionPartNumber) return unit.parts;
+    if (!/part\s*\([a-z]\)|your answer to part|this graph|this equation|this table|this shape|the graph|the equation/i.test(currentPart.promptText)) {
+      return unit.parts;
+    }
+
+    const relatedParts = [...(relatedPartsByGroupUnitKey.get(unit.groupUnitKey) ?? unit.parts)].sort(comparePartOrder);
+    const currentIndex = relatedParts.findIndex((part) => part.partKey === currentPart.partKey);
+    if (currentIndex <= 0) return unit.parts;
+
+    const previousPart = relatedParts[currentIndex - 1];
+    return previousPart ? [previousPart, currentPart] : unit.parts;
+  };
+
+  const getRelevantPartsForUnit = (unit: QuestionUnit) => {
+    const businessParts = getBusinessRelevantParts(unit);
+    const businessAdjustedUnit = businessParts === unit.parts ? unit : { ...unit, parts: businessParts };
+    return getMathematicsRelevantParts(businessAdjustedUnit);
+  };
+
   for (const unit of units.values()) {
     const pageMap = new Map<number, QuestionBankPart[]>();
-    for (const part of getBusinessRelevantParts(unit)) {
+    for (const part of getRelevantPartsForUnit(unit)) {
       for (const pageNumber of part.pageNumbers) {
         const parts = pageMap.get(pageNumber) ?? [];
         parts.push(part);
@@ -409,6 +452,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
   const candidates = units.filter((unit) => {
     if (!unit.questionPaperCdnUrl) return false;
+    if (isLikelyBrokenMathematicsUnit(unit)) return false;
     if (allowedPaperCodes && !allowedPaperCodes.has(unit.paperCode)) return false;
     if (excludedSourceQuestionKeySet.has(unit.sourceQuestionKey)) return false;
     return unit.canonicalLeafs.some((leaf) => selectedLeafSet.has(leaf));
@@ -435,16 +479,14 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const averageUnitMarks = candidates.length > 0
     ? candidates.reduce((sum, unit) => sum + unit.totalMarks, 0) / candidates.length
     : 0;
-  const estimatedMathQuestionCount = isMathsSelection
-    ? Math.max(4, Math.min(12, Math.round(targetMarks / Math.max(1.5, averageUnitMarks || 3))))
-    : 0;
-  const desiredMathCategoryCounts = (() => {
+  const estimatedQuestionCount = Math.max(4, Math.min(12, Math.round(targetMarks / Math.max(1.5, averageUnitMarks || 3))));
+  const desiredCategoryCounts = (() => {
     const counts = new Map<"low" | "medium" | "high", number>([
       ["low", 0],
       ["medium", 0],
       ["high", 0],
     ]);
-    if (!isMathsSelection || estimatedMathQuestionCount <= 0) return counts;
+    if (estimatedQuestionCount <= 0) return counts;
 
     const totalCandidateCount = Math.max(1, candidates.length);
     const baseLow = (candidateMarkCategoryCounts.get("low") ?? 0) / totalCandidateCount;
@@ -454,16 +496,16 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     const mediumRatio = Math.min(0.62, Math.max(0.38, baseMedium || 0.5));
     const highRatio = Math.min(0.28, Math.max(0.08, baseHigh || 0.12));
     const ratioTotal = lowRatio + mediumRatio + highRatio;
-    counts.set("low", Math.round((estimatedMathQuestionCount * lowRatio) / ratioTotal));
-    counts.set("medium", Math.round((estimatedMathQuestionCount * mediumRatio) / ratioTotal));
-    counts.set("high", Math.round((estimatedMathQuestionCount * highRatio) / ratioTotal));
+    counts.set("low", Math.round((estimatedQuestionCount * lowRatio) / ratioTotal));
+    counts.set("medium", Math.round((estimatedQuestionCount * mediumRatio) / ratioTotal)); 
+    counts.set("high", Math.round((estimatedQuestionCount * highRatio) / ratioTotal));
 
     let allocated = (counts.get("low") ?? 0) + (counts.get("medium") ?? 0) + (counts.get("high") ?? 0);
-    while (allocated < estimatedMathQuestionCount) {
+    while (allocated < estimatedQuestionCount) {
       counts.set("medium", (counts.get("medium") ?? 0) + 1);
       allocated += 1;
     }
-    while (allocated > estimatedMathQuestionCount) {
+    while (allocated > estimatedQuestionCount) {
       if ((counts.get("low") ?? 0) > 0) {
         counts.set("low", (counts.get("low") ?? 0) - 1);
       } else if ((counts.get("high") ?? 0) > 0) {
@@ -611,17 +653,13 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       const randomTieBreaker = Math.random() * 0.2;
       const futureSetPenalty = getFutureSetPenalty(unit);
       const isMaths = unit.subjectSlug === "mathematics";
-      const desiredCategoryCount = desiredMathCategoryCounts.get(markCategory) ?? 0;
+      const desiredCategoryCount = desiredCategoryCounts.get(markCategory) ?? 0;
       const projectedCategoryCount = currentMarkCategoryUsageCount + 1;
       const priorAverageCategoryCount = priorPaperCount > 0 ? priorMarkCategoryUsageCount / priorPaperCount : 0;
-      const mathCategoryQuotaBonus = isMaths
-        ? (projectedCategoryCount <= desiredCategoryCount
-          ? (desiredCategoryCount - currentMarkCategoryUsageCount) * 26
-          : -((projectedCategoryCount - desiredCategoryCount) * 42))
-        : 0;
-      const mathCrossPaperPenalty = isMaths
-        ? Math.max(0, projectedCategoryCount - Math.max(desiredCategoryCount, Math.ceil(priorAverageCategoryCount))) * 18
-        : 0;
+      const categoryQuotaBonus = projectedCategoryCount <= desiredCategoryCount
+        ? (desiredCategoryCount - currentMarkCategoryUsageCount) * (isMaths ? 26 : 10)
+        : -((projectedCategoryCount - desiredCategoryCount) * (isMaths ? 42 : 14));
+      const crossPaperCategoryPenalty = Math.max(0, projectedCategoryCount - Math.max(desiredCategoryCount, Math.ceil(priorAverageCategoryCount))) * (isMaths ? 18 : 8);
       const tinyPenalty = remainingMarks > 30
         ? (unit.totalMarks <= 2 ? (isMaths ? 170 : 110) : unit.totalMarks <= 4 ? (isMaths ? 55 : 40) : 0)
         : remainingMarks > 18
@@ -640,11 +678,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + bucketBonus
           + sourcePaperSpreadBonus
           + yearSpreadBonus
-          + mathCategoryQuotaBonus
+          + categoryQuotaBonus
           + randomTieBreaker
           - markBucketPenalty
           - markCategoryPenalty
-          - mathCrossPaperPenalty
+          - crossPaperCategoryPenalty
           - (futureSetPenalty * 18)
           - (overshoot * 180)
           - (samePaperPenalty * 20)
@@ -660,11 +698,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         + bucketBonus
         + sourcePaperSpreadBonus
         + yearSpreadBonus
-        + mathCategoryQuotaBonus
+        + categoryQuotaBonus
         + randomTieBreaker
         - markBucketPenalty
         - markCategoryPenalty
-        - mathCrossPaperPenalty
+        - crossPaperCategoryPenalty
         - (futureSetPenalty * 14)
         - (samePaperPenalty * 40)
         - (sameQuestionPenalty * 600)
@@ -757,17 +795,13 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         const randomTieBreaker = Math.random() * 0.2;
         const futureSetPenalty = getFutureSetPenalty(unit);
         const isMaths = unit.subjectSlug === "mathematics";
-        const desiredCategoryCount = desiredMathCategoryCounts.get(markCategory) ?? 0;
+        const desiredCategoryCount = desiredCategoryCounts.get(markCategory) ?? 0;
         const projectedCategoryCount = currentMarkCategoryUsageCount + 1;
         const priorAverageCategoryCount = priorPaperCount > 0 ? priorMarkCategoryUsageCount / priorPaperCount : 0;
-        const mathCategoryQuotaBonus = isMaths
-          ? (projectedCategoryCount <= desiredCategoryCount
-            ? (desiredCategoryCount - currentMarkCategoryUsageCount) * 18
-            : -((projectedCategoryCount - desiredCategoryCount) * 28))
-          : 0;
-        const mathCrossPaperPenalty = isMaths
-          ? Math.max(0, projectedCategoryCount - Math.max(desiredCategoryCount, Math.ceil(priorAverageCategoryCount))) * 12
-          : 0;
+        const categoryQuotaBonus = projectedCategoryCount <= desiredCategoryCount
+          ? (desiredCategoryCount - currentMarkCategoryUsageCount) * (isMaths ? 18 : 8)
+          : -((projectedCategoryCount - desiredCategoryCount) * (isMaths ? 28 : 12));
+        const crossPaperCategoryPenalty = Math.max(0, projectedCategoryCount - Math.max(desiredCategoryCount, Math.ceil(priorAverageCategoryCount))) * (isMaths ? 12 : 6);
         const score = (improvesDelta ? (mode === "marks" ? 900 : 600) : 0)
           - (nextDelta * (mode === "marks" ? 42 : 32))
           - hardOvershootPenalty
@@ -776,11 +810,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + noveltyBonus
           + sourcePaperSpreadBonus
           + yearSpreadBonus
-          + mathCategoryQuotaBonus
+          + categoryQuotaBonus
           + randomTieBreaker
           - markBucketPenalty
           - markCategoryPenalty
-          - mathCrossPaperPenalty
+          - crossPaperCategoryPenalty
           - (futureSetPenalty * 8);
 
         if (score > bestFillScore) {

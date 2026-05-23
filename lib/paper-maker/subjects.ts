@@ -1,6 +1,6 @@
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
-export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "edexcel-combined-science" | "edexcel-mathematics-higher";
+export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "edexcel-business" | "edexcel-combined-science" | "edexcel-mathematics-higher";
 
 export type PaperOption = {
   code: string;
@@ -88,6 +88,26 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     paperOptions: [
       { code: "paper-1", label: "Paper 1: Creative Reading and Writing" },
       { code: "paper-2", label: "Paper 2: Writers' Viewpoints and Perspectives" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
+    tiers: [],
+  },
+  {
+    key: "edexcel-business",
+    label: "Edexcel Business",
+    boardLabel: "Edexcel",
+    boardCode: "edexcel",
+    subjectSlug: "business",
+    coverTitle: "Business",
+    codeLabel: "1BS0",
+    description: "Generate Edexcel Business papers using tagged source-page questions and the Edexcel topic structure.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by paper and topic.",
+    recommendedMinutesPerMark: 1,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1" },
+      { code: "paper-2", label: "Paper 2" },
     ],
     defaultPaperCodes: ["paper-1", "paper-2"],
     tiers: [],

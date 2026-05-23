@@ -10,6 +10,7 @@ import {
   filterCombinedScienceUnitsByTier,
   filterUnitsByTier,
 } from "@/lib/paper-maker/combined-science";
+import { buildEdexcelBusinessTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-business";
 import { buildEdexcelMathematicsTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-mathematics";
 import { getPaperMakerQuestionBankFromConvex } from "@/lib/paper-maker/convex";
 import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
@@ -17,10 +18,11 @@ import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
 export const revalidate = 300;
 
 export default async function PaperMakerPage() {
-  const [aqaGeographyQuestionBank, edexcelCombinedScienceQuestionBank, aqaBusinessQuestionBank, edexcelMathematicsQuestionBank, aqaEnglishLanguageQuestionBank] = await Promise.all([
+  const [aqaGeographyQuestionBank, edexcelCombinedScienceQuestionBank, aqaBusinessQuestionBank, edexcelBusinessQuestionBank, edexcelMathematicsQuestionBank, aqaEnglishLanguageQuestionBank] = await Promise.all([
     getPaperMakerQuestionBankFromConvex("aqa", "geography"),
     getPaperMakerQuestionBankFromConvex("edexcel", "combined-science"),
     getPaperMakerQuestionBankFromConvex("aqa", "business"),
+    getPaperMakerQuestionBankFromConvex("edexcel", "business"),
     getPaperMakerQuestionBankFromConvex("edexcel", "mathematics"),
     getPaperMakerQuestionBankFromConvex("aqa", "english-language"),
   ]);
@@ -28,12 +30,14 @@ export default async function PaperMakerPage() {
   const geographyUnits = groupQuestionPartsIntoUnits(aqaGeographyQuestionBank);
   const combinedScienceUnits = groupQuestionPartsIntoUnits(edexcelCombinedScienceQuestionBank);
   const businessUnits = groupQuestionPartsIntoUnits(aqaBusinessQuestionBank);
+  const edexcelBusinessUnits = groupQuestionPartsIntoUnits(edexcelBusinessQuestionBank);
   const englishLanguageUnits = groupQuestionPartsIntoUnits(aqaEnglishLanguageQuestionBank);
   const mathematicsUnits = groupQuestionPartsIntoUnits(edexcelMathematicsQuestionBank);
   const mathematicsHigherUnits = filterUnitsByTier(mathematicsUnits, "higher");
   const combinedScienceTierCounts = countCombinedScienceUnitsByTier(combinedScienceUnits);
   const geographyTopics = buildTopicTreeWithCounts(geographyUnits);
   const businessTopics = buildAqaBusinessTopicTreeWithCounts(businessUnits);
+  const edexcelBusinessTopics = buildEdexcelBusinessTopicTreeWithCounts(edexcelBusinessUnits);
   const englishLanguageTopics = buildAqaEnglishLanguageTopicTreeWithCounts(englishLanguageUnits);
   const mathematicsHigherTopics = buildEdexcelMathematicsTopicTreeWithCounts(mathematicsHigherUnits);
   const combinedScienceFoundationUnits = filterCombinedScienceUnitsByTier(combinedScienceUnits, "foundation");
@@ -45,12 +49,14 @@ export default async function PaperMakerPage() {
   const geographyBenchmark = buildRealPaperBenchmark(geographyUnits);
   const combinedScienceBenchmark = buildRealPaperBenchmark(combinedScienceUnits);
   const businessBenchmark = buildRealPaperBenchmark(businessUnits);
+  const edexcelBusinessBenchmark = buildRealPaperBenchmark(edexcelBusinessUnits);
   const englishLanguageBenchmark = buildRealPaperBenchmark(englishLanguageUnits);
   const mathematicsHigherBenchmark = buildRealPaperBenchmark(mathematicsHigherUnits);
   const unitCountBySubject = {
     "aqa-geography": geographyUnits.length,
     "aqa-business": businessUnits.length,
     "aqa-english-language": englishLanguageUnits.length,
+    "edexcel-business": edexcelBusinessUnits.length,
     "edexcel-combined-science": combinedScienceUnits.length,
     "edexcel-mathematics-higher": mathematicsHigherUnits.length,
   } as const;
@@ -58,6 +64,7 @@ export default async function PaperMakerPage() {
     "aqa-geography": geographyBenchmark,
     "aqa-business": businessBenchmark,
     "aqa-english-language": englishLanguageBenchmark,
+    "edexcel-business": edexcelBusinessBenchmark,
     "edexcel-combined-science": combinedScienceBenchmark,
     "edexcel-mathematics-higher": mathematicsHigherBenchmark,
   } as const;
@@ -78,6 +85,8 @@ export default async function PaperMakerPage() {
       ? geographyTopics
       : subject.key === "aqa-business"
         ? businessTopics
+        : subject.key === "edexcel-business"
+          ? edexcelBusinessTopics
         : subject.key === "aqa-english-language"
           ? englishLanguageTopics
         : subject.key === "edexcel-mathematics-higher"
