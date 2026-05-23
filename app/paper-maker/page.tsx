@@ -2,6 +2,7 @@ import Link from "next/link";
 import { PaperMakerWorkspace } from "../_components/paper-maker-workspace";
 import { buildAqaBusinessTopicTreeWithCounts } from "@/lib/paper-maker/aqa-business";
 import { buildAqaEnglishLanguageTopicTreeWithCounts } from "@/lib/paper-maker/aqa-english-language";
+import { buildAqaEnglishLiteratureTopicTreeWithCounts } from "@/lib/paper-maker/aqa-english-literature";
 import { buildTopicTreeWithCounts, groupQuestionPartsIntoUnits } from "@/lib/paper-maker/aqa-geography";
 import { buildRealPaperBenchmark } from "@/lib/paper-maker/benchmarks";
 import {
@@ -12,19 +13,22 @@ import {
 } from "@/lib/paper-maker/combined-science";
 import { buildEdexcelBusinessTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-business";
 import { buildEdexcelMathematicsTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-mathematics";
+import { buildOcrComputerScienceTopicTreeWithCounts } from "@/lib/paper-maker/ocr-computer-science";
 import { getPaperMakerQuestionBankFromConvex } from "@/lib/paper-maker/convex";
 import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
 
 export const revalidate = 300;
 
 export default async function PaperMakerPage() {
-  const [aqaGeographyQuestionBank, edexcelCombinedScienceQuestionBank, aqaBusinessQuestionBank, edexcelBusinessQuestionBank, edexcelMathematicsQuestionBank, aqaEnglishLanguageQuestionBank] = await Promise.all([
+  const [aqaGeographyQuestionBank, edexcelCombinedScienceQuestionBank, aqaBusinessQuestionBank, edexcelBusinessQuestionBank, edexcelMathematicsQuestionBank, aqaEnglishLanguageQuestionBank, aqaEnglishLiteratureQuestionBank, ocrComputerScienceQuestionBank] = await Promise.all([
     getPaperMakerQuestionBankFromConvex("aqa", "geography"),
     getPaperMakerQuestionBankFromConvex("edexcel", "combined-science"),
     getPaperMakerQuestionBankFromConvex("aqa", "business"),
     getPaperMakerQuestionBankFromConvex("edexcel", "business"),
     getPaperMakerQuestionBankFromConvex("edexcel", "mathematics"),
     getPaperMakerQuestionBankFromConvex("aqa", "english-language"),
+    getPaperMakerQuestionBankFromConvex("aqa", "english-literature"),
+    getPaperMakerQuestionBankFromConvex("ocr", "computer-science"),
   ]);
 
   const geographyUnits = groupQuestionPartsIntoUnits(aqaGeographyQuestionBank);
@@ -32,6 +36,8 @@ export default async function PaperMakerPage() {
   const businessUnits = groupQuestionPartsIntoUnits(aqaBusinessQuestionBank);
   const edexcelBusinessUnits = groupQuestionPartsIntoUnits(edexcelBusinessQuestionBank);
   const englishLanguageUnits = groupQuestionPartsIntoUnits(aqaEnglishLanguageQuestionBank);
+  const englishLiteratureUnits = groupQuestionPartsIntoUnits(aqaEnglishLiteratureQuestionBank);
+  const ocrComputerScienceUnits = groupQuestionPartsIntoUnits(ocrComputerScienceQuestionBank);
   const mathematicsUnits = groupQuestionPartsIntoUnits(edexcelMathematicsQuestionBank);
   const mathematicsHigherUnits = filterUnitsByTier(mathematicsUnits, "higher");
   const combinedScienceTierCounts = countCombinedScienceUnitsByTier(combinedScienceUnits);
@@ -39,6 +45,8 @@ export default async function PaperMakerPage() {
   const businessTopics = buildAqaBusinessTopicTreeWithCounts(businessUnits);
   const edexcelBusinessTopics = buildEdexcelBusinessTopicTreeWithCounts(edexcelBusinessUnits);
   const englishLanguageTopics = buildAqaEnglishLanguageTopicTreeWithCounts(englishLanguageUnits);
+  const englishLiteratureTopics = buildAqaEnglishLiteratureTopicTreeWithCounts(englishLiteratureUnits);
+  const ocrComputerScienceTopics = buildOcrComputerScienceTopicTreeWithCounts(ocrComputerScienceUnits);
   const mathematicsHigherTopics = buildEdexcelMathematicsTopicTreeWithCounts(mathematicsHigherUnits);
   const combinedScienceFoundationUnits = filterCombinedScienceUnitsByTier(combinedScienceUnits, "foundation");
   const combinedScienceHigherUnits = filterCombinedScienceUnitsByTier(combinedScienceUnits, "higher");
@@ -51,22 +59,28 @@ export default async function PaperMakerPage() {
   const businessBenchmark = buildRealPaperBenchmark(businessUnits);
   const edexcelBusinessBenchmark = buildRealPaperBenchmark(edexcelBusinessUnits);
   const englishLanguageBenchmark = buildRealPaperBenchmark(englishLanguageUnits);
+  const englishLiteratureBenchmark = buildRealPaperBenchmark(englishLiteratureUnits);
+  const ocrComputerScienceBenchmark = buildRealPaperBenchmark(ocrComputerScienceUnits);
   const mathematicsHigherBenchmark = buildRealPaperBenchmark(mathematicsHigherUnits);
   const unitCountBySubject = {
     "aqa-geography": geographyUnits.length,
     "aqa-business": businessUnits.length,
     "aqa-english-language": englishLanguageUnits.length,
+    "aqa-english-literature": englishLiteratureUnits.length,
     "edexcel-business": edexcelBusinessUnits.length,
     "edexcel-combined-science": combinedScienceUnits.length,
     "edexcel-mathematics-higher": mathematicsHigherUnits.length,
+    "ocr-computer-science": ocrComputerScienceUnits.length,
   } as const;
   const benchmarkBySubject = {
     "aqa-geography": geographyBenchmark,
     "aqa-business": businessBenchmark,
     "aqa-english-language": englishLanguageBenchmark,
+    "aqa-english-literature": englishLiteratureBenchmark,
     "edexcel-business": edexcelBusinessBenchmark,
     "edexcel-combined-science": combinedScienceBenchmark,
     "edexcel-mathematics-higher": mathematicsHigherBenchmark,
+    "ocr-computer-science": ocrComputerScienceBenchmark,
   } as const;
   const subjectOptions = PAPER_MAKER_SUBJECTS.map((subject) => ({
     key: subject.key,
@@ -89,8 +103,12 @@ export default async function PaperMakerPage() {
           ? edexcelBusinessTopics
         : subject.key === "aqa-english-language"
           ? englishLanguageTopics
+        : subject.key === "aqa-english-literature"
+          ? englishLiteratureTopics
         : subject.key === "edexcel-mathematics-higher"
           ? mathematicsHigherTopics
+        : subject.key === "ocr-computer-science"
+          ? ocrComputerScienceTopics
         : [],
     topicsByTier: subject.key === "edexcel-combined-science" ? combinedScienceTopicsByTier : undefined,
     tiers: subject.key === "edexcel-combined-science"
@@ -103,11 +121,15 @@ export default async function PaperMakerPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#f4f2ec]">
-      <nav className="sticky top-0 z-50 border-b border-[#1a2e1a]/[0.06] bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center px-6 py-3 sm:px-8 lg:px-12">
-          <Link href="/" className="font-serif text-[0.95rem] tracking-[-0.02em] text-[#1a2e1a]">
-            Revise with the Past
-          </Link>
+      <nav className="sticky top-0 z-50 border-b border-[#1a2e1a]/[0.06] bg-white/95 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center px-6 sm:px-8 lg:px-12">
+          <div className="flex items-center gap-5">
+            <Link href="/" className="inline-flex items-center text-[0.82rem] font-medium text-[#1a2e1a]/60 transition-colors hover:text-[#1a2e1a]">
+              &larr; Home
+            </Link>
+            <div className="h-5 w-px bg-[#1a2e1a]/12" />
+            <span className="inline-flex items-center font-serif text-[1rem] tracking-[-0.02em] text-[#1a2e1a]">Revise with the Past</span>
+          </div>
         </div>
       </nav>
 

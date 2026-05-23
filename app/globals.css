@@ -146,8 +146,41 @@ input[type="number"]::-webkit-inner-spin-button {
   50% { opacity: 0.55; transform: scale(0.85); }
 }
 
+@keyframes draw-check {
+  from { stroke-dashoffset: 28; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes count-up-flash {
+  0% { color: var(--accent); }
+  100% { color: var(--text); }
+}
+
 .status-breathe {
   animation: breathe 2.4s ease-in-out infinite;
+}
+
+.card-lift {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(26, 46, 26, 0.08);
+}
+.card-lift:active {
+  transform: translateY(0);
+}
+
+.btn-press {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.btn-press:active {
+  transform: scale(0.97);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -156,5 +189,14 @@ input[type="number"]::-webkit-inner-spin-button {
   }
   .status-breathe {
     animation: none;
+  }
+  .card-lift:hover {
+    transform: none;
+  }
+  .card-lift:active {
+    transform: none;
+  }
+  .btn-press:active {
+    transform: none;
   }
 }

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 
 import { expandAqaBusinessTopicSelection } from "@/lib/paper-maker/aqa-business";
 import { expandAqaEnglishLanguageTopicSelection } from "@/lib/paper-maker/aqa-english-language";
+import { expandAqaEnglishLiteratureTopicSelection } from "@/lib/paper-maker/aqa-english-literature";
 import { expandTopicSelection, groupQuestionPartsIntoUnits, selectQuestionUnits } from "@/lib/paper-maker/aqa-geography";
 import { buildRealPaperBenchmark, estimateMarksFromTimeMinutes } from "@/lib/paper-maker/benchmarks";
 import {
@@ -14,6 +15,7 @@ import {
 } from "@/lib/paper-maker/combined-science";
 import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-business";
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
+import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
 import { getAqaGeographyQuestionBankFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
 import { estimatePaperTimeMinutes, getPaperMakerSubject } from "@/lib/paper-maker/subjects";
 import { generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
@@ -538,6 +540,88 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  if (subject.key === "aqa-english-literature") {
+    if (selectedTopicNodeIds.length === 0) {
+      return badRequest("Select at least one English Literature topic.");
+    }
+
+    const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+    if (questionBank.length === 0) {
+      return badRequest("No tagged AQA English Literature question bank is available in Convex.", 500);
+    }
+
+    const selectedLeafTopicIds = expandAqaEnglishLiteratureTopicSelection(selectedTopicNodeIds);
+    if (selectedLeafTopicIds.length === 0) {
+      return badRequest("The selected English Literature topics do not map to any question-bank topics.");
+    }
+
+    const allUnits = groupQuestionPartsIntoUnits(questionBank);
+    const filteredBenchmarkUnits = allUnits.filter((unit) => paperCodes.length === 0 || paperCodes.includes(unit.paperCode));
+    const benchmark = buildRealPaperBenchmark(filteredBenchmarkUnits);
+    const resolvedTargetMarks = targetMode === "time"
+      ? estimateMarksFromTimeMinutes(
+          requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, targetMarks),
+          benchmark.averageMinutesPerMark,
+          subject.recommendedMinutesPerMark,
+        )
+      : targetMarks;
+    const selection = selectQuestionUnits({
+      units: allUnits,
+      selectedLeafTopicIds,
+      targetMarks: resolvedTargetMarks,
+      paperCodes,
+      maxQuestions,
+      tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
+    });
+
+    if (selection.selectedUnits.length === 0) {
+      return badRequest("No source-page English Literature questions matched the selected topics and filters.");
+    }
+
+    const pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(
+      selection.selectedUnits.map((unit) => unit.sourceRelativePath),
+    );
+
+    const pdfBytes = await generateStrictSourcePaperPdf({
+      title: `AQA English Literature Custom Paper (${resolvedTargetMarks} marks target)`,
+      selectedUnits: selection.selectedUnits,
+      allUnits,
+      pageAssetsBySource,
+      coverPage: {
+        boardLabel: subject.boardLabel,
+        subjectLabel: subject.coverTitle,
+        codeLabel: subject.codeLabel,
+        totalMarks: selection.totalMarks,
+        timeMinutes: targetMode === "time"
+          ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+          : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks),
+        paperLabels: subject.paperOptions.filter((paper) => paperCodes.length === 0 || paperCodes.includes(paper.code)).map((paper) => paper.label),
+      },
+    });
+    const timeMinutes = targetMode === "time"
+      ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
+
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="aqa-english-literature-custom-paper-${resolvedTargetMarks}m.pdf"`,
+        "X-Question-Count": String(selection.selectedUnits.length),
+        "X-Total-Marks": String(selection.totalMarks),
+        "X-Resolved-Target-Marks": String(resolvedTargetMarks),
+        "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Time-Minutes": String(timeMinutes),
+        "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
+      },
+    });
+  }
+
   if (subject.key === "edexcel-mathematics-higher") {
     if (selectedTopicNodeIds.length === 0) {
       return badRequest("Select at least one Maths topic.");
@@ -614,6 +698,88 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="edexcel-mathematics-higher-custom-paper-${resolvedTargetMarks}m.pdf"`,
+        "X-Question-Count": String(selection.selectedUnits.length),
+        "X-Total-Marks": String(selection.totalMarks),
+        "X-Resolved-Target-Marks": String(resolvedTargetMarks),
+        "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Time-Minutes": String(timeMinutes),
+        "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
+      },
+    });
+  }
+
+  if (subject.key === "ocr-computer-science") {
+    if (selectedTopicNodeIds.length === 0) {
+      return badRequest("Select at least one Computer Science topic.");
+    }
+
+    const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+    if (questionBank.length === 0) {
+      return badRequest("No tagged OCR Computer Science question bank is available in Convex.", 500);
+    }
+
+    const selectedLeafTopicIds = expandOcrComputerScienceTopicSelection(selectedTopicNodeIds);
+    if (selectedLeafTopicIds.length === 0) {
+      return badRequest("The selected Computer Science topics do not map to any question-bank topics.");
+    }
+
+    const allUnits = groupQuestionPartsIntoUnits(questionBank);
+    const filteredBenchmarkUnits = allUnits.filter((unit) => paperCodes.length === 0 || paperCodes.includes(unit.paperCode));
+    const benchmark = buildRealPaperBenchmark(filteredBenchmarkUnits);
+    const resolvedTargetMarks = targetMode === "time"
+      ? estimateMarksFromTimeMinutes(
+          requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, targetMarks),
+          benchmark.averageMinutesPerMark,
+          subject.recommendedMinutesPerMark,
+        )
+      : targetMarks;
+    const selection = selectQuestionUnits({
+      units: allUnits,
+      selectedLeafTopicIds,
+      targetMarks: resolvedTargetMarks,
+      paperCodes,
+      maxQuestions,
+      tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
+    });
+
+    if (selection.selectedUnits.length === 0) {
+      return badRequest("No source-page Computer Science questions matched the selected topics and filters.");
+    }
+
+    const pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(
+      selection.selectedUnits.map((unit) => unit.sourceRelativePath),
+    );
+
+    const pdfBytes = await generateStrictSourcePaperPdf({
+      title: `OCR Computer Science Custom Paper (${resolvedTargetMarks} marks target)`,
+      selectedUnits: selection.selectedUnits,
+      allUnits,
+      pageAssetsBySource,
+      coverPage: {
+        boardLabel: subject.boardLabel,
+        subjectLabel: subject.coverTitle,
+        codeLabel: subject.codeLabel,
+        totalMarks: selection.totalMarks,
+        timeMinutes: targetMode === "time"
+          ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+          : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks),
+        paperLabels: subject.paperOptions.filter((paper) => paperCodes.length === 0 || paperCodes.includes(paper.code)).map((paper) => paper.label),
+      },
+    });
+    const timeMinutes = targetMode === "time"
+      ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
+
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="ocr-computer-science-custom-paper-${resolvedTargetMarks}m.pdf"`,
         "X-Question-Count": String(selection.selectedUnits.length),
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),

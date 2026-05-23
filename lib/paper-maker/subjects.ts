@@ -1,6 +1,6 @@
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
-export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "edexcel-business" | "edexcel-combined-science" | "edexcel-mathematics-higher";
+export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "aqa-english-literature" | "edexcel-business" | "edexcel-combined-science" | "edexcel-mathematics-higher" | "ocr-computer-science";
 
 export type PaperOption = {
   code: string;
@@ -93,6 +93,26 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     tiers: [],
   },
   {
+    key: "aqa-english-literature",
+    label: "AQA English Literature",
+    boardLabel: "AQA",
+    boardCode: "aqa",
+    subjectSlug: "english-literature",
+    coverTitle: "English Literature",
+    codeLabel: "8702",
+    description: "Generate AQA English Literature papers from tagged source-page questions and set-text topics.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by paper and topic.",
+    recommendedMinutesPerMark: 1.5,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1: Shakespeare and the 19th-century novel" },
+      { code: "paper-2", label: "Paper 2: Modern texts and poetry" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
+    tiers: [],
+  },
+  {
     key: "edexcel-business",
     label: "Edexcel Business",
     boardLabel: "Edexcel",
@@ -158,6 +178,26 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
       { code: "paper-3", label: "Paper 3 (Calculator)" },
     ],
     defaultPaperCodes: ["paper-1", "paper-2", "paper-3"],
+    tiers: [],
+  },
+  {
+    key: "ocr-computer-science",
+    label: "OCR Computer Science",
+    boardLabel: "OCR",
+    boardCode: "ocr",
+    subjectSlug: "computer-science",
+    coverTitle: "Computer Science",
+    codeLabel: "J277",
+    description: "Generate OCR Computer Science papers from tagged source-page questions and J277 topics.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by paper and topic.",
+    recommendedMinutesPerMark: 1.2,
+    paperOptions: [
+      { code: "paper-1", label: "Component 01: Computer systems" },
+      { code: "paper-2", label: "Component 02: Computational thinking, algorithms and programming" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
     tiers: [],
   },
 ];
