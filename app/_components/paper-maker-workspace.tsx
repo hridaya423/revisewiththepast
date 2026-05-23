@@ -10,6 +10,9 @@ import {
   Building2,
   FlaskConical,
   Calculator,
+  Dna,
+  Beaker,
+  Zap,
   Search,
   X,
   Minus,
@@ -63,6 +66,9 @@ const SUBJECT_ICONS: Record<string, React.ElementType> = {
   "aqa-english-literature": BookOpen,
   "edexcel-business": Building2,
   "edexcel-combined-science": FlaskConical,
+  "edexcel-biology": Dna,
+  "edexcel-chemistry": Beaker,
+  "edexcel-physics": Zap,
   "edexcel-mathematics-higher": Calculator,
   "ocr-computer-science": Cpu,
 };
@@ -540,7 +546,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
     }
     setError(null);
     setResult(null);
-    setStep(1);
+    setStep(2);
   }, [subjectOptions, targetMode, targetMarks, timeMinutes]);
 
   const handleTierChange = useCallback((tierKey: SubjectTierKey) => {

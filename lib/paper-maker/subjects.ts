@@ -1,6 +1,6 @@
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
-export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "aqa-english-literature" | "edexcel-business" | "edexcel-combined-science" | "edexcel-mathematics-higher" | "ocr-computer-science";
+export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "aqa-english-literature" | "edexcel-business" | "edexcel-combined-science" | "edexcel-biology" | "edexcel-chemistry" | "edexcel-physics" | "edexcel-mathematics-higher" | "ocr-computer-science";
 
 export type PaperOption = {
   code: string;
@@ -154,6 +154,75 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
       { code: "physics-2", label: "Physics Paper 2" },
     ],
     defaultPaperCodes: ["biology-1", "biology-2", "chemistry-1", "chemistry-2", "physics-1", "physics-2"],
+    tiers: [
+      { key: "foundation", label: "Foundation" },
+      { key: "higher", label: "Higher" },
+    ],
+  },
+  {
+    key: "edexcel-biology",
+    label: "Edexcel Biology",
+    boardLabel: "Edexcel",
+    boardCode: "edexcel",
+    subjectSlug: "biology",
+    coverTitle: "Biology",
+    codeLabel: "1BI0",
+    description: "Generate Edexcel Biology papers from tagged source pages by tier and topic.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by tier and topic.",
+    recommendedMinutesPerMark: 1.15,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1" },
+      { code: "paper-2", label: "Paper 2" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
+    tiers: [
+      { key: "foundation", label: "Foundation" },
+      { key: "higher", label: "Higher" },
+    ],
+  },
+  {
+    key: "edexcel-chemistry",
+    label: "Edexcel Chemistry",
+    boardLabel: "Edexcel",
+    boardCode: "edexcel",
+    subjectSlug: "chemistry",
+    coverTitle: "Chemistry",
+    codeLabel: "1CH0",
+    description: "Generate Edexcel Chemistry papers from tagged source pages by tier and topic.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by tier and topic.",
+    recommendedMinutesPerMark: 1.15,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1" },
+      { code: "paper-2", label: "Paper 2" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
+    tiers: [
+      { key: "foundation", label: "Foundation" },
+      { key: "higher", label: "Higher" },
+    ],
+  },
+  {
+    key: "edexcel-physics",
+    label: "Edexcel Physics",
+    boardLabel: "Edexcel",
+    boardCode: "edexcel",
+    subjectSlug: "physics",
+    coverTitle: "Physics",
+    codeLabel: "1PH0",
+    description: "Generate Edexcel Physics papers from tagged source pages by tier and topic.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Ready to build by tier and topic.",
+    recommendedMinutesPerMark: 1.15,
+    paperOptions: [
+      { code: "paper-1", label: "Paper 1" },
+      { code: "paper-2", label: "Paper 2" },
+    ],
+    defaultPaperCodes: ["paper-1", "paper-2"],
     tiers: [
       { key: "foundation", label: "Foundation" },
       { key: "higher", label: "Higher" },

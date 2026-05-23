@@ -15,6 +15,7 @@ import {
 } from "@/lib/paper-maker/combined-science";
 import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-business";
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
+import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
 import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
 import { getAqaGeographyQuestionBankFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
 import { estimatePaperTimeMinutes, getPaperMakerSubject } from "@/lib/paper-maker/subjects";
@@ -280,6 +281,99 @@ export async function POST(request: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="edexcel-combined-science-${subjectTier}-${resolvedTargetMarks}m.pdf"`,
+        "X-Question-Count": String(selection.selectedUnits.length),
+        "X-Total-Marks": String(selection.totalMarks),
+        "X-Resolved-Target-Marks": String(resolvedTargetMarks),
+        "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Selected-Tier": subjectTier,
+        "X-Time-Minutes": String(timeMinutes),
+        "X-Target-Mode": targetMode,
+        "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
+      },
+    });
+  }
+
+  if (subject.key === "edexcel-biology" || subject.key === "edexcel-chemistry" || subject.key === "edexcel-physics") {
+    if (!subjectTier) {
+      return badRequest(`Select Foundation or Higher for ${subject.coverTitle}.`);
+    }
+    if (selectedTopicNodeIds.length === 0) {
+      return badRequest(`Select at least one ${subject.coverTitle} topic.`);
+    }
+
+    const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+    if (questionBank.length === 0) {
+      return badRequest(`No tagged Edexcel ${subject.coverTitle} question bank is available in Convex.`, 500);
+    }
+
+    const tierQuestionBank = filterQuestionBankByTier(questionBank, subjectTier);
+    if (tierQuestionBank.length === 0) {
+      return badRequest(`No tagged ${subjectTier} Edexcel ${subject.coverTitle} questions are available.`, 500);
+    }
+
+    const selectedLeafTopicIds = expandEdexcelSeparateScienceTopicSelection(subject.subjectSlug as "biology" | "chemistry" | "physics", selectedTopicNodeIds);
+    if (selectedLeafTopicIds.length === 0) {
+      return badRequest(`The selected ${subject.coverTitle} topics do not map to any question-bank topics.`);
+    }
+
+    const allUnits = groupQuestionPartsIntoUnits(tierQuestionBank);
+    const filteredBenchmarkUnits = allUnits.filter((unit) => paperCodes.length === 0 || paperCodes.includes(unit.paperCode));
+    const benchmark = buildRealPaperBenchmark(filteredBenchmarkUnits);
+    const resolvedTargetMarks = targetMode === "time"
+      ? estimateMarksFromTimeMinutes(
+          requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, targetMarks),
+          benchmark.averageMinutesPerMark,
+          subject.recommendedMinutesPerMark,
+        )
+      : targetMarks;
+    const selection = selectQuestionUnits({
+      units: allUnits,
+      selectedLeafTopicIds,
+      targetMarks: resolvedTargetMarks,
+      paperCodes,
+      maxQuestions,
+      tolerance: 7,
+      excludedSourceQuestionKeys: excludeSourceQuestionKeys,
+      remainingPaperCount,
+      priorSelectedUnitMarks,
+      priorPaperCount,
+    });
+
+    if (selection.selectedUnits.length === 0) {
+      return badRequest(`No ${subjectTier} source-page ${subject.coverTitle} questions matched the selected papers and filters.`);
+    }
+
+    const pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(
+      selection.selectedUnits.map((unit) => unit.sourceRelativePath),
+    );
+
+    const tierLabel = subjectTier[0].toUpperCase() + subjectTier.slice(1);
+    const pdfBytes = await generateStrictSourcePaperPdf({
+      title: `Edexcel ${subject.coverTitle} ${tierLabel} Custom Paper (${resolvedTargetMarks} marks target)`,
+      selectedUnits: selection.selectedUnits,
+      allUnits,
+      pageAssetsBySource,
+      coverPage: {
+        boardLabel: subject.boardLabel,
+        subjectLabel: subject.coverTitle,
+        codeLabel: subject.codeLabel,
+        totalMarks: selection.totalMarks,
+        timeMinutes: targetMode === "time"
+          ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+          : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks),
+        paperLabels: subject.paperOptions.filter((paper) => paperCodes.length === 0 || paperCodes.includes(paper.code)).map((paper) => paper.label),
+        tierLabel,
+      },
+    });
+    const timeMinutes = targetMode === "time"
+      ? (requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
+
+    return new Response(Buffer.from(pdfBytes), {
+      headers: {
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `attachment; filename="edexcel-${subject.subjectSlug}-${subjectTier}-${resolvedTargetMarks}m.pdf"`,
         "X-Question-Count": String(selection.selectedUnits.length),
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),

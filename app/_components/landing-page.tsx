@@ -10,6 +10,9 @@ import {
   Building2,
   FlaskConical,
   Calculator,
+  Dna,
+  Beaker,
+  Zap,
   ArrowRight,
 } from "lucide-react";
 
@@ -17,7 +20,7 @@ const STEPS = [
   {
     step: "01",
     title: "Choose your subject",
-    desc: "Pick the course you want to practise and move straight into real past-paper material.",
+    desc: "Pick your course, including separate sciences, and move straight into real past-paper material.",
   },
   {
     step: "02",
@@ -38,6 +41,9 @@ const SUBJECT_ICONS: Record<string, React.ElementType> = {
   "aqa-english-literature": BookOpen,
   "edexcel-business": Building2,
   "edexcel-combined-science": FlaskConical,
+  "edexcel-biology": Dna,
+  "edexcel-chemistry": Beaker,
+  "edexcel-physics": Zap,
   "edexcel-mathematics-higher": Calculator,
   "ocr-computer-science": Cpu,
 };
@@ -63,6 +69,24 @@ const SUBJECTS = [
     desc: "Create revision papers from tagged Combined Science material with the same calm, source-first workflow.",
   },
   {
+    key: "edexcel-biology",
+    board: "Edexcel",
+    title: "Biology",
+    desc: "Create Edexcel Biology papers by tier and topic using real source-page questions.",
+  },
+  {
+    key: "edexcel-chemistry",
+    board: "Edexcel",
+    title: "Chemistry",
+    desc: "Create Edexcel Chemistry papers by tier and topic using real source-page questions.",
+  },
+  {
+    key: "edexcel-physics",
+    board: "Edexcel",
+    title: "Physics",
+    desc: "Create Edexcel Physics papers by tier and topic using real source-page questions.",
+  },
+  {
     key: "edexcel-business",
     board: "Edexcel",
     title: "Business",
@@ -73,7 +97,6 @@ const SUBJECTS = [
     board: "AQA",
     title: "English Language",
     desc: "Generate AQA English Language papers from tagged reading and writing source-page questions.",
-    featured: true,
   },
   {
     key: "aqa-english-literature",
@@ -86,14 +109,12 @@ const SUBJECTS = [
     board: "Edexcel",
     title: "Maths Higher",
     desc: "Build Higher Maths papers from real Edexcel source pages, using tagged specification topics.",
-    featured: true,
   },
   {
     key: "ocr-computer-science",
     board: "OCR",
     title: "Computer Science",
     desc: "Generate OCR Computer Science papers from tagged source-page questions and J277 topics.",
-    featured: true,
   },
 ] as const;
 
@@ -287,11 +308,11 @@ export function LandingPage() {
                 <Link
                   key={subject.key}
                   href="/paper-maker"
-                  className={`stagger-child card-lift group relative overflow-hidden rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-7 transition-all ${
+                  className={`stagger-child card-lift group relative flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-7 transition-all ${
                     isFeatured ? "lg:col-span-2" : ""
                   }`}
                 >
-                  <div className={`flex items-start justify-between ${isFeatured ? "min-h-[160px]" : "min-h-[140px]"}`}>
+                  <div className={`flex flex-1 items-start justify-between ${isFeatured ? "min-h-[160px]" : "min-h-[140px]"}`}>
                     <div>
                       <p className="text-[0.65rem] uppercase tracking-[0.26em] text-accent-warm">{subject.board}</p>
                       <h3 className={`mt-2 font-serif tracking-[-0.03em] text-[#1a2e1a] ${isFeatured ? "text-[1.8rem]" : "text-[1.5rem]"}`}>
@@ -307,7 +328,7 @@ export function LandingPage() {
                       </div>
                     ) : null}
                   </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[0.78rem] font-medium text-[#1a2e1a]/60 transition-colors group-hover:text-accent-warm">
+                  <div className="mt-5 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#1a2e1a]/10 px-3 py-1.5 text-[0.78rem] font-medium text-[#1a2e1a]/65 transition-all group-hover:border-accent-warm/25 group-hover:bg-[#faf8f3] group-hover:text-accent-warm">
                     <span>Start revision</span>
                     <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                   </div>
