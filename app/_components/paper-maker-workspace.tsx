@@ -272,12 +272,14 @@ function SuccessModal({
   result,
   subjectLabel,
   tierLabel,
+  minutesPerMark,
   onClose,
   onBuildAnother,
 }: {
   result: { paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number };
   subjectLabel: string;
   tierLabel?: string;
+  minutesPerMark: number;
   onClose: () => void;
   onBuildAnother: () => void;
 }) {
@@ -329,18 +331,21 @@ function SuccessModal({
           </p>
           <div className="mt-3 grid grid-cols-3 gap-3 text-center">
             <div>
-              <p className="stat-number font-serif text-[1.35rem] text-[#1a2e1a]">{result.paperCount}</p>
+              <p className="stat-number font-serif tabular-nums text-[1.35rem] text-[#1a2e1a]">{result.paperCount}</p>
               <p className="text-[0.68rem] text-[#3d5a3f]/50">paper{result.paperCount === 1 ? "" : "s"}</p>
             </div>
             <div>
-              <p className="stat-number font-serif text-[1.35rem] text-[#1a2e1a]">{result.totalMarks}</p>
+              <p className="stat-number font-serif tabular-nums text-[1.35rem] text-[#1a2e1a]">{result.totalMarks}</p>
               <p className="text-[0.68rem] text-[#3d5a3f]/50">marks</p>
             </div>
             <div>
-              <p className="stat-number font-serif text-[1.35rem] text-[#1a2e1a]">{result.timeMinutes}</p>
+              <p className="stat-number font-serif tabular-nums text-[1.35rem] text-[#1a2e1a]">{result.timeMinutes}</p>
               <p className="text-[0.68rem] text-[#3d5a3f]/50">minutes</p>
             </div>
           </div>
+          <p className="mt-3 text-center text-[0.68rem] text-[#3d5a3f]/50">
+            Using ~{minutesPerMark.toFixed(2)} min per mark
+          </p>
         </div>
 
         <div className="mt-6 flex flex-col gap-2.5">
@@ -1105,6 +1110,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
           result={result}
           subjectLabel={activeSubject?.label ?? ""}
           tierLabel={activeTier?.label}
+          minutesPerMark={activeMinutesPerMark}
           onClose={() => setResult(null)}
           onBuildAnother={() => {
             setResult(null);
