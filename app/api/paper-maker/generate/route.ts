@@ -1,6 +1,4 @@
 import { NextRequest } from "next/server";
-import { readdirSync } from "node:fs";
-import { resolve } from "node:path";
 
 import { expandAqaBusinessTopicSelection } from "@/lib/paper-maker/aqa-business";
 import { expandAqaEnglishLanguageTopicSelection } from "@/lib/paper-maker/aqa-english-language";
@@ -17,7 +15,7 @@ import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-b
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
 import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
 import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
-import { getAqaGeographyQuestionBankFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
+import { getAqaGeographyQuestionBankFromConvex, getPaperAssetsByBoardSubjectFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
 import { estimatePaperTimeMinutes, getPaperMakerSubject } from "@/lib/paper-maker/subjects";
 import { generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
 
@@ -44,57 +42,35 @@ function badRequest(message: string, status = 400) {
   return new Response(message, { status });
 }
 
-function getAqaEnglishLanguageInsertPaths(units: ReturnType<typeof groupQuestionPartsIntoUnits>) {
-  const downloadsDir = resolve(process.cwd(), "data/downloads/aqa/english-language/none");
-  const fileNames = readdirSync(downloadsDir);
-  const relativePaths = new Set<string>();
+async function getInsertAssetUrls(
+  boardCode: string,
+  subjectSlug: string,
+  units: ReturnType<typeof groupQuestionPartsIntoUnits>,
+  options?: { sectionCode?: string },
+) {
+  const assets = await getPaperAssetsByBoardSubjectFromConvex(boardCode, subjectSlug);
+  const insertAssets = assets.filter((asset) => asset.kind === "insert");
+  const urls = new Set<string>();
 
   for (const unit of units) {
-    if (unit.sectionCode !== "A") continue;
+    if (options?.sectionCode && unit.sectionCode !== options.sectionCode) continue;
     const year = unit.year;
     const session = unit.session?.toLowerCase();
     if (!year || !session) continue;
 
-    const match = fileNames.find((fileName) => {
-      const lower = fileName.toLowerCase();
-      return lower.includes(`${year}`)
-        && lower.includes(unit.paperCode)
-        && lower.includes("insert")
-        && lower.includes(session);
-    });
+    const match = insertAssets.find((asset) => (
+      asset.paperCode === unit.paperCode
+      && asset.year === year
+      && asset.session.toLowerCase() === session
+      && asset.cdnUrl
+    ));
 
-    if (match) {
-      relativePaths.add(resolve(downloadsDir, match));
+    if (match?.cdnUrl) {
+      urls.add(match.cdnUrl);
     }
   }
 
-  return Array.from(relativePaths).sort((a, b) => a.localeCompare(b));
-}
-
-function getAqaGeographyInsertPaths(units: ReturnType<typeof groupQuestionPartsIntoUnits>) {
-  const downloadsDir = resolve(process.cwd(), "data/downloads/aqa/geography/none");
-  const fileNames = readdirSync(downloadsDir);
-  const relativePaths = new Set<string>();
-
-  for (const unit of units) {
-    const year = unit.year;
-    const session = unit.session?.toLowerCase();
-    if (!year || !session) continue;
-
-    const match = fileNames.find((fileName) => {
-      const lower = fileName.toLowerCase();
-      return lower.includes(`${year}`)
-        && lower.includes(unit.paperCode.toLowerCase())
-        && lower.includes("insert")
-        && lower.includes(session);
-    });
-
-    if (match) {
-      relativePaths.add(resolve(downloadsDir, match));
-    }
-  }
-
-  return Array.from(relativePaths).sort((a, b) => a.localeCompare(b));
+  return Array.from(urls).sort((a, b) => a.localeCompare(b));
 }
 
 export async function POST(request: NextRequest) {
@@ -204,7 +180,7 @@ export async function POST(request: NextRequest) {
       selectedUnits: selection.selectedUnits,
       allUnits,
       pageAssetsBySource,
-      prefaceSourcePdfs: getAqaGeographyInsertPaths(selection.selectedUnits),
+      prefaceSourcePdfs: await getInsertAssetUrls("aqa", "geography", selection.selectedUnits),
       coverPage: {
         boardLabel: subject.boardLabel,
         subjectLabel: subject.coverTitle,
@@ -646,7 +622,7 @@ export async function POST(request: NextRequest) {
       selectedUnits: selection.selectedUnits,
       allUnits,
       pageAssetsBySource,
-      prefaceSourcePdfs: getAqaEnglishLanguageInsertPaths(selection.selectedUnits),
+        prefaceSourcePdfs: await getInsertAssetUrls("aqa", "english-language", selection.selectedUnits, { sectionCode: "A" }),
       coverPage: {
         boardLabel: subject.boardLabel,
         subjectLabel: subject.coverTitle,

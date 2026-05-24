@@ -112,6 +112,14 @@ export async function getTaggingCountsFromConvex() {
   return await client.query(api.questionTags.getTaggingCounts, {});
 }
 
+export async function getPaperAssetsByBoardSubjectFromConvex(boardCode: string, subjectSlug: string) {
+  const client = getConvexClient();
+  return await client.query(api.paperAssets.getPaperAssetsByBoardSubject, {
+    boardCode,
+    subjectSlug,
+  });
+}
+
 export type PaperMakerSubjectDetailSnapshot = {
   key: string;
   taggedQuestionUnits: number;

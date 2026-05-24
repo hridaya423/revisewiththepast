@@ -54,3 +54,17 @@ export const getPaperAssetByRelativePath = queryGeneric({
       .unique();
   },
 });
+
+export const getPaperAssetsByBoardSubject = queryGeneric({
+  args: {
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("paperAssets")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .collect();
+  },
+});
