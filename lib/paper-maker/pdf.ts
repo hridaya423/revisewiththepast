@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
@@ -126,6 +126,7 @@ const FULL_PAGE_ANSWER_EXTENSION_BY_MARKS = [
 
 const extractedPaperCache = new Map<string, ExtractedPaper | null>();
 const TEMP_PDF_SPLIT_DIR = "/var/folders/w9/p_fpb3_x05n45_bt9_3wp5hw0000gn/T/opencode/pdf-split";
+const TEMP_PDF_NORMALIZE_DIR = "/var/folders/w9/p_fpb3_x05n45_bt9_3wp5hw0000gn/T/opencode/pdf-normalized";
 
 function formatExamTime(timeMinutes: number) {
   const hours = Math.floor(timeMinutes / 60);
@@ -1364,12 +1365,31 @@ async function loadSourcePdfDocument(
   }
 
   const sourceBytes = await fetchPdfBytes(pageAssetUrl, sourcePdfCache);
-  sourceDoc = await PDFDocument.load(sourceBytes, {
+  try {
+    sourceDoc = await PDFDocument.load(sourceBytes, {
+      ignoreEncryption: true,
+      throwOnInvalidObject: false,
+    });
+  } catch {
+    sourceDoc = await loadNormalizedPdfDocumentWithQpdf(pageAssetUrl, sourceBytes);
+  }
+  sourceDocCache.set(pageAssetUrl, sourceDoc);
+  return sourceDoc;
+}
+
+async function loadNormalizedPdfDocumentWithQpdf(cacheKey: string, sourceBytes: Uint8Array) {
+  execFileSync("mkdir", ["-p", TEMP_PDF_NORMALIZE_DIR]);
+  const baseName = Buffer.from(cacheKey).toString("base64url");
+  const inputPath = resolve(TEMP_PDF_NORMALIZE_DIR, `${baseName}.input.pdf`);
+  const outputPath = resolve(TEMP_PDF_NORMALIZE_DIR, `${baseName}.normalized.pdf`);
+  execFileSync("/bin/sh", ["-lc", `rm -f \"${inputPath}\" \"${outputPath}\"`]);
+  writeFileSync(inputPath, Buffer.from(sourceBytes));
+  execFileSync("qpdf", [inputPath, outputPath]);
+  const normalizedBytes = new Uint8Array(readFileSync(outputPath));
+  return await PDFDocument.load(normalizedBytes, {
     ignoreEncryption: true,
     throwOnInvalidObject: false,
   });
-  sourceDocCache.set(pageAssetUrl, sourceDoc);
-  return sourceDoc;
 }
 
 async function copyLocalPdfPagesWithQpdfFallback(outputDoc: PDFDocument, filePath: string) {
