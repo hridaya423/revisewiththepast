@@ -37,6 +37,7 @@ type GeneratePaperRequest = {
   remainingPaperCount?: number;
   priorSelectedUnitMarks?: number[];
   priorPaperCount?: number;
+  priorCoveredLeafTopicIds?: string[];
 };
 
 function badRequest(message: string, status = 400) {
@@ -58,6 +59,32 @@ function getAqaEnglishLanguageInsertPaths(units: ReturnType<typeof groupQuestion
       const lower = fileName.toLowerCase();
       return lower.includes(`${year}`)
         && lower.includes(unit.paperCode)
+        && lower.includes("insert")
+        && lower.includes(session);
+    });
+
+    if (match) {
+      relativePaths.add(resolve(downloadsDir, match));
+    }
+  }
+
+  return Array.from(relativePaths).sort((a, b) => a.localeCompare(b));
+}
+
+function getAqaGeographyInsertPaths(units: ReturnType<typeof groupQuestionPartsIntoUnits>) {
+  const downloadsDir = resolve(process.cwd(), "data/downloads/aqa/geography/none");
+  const fileNames = readdirSync(downloadsDir);
+  const relativePaths = new Set<string>();
+
+  for (const unit of units) {
+    const year = unit.year;
+    const session = unit.session?.toLowerCase();
+    if (!year || !session) continue;
+
+    const match = fileNames.find((fileName) => {
+      const lower = fileName.toLowerCase();
+      return lower.includes(`${year}`)
+        && lower.includes(unit.paperCode.toLowerCase())
         && lower.includes("insert")
         && lower.includes(session);
     });
@@ -107,6 +134,9 @@ export async function POST(request: NextRequest) {
   const priorPaperCount = typeof body.priorPaperCount === "number" && Number.isFinite(body.priorPaperCount)
     ? Math.max(0, Math.min(2, Math.round(body.priorPaperCount)))
     : 0;
+  const priorCoveredLeafTopicIds = Array.isArray(body.priorCoveredLeafTopicIds)
+    ? body.priorCoveredLeafTopicIds.filter((value): value is string => typeof value === "string")
+    : [];
   const remainingPaperCount = typeof body.remainingPaperCount === "number" && Number.isFinite(body.remainingPaperCount)
     ? Math.max(1, Math.min(3, Math.round(body.remainingPaperCount)))
     : 1;
@@ -158,6 +188,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -173,6 +204,7 @@ export async function POST(request: NextRequest) {
       selectedUnits: selection.selectedUnits,
       allUnits,
       pageAssetsBySource,
+      prefaceSourcePdfs: getAqaGeographyInsertPaths(selection.selectedUnits),
       coverPage: {
         boardLabel: subject.boardLabel,
         subjectLabel: subject.coverTitle,
@@ -196,6 +228,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
@@ -247,6 +280,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -287,6 +321,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Selected-Tier": subjectTier,
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
@@ -340,6 +375,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -380,6 +416,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Selected-Tier": subjectTier,
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
@@ -425,6 +462,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -463,6 +501,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
@@ -507,6 +546,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -545,6 +585,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
@@ -589,6 +630,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -628,6 +670,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
@@ -672,6 +715,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -710,6 +754,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
@@ -759,6 +804,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -798,6 +844,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
@@ -842,6 +889,7 @@ export async function POST(request: NextRequest) {
       remainingPaperCount,
       priorSelectedUnitMarks,
       priorPaperCount,
+      priorCoveredLeafTopicIds,
     });
 
     if (selection.selectedUnits.length === 0) {
@@ -880,6 +928,7 @@ export async function POST(request: NextRequest) {
         "X-Total-Marks": String(selection.totalMarks),
         "X-Resolved-Target-Marks": String(resolvedTargetMarks),
         "X-Covered-Topics": String(selection.coveredLeafTopicIds.length),
+        "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),

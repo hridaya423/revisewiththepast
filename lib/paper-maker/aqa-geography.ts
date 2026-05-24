@@ -95,6 +95,7 @@ type SelectQuestionUnitsInput = {
   remainingPaperCount?: number;
   priorSelectedUnitMarks?: number[];
   priorPaperCount?: number;
+  priorCoveredLeafTopicIds?: string[];
 };
 
 type MutableTopicNode = Omit<TopicTreeNode, "leafTopicIds"> & { leafTopicIds?: string[] };
@@ -446,7 +447,7 @@ export function buildTopicTreeWithCounts(units: QuestionUnit[]): TopicTreeNodeWi
   return AQA_GEOGRAPHY_TOPIC_TREE.map(attachCounts);
 }
 
-export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0 }: SelectQuestionUnitsInput) {
+export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0, priorCoveredLeafTopicIds = [] }: SelectQuestionUnitsInput) {
   const selectedLeafSet = new Set(selectedLeafTopicIds);
   const allowedPaperCodes = paperCodes && paperCodes.length > 0 ? new Set(paperCodes) : null;
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
@@ -461,6 +462,9 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const minimumAcceptableMarks = Math.max(0, targetMarks - safeTolerance);
   const maximumAcceptableMarks = targetMarks + safeTolerance;
   const futurePaperCount = Math.max(0, remainingPaperCount - 1);
+  const multiPaperSpreadMultiplier = remainingPaperCount > 1
+    ? Math.min(2.2, 1 + (futurePaperCount * 0.45) + (priorPaperCount > 0 ? 0.2 : 0))
+    : 1;
   const priorMarkBucketCounts = priorSelectedUnitMarks.reduce((map, marks) => {
     map.set(marks, (map.get(marks) ?? 0) + 1);
     return map;
@@ -470,12 +474,23 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     map.set(category, (map.get(category) ?? 0) + 1);
     return map;
   }, new Map<"low" | "medium" | "high", number>());
-  const isMathsSelection = candidates.every((unit) => unit.subjectSlug === "mathematics");
   const candidateMarkCategoryCounts = candidates.reduce((map, unit) => {
     const category = getMarkCategory(unit.totalMarks);
     map.set(category, (map.get(category) ?? 0) + 1);
     return map;
   }, new Map<"low" | "medium" | "high", number>());
+  const candidateCountsByLeaf = candidates.reduce((map, unit) => {
+    for (const leaf of unit.canonicalLeafs) {
+      if (!selectedLeafSet.has(leaf)) continue;
+      map.set(leaf, (map.get(leaf) ?? 0) + 1);
+    }
+    return map;
+  }, new Map<string, number>());
+  const priorCoveredLeafCounts = priorCoveredLeafTopicIds.reduce((map, leaf) => {
+    if (!selectedLeafSet.has(leaf)) return map;
+    map.set(leaf, (map.get(leaf) ?? 0) + 1);
+    return map;
+  }, new Map<string, number>());
   const averageUnitMarks = candidates.length > 0
     ? candidates.reduce((sum, unit) => sum + unit.totalMarks, 0) / candidates.length
     : 0;
@@ -602,6 +617,29 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       return 150;
     };
 
+    const getEffectiveLeafCoverageCount = (leaf: string) => {
+      const priorCount = priorCoveredLeafCounts.get(leaf) ?? 0;
+      return priorCount + (coveredLeafs.has(leaf) ? 1 : 0);
+    };
+
+    const getMinimumLeafCoverageCount = () => {
+      let minimumCoverage = Number.POSITIVE_INFINITY;
+
+      for (const leaf of selectedLeafSet) {
+        minimumCoverage = Math.min(minimumCoverage, getEffectiveLeafCoverageCount(leaf));
+      }
+
+      return Number.isFinite(minimumCoverage) ? minimumCoverage : 0;
+    };
+
+    const getLeafScarcityWeight = (leaf: string) => {
+      const candidateCount = candidateCountsByLeaf.get(leaf) ?? 1;
+      if (candidateCount <= 2) return 1.65;
+      if (candidateCount <= 4) return 1.35;
+      if (candidateCount <= 8) return 1.15;
+      return 1;
+    };
+
     const addUnit = (unit: QuestionUnit) => {
       selected.push(unit);
       currentMarks += unit.totalMarks;
@@ -625,6 +663,15 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     const scoreUnit = (unit: QuestionUnit) => {
       const matchedLeafs = unit.canonicalLeafs.filter((leaf) => selectedLeafSet.has(leaf));
       const newLeafs = matchedLeafs.filter((leaf) => !coveredLeafs.has(leaf));
+      const minimumLeafCoverageCount = getMinimumLeafCoverageCount();
+      const crossPaperNewLeafs = newLeafs.filter((leaf) => (priorCoveredLeafCounts.get(leaf) ?? 0) === 0);
+      const lowestCoverageLeafs = newLeafs.filter((leaf) => getEffectiveLeafCoverageCount(leaf) === minimumLeafCoverageCount);
+      const lowCoverageSpreadBonus = lowestCoverageLeafs.reduce((sum, leaf) => sum + getLeafScarcityWeight(leaf), 0);
+      const crossPaperNoveltyBonus = crossPaperNewLeafs.reduce((sum, leaf) => sum + getLeafScarcityWeight(leaf), 0);
+      const repeatedRunLeafPenalty = matchedLeafs.reduce((sum, leaf) => {
+        const effectiveCoverageCount = getEffectiveLeafCoverageCount(leaf);
+        return sum + Math.max(0, effectiveCoverageCount - minimumLeafCoverageCount);
+      }, 0);
       const samePaperPenalty = (sourcePaperCounts.get(unit.sourceRelativePath) ?? 0);
       const sameQuestionPenalty = (sourceQuestionCounts.get(unit.sourceQuestionKey) ?? 0);
       const pageOverlapCount = unit.pages.reduce((sum, page) => {
@@ -675,6 +722,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           + fitBonus
           + (newLeafs.length * 90)
           + (matchedLeafs.length * 14)
+          + (lowCoverageSpreadBonus * 135 * multiPaperSpreadMultiplier)
+          + (crossPaperNoveltyBonus * 80 * multiPaperSpreadMultiplier)
           + bucketBonus
           + sourcePaperSpreadBonus
           + yearSpreadBonus
@@ -688,12 +737,15 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           - (samePaperPenalty * 20)
           - (sameQuestionPenalty * 900)
           - (pageOverlapCount * 260)
+          - (repeatedRunLeafPenalty * 45 * multiPaperSpreadMultiplier)
           - tinyPenalty;
       }
 
       const marksFitBonus = unit.totalMarks <= remainingMarks ? unit.totalMarks * 3 : Math.max(0, 25 - Math.max(0, nextMarks - targetMarks) * 3);
       return (newLeafs.length * 1000)
         + (matchedLeafs.length * 120)
+        + (lowCoverageSpreadBonus * 260 * multiPaperSpreadMultiplier)
+        + (crossPaperNoveltyBonus * 180 * multiPaperSpreadMultiplier)
         + marksFitBonus
         + bucketBonus
         + sourcePaperSpreadBonus
@@ -707,6 +759,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         - (samePaperPenalty * 40)
         - (sameQuestionPenalty * 600)
         - (pageOverlapCount * 1200)
+        - (repeatedRunLeafPenalty * 120 * multiPaperSpreadMultiplier)
         - (unit.totalMarks <= 2 ? 20 : 0);
     };
 
@@ -775,10 +828,21 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         const pageOverlapCount = unit.pages.reduce((sum, page) => (
           selectedPageKeys.has(`${unit.sourceRelativePath}::${page.pageNumber}`) ? sum + 1 : sum
         ), 0);
+        const matchedLeafs = unit.canonicalLeafs.filter((leaf) => selectedLeafSet.has(leaf));
+        const newLeafs = matchedLeafs.filter((leaf) => !coveredLeafs.has(leaf));
+        const minimumLeafCoverageCount = getMinimumLeafCoverageCount();
+        const crossPaperNewLeafs = newLeafs.filter((leaf) => (priorCoveredLeafCounts.get(leaf) ?? 0) === 0);
+        const lowestCoverageLeafs = newLeafs.filter((leaf) => getEffectiveLeafCoverageCount(leaf) === minimumLeafCoverageCount);
         const hardOvershootPenalty = nextMarks > maximumAcceptableMarks ? (nextMarks - maximumAcceptableMarks) * (mode === "marks" ? 220 : 140) : 0;
         const softSamePaperPenalty = (sourcePaperCounts.get(unit.sourceRelativePath) ?? 0) * (mode === "marks" ? 12 : 18);
         const pageOverlapPenalty = pageOverlapCount * (mode === "marks" ? 120 : 90);
-        const noveltyBonus = unit.canonicalLeafs.filter((leaf) => selectedLeafSet.has(leaf) && !coveredLeafs.has(leaf)).length * (mode === "marks" ? 10 : 18);
+        const noveltyBonus = newLeafs.length * (mode === "marks" ? 10 : 18);
+        const lowCoverageSpreadBonus = lowestCoverageLeafs.reduce((sum, leaf) => sum + getLeafScarcityWeight(leaf), 0);
+        const crossPaperNoveltyBonus = crossPaperNewLeafs.reduce((sum, leaf) => sum + getLeafScarcityWeight(leaf), 0);
+        const repeatedRunLeafPenalty = matchedLeafs.reduce((sum, leaf) => {
+          const effectiveCoverageCount = getEffectiveLeafCoverageCount(leaf);
+          return sum + Math.max(0, effectiveCoverageCount - minimumLeafCoverageCount);
+        }, 0);
         const sourcePaperUsageCount = sourcePaperCounts.get(unit.sourceRelativePath) ?? 0;
         const yearUsageCount = typeof unit.year === "number" ? (selectedYearCounts.get(unit.year) ?? 0) : 0;
         const priorMarkUsageCount = priorMarkBucketCounts.get(unit.totalMarks) ?? 0;
@@ -808,6 +872,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           - softSamePaperPenalty
           - pageOverlapPenalty
           + noveltyBonus
+          + (lowCoverageSpreadBonus * (mode === "marks" ? 60 : 100) * multiPaperSpreadMultiplier)
+          + (crossPaperNoveltyBonus * (mode === "marks" ? 35 : 70) * multiPaperSpreadMultiplier)
           + sourcePaperSpreadBonus
           + yearSpreadBonus
           + categoryQuotaBonus
@@ -815,6 +881,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           - markBucketPenalty
           - markCategoryPenalty
           - crossPaperCategoryPenalty
+          - (repeatedRunLeafPenalty * (mode === "marks" ? 20 : 40) * multiPaperSpreadMultiplier)
           - (futureSetPenalty * 8);
 
         if (score > bestFillScore) {
@@ -862,6 +929,11 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
 
     const leftDelta = Math.abs(targetMarks - left.totalMarks);
     const rightDelta = Math.abs(targetMarks - right.totalMarks);
+    if (leftInRange && rightInRange && Math.abs(leftDelta - rightDelta) <= 2) {
+      if (left.coveredLeafTopicIds.length !== right.coveredLeafTopicIds.length) {
+        return right.coveredLeafTopicIds.length - left.coveredLeafTopicIds.length;
+      }
+    }
     if (leftDelta !== rightDelta) return leftDelta - rightDelta;
     if (left.totalMarks !== right.totalMarks) return right.totalMarks - left.totalMarks;
     if (left.coveredLeafTopicIds.length !== right.coveredLeafTopicIds.length) {

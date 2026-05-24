@@ -709,6 +709,10 @@ function isBusinessUnit(unit: QuestionUnit) {
   return unit.subjectSlug === "business";
 }
 
+function isGeographyUnit(unit: QuestionUnit) {
+  return unit.boardCode === "aqa" && unit.subjectSlug === "geography";
+}
+
 function isMathematicsUnit(unit: QuestionUnit) {
   return unit.subjectSlug === "mathematics";
 }
@@ -884,6 +888,7 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
   const figureNumbers = getReferencedFigureNumbers(unit);
   const firstPageNumber = rawPageNumbers[0];
   const actualFirstPageNumber = unit.pages[0]?.pageNumber;
+  const prependedSupportPages = new Set<number>();
 
   if (isEnglishLanguageUnit(unit)) {
     return actualFirstPageNumber ? [actualFirstPageNumber] : (firstPageNumber ? [firstPageNumber] : []);
@@ -908,6 +913,7 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
 
     if (!firstPageHasSupport && previousPageHasSupport) {
       rawPageNumbers.unshift(previousPageNumber);
+      prependedSupportPages.add(previousPageNumber);
     }
   }
 
@@ -925,6 +931,7 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
 
       if (!firstPageHasSupport && previousPageHasSupport) {
         rawPageNumbers.unshift(previousPageNumber);
+        prependedSupportPages.add(previousPageNumber);
       }
     }
   }
@@ -932,6 +939,7 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
   return rawPageNumbers.filter((pageNumber, index) => {
     if (index === 0) return true;
     if (actualFirstPageNumber && pageNumber === actualFirstPageNumber) return true;
+    if (prependedSupportPages.has(pageNumber)) return true;
 
     const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
     if (page && isBoilerplateOnlyPage(page)) return false;
@@ -1015,6 +1023,10 @@ function shouldPackShortSnippet(unit: QuestionUnit, pageHeight: number, cropBox:
 
 function shouldAttemptCompactLayout(unit: QuestionUnit) {
   if (isCombinedScienceUnit(unit) || isBusinessUnit(unit)) {
+    return false;
+  }
+
+  if (isGeographyUnit(unit) && hasSupportDependency(unit)) {
     return false;
   }
 

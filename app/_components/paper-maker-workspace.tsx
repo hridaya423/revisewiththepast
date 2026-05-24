@@ -637,6 +637,7 @@ export function PaperMakerWorkspace({
       try {
         const excludedSourceQuestionKeys = new Set<string>();
         const priorSelectedUnitMarks: number[] = [];
+        const priorCoveredLeafTopicIds: string[] = [];
         let lastQuestionCount = 0;
         let lastTotalMarks = 0;
         let lastCoveredTopics = 0;
@@ -658,6 +659,7 @@ export function PaperMakerWorkspace({
               remainingPaperCount: paperCount - paperIndex,
               priorSelectedUnitMarks,
               priorPaperCount: paperIndex,
+              priorCoveredLeafTopicIds,
             }),
           });
 
@@ -684,6 +686,12 @@ export function PaperMakerWorkspace({
               if (Number.isFinite(parsed)) {
                 priorSelectedUnitMarks.push(parsed);
               }
+            }
+          }
+          const encodedCoveredLeafs = response.headers.get("X-Covered-Leaf-Topic-Ids");
+          if (encodedCoveredLeafs) {
+            for (const leafId of decodeURIComponent(encodedCoveredLeafs).split("\n").filter(Boolean)) {
+              priorCoveredLeafTopicIds.push(leafId);
             }
           }
 
