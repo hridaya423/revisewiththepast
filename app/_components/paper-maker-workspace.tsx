@@ -35,9 +35,6 @@ import {
 type PaperMakerWorkspaceProps = {
   initialSubjectKey?: PaperMakerSubjectKey;
   initialTier?: SubjectTierKey;
-  initialTargetMode?: PaperBuildTargetMode;
-  initialTargetMarks?: number;
-  initialTimeMinutes?: number;
   subjectOptions: {
     key: PaperMakerSubjectKey;
     label: string;
@@ -409,25 +406,19 @@ export function PaperMakerWorkspace({
   subjectOptions,
   initialSubjectKey,
   initialTier,
-  initialTargetMode,
-  initialTargetMarks,
-  initialTimeMinutes,
 }: PaperMakerWorkspaceProps) {
   const [subjectOptionsState, setSubjectOptionsState] = useState(subjectOptions);
   const defaultSubject = subjectOptionsState.find((subject) => subject.key === initialSubjectKey) ?? subjectOptionsState[0];
   const defaultMinutesPerMark = resolveMinutesPerMark(defaultSubject?.benchmarkMinutesPerMark, defaultSubject?.recommendedMinutesPerMark);
   const router = useRouter();
   const pathname = usePathname();
-  const initialMode = initialTargetMode === "time" ? "time" : "marks";
-  const initialMarks = clampMarks(initialTargetMarks ?? 40);
-  const initialMinutes = clampTimeMinutes(initialTimeMinutes ?? estimatePaperTimeMinutes(defaultMinutesPerMark, initialMarks));
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(initialSubjectKey ? 2 : 1);
   const [selectedSubjectKey, setSelectedSubjectKey] = useState<PaperMakerSubjectKey>(defaultSubject?.key ?? "aqa-geography");
   const [selectedLeafIds, setSelectedLeafIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(defaultSubject?.topics.map((topic) => topic.id) ?? []));
-  const [targetMarks, setTargetMarks] = useState(initialMarks);
-  const [timeMinutes, setTimeMinutes] = useState(initialMinutes);
-  const [targetMode, setTargetMode] = useState<PaperBuildTargetMode>(initialMode);
+  const [targetMarks, setTargetMarks] = useState(40);
+  const [timeMinutes, setTimeMinutes] = useState(() => clampTimeMinutes(estimatePaperTimeMinutes(defaultMinutesPerMark, 40)));
+  const [targetMode, setTargetMode] = useState<PaperBuildTargetMode>("marks");
   const [selectedPaperCodes, setSelectedPaperCodes] = useState<Set<string>>(new Set(defaultSubject?.defaultPaperCodes ?? []));
   const [selectedTier, setSelectedTier] = useState<SubjectTierKey>(initialTier ?? defaultSubject?.tiers[0]?.key ?? "foundation");
   const [error, setError] = useState<string | null>(null);
@@ -624,11 +615,8 @@ export function PaperMakerWorkspace({
     if (activeSubject?.tiers.length) {
       params.set("tier", selectedTier);
     }
-    params.set("mode", targetMode);
-    params.set("marks", String(targetMarks));
-    params.set("minutes", String(timeMinutes));
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeSubject?.tiers.length, pathname, router, selectedSubjectKey, selectedTier, targetMarks, targetMode, timeMinutes]);
+  }, [activeSubject?.tiers.length, pathname, router, selectedSubjectKey, selectedTier]);
 
   const handleTierChange = useCallback((tierKey: SubjectTierKey) => {
     const nextTopics = resolveSubjectTopics(activeSubject, tierKey);

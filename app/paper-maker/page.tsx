@@ -10,9 +10,6 @@ export const revalidate = 300;
 type PaperMakerPageSearchParams = {
   subject?: string | string[];
   tier?: string | string[];
-  mode?: string | string[];
-  marks?: string | string[];
-  minutes?: string | string[];
 };
 
 export default async function PaperMakerPage({
@@ -25,9 +22,6 @@ export default async function PaperMakerPage({
   const requestedTier = resolvedSearchParams?.tier === "foundation" || resolvedSearchParams?.tier === "higher"
     ? resolvedSearchParams.tier
     : undefined;
-  const requestedTargetMode = resolvedSearchParams?.mode === "time" ? "time" : resolvedSearchParams?.mode === "marks" ? "marks" : undefined;
-  const requestedMarks = typeof resolvedSearchParams?.marks === "string" ? Number(resolvedSearchParams.marks) : undefined;
-  const requestedMinutes = typeof resolvedSearchParams?.minutes === "string" ? Number(resolvedSearchParams.minutes) : undefined;
   const initialSubjectKey = getPaperMakerSubject(requestedSubject)?.key;
   const taggingCounts = await getTaggingCountsFromConvex();
   const countsByBoardSubject = new Map(
@@ -78,9 +72,6 @@ export default async function PaperMakerPage({
           subjectOptions={subjectOptions}
           initialSubjectKey={initialSubjectKey}
           initialTier={requestedTier as SubjectTierKey | undefined}
-          initialTargetMode={requestedTargetMode}
-          initialTargetMarks={Number.isFinite(requestedMarks) ? requestedMarks : undefined}
-          initialTimeMinutes={Number.isFinite(requestedMinutes) ? requestedMinutes : undefined}
         />
       </main>
     </div>
