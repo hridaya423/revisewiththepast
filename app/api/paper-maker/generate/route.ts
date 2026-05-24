@@ -120,6 +120,8 @@ export async function POST(request: NextRequest) {
     return badRequest(`${subject.label} is not enabled for generation yet.`, 501);
   }
 
+  try {
+
   if (subject.key === "aqa-geography") {
     if (selectedTopicNodeIds.length === 0) {
       return badRequest("Select at least one topic.");
@@ -886,5 +888,22 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return badRequest(`Generation is not implemented for ${subject.label}.`, 501);
+    return badRequest(`Generation is not implemented for ${subject.label}.`, 501);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Paper generation failed", {
+      subjectKey,
+      subjectTier,
+      targetMode,
+      targetMarks,
+      requestedTimeMinutes,
+      paperCodes,
+      selectedTopicNodeIdsCount: selectedTopicNodeIds.length,
+      remainingPaperCount,
+      priorPaperCount,
+      message,
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    return new Response(`Failed to generate paper: ${message}`, { status: 500 });
+  }
 }
