@@ -1,5 +1,8 @@
 import "server-only";
 
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { QuestionBankPart, SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
@@ -8,6 +11,7 @@ import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 const QUESTION_BANK_CACHE_TTL_MS = 60_000;
 
 let convexClient: ConvexHttpClient | null = null;
+let cachedQuestionPageManifestBySourcePath: Map<string, SourcePageAsset[]> | null = null;
 
 const questionBankCache = new Map<string, {
   expiresAt: number;
@@ -26,6 +30,46 @@ function getConvexClient() {
   if (convexClient) return convexClient;
   convexClient = new ConvexHttpClient(getConvexUrl());
   return convexClient;
+}
+
+function getQuestionPageManifestBySourcePath() {
+  if (cachedQuestionPageManifestBySourcePath) return cachedQuestionPageManifestBySourcePath;
+
+  const manifestPath = resolve(process.cwd(), "data/question-page-cdn-manifest.json");
+  const bySourcePath = new Map<string, SourcePageAsset[]>();
+  if (!existsSync(manifestPath)) {
+    cachedQuestionPageManifestBySourcePath = bySourcePath;
+    return bySourcePath;
+  }
+
+  const parsed = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+    records?: Array<{
+      sourceRelativePath: string;
+      pageNumber: number;
+      url: string;
+      fileName: string;
+      relativePath: string;
+    }>;
+  };
+
+  for (const record of parsed.records ?? []) {
+    const existing = bySourcePath.get(record.sourceRelativePath) ?? [];
+    existing.push({
+      sourceRelativePath: record.sourceRelativePath,
+      pageNumber: record.pageNumber,
+      cdnUrl: record.url,
+      fileName: record.fileName,
+      relativePath: record.relativePath,
+    });
+    bySourcePath.set(record.sourceRelativePath, existing);
+  }
+
+  for (const [sourceRelativePath, assets] of bySourcePath.entries()) {
+    bySourcePath.set(sourceRelativePath, assets.sort((a, b) => a.pageNumber - b.pageNumber));
+  }
+
+  cachedQuestionPageManifestBySourcePath = bySourcePath;
+  return bySourcePath;
 }
 
 export async function getPaperMakerQuestionBankFromConvex(
@@ -104,6 +148,7 @@ export async function getQuestionPageAssetsBySourceRelativePaths(sourceRelativeP
     sourceRelativePaths: uniquePaths,
   });
   const bySourcePath = new Map<string, SourcePageAsset[]>();
+  const manifestBySourcePath = getQuestionPageManifestBySourcePath();
 
   for (const asset of assets as Array<{ sourceRelativePath: string; pageNumber: number; cdnUrl: string; fileName: string; relativePath: string }>) {
     const existing = bySourcePath.get(asset.sourceRelativePath) ?? [];
@@ -118,8 +163,13 @@ export async function getQuestionPageAssetsBySourceRelativePaths(sourceRelativeP
   }
 
   for (const sourceRelativePath of uniquePaths) {
-    const sortedAssets = (bySourcePath.get(sourceRelativePath) ?? []).sort((a, b) => a.pageNumber - b.pageNumber);
-    bySourcePath.set(sourceRelativePath, sortedAssets);
+    const existingAssets = (bySourcePath.get(sourceRelativePath) ?? []).sort((a, b) => a.pageNumber - b.pageNumber);
+    if (existingAssets.length > 0) {
+      bySourcePath.set(sourceRelativePath, existingAssets);
+      continue;
+    }
+
+    bySourcePath.set(sourceRelativePath, manifestBySourcePath.get(sourceRelativePath) ?? []);
   }
 
   return bySourcePath;
