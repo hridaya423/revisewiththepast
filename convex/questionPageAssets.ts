@@ -77,3 +77,19 @@ export const getQuestionPageAssetsBySourceRelativePath = queryGeneric({
       .collect();
   },
 });
+
+export const getQuestionPageAssetsBySourceRelativePaths = queryGeneric({
+  args: { sourceRelativePaths: v.array(v.string()) },
+  handler: async (ctx, args) => {
+    const uniquePaths = Array.from(new Set(args.sourceRelativePaths));
+    const rows = await Promise.all(uniquePaths.map(async (sourceRelativePath) => {
+      const assets = await ctx.db
+        .query("questionPageAssets")
+        .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", sourceRelativePath))
+        .collect();
+      return assets;
+    }));
+
+    return rows.flat();
+  },
+});

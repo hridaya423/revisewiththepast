@@ -48,6 +48,7 @@ type PaperMakerWorkspaceProps = {
     topics: TopicTreeNodeWithCounts[];
     topicsByTier?: Partial<Record<SubjectTierKey, TopicTreeNodeWithCounts[]>>;
     tiers: { key: SubjectTierKey; label: string; taggedQuestionUnits: number }[];
+    detailLoaded: boolean;
   }[];
 };
 
@@ -399,7 +400,8 @@ function MobileCommandBar({ summary, canGenerate, onGenerate, isPending }: {
 }
 
 export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps) {
-  const defaultSubject = subjectOptions[0];
+  const [subjectOptionsState, setSubjectOptionsState] = useState(subjectOptions);
+  const defaultSubject = subjectOptionsState[0];
   const defaultMinutesPerMark = resolveMinutesPerMark(defaultSubject?.benchmarkMinutesPerMark, defaultSubject?.recommendedMinutesPerMark);
   const [step, setStep] = useState(1);
   const [selectedSubjectKey, setSelectedSubjectKey] = useState<PaperMakerSubjectKey>(defaultSubject?.key ?? "aqa-geography");
@@ -414,12 +416,13 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
   const [paperCount, setPaperCount] = useState(1);
   const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number } | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isLoadingSubjectDetail, setIsLoadingSubjectDetail] = useState(false);
   const [topicSearch, setTopicSearch] = useState("");
   const activeStepRef = useRef<HTMLDivElement | null>(null);
 
   const activeSubject = useMemo(
-    () => subjectOptions.find((subject) => subject.key === selectedSubjectKey) ?? subjectOptions[0],
-    [selectedSubjectKey, subjectOptions],
+    () => subjectOptionsState.find((subject) => subject.key === selectedSubjectKey) ?? subjectOptionsState[0],
+    [selectedSubjectKey, subjectOptionsState],
   );
   const activeTopics = useMemo(() => resolveSubjectTopics(activeSubject, selectedTier), [activeSubject, selectedTier]);
   const totalLeafIds = useMemo(() => flattenLeafIds(activeTopics), [activeTopics]);
@@ -439,7 +442,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
   const selectedTopicPreview = useMemo(() => selectedTopicSummaries.slice(0, 4), [selectedTopicSummaries]);
   const selectedTopicOverflowCount = Math.max(0, selectedTopicSummaries.length - selectedTopicPreview.length);
 
-  const canGenerate = generationEnabled && selectedPaperCodes.size > 0 && (!topicSelectionEnabled || selectedTopicNodeIds.length > 0);
+  const canGenerate = !isLoadingSubjectDetail && generationEnabled && selectedPaperCodes.size > 0 && (!topicSelectionEnabled || selectedTopicNodeIds.length > 0);
 
   const filteredTopics = useMemo(() => {
     if (!topicSearch.trim()) return activeTopics;
@@ -469,7 +472,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
   const groupedSubjectOptions = useMemo(() => {
     const boardOrder = ["AQA", "Edexcel", "OCR"];
     const buckets = new Map<string, WorkspaceSubjectOption[]>();
-    for (const subject of subjectOptions) {
+    for (const subject of subjectOptionsState) {
       const group = buckets.get(subject.boardLabel) ?? [];
       group.push(subject);
       buckets.set(subject.boardLabel, group);
@@ -477,7 +480,42 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
     return Array.from(buckets.entries())
       .sort((a, b) => boardOrder.indexOf(a[0]) - boardOrder.indexOf(b[0]))
       .map(([boardLabel, subjects]) => ({ boardLabel, subjects }));
-  }, [subjectOptions]);
+  }, [subjectOptionsState]);
+
+  const loadSubjectDetail = useCallback(async (key: PaperMakerSubjectKey) => {
+    setIsLoadingSubjectDetail(true);
+    try {
+      const response = await fetch(`/api/paper-maker/subject-detail?subjectKey=${encodeURIComponent(key)}`);
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const detail = await response.json() as {
+        key: PaperMakerSubjectKey;
+        taggedQuestionUnits: number;
+        benchmarkMinutesPerMark: number | null;
+        topics: TopicTreeNodeWithCounts[];
+        topicsByTier?: Partial<Record<SubjectTierKey, TopicTreeNodeWithCounts[]>>;
+        tiers: { key: SubjectTierKey; label: string; taggedQuestionUnits: number }[];
+        detailLoaded: boolean;
+      };
+
+      setSubjectOptionsState((current) => current.map((subject) => (
+        subject.key === detail.key
+          ? {
+              ...subject,
+              taggedQuestionUnits: detail.taggedQuestionUnits,
+              benchmarkMinutesPerMark: detail.benchmarkMinutesPerMark,
+              topics: detail.topics,
+              topicsByTier: detail.topicsByTier,
+              tiers: detail.tiers,
+              detailLoaded: detail.detailLoaded,
+            }
+          : subject
+      )));
+    } finally {
+      setIsLoadingSubjectDetail(false);
+    }
+  }, []);
 
   const toggleExpanded = useCallback((id: string) => {
     setExpandedIds((current) => {
@@ -525,7 +563,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
   }, [activeMinutesPerMark]);
 
   const handleSubjectChange = useCallback((key: PaperMakerSubjectKey) => {
-    const subject = subjectOptions.find((entry) => entry.key === key);
+    const subject = subjectOptionsState.find((entry) => entry.key === key);
     const nextTier = subject?.tiers[0]?.key ?? "foundation";
     const nextTopics = resolveSubjectTopics(subject, nextTier);
     setSelectedSubjectKey(key);
@@ -547,7 +585,20 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
     setError(null);
     setResult(null);
     setStep(2);
-  }, [subjectOptions, targetMode, targetMarks, timeMinutes]);
+    if (!subject?.detailLoaded) {
+      void loadSubjectDetail(key);
+    }
+  }, [subjectOptionsState, targetMode, targetMarks, timeMinutes, loadSubjectDetail]);
+
+  useEffect(() => {
+    if (!activeSubject || activeSubject.detailLoaded) return;
+    void loadSubjectDetail(activeSubject.key);
+  }, [activeSubject, loadSubjectDetail]);
+
+  useEffect(() => {
+    if (!activeSubject?.detailLoaded || activeTopics.length === 0 || expandedIds.size > 0) return;
+    setExpandedIds(new Set(activeTopics.map((topic) => topic.id)));
+  }, [activeSubject?.detailLoaded, activeTopics, expandedIds.size]);
 
   const handleTierChange = useCallback((tierKey: SubjectTierKey) => {
     const nextTopics = resolveSubjectTopics(activeSubject, tierKey);
@@ -694,7 +745,7 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
                           </div>
                           <p className="mt-3 text-[0.88rem] leading-6 text-[#3d5a3f]/60">{subject.description}</p>
                           <p className="mt-2 text-[0.75rem] tabular-nums text-[#3d5a3f]/45">
-                            {subject.taggedQuestionUnits} tagged question unit{subject.taggedQuestionUnits === 1 ? "" : "s"}
+                            {subject.taggedQuestionUnits} tagged question part{subject.taggedQuestionUnits === 1 ? "" : "s"}
                           </p>
                         </button>
                       );
@@ -728,13 +779,18 @@ export function PaperMakerWorkspace({ subjectOptions }: PaperMakerWorkspaceProps
                 <button type="button" onClick={() => setStep(1)} className="btn-press rounded-full border border-[#1a2e1a]/10 px-4 py-2.5 text-[0.82rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white">
                   Back
                 </button>
-                <button type="button" onClick={() => setStep(3)} className="btn-press rounded-full bg-[#1a2e1a] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#2a4a2a]">
+                <button type="button" onClick={() => setStep(3)} disabled={isLoadingSubjectDetail} className="btn-press rounded-full bg-[#1a2e1a] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#2a4a2a] disabled:opacity-40">
                   Continue
                 </button>
               </div>
             </div>
 
-            {topicSelectionEnabled ? (
+            {isLoadingSubjectDetail && !activeSubject?.detailLoaded ? (
+              <div className="rounded-[1.4rem] border border-[#1a2e1a]/[0.06] bg-white px-5 py-10 text-center">
+                <p className="text-[0.88rem] font-medium text-[#1a2e1a]">Loading subject topics...</p>
+                <p className="mt-2 text-[0.8rem] text-[#3d5a3f]/55">Fetching tagged topic structure and counts for {activeSubject?.label}.</p>
+              </div>
+            ) : topicSelectionEnabled ? (
               <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-start">
                 <aside className="rounded-[1.4rem] border border-[#1a2e1a]/[0.06] bg-white p-5 xl:sticky xl:top-[100px]">
                   <div className="flex items-start justify-between gap-3">

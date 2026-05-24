@@ -120,7 +120,7 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
     const now = Date.now();
     const existingByIdentity = await ctx.db
       .query("taggedPapers")
-      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .withIndex("by_paper_identity", (q) => q.eq("boardCode", args.boardCode))
       .filter((q) => q.and(
         q.eq(q.field("subjectSlug"), args.subjectSlug),
         q.eq(q.field("paperCode"), args.paperCode),
@@ -322,11 +322,11 @@ export const deleteTaggedByBoardSubjects = mutationGeneric({
     let deletedQuestionParts = 0;
 
     for (const subjectSlug of args.subjectSlugs) {
-      const papers = await ctx.db
-        .query("taggedPapers")
-        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
-        .filter((q) => q.eq(q.field("subjectSlug"), subjectSlug))
-        .collect();
+        const papers = await ctx.db
+          .query("taggedPapers")
+          .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+          .filter((q) => q.eq(q.field("subjectSlug"), subjectSlug))
+          .collect();
 
       for (const paper of papers) {
         const parts = await ctx.db
@@ -367,10 +367,9 @@ export const getTaggingCounts = queryGeneric({
   args: {},
   handler: async (ctx) => {
     const taggedPapers = await ctx.db.query("taggedPapers").collect();
-    const taggedQuestionParts = await ctx.db.query("taggedQuestionParts").collect();
 
     const byBoardSubject = new Map<string, { boardCode: string; subjectSlug: string; taggedPapers: number; taggedQuestionParts: number }>();
-    const paperIdsByBoardSubject = new Map<string, Set<string>>();
+    let taggedQuestionPartsTotal = 0;
 
     for (const paper of taggedPapers) {
       const key = `${paper.boardCode}::${paper.subjectSlug}`;
@@ -381,28 +380,14 @@ export const getTaggingCounts = queryGeneric({
         taggedQuestionParts: 0,
       };
       existing.taggedPapers += 1;
+      existing.taggedQuestionParts += paper.questionCount;
+      taggedQuestionPartsTotal += paper.questionCount;
       byBoardSubject.set(key, existing);
-      const ids = paperIdsByBoardSubject.get(key) ?? new Set<string>();
-      ids.add(String(paper._id));
-      paperIdsByBoardSubject.set(key, ids);
-    }
-
-    const paperIdToBoardSubject = new Map<string, string>();
-    for (const [key, ids] of paperIdsByBoardSubject.entries()) {
-      for (const id of ids) paperIdToBoardSubject.set(id, key);
-    }
-
-    for (const part of taggedQuestionParts) {
-      const key = paperIdToBoardSubject.get(String(part.taggedPaperId));
-      if (!key) continue;
-      const existing = byBoardSubject.get(key);
-      if (!existing) continue;
-      existing.taggedQuestionParts += 1;
     }
 
     return {
       taggedPapers: taggedPapers.length,
-      taggedQuestionParts: taggedQuestionParts.length,
+      taggedQuestionParts: taggedQuestionPartsTotal,
       byBoardSubject: Array.from(byBoardSubject.values()).sort((a, b) => {
         if (a.boardCode !== b.boardCode) return a.boardCode.localeCompare(b.boardCode);
         return a.subjectSlug.localeCompare(b.subjectSlug);
