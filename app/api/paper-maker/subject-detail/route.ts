@@ -13,7 +13,11 @@ import {
   filterCombinedScienceUnitsByTier,
   filterUnitsByTier,
 } from "@/lib/paper-maker/combined-science";
-import { getPaperMakerQuestionBankFromConvex } from "@/lib/paper-maker/convex";
+import {
+  getPaperMakerQuestionBankFromConvex,
+  getSubjectDetailSnapshotFromConvex,
+  upsertSubjectDetailSnapshotInConvex,
+} from "@/lib/paper-maker/convex";
 import { buildEdexcelBusinessTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-business";
 import { buildEdexcelMathematicsTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-mathematics";
 import { buildEdexcelSeparateScienceTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-separate-science";
@@ -28,6 +32,11 @@ export async function GET(request: NextRequest) {
   const subjectKey = request.nextUrl.searchParams.get("subjectKey") as PaperMakerSubjectKey | null;
   const subject = getPaperMakerSubject(subjectKey ?? undefined);
   if (!subject) return badRequest("Unknown subject selection.");
+
+  const cachedSnapshot = await getSubjectDetailSnapshotFromConvex(subject.boardCode, subject.subjectSlug);
+  if (cachedSnapshot) {
+    return Response.json(cachedSnapshot);
+  }
 
   const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug, { cache: true });
   const units = groupQuestionPartsIntoUnits(questionBank);
@@ -79,7 +88,7 @@ export async function GET(request: NextRequest) {
     }));
   }
 
-  return Response.json({
+  const snapshot = {
     key: subject.key,
     taggedQuestionUnits,
     benchmarkMinutesPerMark: benchmark.averageMinutesPerMark,
@@ -87,5 +96,9 @@ export async function GET(request: NextRequest) {
     topicsByTier,
     tiers,
     detailLoaded: true,
-  });
+  };
+
+  await upsertSubjectDetailSnapshotInConvex(subject.boardCode, subject.subjectSlug, snapshot);
+
+  return Response.json(snapshot);
 }

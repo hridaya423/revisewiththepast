@@ -307,7 +307,7 @@ export function LandingPage() {
               return (
                 <Link
                   key={subject.key}
-                  href="/paper-maker"
+                  href={`/paper-maker?subject=${encodeURIComponent(subject.key)}`}
                   className={`stagger-child card-lift group relative flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-7 transition-all ${
                     isFeatured ? "lg:col-span-2" : ""
                   }`}

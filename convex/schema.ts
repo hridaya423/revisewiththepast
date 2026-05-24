@@ -111,6 +111,14 @@ export default defineSchema({
     .index("by_board_subject", ["boardCode", "subjectSlug"])
     .index("by_paper_identity", ["boardCode", "subjectSlug", "paperCode", "year", "session"]),
 
+  subjectDetailSnapshots: defineTable({
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    payloadJson: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_board_subject", ["boardCode", "subjectSlug"]),
+
   taggedQuestionParts: defineTable({
     taggedPaperId: v.id("taggedPapers"),
     questionId: v.string(),

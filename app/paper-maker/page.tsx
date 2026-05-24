@@ -2,11 +2,33 @@ import Link from "next/link";
 
 import { PaperMakerWorkspace } from "../_components/paper-maker-workspace";
 import { getTaggingCountsFromConvex } from "@/lib/paper-maker/convex";
-import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
+import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
+import { getPaperMakerSubject, PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
 
 export const revalidate = 300;
 
-export default async function PaperMakerPage() {
+type PaperMakerPageSearchParams = {
+  subject?: string | string[];
+  tier?: string | string[];
+  mode?: string | string[];
+  marks?: string | string[];
+  minutes?: string | string[];
+};
+
+export default async function PaperMakerPage({
+  searchParams,
+}: {
+  searchParams?: Promise<PaperMakerPageSearchParams>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const requestedSubject = typeof resolvedSearchParams?.subject === "string" ? resolvedSearchParams.subject : undefined;
+  const requestedTier = resolvedSearchParams?.tier === "foundation" || resolvedSearchParams?.tier === "higher"
+    ? resolvedSearchParams.tier
+    : undefined;
+  const requestedTargetMode = resolvedSearchParams?.mode === "time" ? "time" : resolvedSearchParams?.mode === "marks" ? "marks" : undefined;
+  const requestedMarks = typeof resolvedSearchParams?.marks === "string" ? Number(resolvedSearchParams.marks) : undefined;
+  const requestedMinutes = typeof resolvedSearchParams?.minutes === "string" ? Number(resolvedSearchParams.minutes) : undefined;
+  const initialSubjectKey = getPaperMakerSubject(requestedSubject)?.key;
   const taggingCounts = await getTaggingCountsFromConvex();
   const countsByBoardSubject = new Map(
     taggingCounts.byBoardSubject.map((row) => [`${row.boardCode}::${row.subjectSlug}`, row]),
@@ -52,7 +74,14 @@ export default async function PaperMakerPage() {
       </nav>
 
       <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
-        <PaperMakerWorkspace subjectOptions={subjectOptions} />
+        <PaperMakerWorkspace
+          subjectOptions={subjectOptions}
+          initialSubjectKey={initialSubjectKey}
+          initialTier={requestedTier as SubjectTierKey | undefined}
+          initialTargetMode={requestedTargetMode}
+          initialTargetMarks={Number.isFinite(requestedMarks) ? requestedMarks : undefined}
+          initialTimeMinutes={Number.isFinite(requestedMinutes) ? requestedMinutes : undefined}
+        />
       </main>
     </div>
   );

@@ -25,6 +25,18 @@ function inferTierFromSourceRelativePath(sourceRelativePath: string | undefined)
   return "none" as const;
 }
 
+async function invalidateSubjectDetailSnapshot(ctx: { db: { query: Function; delete: Function } }, boardCode: string, subjectSlug: string) {
+  const existing = await ctx.db
+    .query("subjectDetailSnapshots")
+    .withIndex("by_board_subject", (q: any) => q.eq("boardCode", boardCode))
+    .filter((q: any) => q.eq(q.field("subjectSlug"), subjectSlug))
+    .collect();
+
+  for (const snapshot of existing) {
+    await ctx.db.delete(snapshot._id);
+  }
+}
+
 const taggedQuestionPartValidator = v.object({
   questionId: v.string(),
   questionNumber: v.string(),
@@ -118,6 +130,7 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
+    await invalidateSubjectDetailSnapshot(ctx, args.boardCode, args.subjectSlug);
     const existingByIdentity = await ctx.db
       .query("taggedPapers")
       .withIndex("by_paper_identity", (q) => q.eq("boardCode", args.boardCode))
@@ -322,7 +335,8 @@ export const deleteTaggedByBoardSubjects = mutationGeneric({
     let deletedQuestionParts = 0;
 
     for (const subjectSlug of args.subjectSlugs) {
-        const papers = await ctx.db
+      await invalidateSubjectDetailSnapshot(ctx, args.boardCode, subjectSlug);
+      const papers = await ctx.db
           .query("taggedPapers")
           .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
           .filter((q) => q.eq(q.field("subjectSlug"), subjectSlug))
@@ -360,6 +374,52 @@ export const getTaggedPaperBySourceFile = queryGeneric({
       .query("taggedPapers")
       .withIndex("by_source_file", (q) => q.eq("sourceFile", args.sourceFile))
       .unique();
+  },
+});
+
+export const getSubjectDetailSnapshot = queryGeneric({
+  args: {
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("subjectDetailSnapshots")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .unique();
+  },
+});
+
+export const upsertSubjectDetailSnapshot = mutationGeneric({
+  args: {
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    payloadJson: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("subjectDetailSnapshots")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        payloadJson: args.payloadJson,
+        updatedAt: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("subjectDetailSnapshots", {
+      boardCode: args.boardCode,
+      subjectSlug: args.subjectSlug,
+      payloadJson: args.payloadJson,
+      createdAt: now,
+      updatedAt: now,
+    });
   },
 });
 

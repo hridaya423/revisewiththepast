@@ -3,6 +3,7 @@ import "server-only";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { QuestionBankPart, SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
+import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
 const QUESTION_BANK_CACHE_TTL_MS = 60_000;
 
@@ -65,6 +66,35 @@ export async function getAqaGeographyQuestionBankFromConvex(): Promise<QuestionB
 export async function getTaggingCountsFromConvex() {
   const client = getConvexClient();
   return await client.query(api.questionTags.getTaggingCounts, {});
+}
+
+export type PaperMakerSubjectDetailSnapshot = {
+  key: string;
+  taggedQuestionUnits: number;
+  benchmarkMinutesPerMark: number | null;
+  topics: unknown[];
+  topicsByTier?: Partial<Record<SubjectTierKey, unknown[]>>;
+  tiers: Array<{ key: SubjectTierKey; label: string; taggedQuestionUnits: number }>;
+  detailLoaded: boolean;
+};
+
+export async function getSubjectDetailSnapshotFromConvex(boardCode: string, subjectSlug: string) {
+  const client = getConvexClient();
+  const snapshot = await client.query(api.questionTags.getSubjectDetailSnapshot, {
+    boardCode,
+    subjectSlug,
+  });
+  if (!snapshot) return null;
+  return JSON.parse(snapshot.payloadJson) as PaperMakerSubjectDetailSnapshot;
+}
+
+export async function upsertSubjectDetailSnapshotInConvex(boardCode: string, subjectSlug: string, snapshot: PaperMakerSubjectDetailSnapshot) {
+  const client = getConvexClient();
+  await client.mutation(api.questionTags.upsertSubjectDetailSnapshot, {
+    boardCode,
+    subjectSlug,
+    payloadJson: JSON.stringify(snapshot),
+  });
 }
 
 export async function getQuestionPageAssetsBySourceRelativePaths(sourceRelativePaths: string[]) {
