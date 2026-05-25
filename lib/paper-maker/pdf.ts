@@ -1,5 +1,4 @@
-import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 import { PDFDocument, rgb } from "pdf-lib";
@@ -125,8 +124,6 @@ const FULL_PAGE_ANSWER_EXTENSION_BY_MARKS = [
 ];
 
 const extractedPaperCache = new Map<string, ExtractedPaper | null>();
-const TEMP_PDF_SPLIT_DIR = "/var/folders/w9/p_fpb3_x05n45_bt9_3wp5hw0000gn/T/opencode/pdf-split";
-const TEMP_PDF_NORMALIZE_DIR = "/var/folders/w9/p_fpb3_x05n45_bt9_3wp5hw0000gn/T/opencode/pdf-normalized";
 
 function formatExamTime(timeMinutes: number) {
   const hours = Math.floor(timeMinutes / 60);
@@ -1382,43 +1379,13 @@ async function loadSourcePdfDocument(
       ignoreEncryption: true,
       throwOnInvalidObject: false,
     });
-  } catch {
-    sourceDoc = await loadNormalizedPdfDocumentWithQpdf(pageAssetUrl, sourceBytes);
+  } catch (error) {
+    throw new Error(
+      `Failed to load source PDF ${pageAssetUrl}: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
   sourceDocCache.set(pageAssetUrl, sourceDoc);
   return sourceDoc;
-}
-
-async function loadNormalizedPdfDocumentWithQpdf(cacheKey: string, sourceBytes: Uint8Array) {
-  execFileSync("mkdir", ["-p", TEMP_PDF_NORMALIZE_DIR]);
-  const baseName = Buffer.from(cacheKey).toString("base64url");
-  const inputPath = resolve(TEMP_PDF_NORMALIZE_DIR, `${baseName}.input.pdf`);
-  const outputPath = resolve(TEMP_PDF_NORMALIZE_DIR, `${baseName}.normalized.pdf`);
-  execFileSync("/bin/sh", ["-lc", `rm -f \"${inputPath}\" \"${outputPath}\"`]);
-  writeFileSync(inputPath, Buffer.from(sourceBytes));
-  execFileSync("qpdf", [inputPath, outputPath]);
-  const normalizedBytes = new Uint8Array(readFileSync(outputPath));
-  return await PDFDocument.load(normalizedBytes, {
-    ignoreEncryption: true,
-    throwOnInvalidObject: false,
-  });
-}
-
-async function copyLocalPdfPagesWithQpdfFallback(outputDoc: PDFDocument, filePath: string) {
-  const pageCount = Number(execFileSync("qpdf", ["--show-npages", filePath], { encoding: "utf8" }).trim());
-  if (!Number.isFinite(pageCount) || pageCount <= 0) {
-    throw new Error(`Unable to determine page count for ${filePath}`);
-  }
-
-  execFileSync("mkdir", ["-p", TEMP_PDF_SPLIT_DIR]);
-  for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
-    const splitPath = resolve(TEMP_PDF_SPLIT_DIR, `${Buffer.from(filePath).toString("base64url")}-${pageIndex + 1}.pdf`);
-    execFileSync("qpdf", ["--empty", "--pages", filePath, String(pageIndex + 1), "--", splitPath]);
-    const splitDocBytes = new Uint8Array(readFileSync(splitPath));
-    const splitDoc = await PDFDocument.load(splitDocBytes, { ignoreEncryption: true, throwOnInvalidObject: false });
-    const [copiedPage] = await outputDoc.copyPages(splitDoc, [0]);
-    outputDoc.addPage(copiedPage);
-  }
 }
 
 async function withSourcePdfCandidate<T>(
@@ -1482,7 +1449,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
         outputDoc.addPage(copiedPage);
       }
     } catch {
-      await copyLocalPdfPagesWithQpdfFallback(outputDoc, prefacePdfPath);
+      continue;
     }
   }
 
@@ -1624,7 +1591,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             outputDoc.addPage(copiedPage);
           }
         } catch {
-          await copyLocalPdfPagesWithQpdfFallback(outputDoc, insertPdfPath);
+          continue;
         }
       }
       prependedInsertBySource.add(unit.sourceRelativePath);
