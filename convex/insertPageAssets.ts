@@ -10,6 +10,8 @@ const pageAssetArgs = {
   cdnUrl: v.string(),
   fileSize: v.number(),
   contentType: v.string(),
+  ocrText: v.string(),
+  detectedSupportLabels: v.array(v.string()),
   uploadedAt: v.number(),
 };
 

@@ -3,7 +3,10 @@ import "dotenv/config";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
+
 import { ConvexHttpClient } from "convex/browser";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+
 import { api } from "../convex/_generated/api";
 
 type ManifestRecord = {
@@ -95,6 +98,34 @@ function buildInsertPageRelativePath(sourceRelativePath: string, pageNumber: num
   return `data/insert-page-assets/${sourceRelativePath.replaceAll("/", "__")}-page-${String(pageNumber).padStart(3, "0")}.pdf`;
 }
 
+function normalizeOcrText(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function extractSupportLabelsFromText(text: string) {
+  const labels = new Set<string>();
+  const normalized = text.toLowerCase();
+  const pattern = /\b(figure|resource|map|diagram|graph|photo|photograph|table|chart)\s*([a-z]|\d{1,3})\b/g;
+  let match = pattern.exec(normalized);
+  while (match) {
+    const kind = match[1] === "photograph" ? "photo" : match[1];
+    labels.add(`${kind} ${match[2]}`);
+    match = pattern.exec(normalized);
+  }
+  return Array.from(labels).sort((a, b) => a.localeCompare(b));
+}
+
+async function readOcrTextFromPdfPage(filePath: string) {
+  const loadingTask = getDocument(filePath);
+  const document = await loadingTask.promise;
+  const page = await document.getPage(1);
+  const textContent = await page.getTextContent();
+  const text = textContent.items
+    .map((item) => ("str" in item ? item.str : ""))
+    .join(" ");
+  return normalizeOcrText(text);
+}
+
 async function main() {
   if (!TARGET_BOARD_CODE || !TARGET_SUBJECT_SLUG) {
     throw new Error("Set TARGET_BOARD_CODE and TARGET_SUBJECT_SLUG");
@@ -121,6 +152,13 @@ async function main() {
     console.log(`${fileName}: ${pageCount} pages`);
 
     for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      const splitPath = resolve(TEMP_DIR, `${Buffer.from(sourceRelativePath).toString("base64url")}-page-${String(pageNumber).padStart(3, "0")}.pdf`);
+      execFileSync("/bin/sh", ["-lc", `rm -f \"${splitPath}\"`]);
+      splitPdfPage(absolutePath, pageNumber, splitPath);
+
+      const ocrText = await readOcrTextFromPdfPage(splitPath);
+      const detectedSupportLabels = extractSupportLabelsFromText(ocrText);
+
       const existing = existingByKey.get(`${sourceRelativePath}::${pageNumber}`);
       if (existing) {
         const relativePath = existing.relativePath ?? buildInsertPageRelativePath(existing.sourceRelativePath, existing.pageNumber);
@@ -133,15 +171,13 @@ async function main() {
           cdnUrl: existing.url,
           fileSize: existing.size,
           contentType: existing.contentType,
+          ocrText,
+          detectedSupportLabels,
           uploadedAt: Date.parse(existing.uploadedAt) || Date.now(),
         });
         console.log(`  [${pageNumber}/${pageCount}] skipped`);
         continue;
       }
-
-      const splitPath = resolve(TEMP_DIR, `${Buffer.from(sourceRelativePath).toString("base64url")}-page-${String(pageNumber).padStart(3, "0")}.pdf`);
-      execFileSync("/bin/sh", ["-lc", `rm -f \"${splitPath}\"`]);
-      splitPdfPage(absolutePath, pageNumber, splitPath);
 
       const upload = await uploadPage(splitPath, `page-${String(pageNumber).padStart(3, "0")}.pdf`);
       const relativePath = buildInsertPageRelativePath(sourceRelativePath, pageNumber);
@@ -167,6 +203,8 @@ async function main() {
         cdnUrl: upload.url,
         fileSize: upload.size,
         contentType: upload.content_type,
+        ocrText,
+        detectedSupportLabels,
         uploadedAt: Date.parse(upload.created_at) || Date.now(),
       });
       persistManifest(manifest);

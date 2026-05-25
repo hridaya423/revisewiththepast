@@ -98,6 +98,8 @@ export default defineSchema({
     cdnUrl: v.string(),
     fileSize: v.number(),
     contentType: v.string(),
+    ocrText: v.optional(v.string()),
+    detectedSupportLabels: v.optional(v.array(v.string())),
     uploadedAt: v.number(),
     createdAt: v.number(),
     updatedAt: v.number(),

@@ -121,26 +121,34 @@ export async function getPaperAssetsByBoardSubjectFromConvex(boardCode: string, 
   });
 }
 
-export async function getInsertPageAssetUrlsBySourceRelativePaths(sourceRelativePaths: string[]) {
+export type InsertPageAsset = {
+  sourceRelativePath: string;
+  pageNumber: number;
+  cdnUrl: string;
+  detectedSupportLabels: string[];
+  ocrText: string;
+};
+
+export async function getInsertPageAssetsBySourceRelativePaths(sourceRelativePaths: string[]) {
   const client = getConvexClient();
   const uniquePaths = Array.from(new Set(sourceRelativePaths));
   const assets = await client.query(api.insertPageAssets.getInsertPageAssetsBySourceRelativePaths, {
     sourceRelativePaths: uniquePaths,
   });
 
-  const bySourcePath = new Map<string, Array<{ pageNumber: number; cdnUrl: string }>>();
-  for (const asset of assets as Array<{ sourceRelativePath: string; pageNumber: number; cdnUrl: string }>) {
+  const bySourcePath = new Map<string, InsertPageAsset[]>();
+  for (const asset of assets as Array<InsertPageAsset>) {
     const existing = bySourcePath.get(asset.sourceRelativePath) ?? [];
-    existing.push({ pageNumber: asset.pageNumber, cdnUrl: asset.cdnUrl });
+    existing.push(asset);
     bySourcePath.set(asset.sourceRelativePath, existing);
   }
 
-  const result = new Map<string, string[]>();
+  const result = new Map<string, InsertPageAsset[]>();
   for (const sourceRelativePath of uniquePaths) {
-    const pageUrls = (bySourcePath.get(sourceRelativePath) ?? [])
-      .sort((a, b) => a.pageNumber - b.pageNumber)
-      .map((row) => row.cdnUrl);
-    result.set(sourceRelativePath, pageUrls);
+    result.set(
+      sourceRelativePath,
+      (bySourcePath.get(sourceRelativePath) ?? []).sort((a, b) => a.pageNumber - b.pageNumber),
+    );
   }
 
   return result;

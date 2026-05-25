@@ -15,7 +15,7 @@ import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-b
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
 import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
 import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
-import { getAqaGeographyQuestionBankFromConvex, getInsertPageAssetUrlsBySourceRelativePaths, getPaperAssetsByBoardSubjectFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
+import { getAqaGeographyQuestionBankFromConvex, getInsertPageAssetsBySourceRelativePaths, getPaperAssetsByBoardSubjectFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
 import { estimatePaperTimeMinutes, getPaperMakerSubject } from "@/lib/paper-maker/subjects";
 import { generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
 
@@ -38,6 +38,9 @@ type GeneratePaperRequest = {
   priorCoveredLeafTopicIds?: string[];
 };
 
+const SUPPORT_DEPENDENCY_PATTERN = /\bfigure\b|\bstudy\b|\bmap\b|\bdiagram\b|\bgraph\b|\bphoto\b|\bresource\b|\bapparatus\b|\btable\b|\bchart\b|\bmodel\b|\bspectrum\b|\bresults\b/i;
+const SUPPORT_LABEL_PATTERN = /\b(figure|resource|map|diagram|graph|photo|photograph|table|chart)\s*([a-z]|\d{1,3})\b/gi;
+
 function badRequest(message: string, status = 400) {
   return new Response(message, { status });
 }
@@ -46,16 +49,35 @@ async function getInsertAssetUrls(
   boardCode: string,
   subjectSlug: string,
   units: ReturnType<typeof groupQuestionPartsIntoUnits>,
-  options?: { sectionCode?: string },
+  options?: { sectionCode?: string; requireSupportDependency?: boolean },
 ) {
+  const extractSupportLabels = (text: string) => {
+    const labels = new Set<string>();
+    const lowered = text.toLowerCase();
+    let match = SUPPORT_LABEL_PATTERN.exec(lowered);
+    while (match) {
+      const kind = match[1] === "photograph" ? "photo" : match[1];
+      labels.add(`${kind} ${match[2]}`);
+      match = SUPPORT_LABEL_PATTERN.exec(lowered);
+    }
+    SUPPORT_LABEL_PATTERN.lastIndex = 0;
+    return labels;
+  };
+
   const assets = await getPaperAssetsByBoardSubjectFromConvex(boardCode, subjectSlug);
   const insertAssets = assets.filter((asset) => asset.kind === "insert");
   const insertAssetPaths = Array.from(new Set(insertAssets.map((asset) => asset.relativePath)));
-  const splitInsertUrlsByPath = await getInsertPageAssetUrlsBySourceRelativePaths(insertAssetPaths);
+  const splitInsertAssetsByPath = await getInsertPageAssetsBySourceRelativePaths(insertAssetPaths);
   const urls = new Set<string>();
 
   for (const unit of units) {
     if (options?.sectionCode && unit.sectionCode !== options.sectionCode) continue;
+    if (options?.requireSupportDependency) {
+      const searchable = unit.parts
+        .map((part) => `${part.promptText ?? ""} ${part.contextText ?? ""}`.trim())
+        .join(" ");
+      if (!SUPPORT_DEPENDENCY_PATTERN.test(searchable)) continue;
+    }
     const year = unit.year;
     const session = unit.session?.toLowerCase();
     if (!year || !session) continue;
@@ -67,17 +89,26 @@ async function getInsertAssetUrls(
       && asset.cdnUrl
     ));
 
+    const supportLabels = extractSupportLabels(
+      unit.parts.map((part) => `${part.promptText ?? ""} ${part.contextText ?? ""}`.trim()).join(" "),
+    );
+
     if (match?.relativePath) {
-      const splitPageUrls = splitInsertUrlsByPath.get(match.relativePath) ?? [];
-      if (splitPageUrls.length > 0) {
-        for (const splitPageUrl of splitPageUrls) {
-          urls.add(splitPageUrl);
+      const splitPages = splitInsertAssetsByPath.get(match.relativePath) ?? [];
+      if (splitPages.length > 0) {
+        if (supportLabels.size > 0) {
+          for (const splitPage of splitPages) {
+            const pageLabels = new Set((splitPage.detectedSupportLabels ?? []).map((label) => label.toLowerCase()));
+            if (Array.from(supportLabels).some((label) => pageLabels.has(label))) {
+              urls.add(splitPage.cdnUrl);
+            }
+          }
+          continue;
         }
-        continue;
       }
     }
 
-    if (match?.cdnUrl) {
+    if (supportLabels.size === 0 && match?.cdnUrl) {
       urls.add(match.cdnUrl);
     }
   }
@@ -192,7 +223,7 @@ export async function POST(request: NextRequest) {
       selectedUnits: selection.selectedUnits,
       allUnits,
       pageAssetsBySource,
-      prefaceSourcePdfs: await getInsertAssetUrls("aqa", "geography", selection.selectedUnits),
+      prefaceSourcePdfs: await getInsertAssetUrls("aqa", "geography", selection.selectedUnits, { requireSupportDependency: true }),
       coverPage: {
         boardLabel: subject.boardLabel,
         subjectLabel: subject.coverTitle,
@@ -634,7 +665,7 @@ export async function POST(request: NextRequest) {
       selectedUnits: selection.selectedUnits,
       allUnits,
       pageAssetsBySource,
-        prefaceSourcePdfs: await getInsertAssetUrls("aqa", "english-language", selection.selectedUnits, { sectionCode: "A" }),
+        prefaceSourcePdfs: await getInsertAssetUrls("aqa", "english-language", selection.selectedUnits, { sectionCode: "A", requireSupportDependency: true }),
       coverPage: {
         boardLabel: subject.boardLabel,
         subjectLabel: subject.coverTitle,
