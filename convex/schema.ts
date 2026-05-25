@@ -89,6 +89,23 @@ export default defineSchema({
     .index("by_source_relative_path", ["sourceRelativePath"])
     .index("by_source_relative_path_page", ["sourceRelativePath", "pageNumber"]),
 
+  insertPageAssets: defineTable({
+    sourceRelativePath: v.string(),
+    pageNumber: v.number(),
+    relativePath: v.string(),
+    fileName: v.string(),
+    cdnUploadId: v.string(),
+    cdnUrl: v.string(),
+    fileSize: v.number(),
+    contentType: v.string(),
+    uploadedAt: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_relative_path", ["relativePath"])
+    .index("by_source_relative_path", ["sourceRelativePath"])
+    .index("by_source_relative_path_page", ["sourceRelativePath", "pageNumber"]),
+
   taggedPapers: defineTable({
     sourceFile: v.string(),
     sourceRelativePath: v.optional(v.string()),

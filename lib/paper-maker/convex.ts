@@ -72,6 +72,7 @@ function getQuestionPageManifestBySourcePath() {
   return bySourcePath;
 }
 
+
 export async function getPaperMakerQuestionBankFromConvex(
   boardCode: string,
   subjectSlug: string,
@@ -118,6 +119,31 @@ export async function getPaperAssetsByBoardSubjectFromConvex(boardCode: string, 
     boardCode,
     subjectSlug,
   });
+}
+
+export async function getInsertPageAssetUrlsBySourceRelativePaths(sourceRelativePaths: string[]) {
+  const client = getConvexClient();
+  const uniquePaths = Array.from(new Set(sourceRelativePaths));
+  const assets = await client.query(api.insertPageAssets.getInsertPageAssetsBySourceRelativePaths, {
+    sourceRelativePaths: uniquePaths,
+  });
+
+  const bySourcePath = new Map<string, Array<{ pageNumber: number; cdnUrl: string }>>();
+  for (const asset of assets as Array<{ sourceRelativePath: string; pageNumber: number; cdnUrl: string }>) {
+    const existing = bySourcePath.get(asset.sourceRelativePath) ?? [];
+    existing.push({ pageNumber: asset.pageNumber, cdnUrl: asset.cdnUrl });
+    bySourcePath.set(asset.sourceRelativePath, existing);
+  }
+
+  const result = new Map<string, string[]>();
+  for (const sourceRelativePath of uniquePaths) {
+    const pageUrls = (bySourcePath.get(sourceRelativePath) ?? [])
+      .sort((a, b) => a.pageNumber - b.pageNumber)
+      .map((row) => row.cdnUrl);
+    result.set(sourceRelativePath, pageUrls);
+  }
+
+  return result;
 }
 
 export type PaperMakerSubjectDetailSnapshot = {

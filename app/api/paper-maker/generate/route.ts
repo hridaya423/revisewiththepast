@@ -15,7 +15,7 @@ import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-b
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
 import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
 import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
-import { getAqaGeographyQuestionBankFromConvex, getPaperAssetsByBoardSubjectFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
+import { getAqaGeographyQuestionBankFromConvex, getInsertPageAssetUrlsBySourceRelativePaths, getPaperAssetsByBoardSubjectFromConvex, getPaperMakerQuestionBankFromConvex, getQuestionPageAssetsBySourceRelativePaths } from "@/lib/paper-maker/convex";
 import { estimatePaperTimeMinutes, getPaperMakerSubject } from "@/lib/paper-maker/subjects";
 import { generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
 
@@ -50,6 +50,8 @@ async function getInsertAssetUrls(
 ) {
   const assets = await getPaperAssetsByBoardSubjectFromConvex(boardCode, subjectSlug);
   const insertAssets = assets.filter((asset) => asset.kind === "insert");
+  const insertAssetPaths = Array.from(new Set(insertAssets.map((asset) => asset.relativePath)));
+  const splitInsertUrlsByPath = await getInsertPageAssetUrlsBySourceRelativePaths(insertAssetPaths);
   const urls = new Set<string>();
 
   for (const unit of units) {
@@ -64,6 +66,16 @@ async function getInsertAssetUrls(
       && asset.session.toLowerCase() === session
       && asset.cdnUrl
     ));
+
+    if (match?.relativePath) {
+      const splitPageUrls = splitInsertUrlsByPath.get(match.relativePath) ?? [];
+      if (splitPageUrls.length > 0) {
+        for (const splitPageUrl of splitPageUrls) {
+          urls.add(splitPageUrl);
+        }
+        continue;
+      }
+    }
 
     if (match?.cdnUrl) {
       urls.add(match.cdnUrl);
