@@ -161,6 +161,12 @@ input[type="number"]::-webkit-inner-spin-button {
   100% { color: var(--text); }
 }
 
+@keyframes indeterminate-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(200%); }
+  100% { transform: translateX(-100%); }
+}
+
 .status-breathe {
   animation: breathe 2.4s ease-in-out infinite;
 }

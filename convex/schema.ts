@@ -230,6 +230,76 @@ export default defineSchema({
     .index("by_case_study", ["caseStudy"])
     .index("by_resource_track", ["resourceTrack"]),
 
+  markingSubmissions: defineTable({
+    ownerId: v.optional(v.string()),
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    subjectKey: v.string(),
+    paperCode: v.optional(v.string()),
+    tier: v.optional(v.union(v.literal("none"), v.literal("foundation"), v.literal("higher"))),
+    year: v.optional(v.number()),
+    session: v.optional(v.string()),
+    rubricVersion: v.optional(v.string()),
+    status: v.union(
+      v.literal("uploaded"),
+      v.literal("ocr_complete"),
+      v.literal("scored"),
+      v.literal("review_required"),
+    ),
+    studentLabel: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner", ["ownerId"])
+    .index("by_board_subject", ["boardCode", "subjectSlug"])
+    .index("by_subject_key", ["subjectKey"]),
+
+  markingResponses: defineTable({
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    questionNumber: v.optional(v.string()),
+    questionPartNumber: v.optional(v.string()),
+    sourceImageUrl: v.optional(v.string()),
+    ocrText: v.string(),
+    ocrProvider: v.string(),
+    ocrModel: v.string(),
+    ocrConfidence: v.optional(v.number()),
+    ocrRawJson: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_submission", ["submissionId"])
+    .index("by_submission_question", ["submissionId", "questionKey"]),
+
+  markingScores: defineTable({
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    awardedMarks: v.number(),
+    maxMarks: v.number(),
+    confidence: v.number(),
+    needsReview: v.boolean(),
+    rationale: v.string(),
+    evidenceJson: v.string(),
+    scorerProvider: v.string(),
+    scorerModel: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_submission", ["submissionId"])
+    .index("by_submission_question", ["submissionId", "questionKey"]),
+
+  markingModerations: defineTable({
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    originalAwardedMarks: v.number(),
+    moderatedAwardedMarks: v.number(),
+    moderatorLabel: v.optional(v.string()),
+    reason: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_submission", ["submissionId"])
+    .index("by_submission_question", ["submissionId", "questionKey"]),
+
   papers: defineTable({
     subjectId: v.id("subjects"),
     boardId: v.id("examBoards"),
