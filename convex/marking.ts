@@ -18,6 +18,7 @@ async function requireOwnedSubmission(ctx: any, submissionId: any) {
 
 export const createMarkingSubmission = mutation({
   args: {
+    savedPaperId: v.optional(v.id("savedPapers")),
     boardCode: v.string(),
     subjectSlug: v.string(),
     subjectKey: v.string(),
@@ -30,9 +31,16 @@ export const createMarkingSubmission = mutation({
   },
   handler: async (ctx, args) => {
     const user = await requireOwner(ctx);
+    if (args.savedPaperId) {
+      const savedPaper = await ctx.db.get(args.savedPaperId);
+      if (!savedPaper || savedPaper.ownerId !== String(user._id)) {
+        throw new Error("Unauthorized");
+      }
+    }
     const now = Date.now();
     return await ctx.db.insert("markingSubmissions", {
       ownerId: String(user._id),
+      savedPaperId: args.savedPaperId,
       ...args,
       status: "uploaded",
       createdAt: now,
@@ -137,6 +145,29 @@ export const upsertMarkingScore = mutation({
   },
 });
 
+export const addMarkingResponsePage = mutation({
+  args: {
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    questionNumber: v.optional(v.string()),
+    questionPartNumber: v.optional(v.string()),
+    pageLabel: v.optional(v.string()),
+    fileName: v.string(),
+    contentType: v.string(),
+    fileSize: v.number(),
+    cdnUploadId: v.string(),
+    sourceImageUrl: v.string(),
+    uploadedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireOwnedSubmission(ctx, args.submissionId);
+    return await ctx.db.insert("markingResponsePages", {
+      ...args,
+      createdAt: Date.now(),
+    });
+  },
+});
+
 export const addMarkingModeration = mutation({
   args: {
     submissionId: v.id("markingSubmissions"),
@@ -161,9 +192,21 @@ export const getMarkingSubmissionBundle = query({
   },
   handler: async (ctx, args) => {
     const { submission } = await requireOwnedSubmission(ctx, args.submissionId);
+    const savedPaper = submission.savedPaperId ? await ctx.db.get(submission.savedPaperId) : null;
+    const savedPaperQuestions = submission.savedPaperId
+      ? await ctx.db
+        .query("savedPaperQuestions")
+        .withIndex("by_saved_paper_order", (q) => q.eq("savedPaperId", submission.savedPaperId))
+        .collect()
+      : [];
 
     const responses = await ctx.db
       .query("markingResponses")
+      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+      .collect();
+
+    const pages = await ctx.db
+      .query("markingResponsePages")
       .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
       .collect();
 
@@ -179,9 +222,63 @@ export const getMarkingSubmissionBundle = query({
 
     return {
       submission,
+      savedPaper,
+      savedPaperQuestions: savedPaperQuestions.sort((a, b) => a.displayOrder - b.displayOrder),
+      pages: pages.sort((a, b) => a.createdAt - b.createdAt),
       responses,
       scores,
       moderations,
+      insights: {
+        questionCount: new Set([
+          ...savedPaperQuestions.map((question) => question.unitKey),
+          ...pages.map((page) => page.questionKey),
+          ...responses.map((response) => response.questionKey),
+          ...scores.map((score) => score.questionKey),
+        ]).size,
+        uploadedPageCount: pages.length,
+        ocrCompletedCount: responses.length,
+        scoredCount: scores.length,
+        reviewRequiredCount: scores.filter((score) => score.needsReview).length,
+        totalAwardedMarks: scores.reduce((sum, score) => sum + score.awardedMarks, 0),
+        totalMaxMarks: scores.reduce((sum, score) => sum + score.maxMarks, 0),
+        averageConfidence: scores.length > 0
+          ? scores.reduce((sum, score) => sum + score.confidence, 0) / scores.length
+          : null,
+      },
     };
+  },
+});
+
+export const listMarkingSubmissions = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireOwner(ctx);
+    const submissions = await ctx.db
+      .query("markingSubmissions")
+      .withIndex("by_owner", (q) => q.eq("ownerId", String(user._id)))
+      .collect();
+
+    const summaries = await Promise.all(submissions.map(async (submission) => {
+      const savedPaper = submission.savedPaperId ? await ctx.db.get(submission.savedPaperId) : null;
+      const pages = await ctx.db
+        .query("markingResponsePages")
+        .withIndex("by_submission", (q) => q.eq("submissionId", submission._id))
+        .collect();
+      const scores = await ctx.db
+        .query("markingScores")
+        .withIndex("by_submission", (q) => q.eq("submissionId", submission._id))
+        .collect();
+      return {
+        ...submission,
+        savedPaperTitle: savedPaper?.title ?? null,
+        uploadedPageCount: pages.length,
+        scoredCount: scores.length,
+        totalAwardedMarks: scores.reduce((sum, score) => sum + score.awardedMarks, 0),
+        totalMaxMarks: scores.reduce((sum, score) => sum + score.maxMarks, 0),
+        reviewRequiredCount: scores.filter((score) => score.needsReview).length,
+      };
+    }));
+
+    return summaries.sort((a, b) => b.updatedAt - a.updatedAt);
   },
 });

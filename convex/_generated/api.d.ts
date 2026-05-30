@@ -17,6 +17,7 @@ import type * as marking from "../marking.js";
 import type * as paperAssets from "../paperAssets.js";
 import type * as questionPageAssets from "../questionPageAssets.js";
 import type * as questionTags from "../questionTags.js";
+import type * as savedPapers from "../savedPapers.js";
 
 import type {
   ApiFromModules,
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   paperAssets: typeof paperAssets;
   questionPageAssets: typeof questionPageAssets;
   questionTags: typeof questionTags;
+  savedPapers: typeof savedPapers;
 }>;
 
 /**

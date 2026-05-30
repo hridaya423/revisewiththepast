@@ -65,7 +65,12 @@ export default async function PaperMakerPage({
               <div className="h-5 w-px bg-[#1a2e1a]/12" />
               <span className="inline-flex items-center font-serif text-[1rem] tracking-[-0.02em] text-[#1a2e1a]">Revise with the Past</span>
             </div>
-            <UserMenu />
+            <div className="flex items-center gap-2">
+              <Link href="/marking" className="inline-flex items-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-3.5 py-2 text-[0.78rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white">
+                Marking Studio
+              </Link>
+              <UserMenu />
+            </div>
           </div>
       </nav>
 

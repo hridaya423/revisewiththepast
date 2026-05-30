@@ -31,6 +31,7 @@ import {
   type PaperBuildTargetMode,
   type PaperMakerSubjectKey,
 } from "@/lib/paper-maker/subjects";
+import { useAuth } from "@/app/_components/auth-provider";
 
 type PaperMakerWorkspaceProps = {
   initialSubjectKey?: PaperMakerSubjectKey;
@@ -283,6 +284,7 @@ function SuccessModal({
   subjectLabel,
   tierLabel,
   minutesPerMark,
+  isAuthenticated,
   onClose,
   onBuildAnother,
 }: {
@@ -290,6 +292,7 @@ function SuccessModal({
   subjectLabel: string;
   tierLabel?: string;
   minutesPerMark: number;
+  isAuthenticated: boolean;
   onClose: () => void;
   onBuildAnother: () => void;
 }) {
@@ -359,6 +362,12 @@ function SuccessModal({
         </div>
 
         <div className="mt-6 flex flex-col gap-2.5">
+          <a
+            href={isAuthenticated ? "/marking" : "/auth?redirect=/marking"}
+            className="btn-press inline-flex w-full items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white"
+          >
+            Open marking studio
+          </a>
           <button
             type="button"
             onClick={onClose}
@@ -407,6 +416,7 @@ export function PaperMakerWorkspace({
   initialSubjectKey,
   initialTier,
 }: PaperMakerWorkspaceProps) {
+  const { isAuthenticated } = useAuth();
   const [subjectOptionsState, setSubjectOptionsState] = useState(subjectOptions);
   const defaultSubject = subjectOptionsState.find((subject) => subject.key === initialSubjectKey) ?? subjectOptionsState[0];
   const defaultMinutesPerMark = resolveMinutesPerMark(defaultSubject?.benchmarkMinutesPerMark, defaultSubject?.recommendedMinutesPerMark);
@@ -638,6 +648,7 @@ export function PaperMakerWorkspace({
         const excludedSourceQuestionKeys = new Set<string>();
         const priorSelectedUnitMarks: number[] = [];
         const priorCoveredLeafTopicIds: string[] = [];
+        let saveWarning: string | null = null;
         let lastQuestionCount = 0;
         let lastTotalMarks = 0;
         let lastCoveredTopics = 0;
@@ -695,6 +706,8 @@ export function PaperMakerWorkspace({
             }
           }
 
+          const encodedUnitKeys = response.headers.get("X-Selected-Unit-Keys");
+
           const url = URL.createObjectURL(blob);
           const anchor = document.createElement("a");
           anchor.href = url;
@@ -702,7 +715,32 @@ export function PaperMakerWorkspace({
           document.body.appendChild(anchor);
           anchor.click();
           anchor.remove();
+
+          if (isAuthenticated && encodedUnitKeys) {
+            const saveFormData = new FormData();
+            saveFormData.append("subjectKey", selectedSubjectKey);
+            if (activeSubject?.tiers.length) saveFormData.append("subjectTier", selectedTier);
+            saveFormData.append("targetMarks", String(targetMarks));
+            saveFormData.append("totalMarks", String(lastTotalMarks));
+            saveFormData.append("timeMinutes", String(lastTimeMinutes));
+            saveFormData.append("selectedUnitKeys", decodeURIComponent(encodedUnitKeys));
+            saveFormData.append("file", new File([blob], anchor.download, { type: "application/pdf" }));
+
+            const saveResponse = await fetch("/api/paper-maker/save-generated", {
+              method: "POST",
+              body: saveFormData,
+            });
+
+            if (!saveResponse.ok && !saveWarning) {
+              saveWarning = await saveResponse.text() || "The paper downloaded, but saving it failed.";
+            }
+          }
+
           URL.revokeObjectURL(url);
+        }
+
+        if (saveWarning) {
+          setError(saveWarning);
         }
 
         setResult({
@@ -716,7 +754,7 @@ export function PaperMakerWorkspace({
         setError(cause instanceof Error ? cause.message : String(cause));
       }
     });
-  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, timeMinutes, targetMode, selectedPaperCodes, paperCount]);
+  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, timeMinutes, targetMode, selectedPaperCodes, paperCount, isAuthenticated]);
 
   useEffect(() => {
     activeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1199,6 +1237,7 @@ export function PaperMakerWorkspace({
           subjectLabel={activeSubject?.label ?? ""}
           tierLabel={activeTier?.label}
           minutesPerMark={activeMinutesPerMark}
+          isAuthenticated={isAuthenticated}
           onClose={() => setResult(null)}
           onBuildAnother={() => {
             setResult(null);

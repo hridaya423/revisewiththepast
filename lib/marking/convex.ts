@@ -4,6 +4,7 @@ import { api } from "@/convex/_generated/api";
 import { fetchAuthMutation, fetchAuthQuery } from "@/lib/auth-server";
 
 export async function createMarkingSubmissionInConvex(args: {
+  savedPaperId?: string;
   boardCode: string;
   subjectSlug: string;
   subjectKey: string;
@@ -14,7 +15,10 @@ export async function createMarkingSubmissionInConvex(args: {
   rubricVersion?: string;
   studentLabel?: string;
 }) {
-  return await fetchAuthMutation(api.marking.createMarkingSubmission, args);
+  return await fetchAuthMutation(api.marking.createMarkingSubmission, {
+    ...args,
+    savedPaperId: args.savedPaperId as never,
+  });
 }
 
 export async function setMarkingSubmissionStatusInConvex(
@@ -58,6 +62,25 @@ export async function upsertMarkingScoreInConvex(args: {
   scorerModel: string;
 }) {
   return await fetchAuthMutation(api.marking.upsertMarkingScore, {
+    ...args,
+    submissionId: args.submissionId as never,
+  });
+}
+
+export async function addMarkingResponsePageInConvex(args: {
+  submissionId: string;
+  questionKey: string;
+  questionNumber?: string;
+  questionPartNumber?: string;
+  pageLabel?: string;
+  fileName: string;
+  contentType: string;
+  fileSize: number;
+  cdnUploadId: string;
+  sourceImageUrl: string;
+  uploadedAt: number;
+}) {
+  return await fetchAuthMutation(api.marking.addMarkingResponsePage, {
     ...args,
     submissionId: args.submissionId as never,
   });

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Manrope, Newsreader } from "next/font/google";
 import { AuthProvider } from "@/app/_components/auth-provider";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 
 const sans = Manrope({

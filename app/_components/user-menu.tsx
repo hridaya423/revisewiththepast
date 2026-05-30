@@ -30,10 +30,11 @@ export function UserMenu() {
     return (
       <a
         href="/auth"
-        className="btn-press inline-flex items-center gap-1.5 rounded-full bg-[#1a2e1a] px-4 py-2 text-[0.78rem] font-semibold text-white shadow-[0_4px_14px_rgba(26,46,26,0.18)] transition-shadow hover:shadow-[0_6px_20px_rgba(26,46,26,0.24)]"
+        className="btn-press inline-flex min-w-[112px] items-center justify-center gap-1.5 rounded-full bg-[#1a2e1a] px-4 py-2 text-[0.78rem] font-semibold text-white shadow-[0_4px_14px_rgba(26,46,26,0.18)] transition-shadow hover:bg-[#233923] hover:shadow-[0_6px_20px_rgba(26,46,26,0.24)]"
+        aria-label="Sign in"
       >
-        <User className="h-3.5 w-3.5" strokeWidth={2} />
-        <span>Sign in</span>
+        <User className="h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2} />
+        <span className="text-white">Sign in</span>
       </a>
     );
   }
@@ -69,6 +70,12 @@ export function UserMenu() {
             <p className="truncate text-[0.75rem] text-[#3d5a3f]/55">{user!.email}</p>
           </div>
           <div className="p-1.5">
+            <a
+              href="/marking"
+              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-[0.82rem] text-[#1a2e1a]/70 transition-colors hover:bg-[#f8f7f4] hover:text-[#1a2e1a]"
+            >
+              <span>Marking studio</span>
+            </a>
             <button
               type="button"
               onClick={() => {

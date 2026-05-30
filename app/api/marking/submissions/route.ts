@@ -7,6 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type CreateSubmissionRequest = {
+  savedPaperId?: string;
   boardCode?: string;
   subjectSlug?: string;
   subjectKey?: string;
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
   const boardCode = typeof body.boardCode === "string" ? body.boardCode.trim().toLowerCase() : "edexcel";
   const subjectSlug = typeof body.subjectSlug === "string" ? body.subjectSlug.trim().toLowerCase() : "mathematics";
   const subjectKey = typeof body.subjectKey === "string" ? body.subjectKey.trim() : "edexcel-mathematics-higher";
+  const savedPaperId = typeof body.savedPaperId === "string" ? body.savedPaperId.trim() : undefined;
   const paperCode = typeof body.paperCode === "string" ? body.paperCode.trim() : undefined;
   const tier = body.tier === "foundation" || body.tier === "higher" || body.tier === "none" ? body.tier : undefined;
   const year = typeof body.year === "number" && Number.isFinite(body.year) ? Math.round(body.year) : undefined;
@@ -49,6 +51,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const submissionId = await createMarkingSubmissionInConvex({
+      savedPaperId,
       boardCode,
       subjectSlug,
       subjectKey,

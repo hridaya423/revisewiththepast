@@ -232,6 +232,7 @@ export default defineSchema({
 
   markingSubmissions: defineTable({
     ownerId: v.optional(v.string()),
+    savedPaperId: v.optional(v.id("savedPapers")),
     boardCode: v.string(),
     subjectSlug: v.string(),
     subjectKey: v.string(),
@@ -271,6 +272,23 @@ export default defineSchema({
     .index("by_submission", ["submissionId"])
     .index("by_submission_question", ["submissionId", "questionKey"]),
 
+  markingResponsePages: defineTable({
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    questionNumber: v.optional(v.string()),
+    questionPartNumber: v.optional(v.string()),
+    pageLabel: v.optional(v.string()),
+    fileName: v.string(),
+    contentType: v.string(),
+    fileSize: v.number(),
+    cdnUploadId: v.string(),
+    sourceImageUrl: v.string(),
+    uploadedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_submission", ["submissionId"])
+    .index("by_submission_question", ["submissionId", "questionKey"]),
+
   markingScores: defineTable({
     submissionId: v.id("markingSubmissions"),
     questionKey: v.string(),
@@ -299,6 +317,47 @@ export default defineSchema({
   })
     .index("by_submission", ["submissionId"])
     .index("by_submission_question", ["submissionId", "questionKey"]),
+
+  savedPapers: defineTable({
+    ownerId: v.string(),
+    subjectKey: v.string(),
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    tier: v.optional(v.union(v.literal("none"), v.literal("foundation"), v.literal("higher"))),
+    title: v.string(),
+    targetMarks: v.number(),
+    totalMarks: v.number(),
+    timeMinutes: v.number(),
+    pdfFileName: v.string(),
+    pdfContentType: v.string(),
+    pdfFileSize: v.number(),
+    pdfCdnUploadId: v.string(),
+    pdfUrl: v.string(),
+    questionCount: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner", ["ownerId"])
+    .index("by_subject", ["subjectKey"]),
+
+  savedPaperQuestions: defineTable({
+    savedPaperId: v.id("savedPapers"),
+    displayOrder: v.number(),
+    unitKey: v.string(),
+    sourceQuestionKey: v.string(),
+    sourceRelativePath: v.string(),
+    paperCode: v.string(),
+    year: v.optional(v.number()),
+    session: v.optional(v.string()),
+    questionNumber: v.string(),
+    questionPartNumber: v.optional(v.union(v.string(), v.null())),
+    totalMarks: v.number(),
+    promptText: v.string(),
+    contextText: v.optional(v.union(v.string(), v.null())),
+    createdAt: v.number(),
+  })
+    .index("by_saved_paper", ["savedPaperId"])
+    .index("by_saved_paper_order", ["savedPaperId", "displayOrder"]),
 
   papers: defineTable({
     subjectId: v.id("subjects"),

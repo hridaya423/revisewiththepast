@@ -251,6 +251,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -345,6 +346,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -440,6 +442,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -524,6 +527,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -608,6 +612,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -693,6 +698,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -777,6 +783,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -867,6 +874,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
@@ -951,6 +959,7 @@ export async function POST(request: NextRequest) {
         "X-Time-Minutes": String(timeMinutes),
         "X-Target-Mode": targetMode,
         "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+        "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
         "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
       },
     });
