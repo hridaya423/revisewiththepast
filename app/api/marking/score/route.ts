@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingScoreInConvex } from "@/lib/marking/convex";
+import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingQuestionStatusInConvex, upsertMarkingScoreInConvex } from "@/lib/marking/convex";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,6 +73,13 @@ export async function POST(request: NextRequest) {
       evidenceJson: JSON.stringify(body.evidence ?? {}),
       scorerProvider,
       scorerModel,
+      scoreStatus: "confirmed",
+    });
+
+    await upsertMarkingQuestionStatusInConvex({
+      submissionId,
+      questionKey,
+      status: needsReview ? "needs_manual_review" : "saved",
     });
 
     const bundle = await getMarkingSubmissionBundleFromConvex(submissionId);

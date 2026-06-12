@@ -433,7 +433,7 @@ export function PaperMakerWorkspace({
   const [selectedTier, setSelectedTier] = useState<SubjectTierKey>(initialTier ?? defaultSubject?.tiers[0]?.key ?? "foundation");
   const [error, setError] = useState<string | null>(null);
   const [paperCount, setPaperCount] = useState(1);
-  const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number } | null>(null);
+  const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number; savedPaperIds: string[] } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoadingSubjectDetail, setIsLoadingSubjectDetail] = useState(false);
   const [topicSearch, setTopicSearch] = useState("");
@@ -649,6 +649,7 @@ export function PaperMakerWorkspace({
         const priorSelectedUnitMarks: number[] = [];
         const priorCoveredLeafTopicIds: string[] = [];
         let saveWarning: string | null = null;
+        const savedPaperIds: string[] = [];
         let lastQuestionCount = 0;
         let lastTotalMarks = 0;
         let lastCoveredTopics = 0;
@@ -731,6 +732,11 @@ export function PaperMakerWorkspace({
               body: saveFormData,
             });
 
+            if (saveResponse.ok) {
+              const payload = await saveResponse.json() as { savedPaperId?: string };
+              if (payload.savedPaperId) savedPaperIds.push(payload.savedPaperId);
+            }
+
             if (!saveResponse.ok && !saveWarning) {
               saveWarning = await saveResponse.text() || "The paper downloaded, but saving it failed.";
             }
@@ -749,6 +755,7 @@ export function PaperMakerWorkspace({
           totalMarks: lastTotalMarks,
           coveredTopics: lastCoveredTopics,
           timeMinutes: lastTimeMinutes,
+          savedPaperIds,
         });
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));

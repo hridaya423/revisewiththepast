@@ -41,9 +41,12 @@ export const createSavedPaper = mutation({
       session: v.optional(v.string()),
       questionNumber: v.string(),
       questionPartNumber: v.optional(v.union(v.string(), v.null())),
+      questionPath: v.optional(v.array(v.string())),
       totalMarks: v.number(),
       promptText: v.string(),
       contextText: v.optional(v.union(v.string(), v.null())),
+      questionType: v.optional(v.union(v.string(), v.null())),
+      isChoiceQuestion: v.optional(v.boolean()),
     })),
   },
   handler: async (ctx, args) => {

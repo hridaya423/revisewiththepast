@@ -32,6 +32,8 @@ export type QuestionBankPart = {
   bbox: BoundingBox | null;
   sourceMode: string;
   assetIds: string[];
+  questionType?: string | null;
+  isChoiceQuestion?: boolean;
   choiceGroupId?: string | null;
   choiceGroupType?: string | null;
   choiceSiblingQuestionIds?: string[];

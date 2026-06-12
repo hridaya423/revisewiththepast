@@ -18,6 +18,7 @@
     "@aws-sdk/client-s3": "^3.1045.0",
     "@convex-dev/better-auth": "^0.12.2",
     "@gsap/react": "^2.1.2",
+    "@napi-rs/canvas": "^1.0.0",
     "@openrouter/sdk": "^0.12.35",
     "better-auth": "^1.6.11",
     "cheerio": "^1.2.0",

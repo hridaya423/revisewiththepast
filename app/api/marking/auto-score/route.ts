@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 
 import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
 import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingScoreInConvex } from "@/lib/marking/convex";
-import { autoScoreMathQuestion } from "@/lib/marking/scoring";
+import { autoScoreMathPaper, autoScoreMathQuestion } from "@/lib/marking/scoring";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 type AutoScoreRequest = {
   submissionId?: string;
   questionKey?: string;
+  scoreWholePaper?: boolean;
 };
 
 function badRequest(message: string, status = 400) {
@@ -29,12 +30,38 @@ export async function POST(request: NextRequest) {
 
   const submissionId = typeof body.submissionId === "string" ? body.submissionId.trim() : "";
   const questionKey = typeof body.questionKey === "string" ? body.questionKey.trim() : "";
+  const scoreWholePaper = body.scoreWholePaper === true;
   if (!submissionId) return badRequest("submissionId is required.");
-  if (!questionKey) return badRequest("questionKey is required.");
+  if (!scoreWholePaper && !questionKey) return badRequest("questionKey is required.");
 
   try {
     const bundle = await getMarkingSubmissionBundleFromConvex(submissionId);
     if (!bundle) return badRequest("Submission not found.", 404);
+
+    if (scoreWholePaper) {
+      const results = await autoScoreMathPaper(bundle as never);
+      for (const entry of results) {
+        if (entry.result.skipped) continue;
+        await upsertMarkingScoreInConvex({
+          submissionId,
+          questionKey: entry.questionKey,
+          awardedMarks: entry.result.awardedMarks,
+          maxMarks: entry.result.evidence.sourceUnit.totalMarks,
+          confidence: entry.result.confidence,
+          needsReview: entry.result.needsReview,
+          rationale: entry.result.rationale,
+          evidenceJson: JSON.stringify(entry.result.evidence),
+          scorerProvider: "openrouter",
+          scorerModel: process.env.OPENROUTER_MODEL ?? "google/gemini-3.1-flash-lite",
+          scoreStatus: "ai_suggested",
+        });
+      }
+
+      const updatedBundle = await getMarkingSubmissionBundleFromConvex(submissionId);
+      const hasReviewRequired = (updatedBundle?.scores ?? []).some((score) => score.needsReview) || results.some((entry) => entry.result.skipped);
+      await setMarkingSubmissionStatusInConvex(submissionId, hasReviewRequired ? "review_required" : "scored");
+      return Response.json({ results });
+    }
 
     const result = await autoScoreMathQuestion(bundle as never, questionKey);
     await upsertMarkingScoreInConvex({
@@ -47,7 +74,8 @@ export async function POST(request: NextRequest) {
       rationale: result.rationale,
       evidenceJson: JSON.stringify(result.evidence),
       scorerProvider: "openrouter",
-      scorerModel: process.env.OPENROUTER_MODEL ?? "google/gemini-3-flash-preview",
+      scorerModel: process.env.OPENROUTER_MODEL ?? "google/gemini-3.1-flash-lite",
+      scoreStatus: "ai_suggested",
     });
 
     const updatedBundle = await getMarkingSubmissionBundleFromConvex(submissionId);

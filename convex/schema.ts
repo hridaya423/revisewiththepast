@@ -248,12 +248,26 @@ export default defineSchema({
       v.literal("review_required"),
     ),
     studentLabel: v.optional(v.string()),
+    importSource: v.optional(v.union(
+      v.literal("manual_upload"),
+      v.literal("imported_pdf"),
+      v.literal("saved_paper"),
+    )),
+    detectedPaperIdentity: v.optional(v.object({
+      paperCode: v.string(),
+      year: v.number(),
+      session: v.string(),
+      tier: v.union(v.literal("none"), v.literal("foundation"), v.literal("higher")),
+      sourceRelativePath: v.optional(v.string()),
+      examReference: v.optional(v.string()),
+    })),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_owner", ["ownerId"])
     .index("by_board_subject", ["boardCode", "subjectSlug"])
-    .index("by_subject_key", ["subjectKey"]),
+    .index("by_subject_key", ["subjectKey"])
+    .index("by_saved_paper", ["savedPaperId"]),
 
   markingResponses: defineTable({
     submissionId: v.id("markingSubmissions"),
@@ -283,7 +297,30 @@ export default defineSchema({
     fileSize: v.number(),
     cdnUploadId: v.string(),
     sourceImageUrl: v.string(),
+    scriptPageNumber: v.optional(v.number()),
+    ocrText: v.optional(v.string()),
     uploadedAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_submission", ["submissionId"])
+    .index("by_submission_question", ["submissionId", "questionKey"]),
+
+  markingQuestionStatuses: defineTable({
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    status: v.union(
+      v.literal("unmapped"),
+      v.literal("pages_assigned"),
+      v.literal("ocr_pending"),
+      v.literal("ocr_ready"),
+      v.literal("mark_scheme_ready"),
+      v.literal("ai_scored"),
+      v.literal("saved"),
+      v.literal("needs_manual_review"),
+      v.literal("failed"),
+    ),
+    failureReason: v.optional(v.string()),
+    updatedAt: v.number(),
     createdAt: v.number(),
   })
     .index("by_submission", ["submissionId"])
@@ -300,6 +337,7 @@ export default defineSchema({
     evidenceJson: v.string(),
     scorerProvider: v.string(),
     scorerModel: v.string(),
+    scoreStatus: v.optional(v.union(v.literal("ai_suggested"), v.literal("confirmed"))),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -351,9 +389,12 @@ export default defineSchema({
     session: v.optional(v.string()),
     questionNumber: v.string(),
     questionPartNumber: v.optional(v.union(v.string(), v.null())),
+    questionPath: v.optional(v.array(v.string())),
     totalMarks: v.number(),
     promptText: v.string(),
     contextText: v.optional(v.union(v.string(), v.null())),
+    questionType: v.optional(v.union(v.string(), v.null())),
+    isChoiceQuestion: v.optional(v.boolean()),
     createdAt: v.number(),
   })
     .index("by_saved_paper", ["savedPaperId"])

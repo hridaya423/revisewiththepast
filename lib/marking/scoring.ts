@@ -6,12 +6,20 @@ import { resolve } from "node:path";
 import { OpenRouter } from "@openrouter/sdk";
 
 import { getMarkableUnitsByUnitKeys } from "@/lib/marking/paper-maker";
+import { getPdfDocument } from "@/lib/marking/pdfjs-server";
+import {
+  formatQuestionPathLabel,
+  isPartStartLineForPath,
+  isSiblingPartStartLine,
+  parseQuestionPathFromPrompt,
+} from "@/lib/marking/question-path";
+import { requiresManualReview } from "@/lib/marking/answer-extraction";
 import { getPaperAssetsByBoardSubjectFromConvex } from "@/lib/paper-maker/convex";
 import type { PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
 
 const AI_KEY = process.env.HACKCLUB_AI_API_KEY ?? process.env.OPENROUTER_API_KEY;
 const AI_SERVER_URL = process.env.HACKCLUB_AI_API_KEY ? "https://ai.hackclub.com/proxy/v1" : undefined;
-const AI_MODEL = process.env.OPENROUTER_MODEL ?? "google/gemini-3-flash-preview";
+const AI_MODEL = process.env.OPENROUTER_MODEL ?? "google/gemini-3.1-flash-lite";
 
 type PositionedPdfItem = {
   text: string;
@@ -54,13 +62,17 @@ type SubmissionBundle = {
     session?: string;
     questionNumber: string;
     questionPartNumber?: string | null;
+    questionPath?: string[];
     totalMarks: number;
     promptText: string;
     contextText?: string | null;
+    questionType?: string | null;
+    isChoiceQuestion?: boolean;
   }>;
   responses: Array<{
     questionKey: string;
     ocrText: string;
+    ocrRawJson?: string;
   }>;
 };
 
@@ -80,6 +92,7 @@ export type AutoScoreResult = {
   confidence: number;
   needsReview: boolean;
   rationale: string;
+  skipped?: boolean;
   evidence: {
     sourceUnit: {
       unitKey: string;
@@ -179,8 +192,7 @@ async function loadPdfTextPages(relativePath: string, remoteUrl: string) {
       return new Uint8Array(await response.arrayBuffer());
     }));
 
-  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const document = await pdfjs.getDocument({ data }).promise;
+  const document = await getPdfDocument(data);
   const pages: CachedPdfPage[] = [];
 
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -288,6 +300,39 @@ function fallbackSlicePartText(questionText: string, questionPartNumber: string 
   return remainder.slice(0, startMatch[0].length + nextPartMatch.index).trim();
 }
 
+function cleanOcrTextForScoring(promptText: string, contextText: string | null, ocrText: string) {
+  const boilerplatePatterns = [
+    /^page\s+\d+$/i,
+    /^pmt$/i,
+    /^do not write.*$/i,
+    /^turn over.*$/i,
+    /^answer in the spaces provided.*$/i,
+    /^total for question.*$/i,
+    /^total for paper.*$/i,
+    /^paper:\s*1ma1/i,
+    /^question\s+answer\s+mark/i,
+  ];
+
+  const promptTokens = new Set(normalizeInlineText(`${promptText} ${contextText ?? ""}`).toLowerCase().split(" ").filter((token) => token.length > 2));
+
+  return ocrText
+    .split(/\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !boilerplatePatterns.some((pattern) => pattern.test(line)))
+    .filter((line) => {
+      const normalized = normalizeInlineText(line).toLowerCase();
+      const tokens = normalized.split(" ").filter((token) => token.length > 2);
+      if (tokens.length === 0) return false;
+      const overlapCount = tokens.filter((token) => promptTokens.has(token)).length;
+      const overlapRatio = overlapCount / tokens.length;
+      if (tokens.length <= 12 && overlapRatio >= 0.75) return false;
+      return true;
+    })
+    .join("\n")
+    .trim();
+}
+
 async function getPaperAssets(boardCode: string, subjectSlug: string) {
   const key = `${boardCode}::${subjectSlug}`;
   if (!PAPER_ASSET_CACHE.has(key)) {
@@ -301,8 +346,8 @@ async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof get
   const targetTier = inferTierFromSourceRelativePath(unit.sourceRelativePath);
   const markSchemeAsset = paperAssets.find((asset) => asset.kind === "mark_scheme"
     && asset.paperCode === unit.paperCode
-    && asset.year === (unit.year ?? asset.year)
-    && asset.session === (unit.session ?? asset.session)
+    && asset.year === unit.year
+    && asset.session === unit.session
     && asset.tier === targetTier);
 
   if (!markSchemeAsset) {
@@ -335,6 +380,11 @@ async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof get
   }
 
   const questionPartNumber = unit.parts[0]?.questionPartNumber ?? null;
+  const questionPath = parseQuestionPathFromPrompt(
+    unit.parts.map((part) => part.promptText).join("\n\n"),
+    targetQuestionNumber,
+    questionPartNumber,
+  );
   const questionLines = collectedPages.flatMap((page) => page.lines);
   const relevantQuestionLines = questionLines.filter((line) => !/^(paper:|question\s+answer\s+mark\s+mark scheme|additional guidance|pmt)$/i.test(line.fullText));
   const questionStartIndex = relevantQuestionLines.findIndex((line) => isQuestionStartLine(line, targetQuestionNumber));
@@ -351,7 +401,19 @@ async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof get
   }
 
   let partLines = trimmedQuestionLines;
-  if (questionPartNumber) {
+  if (questionPath.length > 0) {
+    const startIndex = trimmedQuestionLines.findIndex((line) => isPartStartLineForPath(line.leftText, questionPath));
+    if (startIndex >= 0) {
+      const collected: StructuredPdfLine[] = [];
+      for (let index = startIndex; index < trimmedQuestionLines.length; index += 1) {
+        const line = trimmedQuestionLines[index];
+        if (index > startIndex && isSiblingPartStartLine(line.leftText, questionPath)) break;
+        if (index > startIndex && isDifferentQuestionLine(line, targetQuestionNumber)) break;
+        collected.push(line);
+      }
+      if (collected.length > 0) partLines = collected;
+    }
+  } else if (questionPartNumber) {
     const startIndex = trimmedQuestionLines.findIndex((line) => isPartStartLine(line, questionPartNumber));
     if (startIndex >= 0) {
       const collected: StructuredPdfLine[] = [];
@@ -403,36 +465,92 @@ export async function resolveSubmissionQuestionContext(bundle: SubmissionBundle,
   }
 
   const markScheme = await buildMarkSchemeSnippetForUnit(unit);
+  const alreadyAnswerExtracted = Boolean(response.ocrRawJson?.includes("answerExtraction"));
+  const cleanedOcrText = alreadyAnswerExtracted
+    ? response.ocrText
+    : cleanOcrTextForScoring(
+      savedPaperQuestion.promptText,
+      savedPaperQuestion.contextText ?? null,
+      response.ocrText,
+    );
 
   return {
     unit,
-    response,
+    response: {
+      ...response,
+      ocrText: cleanedOcrText || response.ocrText,
+    },
+    savedPaperQuestion,
     markScheme,
   };
 }
 
 export async function buildCombinedMarkScheme(bundle: SubmissionBundle) {
   const questions = bundle.savedPaperQuestions ?? [];
-  const entries = await Promise.all(questions.map(async (question) => {
-    const unit = (await getMarkableUnitsByUnitKeys(bundle.submission.subjectKey as PaperMakerSubjectKey, [question.unitKey]))[0];
-    if (!unit) return null;
-    const markScheme = await buildMarkSchemeSnippetForUnit(unit);
-    return {
-      questionKey: question.unitKey,
-      label: `Question ${question.questionNumber}${question.questionPartNumber ? ` (${question.questionPartNumber})` : ""}`,
-      markScheme,
-    };
+  const results = await Promise.all(questions.map(async (question) => {
+    try {
+      const unit = (await getMarkableUnitsByUnitKeys(bundle.submission.subjectKey as PaperMakerSubjectKey, [question.unitKey]))[0];
+      if (!unit) {
+        return {
+          ok: false as const,
+          questionKey: question.unitKey,
+          error: `Could not resolve source unit for ${question.unitKey}`,
+        };
+      }
+      const markScheme = await buildMarkSchemeSnippetForUnit(unit);
+      const questionPath = question.questionPath
+        ?? parseQuestionPathFromPrompt(question.promptText, question.questionNumber, question.questionPartNumber ?? null);
+      return {
+        ok: true as const,
+        questionKey: question.unitKey,
+        label: formatQuestionPathLabel(question.questionNumber, questionPath),
+        markScheme,
+      };
+    } catch (error) {
+      return {
+        ok: false as const,
+        questionKey: question.unitKey,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
   }));
 
-  const filtered = entries.filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+  const entries = results.filter((entry): entry is Extract<typeof entry, { ok: true }> => entry.ok);
+  const failures = results.filter((entry): entry is Extract<typeof entry, { ok: false }> => !entry.ok);
   return {
-    entries: filtered,
-    combinedText: filtered.map((entry) => `${entry.label}\n${entry.markScheme.partText}`).join("\n\n================\n\n"),
+    entries,
+    failures,
+    combinedText: entries.map((entry) => `${entry.label}\n${entry.markScheme.partText}`).join("\n\n================\n\n"),
   };
 }
 
 export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKey: string): Promise<AutoScoreResult> {
-  const { unit, response, markScheme } = await resolveSubmissionQuestionContext(bundle, questionKey);
+  const { unit, response, savedPaperQuestion, markScheme } = await resolveSubmissionQuestionContext(bundle, questionKey);
+  if (savedPaperQuestion.isChoiceQuestion || savedPaperQuestion.questionType === "multiple-choice") {
+    return {
+      awardedMarks: 0,
+      confidence: 0,
+      needsReview: true,
+      skipped: true,
+      rationale: "Multiple-choice questions are excluded from AI marking and should use a deterministic answer-detection path or manual review.",
+      evidence: {
+        sourceUnit: {
+          unitKey: unit.unitKey,
+          sourceRelativePath: unit.sourceRelativePath,
+          paperCode: unit.paperCode,
+          year: unit.year,
+          session: unit.session,
+          questionNumber: unit.questionNumber,
+          questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
+          totalMarks: unit.totalMarks,
+          promptText: unit.parts.map((part) => part.promptText).join("\n\n"),
+          contextText: unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
+        },
+        markScheme,
+        studentOcrText: response.ocrText,
+      },
+    };
+  }
   const client = getClient();
 
   const systemPrompt = [
@@ -537,4 +655,189 @@ export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKe
         .filter((entry) => entry.criterion || entry.evidence),
     },
   };
+}
+
+export async function autoScoreMathPaper(bundle: SubmissionBundle) {
+  const questions = bundle.savedPaperQuestions ?? [];
+  if (questions.length === 0) {
+    throw new Error("This submission is not linked to a saved paper.");
+  }
+
+  const contexts = await Promise.all(questions.map(async (question) => {
+    if (question.isChoiceQuestion || question.questionType === "multiple-choice") {
+      return { questionKey: question.unitKey, skipped: true, reason: "Multiple-choice question", context: null };
+    }
+    if (requiresManualReview(question.promptText, question.contextText ?? null)) {
+      return { questionKey: question.unitKey, skipped: true, reason: "Needs manual review (graph, construction, or diagram)", context: null };
+    }
+    try {
+      const context = await resolveSubmissionQuestionContext(bundle, question.unitKey);
+      return { questionKey: question.unitKey, skipped: false, reason: null, context };
+    } catch (error) {
+      return {
+        questionKey: question.unitKey,
+        skipped: true,
+        reason: error instanceof Error ? error.message : String(error),
+        context: null,
+      };
+    }
+  }));
+
+  const scoreable = contexts.filter((entry) => !entry.skipped && entry.context) as Array<{ questionKey: string; skipped: false; context: NonNullable<(typeof contexts)[number]["context"]> }>;
+  let parsedByQuestionKey = new Map<string, {
+    questionKey?: string;
+    awardedMarks?: number;
+    confidence?: number;
+    needsReview?: boolean;
+    rationale?: string;
+    markBreakdown?: Array<{ criterion?: string; awarded?: boolean; evidence?: string }>;
+  }>();
+
+  if (scoreable.length > 0) {
+    const client = getClient();
+    const payload = scoreable.map(({ questionKey, context }) => ({
+      questionKey,
+      questionNumber: context.unit.questionNumber,
+      questionPartNumber: context.unit.parts[0]?.questionPartNumber ?? null,
+      maxMarks: context.unit.totalMarks,
+      promptText: context.unit.parts.map((part) => part.promptText).join("\n\n"),
+      contextText: context.unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
+      studentResponse: context.response.ocrText,
+      markScheme: context.markScheme.partText,
+    }));
+
+    const systemPrompt = [
+      "You are a cautious GCSE Edexcel Mathematics marker.",
+      "Mark a whole paper in one pass.",
+      "Every question already has its own relevant mark scheme excerpt.",
+      "Do not mix criteria across questions.",
+      "Do not invent unseen working.",
+      "Return strict JSON only with one result per questionKey.",
+    ].join(" ");
+
+    const userPrompt = JSON.stringify({
+      task: "Mark this whole Edexcel GCSE Maths paper question-by-question.",
+      questions: payload,
+      outputSchema: {
+        results: payload.map((question) => ({
+          questionKey: question.questionKey,
+          awardedMarks: "integer between 0 and maxMarks",
+          confidence: "number between 0 and 1",
+          needsReview: "boolean",
+          rationale: "short plain-English explanation",
+          markBreakdown: [{ criterion: "string", awarded: "boolean", evidence: "short quote or paraphrase from OCR text" }],
+        })),
+      },
+    }, null, 2);
+
+    const responsePayload = await client.chat.send({
+      chatRequest: {
+        model: AI_MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        responseFormat: { type: "json_object" },
+        maxTokens: 5000,
+      },
+    });
+
+    const content = responsePayload?.choices?.[0]?.message?.content;
+    if (!content) {
+      throw new Error("The whole-paper scoring model returned no content.");
+    }
+
+    const parsed = JSON.parse(content) as {
+      results?: Array<{
+        questionKey?: string;
+        awardedMarks?: number;
+        confidence?: number;
+        needsReview?: boolean;
+        rationale?: string;
+        markBreakdown?: Array<{ criterion?: string; awarded?: boolean; evidence?: string }>;
+      }>;
+    };
+
+    parsedByQuestionKey = new Map((parsed.results ?? []).map((entry) => [entry.questionKey ?? "", entry]));
+  }
+
+  return contexts.map((entry) => {
+    if (entry.skipped || !entry.context) {
+      return {
+        questionKey: entry.questionKey,
+        reason: entry.reason,
+        result: {
+          awardedMarks: 0,
+          confidence: 0,
+          needsReview: true,
+          skipped: true,
+          rationale: entry.reason || "Question was not eligible for AI scoring.",
+          evidence: {
+            sourceUnit: {
+              unitKey: entry.context?.unit.unitKey ?? entry.questionKey,
+              sourceRelativePath: entry.context?.unit.sourceRelativePath ?? "",
+              paperCode: entry.context?.unit.paperCode ?? "",
+              year: entry.context?.unit.year ?? null,
+              session: entry.context?.unit.session ?? null,
+              questionNumber: entry.context?.unit.questionNumber ?? "",
+              questionPartNumber: entry.context?.unit.parts[0]?.questionPartNumber ?? null,
+              totalMarks: entry.context?.unit.totalMarks ?? 0,
+              promptText: entry.context?.unit.parts.map((part: { promptText: string }) => part.promptText).join("\n\n") ?? "",
+              contextText: entry.context?.unit.parts.map((part: { contextText?: string | null }) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
+            },
+            markScheme: entry.context?.markScheme ?? {
+              questionNumber: "",
+              questionPartNumber: null,
+              pageNumbers: [],
+              questionText: "",
+              partText: "",
+              combinedText: "",
+              markSchemeRelativePath: "",
+              markSchemeUrl: "",
+            },
+            studentOcrText: entry.context?.response.ocrText ?? "",
+          },
+        } satisfies AutoScoreResult,
+      };
+    }
+
+    const modelResult = parsedByQuestionKey.get(entry.questionKey);
+    const awardedMarks = Math.max(0, Math.min(entry.context.unit.totalMarks, Math.round(modelResult?.awardedMarks ?? 0)));
+    const confidence = Math.max(0, Math.min(1, Number(modelResult?.confidence ?? 0.5)));
+
+    return {
+      questionKey: entry.questionKey,
+      result: {
+        awardedMarks,
+        confidence,
+        needsReview: modelResult?.needsReview === true || confidence < 0.65,
+        rationale: typeof modelResult?.rationale === "string" && modelResult.rationale.trim()
+          ? modelResult.rationale.trim()
+          : "Auto-scored against the retrieved mark scheme excerpt.",
+        evidence: {
+          sourceUnit: {
+            unitKey: entry.context.unit.unitKey,
+            sourceRelativePath: entry.context.unit.sourceRelativePath,
+            paperCode: entry.context.unit.paperCode,
+            year: entry.context.unit.year,
+            session: entry.context.unit.session,
+            questionNumber: entry.context.unit.questionNumber,
+            questionPartNumber: entry.context.unit.parts[0]?.questionPartNumber ?? null,
+            totalMarks: entry.context.unit.totalMarks,
+            promptText: entry.context.unit.parts.map((part) => part.promptText).join("\n\n"),
+            contextText: entry.context.unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
+          },
+          markScheme: entry.context.markScheme,
+          studentOcrText: entry.context.response.ocrText,
+          markBreakdown: (modelResult?.markBreakdown ?? [])
+            .map((breakdown) => ({
+              criterion: breakdown.criterion ?? "criterion",
+              awarded: breakdown.awarded === true,
+              evidence: breakdown.evidence ?? "",
+            }))
+            .filter((breakdown) => breakdown.criterion || breakdown.evidence),
+        },
+      } satisfies AutoScoreResult,
+    };
+  });
 }

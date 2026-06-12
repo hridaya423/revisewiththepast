@@ -28,6 +28,19 @@ export const createMarkingSubmission = mutation({
     session: v.optional(v.string()),
     rubricVersion: v.optional(v.string()),
     studentLabel: v.optional(v.string()),
+    importSource: v.optional(v.union(
+      v.literal("manual_upload"),
+      v.literal("imported_pdf"),
+      v.literal("saved_paper"),
+    )),
+    detectedPaperIdentity: v.optional(v.object({
+      paperCode: v.string(),
+      year: v.number(),
+      session: v.string(),
+      tier: v.union(v.literal("none"), v.literal("foundation"), v.literal("higher")),
+      sourceRelativePath: v.optional(v.string()),
+      examReference: v.optional(v.string()),
+    })),
   },
   handler: async (ctx, args) => {
     const user = await requireOwner(ctx);
@@ -66,6 +79,38 @@ export const setMarkingSubmissionStatus = mutation({
       updatedAt: Date.now(),
     });
     return args.submissionId;
+  },
+});
+
+export const updateMarkingSubmissionMetadata = mutation({
+  args: {
+    submissionId: v.id("markingSubmissions"),
+    importSource: v.optional(v.union(
+      v.literal("manual_upload"),
+      v.literal("imported_pdf"),
+      v.literal("saved_paper"),
+    )),
+    detectedPaperIdentity: v.optional(v.object({
+      paperCode: v.string(),
+      year: v.number(),
+      session: v.string(),
+      tier: v.union(v.literal("none"), v.literal("foundation"), v.literal("higher")),
+      sourceRelativePath: v.optional(v.string()),
+      examReference: v.optional(v.string()),
+    })),
+    paperCode: v.optional(v.string()),
+    year: v.optional(v.number()),
+    session: v.optional(v.string()),
+    tier: v.optional(v.union(v.literal("none"), v.literal("foundation"), v.literal("higher"))),
+  },
+  handler: async (ctx, args) => {
+    await requireOwnedSubmission(ctx, args.submissionId);
+    const { submissionId, ...patch } = args;
+    await ctx.db.patch(submissionId, {
+      ...patch,
+      updatedAt: Date.now(),
+    });
+    return submissionId;
   },
 });
 
@@ -119,6 +164,7 @@ export const upsertMarkingScore = mutation({
     evidenceJson: v.string(),
     scorerProvider: v.string(),
     scorerModel: v.string(),
+    scoreStatus: v.optional(v.union(v.literal("ai_suggested"), v.literal("confirmed"))),
   },
   handler: async (ctx, args) => {
     await requireOwnedSubmission(ctx, args.submissionId);
@@ -157,6 +203,8 @@ export const addMarkingResponsePage = mutation({
     fileSize: v.number(),
     cdnUploadId: v.string(),
     sourceImageUrl: v.string(),
+    scriptPageNumber: v.optional(v.number()),
+    ocrText: v.optional(v.string()),
     uploadedAt: v.number(),
   },
   handler: async (ctx, args) => {
@@ -164,6 +212,52 @@ export const addMarkingResponsePage = mutation({
     return await ctx.db.insert("markingResponsePages", {
       ...args,
       createdAt: Date.now(),
+    });
+  },
+});
+
+export const upsertMarkingQuestionStatus = mutation({
+  args: {
+    submissionId: v.id("markingSubmissions"),
+    questionKey: v.string(),
+    status: v.union(
+      v.literal("unmapped"),
+      v.literal("pages_assigned"),
+      v.literal("ocr_pending"),
+      v.literal("ocr_ready"),
+      v.literal("mark_scheme_ready"),
+      v.literal("ai_scored"),
+      v.literal("saved"),
+      v.literal("needs_manual_review"),
+      v.literal("failed"),
+    ),
+    failureReason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireOwnedSubmission(ctx, args.submissionId);
+    const now = Date.now();
+    const existing = await ctx.db
+      .query("markingQuestionStatuses")
+      .withIndex("by_submission_question", (q) => q.eq("submissionId", args.submissionId))
+      .filter((q) => q.eq(q.field("questionKey"), args.questionKey))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        status: args.status,
+        failureReason: args.failureReason,
+        updatedAt: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("markingQuestionStatuses", {
+      submissionId: args.submissionId,
+      questionKey: args.questionKey,
+      status: args.status,
+      failureReason: args.failureReason,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 });
@@ -220,14 +314,20 @@ export const getMarkingSubmissionBundle = query({
       .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
       .collect();
 
+    const questionStatuses = await ctx.db
+      .query("markingQuestionStatuses")
+      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+      .collect();
+
     return {
       submission,
       savedPaper,
       savedPaperQuestions: savedPaperQuestions.sort((a, b) => a.displayOrder - b.displayOrder),
-      pages: pages.sort((a, b) => a.createdAt - b.createdAt),
+      pages: pages.sort((a, b) => (a.scriptPageNumber ?? 0) - (b.scriptPageNumber ?? 0) || a.createdAt - b.createdAt),
       responses,
       scores,
       moderations,
+      questionStatuses,
       insights: {
         questionCount: new Set([
           ...savedPaperQuestions.map((question) => question.unitKey),

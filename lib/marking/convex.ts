@@ -14,10 +14,41 @@ export async function createMarkingSubmissionInConvex(args: {
   session?: string;
   rubricVersion?: string;
   studentLabel?: string;
+  importSource?: "manual_upload" | "imported_pdf" | "saved_paper";
+  detectedPaperIdentity?: {
+    paperCode: string;
+    year: number;
+    session: string;
+    tier: "none" | "foundation" | "higher";
+    sourceRelativePath?: string;
+    examReference?: string;
+  };
 }) {
   return await fetchAuthMutation(api.marking.createMarkingSubmission, {
     ...args,
     savedPaperId: args.savedPaperId as never,
+  });
+}
+
+export async function updateMarkingSubmissionMetadataInConvex(args: {
+  submissionId: string;
+  importSource?: "manual_upload" | "imported_pdf" | "saved_paper";
+  detectedPaperIdentity?: {
+    paperCode: string;
+    year: number;
+    session: string;
+    tier: "none" | "foundation" | "higher";
+    sourceRelativePath?: string;
+    examReference?: string;
+  };
+  paperCode?: string;
+  year?: number;
+  session?: string;
+  tier?: "none" | "foundation" | "higher";
+}) {
+  return await fetchAuthMutation(api.marking.updateMarkingSubmissionMetadata, {
+    ...args,
+    submissionId: args.submissionId as never,
   });
 }
 
@@ -60,8 +91,30 @@ export async function upsertMarkingScoreInConvex(args: {
   evidenceJson: string;
   scorerProvider: string;
   scorerModel: string;
+  scoreStatus?: "ai_suggested" | "confirmed";
 }) {
   return await fetchAuthMutation(api.marking.upsertMarkingScore, {
+    ...args,
+    submissionId: args.submissionId as never,
+  });
+}
+
+export async function upsertMarkingQuestionStatusInConvex(args: {
+  submissionId: string;
+  questionKey: string;
+  status:
+    | "unmapped"
+    | "pages_assigned"
+    | "ocr_pending"
+    | "ocr_ready"
+    | "mark_scheme_ready"
+    | "ai_scored"
+    | "saved"
+    | "needs_manual_review"
+    | "failed";
+  failureReason?: string;
+}) {
+  return await fetchAuthMutation(api.marking.upsertMarkingQuestionStatus, {
     ...args,
     submissionId: args.submissionId as never,
   });
@@ -78,6 +131,8 @@ export async function addMarkingResponsePageInConvex(args: {
   fileSize: number;
   cdnUploadId: string;
   sourceImageUrl: string;
+  scriptPageNumber?: number;
+  ocrText?: string;
   uploadedAt: number;
 }) {
   return await fetchAuthMutation(api.marking.addMarkingResponsePage, {

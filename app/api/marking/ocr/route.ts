@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { setMarkingSubmissionStatusInConvex, upsertMarkingResponseInConvex } from "@/lib/marking/convex";
+import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingResponseInConvex } from "@/lib/marking/convex";
 import { OCR_MODEL, OCR_PROVIDER, runDeepseekOcrOnImage } from "@/lib/marking/replicate";
 
 export const runtime = "nodejs";
@@ -41,29 +41,54 @@ export async function POST(request: NextRequest) {
   const questionPartNumber = typeof body.questionPartNumber === "string" ? body.questionPartNumber.trim() : undefined;
 
   if (!submissionId) return badRequest("submissionId is required.");
-  if (!imageUrl) return badRequest("imageUrl is required.");
   if (!questionKey) return badRequest("questionKey is required.");
 
   try {
-    const ocr = await runDeepseekOcrOnImage(imageUrl);
+    const bundle = await getMarkingSubmissionBundleFromConvex(submissionId);
+    if (!bundle) return badRequest("Submission not found.", 404);
+
+    const pageUrls = imageUrl
+      ? [imageUrl]
+      : (bundle.pages ?? [])
+        .filter((page) => page.questionKey === questionKey)
+        .map((page) => page.sourceImageUrl)
+        .filter((url): url is string => Boolean(url));
+
+    if (pageUrls.length === 0) return badRequest("No uploaded page was found for this question.");
+
+    const transcripts: string[] = [];
+    const outputs: unknown[] = [];
+    const predictionIds: Array<string | null> = [];
+
+    for (const pageUrl of pageUrls) {
+      const ocr = await runDeepseekOcrOnImage(pageUrl);
+      transcripts.push(ocr.text.trim());
+      outputs.push(ocr.output);
+      predictionIds.push(ocr.predictionId);
+    }
+
+    const mergedText = transcripts
+      .map((text, index) => (pageUrls.length > 1 ? `Page ${index + 1}\n${text}` : text))
+      .join("\n\n");
+
     await upsertMarkingResponseInConvex({
       submissionId,
       questionKey,
       questionNumber,
       questionPartNumber,
-      sourceImageUrl: imageUrl,
-      ocrText: ocr.text,
+      sourceImageUrl: pageUrls[0],
+      ocrText: mergedText,
       ocrProvider: OCR_PROVIDER,
       ocrModel: OCR_MODEL,
-      ocrRawJson: JSON.stringify({ predictionId: ocr.predictionId, output: ocr.output }),
+      ocrRawJson: JSON.stringify({ predictionIds, pageUrls, outputs }),
     });
     await setMarkingSubmissionStatusInConvex(submissionId, "ocr_complete");
 
     return Response.json({
       submissionId,
       questionKey,
-      ocrText: ocr.text,
-      predictionId: ocr.predictionId,
+      ocrText: mergedText,
+      predictionIds,
     });
   } catch (error) {
     if (isUnauthorizedError(error)) return unauthorizedResponse();

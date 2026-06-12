@@ -523,6 +523,8 @@ export const getPaperMakerQuestionBank = queryGeneric({
       bbox: { x0: number; y0: number; x1: number; y1: number } | null;
       sourceMode: string;
       assetIds: string[];
+      questionType?: string | null;
+      isChoiceQuestion?: boolean;
       choiceGroupId?: string | null;
       choiceGroupType?: string | null;
       choiceSiblingQuestionIds?: string[];
@@ -582,6 +584,8 @@ export const getPaperMakerQuestionBank = queryGeneric({
           bbox: part.bbox,
           sourceMode: part.sourceMode,
           assetIds: part.assetIds,
+          questionType: part.questionType,
+          isChoiceQuestion: part.isChoiceQuestion || false,
           choiceGroupId: part.choiceGroupId,
           choiceGroupType: part.choiceGroupType,
           choiceSiblingQuestionIds: part.choiceSiblingQuestionIds,

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
-import { Brain, CheckCircle2, ChevronRight, Eye, FileUp, ScanText, Sparkles, TriangleAlert, Gauge, Layers3, ListChecks, ShieldAlert } from "lucide-react";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { Brain, CheckCircle2, ChevronRight, Eye, FileUp, ScanText, Sparkles, TriangleAlert, Gauge, Layers3, ShieldAlert } from "lucide-react";
 import { MathRichText } from "@/app/_components/math-rich-text";
 
 type Bundle = {
@@ -11,6 +11,7 @@ type Bundle = {
     studentLabel?: string;
     paperCode?: string;
     status: "uploaded" | "ocr_complete" | "scored" | "review_required";
+    importSource?: "manual_upload" | "imported_pdf" | "saved_paper";
   };
   savedPaper?: {
     title: string;
@@ -24,6 +25,7 @@ type Bundle = {
     session?: string;
     questionNumber: string;
     questionPartNumber?: string | null;
+    questionPath?: string[];
     totalMarks: number;
     promptText: string;
     contextText?: string | null;
@@ -36,6 +38,8 @@ type Bundle = {
     pageLabel?: string;
     fileName: string;
     sourceImageUrl: string;
+    scriptPageNumber?: number;
+    ocrText?: string;
   }>;
   responses: Array<{
     _id: string;
@@ -44,6 +48,7 @@ type Bundle = {
     questionPartNumber?: string;
     sourceImageUrl?: string;
     ocrText: string;
+    ocrProvider?: string;
   }>;
   scores: Array<{
     _id: string;
@@ -54,6 +59,13 @@ type Bundle = {
     needsReview: boolean;
     rationale: string;
     evidenceJson?: string;
+    scoreStatus?: "ai_suggested" | "confirmed";
+    updatedAt?: number;
+  }>;
+  questionStatuses?: Array<{
+    questionKey: string;
+    status: string;
+    failureReason?: string;
   }>;
   insights: {
     questionCount: number;
@@ -78,16 +90,20 @@ type CombinedMarkSchemeEntry = {
   };
 };
 
-function composeQuestionKey(questionNumber: string, questionPartNumber: string) {
-  const question = questionNumber.trim();
-  const part = questionPartNumber.trim();
-  return part ? `${question}${part}` : question;
-}
-
-function formatQuestionLabel(question: { displayOrder?: number; questionNumber?: string; questionPartNumber?: string | null; questionKey: string }) {
+function formatQuestionLabel(question: {
+  displayOrder?: number;
+  questionNumber?: string;
+  questionPartNumber?: string | null;
+  questionPath?: string[];
+  questionKey: string;
+}) {
   const number = question.questionNumber ? `Question ${question.questionNumber}` : question.questionKey;
-  const part = question.questionPartNumber ? ` (${question.questionPartNumber})` : "";
-  return question.displayOrder ? `${question.displayOrder}. ${number}${part}` : `${number}${part}`;
+  const pathSuffix = question.questionPath && question.questionPath.length > 0
+    ? ` (${question.questionPath.join(")(")})`
+    : question.questionPartNumber
+      ? ` (${question.questionPartNumber})`
+      : "";
+  return question.displayOrder ? `${question.displayOrder}. ${number}${pathSuffix}` : `${number}${pathSuffix}`;
 }
 
 function parseScoreEvidence(rawJson?: string) {
@@ -128,8 +144,13 @@ function confidenceLabel(value: number | null) {
 function getQuestionState(row: {
   pages: unknown[];
   response: unknown;
-  score: { needsReview: boolean } | null;
+  score: { needsReview: boolean; scoreStatus?: "ai_suggested" | "confirmed" } | null;
+  questionStatus?: { status: string; failureReason?: string } | null;
 }) {
+  if (row.questionStatus?.status === "failed") return "failed" as const;
+  if (row.questionStatus?.status === "needs_manual_review") return "review" as const;
+  if (row.score?.scoreStatus === "confirmed") return row.score.needsReview ? "review" as const : "scored" as const;
+  if (row.score?.scoreStatus === "ai_suggested") return row.score.needsReview ? "review" as const : "scored" as const;
   if (row.score?.needsReview) return "review" as const;
   if (row.score) return "scored" as const;
   if (row.response) return "ocr" as const;
@@ -137,7 +158,8 @@ function getQuestionState(row: {
   return "empty" as const;
 }
 
-function getQuestionStateLabel(state: ReturnType<typeof getQuestionState>) {
+function getQuestionStateLabel(state: ReturnType<typeof getQuestionState>, questionStatus?: { status: string; failureReason?: string } | null) {
+  if (state === "failed") return questionStatus?.failureReason ? "Failed" : "Failed";
   if (state === "review") return "Needs review";
   if (state === "scored") return "Scored";
   if (state === "ocr") return "OCR ready";
@@ -146,6 +168,7 @@ function getQuestionStateLabel(state: ReturnType<typeof getQuestionState>) {
 }
 
 function getQuestionStateStyles(state: ReturnType<typeof getQuestionState>) {
+  if (state === "failed") return "border-[#b85b4f]/25 bg-[#fff3f1] text-[#8f3f37]";
   if (state === "review") return "border-[#d9a063]/35 bg-[#fff5ea] text-[#9a5a2c]";
   if (state === "scored") return "border-[#5a8a5c]/20 bg-[#edf7ee] text-[#3f6d44]";
   if (state === "ocr") return "border-[#6d8aa6]/20 bg-[#eef4fb] text-[#486781]";
@@ -160,11 +183,9 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
   const [ocrLoadingKey, setOcrLoadingKey] = useState<string | null>(null);
   const [scoreLoadingKey, setScoreLoadingKey] = useState<string | null>(null);
   const [autoScoreLoadingKey, setAutoScoreLoadingKey] = useState<string | null>(null);
-  const [combinedMarkScheme, setCombinedMarkScheme] = useState<{ entries: CombinedMarkSchemeEntry[]; combinedText: string } | null>(null);
+  const [combinedMarkScheme, setCombinedMarkScheme] = useState<{ entries: CombinedMarkSchemeEntry[]; combinedText: string; failures?: Array<{ questionKey: string; error: string }> } | null>(null);
   const [isLoadingCombinedMarkScheme, setIsLoadingCombinedMarkScheme] = useState(false);
   const [activeMarkSchemeQuestionKey, setActiveMarkSchemeQuestionKey] = useState<string | null>(null);
-  const [questionNumber, setQuestionNumber] = useState("");
-  const [questionPartNumber, setQuestionPartNumber] = useState("");
   const [pageLabel, setPageLabel] = useState("");
 
   const questionRows = useMemo(() => {
@@ -183,9 +204,13 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
       pages: initialBundle.pages.filter((page) => page.questionKey === questionKey),
       response: initialBundle.responses.find((response) => response.questionKey === questionKey) ?? null,
       score: initialBundle.scores.find((score) => score.questionKey === questionKey) ?? null,
+      questionStatus: initialBundle.questionStatuses?.find((entry) => entry.questionKey === questionKey) ?? null,
       combinedMarkScheme: combinedMarkScheme?.entries.find((entry) => entry.questionKey === questionKey) ?? null,
     }));
-  }, [combinedMarkScheme?.entries, initialBundle.pages, initialBundle.responses, initialBundle.savedPaperQuestions, initialBundle.scores]);
+  }, [combinedMarkScheme?.entries, initialBundle.pages, initialBundle.questionStatuses, initialBundle.responses, initialBundle.savedPaperQuestions, initialBundle.scores]);
+
+  const isImportedSubmission = initialBundle.submission.importSource === "imported_pdf";
+  const hasImportedPages = initialBundle.pages.length > 0;
 
   const reviewRows = useMemo(() => questionRows.filter((row) => row.score?.needsReview), [questionRows]);
   const activeMarkSchemeEntry = useMemo(() => {
@@ -222,23 +247,92 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     });
   };
 
-  const uploadManualPage = (file: File | null) => {
-    if (!file) return;
-    const trimmedQuestionNumber = questionNumber.trim();
-    if (!trimmedQuestionNumber) {
-      setUploadError("Question number is required before uploading a page.");
+  const uploadFinishedScriptPages = (files: FileList | null) => {
+    const savedQuestions = initialBundle.savedPaperQuestions ?? [];
+    if (!files || files.length === 0) return;
+    if (savedQuestions.length === 0) {
+      setUploadError("This submission needs a linked saved paper before script pages can be assigned automatically.");
       return;
     }
-    const questionKey = composeQuestionKey(trimmedQuestionNumber, questionPartNumber);
-    uploadPageForQuestion(questionKey, file, trimmedQuestionNumber, questionPartNumber.trim() || null);
+
+    const orderedFiles = Array.from(files);
+    const targetQuestions = questionRows
+      .filter((row) => row.pages.length === 0)
+      .map((row) => row.savedQuestion)
+      .filter((question): question is NonNullable<typeof question> => question !== null);
+
+    if (targetQuestions.length === 0) {
+      setUploadError("Every generated question already has an uploaded page. Use the per-question upload buttons for extra pages.");
+      return;
+    }
+
+    if (orderedFiles.length > targetQuestions.length) {
+      setUploadError(`You selected ${orderedFiles.length} pages but only ${targetQuestions.length} questions are still missing uploads. Extra pages were not assigned automatically.`);
+    } else {
+      setUploadError(null);
+    }
+
+    startTransition(async () => {
+      for (let index = 0; index < Math.min(orderedFiles.length, targetQuestions.length); index += 1) {
+        const file = orderedFiles[index];
+        const question = targetQuestions[index];
+        const formData = new FormData();
+        formData.append("submissionId", submissionId);
+        formData.append("questionKey", question.unitKey);
+        formData.append("questionNumber", question.questionNumber);
+        if (question.questionPartNumber) formData.append("questionPartNumber", question.questionPartNumber);
+        formData.append("pageLabel", `Script page ${index + 1}`);
+        formData.append("file", file);
+
+        const response = await fetch("/api/marking/uploads", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          setUploadError(await response.text() || `Could not upload script page ${index + 1}.`);
+          return;
+        }
+      }
+
+      setPageLabel("");
+      router.refresh();
+    });
   };
 
-  const runOcr = async (questionKey: string, imageUrl: string) => {
+  const processFinishedPaperPdf = (file: File | null) => {
+    if (!file) return;
+    setUploadError(null);
+
+    startTransition(async () => {
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("submissionId", submissionId);
+
+        const response = await fetch("/api/marking/import-finished-paper", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          setUploadError(await response.text() || "Could not import the finished paper PDF.");
+          return;
+        }
+
+        router.refresh();
+      } catch (error) {
+        setUploadError(error instanceof Error ? error.message : String(error));
+      }
+    });
+  };
+
+  const runOcr = async (questionKey: string) => {
     setOcrLoadingKey(questionKey);
     const response = await fetch("/api/marking/ocr", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ submissionId, questionKey, imageUrl }),
+      body: JSON.stringify({ submissionId, questionKey }),
     });
     setOcrLoadingKey(null);
     if (!response.ok) {
@@ -258,6 +352,21 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     setAutoScoreLoadingKey(null);
     if (!response.ok) {
       setUploadError(await response.text() || "Could not auto-score this question.");
+      return;
+    }
+    router.refresh();
+  };
+
+  const autoScoreWholePaper = async () => {
+    setAutoScoreLoadingKey("__whole-paper__");
+    const response = await fetch("/api/marking/auto-score", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ submissionId, scoreWholePaper: true }),
+    });
+    setAutoScoreLoadingKey(null);
+    if (!response.ok) {
+      setUploadError(await response.text() || "Could not auto-score the full paper.");
       return;
     }
     router.refresh();
@@ -303,10 +412,20 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
       setUploadError(await response.text() || "Could not load combined mark scheme.");
       return;
     }
-    const payload = await response.json() as { entries: CombinedMarkSchemeEntry[]; combinedText: string };
+    const payload = await response.json() as {
+      entries: CombinedMarkSchemeEntry[];
+      combinedText: string;
+      failures?: Array<{ questionKey: string; error: string }>;
+    };
     setCombinedMarkScheme(payload);
     setActiveMarkSchemeQuestionKey(payload.entries[0]?.questionKey ?? null);
   };
+
+  useEffect(() => {
+    if ((initialBundle.savedPaperQuestions ?? []).length === 0 || combinedMarkScheme) return;
+    void loadCombinedMarkScheme();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [submissionId, initialBundle.savedPaperQuestions?.length]);
 
   return (
     <div className="space-y-8">
@@ -362,11 +481,37 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
                   <h2 className="font-serif text-[1.25rem] text-[#1a2e1a]">Source-linked questions</h2>
                 </div>
               </div>
-              <p className="mt-4 text-[0.84rem] leading-[1.6] text-[#3d5a3f]/60">Each upload, OCR run, score, and mark scheme slice is attached to a known generated-paper question, so the scorer can resolve the original source paper correctly.</p>
+              <p className="mt-4 text-[0.84rem] leading-[1.6] text-[#3d5a3f]/60">
+                {isImportedSubmission && hasImportedPages
+                  ? "This submission was imported from a finished script PDF. Page images, OCR, and question mapping are already attached. Use the controls below to add extra pages or re-run scoring."
+                  : "Upload the finished student script PDF to render pages, run handwriting OCR, map answers to your saved questions, and auto-score them."}
+              </p>
+              {!(isImportedSubmission && hasImportedPages) ? (
+              <label className="mt-4 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#f5f2ea] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
+                <input type="file" accept="application/pdf" className="hidden" onChange={(event) => processFinishedPaperPdf(event.target.files?.[0] ?? null)} />
+                {isPending ? "Processing finished paper PDF..." : "Upload finished paper PDF"}
+              </label>
+              ) : (
+              <label className="mt-4 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#faf8f3] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
+                <input type="file" accept="application/pdf" className="hidden" onChange={(event) => processFinishedPaperPdf(event.target.files?.[0] ?? null)} />
+                {isPending ? "Replacing script PDF..." : "Replace script PDF"}
+              </label>
+              )}
+              <button type="button" onClick={autoScoreWholePaper} disabled={autoScoreLoadingKey === "__whole-paper__"} className="btn-press mt-4 inline-flex items-center gap-2 rounded-full bg-[#1a2e1a] px-4 py-2 text-[0.8rem] font-semibold text-white disabled:opacity-60">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{autoScoreLoadingKey === "__whole-paper__" ? "Scoring whole paper..." : "Auto-score whole paper"}</span>
+              </button>
+              <label className="mt-4 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#faf8f3] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
+                <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => uploadFinishedScriptPages(event.target.files)} />
+                {isPending ? "Uploading script pages..." : "Upload finished script pages"}
+              </label>
               <button type="button" onClick={loadCombinedMarkScheme} disabled={isLoadingCombinedMarkScheme} className="btn-press mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a2e1a]/10 px-4 py-2 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-[#faf8f3] disabled:opacity-60">
                 <Brain className="h-4 w-4" />
-                <span>{isLoadingCombinedMarkScheme ? "Loading mark scheme..." : "Load combined mark scheme"}</span>
+                <span>{isLoadingCombinedMarkScheme ? "Loading mark scheme..." : combinedMarkScheme ? "Reload mark scheme" : "Load combined mark scheme"}</span>
               </button>
+              {combinedMarkScheme?.failures && combinedMarkScheme.failures.length > 0 ? (
+                <p className="mt-3 text-[0.78rem] text-[#9a5a2c]">{combinedMarkScheme.failures.length} mark scheme slice{combinedMarkScheme.failures.length === 1 ? "" : "s"} could not be loaded.</p>
+              ) : null}
               {combinedMarkScheme ? (
                 <div className="mt-4 overflow-hidden rounded-[1rem] border border-[#1a2e1a]/[0.06] bg-[#faf8f3]">
                   <div className="flex overflow-x-auto border-b border-[#1a2e1a]/[0.06] px-2 py-2">
@@ -402,19 +547,11 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-accent"><FileUp className="h-4 w-4" /></div>
                 <div>
-                  <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Upload page</p>
-                  <h2 className="font-serif text-[1.25rem] text-[#1a2e1a]">Manual question upload</h2>
+                  <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Unsupported path</p>
+                  <h2 className="font-serif text-[1.25rem] text-[#1a2e1a]">This submission needs a saved generated paper</h2>
                 </div>
               </div>
-              <div className="mt-5 space-y-4">
-                <input value={questionNumber} onChange={(event) => setQuestionNumber(event.target.value)} placeholder="Question number e.g. 7" className="w-full rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35 focus:bg-white focus:shadow-[0_0_0_3px_rgba(90,138,92,0.15)]" />
-                <input value={questionPartNumber} onChange={(event) => setQuestionPartNumber(event.target.value)} placeholder="Part e.g. b" className="w-full rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35 focus:bg-white focus:shadow-[0_0_0_3px_rgba(90,138,92,0.15)]" />
-                <input value={pageLabel} onChange={(event) => setPageLabel(event.target.value)} placeholder="Optional page label" className="w-full rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35 focus:bg-white focus:shadow-[0_0_0_3px_rgba(90,138,92,0.15)]" />
-                <label className="flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#faf8f3] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
-                  <input type="file" accept="image/*" className="hidden" onChange={(event) => uploadManualPage(event.target.files?.[0] ?? null)} />
-                  {isPending ? "Uploading..." : "Choose a scanned response image"}
-                </label>
-              </div>
+              <p className="mt-4 text-[0.84rem] leading-[1.6] text-[#3d5a3f]/60">The polished marking flow starts from a generated paper saved to your account. That is what lets the app resolve the original source paper, pull the right mark scheme, and slice the relevant question section automatically.</p>
             </div>
           )}
 
@@ -433,33 +570,30 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
             </div>
           </div>
 
-          <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#fff2e6] text-[#b17436]"><ListChecks className="h-4 w-4" /></div>
-              <div>
-                <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Review queue</p>
-                <h2 className="font-serif text-[1.2rem] text-[#1a2e1a]">Questions to inspect</h2>
-              </div>
-            </div>
-            <div className="mt-4 space-y-2">
-              {reviewRows.length === 0 ? (
-                <div className="rounded-[1rem] border border-dashed border-[#1a2e1a]/10 bg-[#faf8f3] px-4 py-4 text-[0.8rem] text-[#3d5a3f]/60">Nothing currently flagged. Questions with low confidence or manual review flags will show here.</div>
-              ) : reviewRows.map((row) => (
-                <a key={`review-${row.questionKey}`} href={`#question-${row.questionKey}`} className="flex items-center justify-between rounded-[1rem] border border-[#d9a063]/20 bg-[#fff7ef] px-3 py-3 text-left hover:bg-[#fff3e7]">
-                  <div>
-                    <p className="text-[0.82rem] font-medium text-[#1a2e1a]">{formatQuestionLabel({ displayOrder: row.savedQuestion?.displayOrder, questionNumber: row.savedQuestion?.questionNumber, questionPartNumber: row.savedQuestion?.questionPartNumber, questionKey: row.questionKey })}</p>
-                    <p className="mt-1 text-[0.74rem] text-[#9a5a2c]">{row.score ? `${Math.round(row.score.confidence * 100)}% confidence` : "Awaiting score"}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-[#9a5a2c]" />
-                </a>
-              ))}
-            </div>
-          </div>
-
           {uploadError ? <p className="rounded-[1rem] border border-red-200 bg-red-50 px-4 py-3 text-[0.8rem] text-red-700">{uploadError}</p> : null}
         </aside>
 
         <div className="space-y-4">
+          {reviewRows.length > 0 ? (
+            <section className="rounded-[1.6rem] border border-[#d9a063]/20 bg-[linear-gradient(180deg,#fff8f0_0%,#ffffff_100%)] p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[0.72rem] uppercase tracking-[0.16em] text-[#b17436]">Review queue</p>
+                  <h2 className="mt-1 font-serif text-[1.25rem] text-[#1a2e1a]">Questions needing human attention</h2>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#fff2e6] px-3 py-1.5 text-[0.72rem] font-medium text-[#9a5a2c]"><ShieldAlert className="h-3.5 w-3.5" />{reviewRows.length} to review</div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {reviewRows.map((row) => (
+                  <a key={`review-${row.questionKey}`} href={`#question-${row.questionKey}`} className="inline-flex items-center gap-2 rounded-full border border-[#d9a063]/25 bg-white px-3 py-2 text-[0.78rem] font-medium text-[#9a5a2c] hover:bg-[#fff6ee]">
+                    <span>{formatQuestionLabel({ displayOrder: row.savedQuestion?.displayOrder, questionNumber: row.savedQuestion?.questionNumber, questionPartNumber: row.savedQuestion?.questionPartNumber, questionKey: row.questionKey })}</span>
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           <section className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -503,17 +637,21 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
                       displayOrder: row.savedQuestion?.displayOrder,
                       questionNumber: row.savedQuestion?.questionNumber,
                       questionPartNumber: row.savedQuestion?.questionPartNumber,
+                      questionPath: row.savedQuestion?.questionPath,
                       questionKey: row.questionKey,
                     })}</h2>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-2.5 py-1 text-[0.72rem] text-[#3d5a3f]/65">{row.savedQuestion?.paperCode ? `${row.savedQuestion.paperCode} · ${row.savedQuestion.year ?? ""} ${row.savedQuestion.session ?? ""}`.trim() : "Manual question"}</span>
-                      <span className={`rounded-full border px-2.5 py-1 text-[0.72rem] ${getQuestionStateStyles(getQuestionState(row))}`}>{getQuestionStateLabel(getQuestionState(row))}</span>
+                      <span className={`rounded-full border px-2.5 py-1 text-[0.72rem] ${getQuestionStateStyles(getQuestionState(row))}`}>{getQuestionStateLabel(getQuestionState(row), row.questionStatus)}</span>
                       <span className="rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-2.5 py-1 text-[0.72rem] text-[#3d5a3f]/65">{row.pages.length} uploaded page{row.pages.length === 1 ? "" : "s"}</span>
                     </div>
+                    {row.questionStatus?.failureReason ? (
+                      <p className="mt-2 text-[0.78rem] text-[#9a5a2c]">{row.questionStatus.failureReason}</p>
+                    ) : null}
                     {row.score ? (
                       <div className="mt-3 flex flex-wrap items-center gap-3">
                         <div className="rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-3 py-1.5 text-[0.76rem] font-semibold text-[#1a2e1a]">
-                          Model mark: {row.score.awardedMarks}/{row.score.maxMarks}
+                          {row.score.scoreStatus === "confirmed" ? "Saved" : "AI suggestion"}: {row.score.awardedMarks}/{row.score.maxMarks}
                         </div>
                         <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#1a2e1a]/8">
                           <div className={`h-full rounded-full ${row.score.confidence >= 0.85 ? "bg-[#5a8a5c]" : row.score.confidence >= 0.65 ? "bg-[#b38a43]" : "bg-[#b85b4f]"}`} style={{ width: `${Math.max(6, Math.min(100, row.score.confidence * 100))}%` }} />
@@ -531,7 +669,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
                       </label>
                     ) : null}
                     {row.pages[0] ? (
-                      <button type="button" onClick={() => runOcr(row.questionKey, row.pages[0].sourceImageUrl)} disabled={ocrLoadingKey === row.questionKey} className="btn-press inline-flex items-center justify-center gap-2 rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-4 py-2.5 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-white disabled:opacity-60">
+                      <button type="button" onClick={() => runOcr(row.questionKey)} disabled={ocrLoadingKey === row.questionKey} className="btn-press inline-flex items-center justify-center gap-2 rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-4 py-2.5 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-white disabled:opacity-60">
                         <ScanText className="h-4 w-4" />
                         <span>{ocrLoadingKey === row.questionKey ? "Running OCR..." : row.response ? "Refresh OCR" : "Run OCR"}</span>
                       </button>
@@ -584,18 +722,18 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
                       <MathRichText text={markSchemePreview || "Load the combined mark scheme or auto-score this question to populate the exact mark scheme slice used for grading."} className="mt-3 text-[0.84rem] leading-[1.65] text-[#1a2e1a]/78" />
                     </div>
 
-                    <form action={(formData) => saveScore(row.questionKey, formData)} className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-[0_6px_18px_rgba(26,46,26,0.03)]">
+                    <form key={`${row.questionKey}-${row.score?.updatedAt ?? "empty"}`} action={(formData) => saveScore(row.questionKey, formData)} className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-[0_6px_18px_rgba(26,46,26,0.03)]">
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                           <p className="text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm">Score decision</p>
                           <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/58">Adjust the score manually or keep the model’s result and rationale.</p>
                         </div>
-                        {row.score ? <div className="rounded-full bg-[#f4f7f1] px-3 py-1.5 text-[0.76rem] font-medium text-[#3f6d44]">Saved</div> : null}
+                        {row.score?.scoreStatus === "confirmed" ? <div className="rounded-full bg-[#f4f7f1] px-3 py-1.5 text-[0.76rem] font-medium text-[#3f6d44]">Saved</div> : row.score?.scoreStatus === "ai_suggested" ? <div className="rounded-full bg-[#eef4fb] px-3 py-1.5 text-[0.76rem] font-medium text-[#486781]">AI suggestion</div> : null}
                       </div>
                       <div className="grid gap-3 sm:grid-cols-3">
                         <input name={`awarded-${row.questionKey}`} defaultValue={row.score?.awardedMarks ?? ""} placeholder="Awarded" type="number" min={0} className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
-                        <input name={`max-${row.questionKey}`} defaultValue={maxMarksDefault} placeholder="Max" type="number" min={0} className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
-                        <input name={`confidence-${row.questionKey}`} defaultValue={row.score?.confidence ?? 0.8} placeholder="Confidence" type="number" min={0} max={1} step="0.05" className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
+                        <input name={`max-${row.questionKey}`} defaultValue={row.score?.maxMarks ?? row.savedQuestion?.totalMarks ?? ""} placeholder="Max" type="number" min={0} className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
+                        <input name={`confidence-${row.questionKey}`} defaultValue={row.score?.confidence ?? ""} placeholder="Confidence" type="number" min={0} max={1} step="0.05" className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
                       </div>
                       <textarea name={`rationale-${row.questionKey}`} defaultValue={row.score?.rationale ?? ""} placeholder="Why this mark was awarded or why it needs review. LaTeX supported, e.g. $x^2 + 3x$." className="mt-3 min-h-[110px] w-full rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] leading-[1.6] outline-none focus:border-accent/35" />
                       <label className="mt-3 flex items-center gap-2 text-[0.82rem] text-[#1a2e1a]/70">
