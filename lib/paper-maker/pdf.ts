@@ -4,6 +4,12 @@ import { resolve } from "node:path";
 import { PDFDocument, rgb } from "pdf-lib";
 
 import type { BoundingBox, QuestionUnit, SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
+import {
+  buildUnitRenderPlan,
+  isUnitRegionRenderable,
+  type RegionFigure,
+  type RegionPageLayout,
+} from "@/lib/paper-maker/region-render";
 
 type GeneratePaperPdfInput = {
   title: string;
@@ -11,6 +17,9 @@ type GeneratePaperPdfInput = {
   allUnits: QuestionUnit[];
   pageAssetsBySource: Map<string, SourcePageAsset[]>;
   prefaceSourcePdfs?: string[];
+  figuresBySource?: Map<string, RegionFigure[]>;
+  pageLayoutsBySource?: Map<string, RegionPageLayout[]>;
+  regionMode?: boolean;
   coverPage: {
     boardLabel: string;
     subjectLabel: string;
@@ -650,12 +659,12 @@ function getVisiblePageGeometry(sourcePdfPage: import("pdf-lib").PDFPage): Visib
   };
 }
 
-function toPdfCropBox(cropBox: CropBox, geometry: VisiblePageGeometry): CropBox {
+function toPdfCropBox(cropBox: CropBox, _geometry: VisiblePageGeometry): CropBox {
   return {
-    left: geometry.x + cropBox.left,
-    right: geometry.x + cropBox.right,
-    bottom: geometry.y + cropBox.bottom,
-    top: geometry.y + cropBox.top,
+    left: cropBox.left,
+    right: cropBox.right,
+    bottom: cropBox.bottom,
+    top: cropBox.top,
   } satisfies CropBox;
 }
 
@@ -845,33 +854,6 @@ function resolveSamePageFigureSupportCropBox(
   return isValidCropBox(cropBox, pageWidth, pageHeight) ? cropBox : null;
 }
 
-function resolvePreviousPageFigureSupportCropBox(
-  unit: QuestionUnit,
-  pageNumber: number,
-  pageWidth: number,
-  pageHeight: number,
-) {
-  const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
-  if (!extractedPage) {
-    return null;
-  }
-
-  const figureNumbers = getReferencedFigureNumbers(unit);
-  const hasReferencedFigure = getReferencedFigureLines(extractedPage, figureNumbers).length > 0;
-  if (!hasReferencedFigure && !pageContainsSupportContext(extractedPage)) {
-    return null;
-  }
-
-  const cropBox = {
-    left: 0,
-    right: pageWidth,
-    bottom: getFooterFloor(extractedPage, pageHeight),
-    top: pageHeight,
-  } satisfies CropBox;
-
-  return isValidCropBox(cropBox, pageWidth, pageHeight) ? cropBox : null;
-}
-
 function shouldUseAnswerLayout(unit: QuestionUnit) {
   if (isMathematicsUnit(unit)) {
     return false;
@@ -1047,6 +1029,14 @@ async function prepareSnippet(
   const workingDoc = await PDFDocument.create();
   const [workingPage] = await workingDoc.copyPages(sourceDoc, [sourcePageIndex]);
   const embeddedPage = await outputDoc.embedPage(workingPage, cropBox);
+  try {
+    await embeddedPage.embed();
+  } catch (error) {
+    const queued = (outputDoc as unknown as { embeddedPages: unknown[] }).embeddedPages;
+    const index = queued.indexOf(embeddedPage);
+    if (index >= 0) queued.splice(index, 1);
+    throw error;
+  }
   return {
     embeddedPage,
     width: cropBox.right - cropBox.left,
@@ -1422,7 +1412,150 @@ async function withSourcePdfCandidate<T>(
   );
 }
 
-export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, prefaceSourcePdfs = [], coverPage }: GeneratePaperPdfInput) {
+const REGION_OUTPUT_PAGE_WIDTH = 595.28;
+const REGION_OUTPUT_PAGE_HEIGHT = 841.89;
+
+type RegionRenderFlow = {
+  page: import("pdf-lib").PDFPage | null;
+  cursorY: number;
+};
+
+async function renderRegionUnit(
+  unit: QuestionUnit,
+  outputDoc: PDFDocument,
+  pageAssetsBySource: Map<string, SourcePageAsset[]>,
+  sourcePdfCache: Map<string, Uint8Array>,
+  sourceDocCache: Map<string, PDFDocument>,
+  layoutByPage: Map<number, RegionPageLayout>,
+  figures: RegionFigure[],
+  flow: RegionRenderFlow,
+) {
+  const plan = buildUnitRenderPlan(unit, layoutByPage, figures);
+  if (plan.length === 0) return;
+
+  const sideMargin = SHORT_PAGE_SIDE_MARGIN;
+  const availableWidth = REGION_OUTPUT_PAGE_WIDTH - sideMargin * 2;
+  const availableFullHeight = REGION_OUTPUT_PAGE_HEIGHT - SHORT_PAGE_TOP_MARGIN - SHORT_PAGE_BOTTOM_MARGIN;
+
+  type PreparedCrop = {
+    embeddedPage: PreparedSnippet["embeddedPage"];
+    kind: typeof plan[number]["kind"];
+    width: number;
+    height: number;
+  };
+  const prepared: PreparedCrop[] = [];
+  for (const crop of plan) {
+    const item = await withSourcePdfCandidate(
+      unit,
+      crop.pageNumber,
+      pageAssetsBySource,
+      sourcePdfCache,
+      sourceDocCache,
+      async (sourcePage, _sourceDoc, sourcePdfPage): Promise<PreparedCrop | null> => {
+        const pageGeometry = getVisiblePageGeometry(sourcePdfPage);
+        const pdfCropBox = toPdfCropBox(crop.cropBox, pageGeometry);
+        const cropWidth = crop.cropBox.right - crop.cropBox.left;
+        const cropHeight = crop.cropBox.top - crop.cropBox.bottom;
+        if (cropWidth <= 0 || cropHeight <= 0) return null;
+
+        const snippet = await prepareSnippet(
+          outputDoc,
+          sourcePage.pdfUrl,
+          pdfCropBox,
+          sourcePdfCache,
+          sourceDocCache,
+          sourcePage.sourcePageIndex,
+        );
+
+        let scale = Math.min(1, availableWidth / cropWidth);
+        if (cropHeight * scale > availableFullHeight) scale = Math.min(scale, availableFullHeight / cropHeight);
+        return { embeddedPage: snippet.embeddedPage, kind: crop.kind, width: cropWidth * scale, height: cropHeight * scale };
+      },
+    );
+    if (item) prepared.push(item);
+  }
+
+  const SHORT_LEAD_HEIGHT = availableFullHeight * 0.35;
+  const isShortLead = (crop: PreparedCrop) => crop.kind === "stem" || crop.kind === "figure" || crop.height < SHORT_LEAD_HEIGHT;
+  const blocks: PreparedCrop[][] = [];
+  for (let index = 0; index < prepared.length; ) {
+    const block: PreparedCrop[] = [];
+    let accumulated = 0;
+    while (
+      index < prepared.length
+      && isShortLead(prepared[index])
+      && (block.length === 0 || accumulated <= availableFullHeight * 0.65)
+    ) {
+      accumulated += prepared[index].height + SHORT_PAGE_GAP;
+      block.push(prepared[index]);
+      index += 1;
+    }
+    while (
+      index < prepared.length
+      && block.length > 0
+      && !block.some((crop) => crop.kind === "question")
+    ) {
+      block.push(prepared[index]);
+      index += 1;
+    }
+    if (block.length === 0 && index < prepared.length) {
+      block.push(prepared[index]);
+      index += 1;
+    }
+    if (block.length > 0) blocks.push(block);
+  }
+
+  for (const block of blocks) {
+    const gaps = SHORT_PAGE_GAP * (block.length - 1);
+    const rawHeight = block.reduce((sum, crop) => sum + crop.height, 0) + gaps;
+    const fitsOnePage = rawHeight <= availableFullHeight;
+    const canScaleToOnePage = block.length > 1 && !fitsOnePage && rawHeight <= availableFullHeight * 1.4;
+
+    if (fitsOnePage || canScaleToOnePage) {
+      const blockScale = canScaleToOnePage ? availableFullHeight / rawHeight : 1;
+      const scaledHeight = rawHeight * blockScale;
+      if (!flow.page || flow.cursorY - scaledHeight < SHORT_PAGE_BOTTOM_MARGIN) {
+        flow.page = outputDoc.addPage([REGION_OUTPUT_PAGE_WIDTH, REGION_OUTPUT_PAGE_HEIGHT]);
+        flow.cursorY = REGION_OUTPUT_PAGE_HEIGHT - SHORT_PAGE_TOP_MARGIN;
+      }
+      for (const crop of block) {
+        const drawHeight = crop.height * blockScale;
+        const drawWidth = crop.width * blockScale;
+        flow.page!.drawPage(crop.embeddedPage, {
+          x: sideMargin,
+          y: flow.cursorY - drawHeight,
+          width: drawWidth,
+          height: drawHeight,
+        });
+        flow.cursorY -= drawHeight + SHORT_PAGE_GAP;
+      }
+    } else {
+      for (let i = 0; i < block.length; i += 1) {
+        const crop = block[i];
+        const next = block[i + 1];
+        const pairHeight = next ? crop.height + SHORT_PAGE_GAP + next.height : crop.height;
+        const isLead = crop.kind === "stem" || crop.kind === "figure";
+        const needBreak = !flow.page || flow.cursorY - crop.height < SHORT_PAGE_BOTTOM_MARGIN;
+        const pairBreak = isLead && Boolean(next) && Boolean(flow.page)
+          && flow.cursorY - pairHeight < SHORT_PAGE_BOTTOM_MARGIN
+          && pairHeight <= availableFullHeight;
+        if (needBreak || pairBreak) {
+          flow.page = outputDoc.addPage([REGION_OUTPUT_PAGE_WIDTH, REGION_OUTPUT_PAGE_HEIGHT]);
+          flow.cursorY = REGION_OUTPUT_PAGE_HEIGHT - SHORT_PAGE_TOP_MARGIN;
+        }
+        flow.page!.drawPage(crop.embeddedPage, {
+          x: sideMargin,
+          y: flow.cursorY - crop.height,
+          width: crop.width,
+          height: crop.height,
+        });
+        flow.cursorY -= crop.height + SHORT_PAGE_GAP;
+      }
+    }
+  }
+}
+
+export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, prefaceSourcePdfs = [], coverPage, figuresBySource, pageLayoutsBySource, regionMode = false }: GeneratePaperPdfInput) {
   const outputDoc = await PDFDocument.create();
   outputDoc.setTitle(title);
   drawExamCoverPage(outputDoc, coverPage);
@@ -1453,13 +1586,82 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
     }
   }
 
+  const layoutMapCache = new Map<string, Map<number, RegionPageLayout>>();
+  const getLayoutMap = (sourceRelativePath: string) => {
+    let cached = layoutMapCache.get(sourceRelativePath);
+    if (!cached) {
+      cached = new Map<number, RegionPageLayout>();
+      for (const layout of pageLayoutsBySource?.get(sourceRelativePath) ?? []) {
+        cached.set(layout.pageNumber, layout);
+      }
+      layoutMapCache.set(sourceRelativePath, cached);
+    }
+    return cached;
+  };
+
+  const regionUnits: QuestionUnit[] = [];
+  const legacyUnits: QuestionUnit[] = [];
+  for (const unit of orderedUnits) {
+    if (regionMode && isUnitRegionRenderable(unit, getLayoutMap(unit.sourceRelativePath))) {
+      regionUnits.push(unit);
+    } else {
+      legacyUnits.push(unit);
+    }
+  }
+
+  const skippedUnitKeys: string[] = [];
+
+  if (regionUnits.length > 0) {
+    const regionFlow: RegionRenderFlow = { page: null, cursorY: 0 };
+    const regionAvailWidth = REGION_OUTPUT_PAGE_WIDTH - SHORT_PAGE_SIDE_MARGIN * 2;
+    const estimateUnitHeight = (unit: QuestionUnit): number => {
+      const plan = buildUnitRenderPlan(unit, getLayoutMap(unit.sourceRelativePath), figuresBySource?.get(unit.sourceRelativePath) ?? []);
+      let height = 0;
+      for (const crop of plan) {
+        const cropWidth = crop.cropBox.right - crop.cropBox.left;
+        const cropHeight = crop.cropBox.top - crop.cropBox.bottom;
+        if (cropWidth <= 0 || cropHeight <= 0) continue;
+        height += cropHeight * Math.min(1, regionAvailWidth / cropWidth) + SHORT_PAGE_GAP;
+      }
+      return height;
+    };
+
+    const pending = [...regionUnits];
+    while (pending.length > 0) {
+      let index = 0;
+      if (regionFlow.page) {
+        const space = regionFlow.cursorY - SHORT_PAGE_BOTTOM_MARGIN;
+        const windowEnd = Math.min(pending.length, 6);
+        for (let i = 0; i < windowEnd; i += 1) {
+          if (estimateUnitHeight(pending[i]) <= space) { index = i; break; }
+        }
+      }
+      const unit = pending.splice(index, 1)[0];
+      try {
+        await renderRegionUnit(
+          unit,
+          outputDoc,
+          pageAssetsBySource,
+          sourcePdfCache,
+          sourceDocCache,
+          getLayoutMap(unit.sourceRelativePath),
+          figuresBySource?.get(unit.sourceRelativePath) ?? [],
+          regionFlow,
+        );
+      } catch (error) {
+        skippedUnitKeys.push(unit.unitKey);
+        console.warn(`Skipped region unit ${unit.unitKey}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  }
+
   const unitStartPages = buildUnitStartPageMap(allUnits);
   const renderPageNumbersByUnit = new Map(
-    orderedUnits.map((unit) => [unit.unitKey, determineRenderPageNumbers(unit, unitStartPages)]),
+    legacyUnits.map((unit) => [unit.unitKey, determineRenderPageNumbers(unit, unitStartPages)]),
   );
-  const selectedPageOccupancy = buildRenderPageOccupancyMap(orderedUnits, renderPageNumbersByUnit);
-  const shortUnits = orderedUnits.filter(shouldAttemptCompactLayout);
-  const standardUnits = orderedUnits.filter((unit) => !shouldAttemptCompactLayout(unit));
+  const selectedPageOccupancy = buildRenderPageOccupancyMap(legacyUnits, renderPageNumbersByUnit);
+  const shortUnits = legacyUnits.filter(shouldAttemptCompactLayout);
+  const standardUnits = legacyUnits.filter((unit) => !shouldAttemptCompactLayout(unit));
 
   if (shortUnits.length > 0) {
     let currentPage: import("pdf-lib").PDFPage | null = null;
@@ -1468,6 +1670,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
     let cursorTop = 0;
 
     for (const unit of shortUnits) {
+     try {
       const renderPageNumbers = renderPageNumbersByUnit.get(unit.unitKey) ?? [];
       let shortPageItem: ShortPageItem | null = null;
 
@@ -1573,10 +1776,15 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
 
       drawShortPageItem(currentPage, shortPageItem, cursorTop);
       cursorTop -= shortPageItem.scaledHeight + SHORT_PAGE_GAP;
+     } catch (error) {
+       standardUnits.push(unit);
+       console.warn(`Short-layout render failed for ${unit.unitKey}, retrying standard: ${error instanceof Error ? error.message : String(error)}`);
+     }
     }
   }
 
   for (const unit of standardUnits) {
+   try {
     const renderPageNumbers = renderPageNumbersByUnit.get(unit.unitKey) ?? [];
     if (renderPageNumbers.length === 0) continue;
     const firstPageNumber = unit.pages[0]?.pageNumber ?? renderPageNumbers[0];
@@ -1679,6 +1887,14 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
         throw new Error(`Missing page asset CDN URL for ${unit.unitKey} page ${pageNumber}`);
       }
     }
+   } catch (error) {
+     skippedUnitKeys.push(unit.unitKey);
+     console.warn(`Skipped unit ${unit.unitKey}: ${error instanceof Error ? error.message : String(error)}`);
+   }
+  }
+
+  if (skippedUnitKeys.length > 0) {
+    console.warn(`Paper generated with ${skippedUnitKeys.length} unit(s) skipped due to unreadable source PDFs.`);
   }
 
   return await outputDoc.save();

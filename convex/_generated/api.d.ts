@@ -15,6 +15,7 @@ import type * as http from "../http.js";
 import type * as insertPageAssets from "../insertPageAssets.js";
 import type * as marking from "../marking.js";
 import type * as paperAssets from "../paperAssets.js";
+import type * as paperRegions from "../paperRegions.js";
 import type * as questionPageAssets from "../questionPageAssets.js";
 import type * as questionTags from "../questionTags.js";
 import type * as savedPapers from "../savedPapers.js";
@@ -33,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   insertPageAssets: typeof insertPageAssets;
   marking: typeof marking;
   paperAssets: typeof paperAssets;
+  paperRegions: typeof paperRegions;
   questionPageAssets: typeof questionPageAssets;
   questionTags: typeof questionTags;
   savedPapers: typeof savedPapers;

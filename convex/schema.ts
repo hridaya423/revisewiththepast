@@ -108,6 +108,35 @@ export default defineSchema({
     .index("by_source_relative_path", ["sourceRelativePath"])
     .index("by_source_relative_path_page", ["sourceRelativePath", "pageNumber"]),
 
+  paperFigures: defineTable({
+    sourceRelativePath: v.string(),
+    label: v.string(),
+    pageNumber: v.number(),
+    yTop: v.number(),
+    yBottom: v.number(),
+    regionVersion: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_source_relative_path", ["sourceRelativePath"])
+    .index("by_source_relative_path_page", ["sourceRelativePath", "pageNumber"]),
+
+  paperPageLayouts: defineTable({
+    sourceRelativePath: v.string(),
+    pageNumber: v.number(),
+    pageWidth: v.number(),
+    pageHeight: v.number(),
+    contentX0: v.number(),
+    contentX1: v.number(),
+    headerFloorY: v.number(),
+    footerCeilingY: v.number(),
+    regionVersion: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_source_relative_path", ["sourceRelativePath"])
+    .index("by_source_relative_path_page", ["sourceRelativePath", "pageNumber"]),
+
   taggedPapers: defineTable({
     sourceFile: v.string(),
     sourceRelativePath: v.optional(v.string()),
@@ -185,6 +214,16 @@ export default defineSchema({
       }),
       v.null(),
     )),
+    regionSpans: v.optional(v.union(
+      v.array(v.object({ pageNumber: v.number(), yTop: v.number(), yBottom: v.number() })),
+      v.null(),
+    )),
+    stemSpans: v.optional(v.union(
+      v.array(v.object({ pageNumber: v.number(), yTop: v.number(), yBottom: v.number() })),
+      v.null(),
+    )),
+    referencedFigures: v.optional(v.array(v.string())),
+    regionVersion: v.optional(v.string()),
     sourceMode: v.string(),
     assetIds: v.array(v.string()),
 

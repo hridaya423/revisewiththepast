@@ -7,6 +7,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 import type { QuestionBankPart, SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
+import type { RegionFigure, RegionPageLayout } from "@/lib/paper-maker/region-render";
 
 const QUESTION_BANK_CACHE_TTL_MS = 60_000;
 
@@ -214,5 +215,36 @@ export async function getQuestionPageAssetsBySourceRelativePaths(sourceRelativeP
     bySourcePath.set(sourceRelativePath, manifestBySourcePath.get(sourceRelativePath) ?? []);
   }
 
+  return bySourcePath;
+}
+
+export type PaperFigureRow = RegionFigure & { sourceRelativePath: string };
+export type PaperPageLayoutRow = RegionPageLayout & { sourceRelativePath: string };
+
+export async function getPaperFiguresBySourceRelativePaths(sourceRelativePaths: string[]): Promise<Map<string, RegionFigure[]>> {
+  const client = getConvexClient();
+  const uniquePaths = Array.from(new Set(sourceRelativePaths));
+  if (uniquePaths.length === 0) return new Map<string, RegionFigure[]>();
+  const rows = await client.query(api.paperRegions.getPaperFigures, { sourceRelativePaths: uniquePaths });
+  const bySourcePath = new Map<string, RegionFigure[]>();
+  for (const row of rows as PaperFigureRow[]) {
+    const existing = bySourcePath.get(row.sourceRelativePath) ?? [];
+    existing.push(row);
+    bySourcePath.set(row.sourceRelativePath, existing);
+  }
+  return bySourcePath;
+}
+
+export async function getPaperPageLayoutsBySourceRelativePaths(sourceRelativePaths: string[]): Promise<Map<string, RegionPageLayout[]>> {
+  const client = getConvexClient();
+  const uniquePaths = Array.from(new Set(sourceRelativePaths));
+  if (uniquePaths.length === 0) return new Map<string, RegionPageLayout[]>();
+  const rows = await client.query(api.paperRegions.getPaperPageLayouts, { sourceRelativePaths: uniquePaths });
+  const bySourcePath = new Map<string, RegionPageLayout[]>();
+  for (const row of rows as PaperPageLayoutRow[]) {
+    const existing = bySourcePath.get(row.sourceRelativePath) ?? [];
+    existing.push(row);
+    bySourcePath.set(row.sourceRelativePath, existing);
+  }
   return bySourcePath;
 }

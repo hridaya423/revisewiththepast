@@ -2,7 +2,11 @@ import "server-only";
 
 import { resolve } from "node:path";
 
-import { createCanvas } from "@napi-rs/canvas";
+import { createCanvas, DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
+
+globalThis.DOMMatrix ??= DOMMatrix as unknown as typeof globalThis.DOMMatrix;
+globalThis.ImageData ??= ImageData as unknown as typeof globalThis.ImageData;
+globalThis.Path2D ??= Path2D as unknown as typeof globalThis.Path2D;
 
 type PdfJsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 type PdfJsWorkerModule = typeof import("pdfjs-dist/legacy/build/pdf.worker.mjs");
@@ -17,6 +21,7 @@ declare global {
 }
 
 export const STANDARD_FONT_DATA_URL = `${resolve(process.cwd(), "node_modules/pdfjs-dist/standard_fonts")}/`;
+export const WASM_URL = `${resolve(process.cwd(), "node_modules/pdfjs-dist/wasm")}/`;
 
 let cachedPdfJsModule: Promise<PdfJsModule> | null = null;
 
@@ -43,6 +48,7 @@ export async function getPdfDocument(data: Uint8Array) {
     data,
     disableWorker: true,
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
+    wasmUrl: WASM_URL,
     useWorkerFetch: false,
   } as never).promise;
 }

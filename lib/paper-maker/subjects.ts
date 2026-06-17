@@ -215,8 +215,8 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     codeLabel: "1PH0",
     description: "Generate Edexcel Physics papers from tagged source pages by tier and topic.",
     topicSelectionEnabled: true,
-    generationEnabled: true,
-    availabilityNote: "Ready to build by tier and topic.",
+    generationEnabled: false,
+    availabilityNote: "Covered by Combined Science (physics papers).",
     recommendedMinutesPerMark: 1.15,
     paperOptions: [
       { code: "paper-1", label: "Paper 1" },

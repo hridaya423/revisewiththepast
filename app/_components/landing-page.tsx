@@ -81,12 +81,6 @@ const SUBJECTS = [
     desc: "Create Edexcel Chemistry papers by tier and topic using real source-page questions.",
   },
   {
-    key: "edexcel-physics",
-    board: "Edexcel",
-    title: "Physics",
-    desc: "Create Edexcel Physics papers by tier and topic using real source-page questions.",
-  },
-  {
     key: "edexcel-business",
     board: "Edexcel",
     title: "Business",

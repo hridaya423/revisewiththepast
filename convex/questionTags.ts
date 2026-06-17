@@ -86,6 +86,17 @@ const taggedQuestionPartValidator = v.object({
   sourceMode: v.string(),
   assetIds: v.array(v.string()),
 
+  regionSpans: v.optional(v.union(
+    v.array(v.object({ pageNumber: v.number(), yTop: v.number(), yBottom: v.number() })),
+    v.null(),
+  )),
+  stemSpans: v.optional(v.union(
+    v.array(v.object({ pageNumber: v.number(), yTop: v.number(), yBottom: v.number() })),
+    v.null(),
+  )),
+  referencedFigures: v.optional(v.array(v.string())),
+  regionVersion: v.optional(v.string()),
+
   isChoiceQuestion: v.optional(v.boolean()),
   choiceGroupId: v.optional(v.union(v.string(), v.null())),
   choiceGroupType: v.optional(v.union(v.string(), v.null())),
@@ -377,6 +388,22 @@ export const getTaggedPaperBySourceFile = queryGeneric({
   },
 });
 
+export const getFullTaggedPartsBySourceRelativePath = queryGeneric({
+  args: { sourceRelativePath: v.string() },
+  handler: async (ctx, args) => {
+    const paper = await ctx.db
+      .query("taggedPapers")
+      .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
+      .first();
+    if (!paper) return { found: false as const, parts: [] as Array<Record<string, unknown>> };
+    const parts = await ctx.db
+      .query("taggedQuestionParts")
+      .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", paper._id))
+      .collect();
+    return { found: true as const, parts };
+  },
+});
+
 export const getSubjectDetailSnapshot = queryGeneric({
   args: {
     boardCode: v.string(),
@@ -521,6 +548,10 @@ export const getPaperMakerQuestionBank = queryGeneric({
       pageNumber: number;
       pageNumbers: number[];
       bbox: { x0: number; y0: number; x1: number; y1: number } | null;
+      regionSpans?: Array<{ pageNumber: number; yTop: number; yBottom: number }> | null;
+      stemSpans?: Array<{ pageNumber: number; yTop: number; yBottom: number }> | null;
+      referencedFigures?: string[];
+      regionVersion?: string;
       sourceMode: string;
       assetIds: string[];
       questionType?: string | null;
@@ -582,6 +613,10 @@ export const getPaperMakerQuestionBank = queryGeneric({
           pageNumber: part.pageNumber,
           pageNumbers: part.pageNumbers,
           bbox: part.bbox,
+          regionSpans: part.regionSpans ?? null,
+          stemSpans: part.stemSpans ?? null,
+          referencedFigures: part.referencedFigures ?? [],
+          regionVersion: part.regionVersion,
           sourceMode: part.sourceMode,
           assetIds: part.assetIds,
           questionType: part.questionType,

@@ -428,12 +428,14 @@ function parseArgs() {
   const configDirIndex = args.indexOf("--config-dir");
   const skipConvex = args.includes("--skip-convex");
   const forceRetag = args.includes("--force") || args.includes("--retag");
+  const reconcile = args.includes("--reconcile");
   return {
     paperJson: paperJsonIndex >= 0 ? resolve(process.cwd(), args[paperJsonIndex + 1]) : null,
     inputDir: inputDirIndex >= 0 ? resolve(process.cwd(), args[inputDirIndex + 1]) : DEFAULT_INPUT_DIR,
     configDir: configDirIndex >= 0 ? resolve(process.cwd(), args[configDirIndex + 1]) : DEFAULT_CONFIG_DIR,
     writeToConvex: WRITE_TO_CONVEX_BY_DEFAULT && !skipConvex,
     forceRetag,
+    reconcile,
   };
 }
 
@@ -671,20 +673,6 @@ function getAllowedTopics(taxonomy: Taxonomy | null, paperCode: string, sectionC
   }
 
   return leafTopics;
-}
-
-function buildTopicPoolForPaper(extracted: ExtractedPaper, taxonomy: Taxonomy | null, normalizedPaperCode: string) {
-  if (!taxonomy) return [] as TaxonomyTopic[];
-  const leafTopics = taxonomy.topics.filter((t) => t.kind === "leaf");
-  const topicIds = new Set<string>();
-
-  for (const part of extracted.question_parts) {
-    const allowed = getAllowedTopics(taxonomy, normalizedPaperCode, part.section_code);
-    for (const topic of allowed) topicIds.add(topic.id);
-  }
-
-  if (topicIds.size === 0) return leafTopics;
-  return leafTopics.filter((topic) => topicIds.has(topic.id));
 }
 
 function buildPaperPrompts(
@@ -944,10 +932,6 @@ function deriveResourceTrack(sourcePart: ExtractedQuestionPart, canonicalLeaf: s
   return null;
 }
 
-function remapAqaGeographySkillsLeaf(sourcePart: ExtractedQuestionPart, canonicalLeaf: string) {
-  return canonicalLeaf;
-}
-
 function buildContextualFacetValues(
   sourcePart: ExtractedQuestionPart,
   result: TaggedPaperResponse["question_parts"][number],
@@ -1064,9 +1048,7 @@ function mapTaggedPaperResult(
 
   return extracted.question_parts.map((sourcePart) => {
     const result = taggedById.get(sourcePart.question_id)!;
-    const canonicalLeaf = extracted.board_code === "aqa" && extracted.subject_slug === "geography"
-      ? remapAqaGeographySkillsLeaf(sourcePart, result.canonical_leaf)
-      : result.canonical_leaf;
+    const canonicalLeaf = result.canonical_leaf;
     const allowedTopicIds = new Set(
       getAllowedTopics(taxonomy, normalizedPaperCode, sourcePart.section_code).map((topic) => topic.id),
     );
@@ -1477,6 +1459,84 @@ function collectPaperJsonPaths(inputDir: string): string[] {
   });
 }
 
+function convexPartToTagged(p: Record<string, unknown>): TaggedQuestionPart {
+  const arr = (v: unknown) => (Array.isArray(v) ? (v as string[]) : []);
+  const str = (v: unknown) => (typeof v === "string" ? v : null);
+  return {
+    question_id: p.questionId as string,
+    canonical_leaf: (p.canonicalLeaf as string) ?? "",
+    knowledge_points: arr(p.knowledgePoints),
+    skills_tested: arr(p.skillsTested),
+    bloom_level: (p.bloomLevel as TaggedQuestionPart["bloom_level"]) ?? "understand",
+    difficulty: (p.difficulty as TaggedQuestionPart["difficulty"]) ?? "medium",
+    question_type: (p.questionType as TaggedQuestionPart["question_type"]) ?? "structured",
+    key_terms: arr(p.keyTerms),
+    spec_references: arr(p.specReferences),
+    confidence: typeof p.confidence === "number" ? (p.confidence as number) : 0,
+    evidence_snippet: (p.evidenceSnippet as string) ?? "",
+    taxonomy_version: (p.taxonomyVersion as string) ?? "unknown",
+    setText: str(p.setText),
+    cluster: str(p.cluster),
+    namedPoem: arr(p.namedPoem),
+    characters: arr(p.characters),
+    themes: arr(p.themes),
+    taskMode: str(p.taskMode),
+    domain: str(p.domain),
+    subtopic: str(p.subtopic),
+    representation: str(p.representation),
+    subskill: arr(p.subskill),
+    errorTrap: arr(p.errorTrap),
+    unit: str(p.unit),
+    caseStudy: arr(p.caseStudy),
+    resourceTrack: str(p.resourceTrack),
+    process: arr(p.process),
+  };
+}
+
+async function reconcilePaper(
+  paper: Extract<ReturnType<typeof preparePaperForTagging>, { status: "ready" }>,
+  convexClient: ConvexHttpClient | null,
+): Promise<{ newParts: number; removedParts: number; llmUsed: boolean } | null> {
+  const sourceRelativePath = deriveSourceRelativePath(paper.extracted.source_file);
+  const existingByQid = new Map<string, TaggedQuestionPart>();
+  if (convexClient) {
+    const res = await (convexClient as unknown as { query: (n: string, a: Record<string, unknown>) => Promise<{ found: boolean; parts: Array<Record<string, unknown>> }> })
+      .query("questionTags:getFullTaggedPartsBySourceRelativePath", { sourceRelativePath });
+    if (res?.found) {
+      for (const part of res.parts) existingByQid.set(part.questionId as string, convexPartToTagged(part));
+    }
+  }
+  if (existingByQid.size === 0) return null;
+
+  const freshParts = paper.extracted.question_parts;
+  const freshIds = new Set(freshParts.map((part) => part.question_id));
+  const newIds = freshParts.filter((part) => !existingByQid.has(part.question_id)).map((part) => part.question_id);
+  const removedParts = [...existingByQid.keys()].filter((id) => !freshIds.has(id)).length;
+
+  let merged: TaggedQuestionPart[];
+  let llmUsed = false;
+  if (newIds.length === 0) {
+    merged = freshParts
+      .map((part) => existingByQid.get(part.question_id))
+      .filter((tag): tag is TaggedQuestionPart => tag !== undefined);
+  } else {
+    const newIdSet = new Set(newIds);
+    const newPartsChunk = createPaperChunk(
+      paper.extracted,
+      freshParts.filter((part) => newIdSet.has(part.question_id)),
+    );
+    const llmTagged = await tagWholePaper(newPartsChunk, paper.taxonomy, paper.normalizedPaperCode, paper.controlledVocabs);
+    const llmByQid = new Map(llmTagged.map((tag) => [tag.question_id, tag]));
+    merged = freshParts
+      .map((part) => existingByQid.get(part.question_id) ?? llmByQid.get(part.question_id))
+      .filter((tag): tag is TaggedQuestionPart => tag !== undefined);
+    llmUsed = true;
+  }
+
+  await persistTaggedPaper(paper, merged, convexClient);
+  return { newParts: newIds.length, removedParts, llmUsed };
+}
+
 async function main() {
   if (process.argv.includes("--help") || process.argv.includes("-h")) {
     console.log("Usage: npm run papers:tag -- [--paper-json <path>] [--input-dir <path>] [--config-dir <path>]");
@@ -1498,10 +1558,40 @@ async function main() {
     return;
   }
 
-  const { paperJson, inputDir, configDir, writeToConvex, forceRetag } = parseArgs();
+  const { paperJson, inputDir, configDir, writeToConvex, forceRetag, reconcile } = parseArgs();
   assertEnv(writeToConvex);
   const discoveredPaperPaths = paperJson ? [paperJson] : collectPaperJsonPaths(inputDir);
   if (discoveredPaperPaths.length === 0) throw new Error("No extracted paper.json files found");
+
+  if (reconcile) {
+    const convexClient = writeToConvex ? new ConvexHttpClient(CONVEX_URL as string) : null;
+    console.log(`Reconciling ${discoveredPaperPaths.length} papers (LLM only for new parts)…`);
+    let papers = 0; let llmCalls = 0; let newTotal = 0; let removedTotal = 0; let skipped = 0; let failed = 0;
+    await runPool(discoveredPaperPaths, PAPER_CONCURRENCY, async (paperJsonPath) => {
+      try {
+        const prepared = preparePaperForTagging(paperJsonPath, configDir);
+        if (prepared.status !== "ready") return;
+        const hasRegions = prepared.extracted.question_parts.some(
+          (part) => Array.isArray((part as { region_spans?: unknown[] }).region_spans) && ((part as { region_spans?: unknown[] }).region_spans as unknown[]).length > 0,
+        );
+        if (!hasRegions) { skipped += 1; return; }
+        const result = await reconcilePaper(prepared, convexClient);
+        if (result === null) { skipped += 1; return; }
+        papers += 1;
+        newTotal += result.newParts;
+        removedTotal += result.removedParts;
+        if (result.llmUsed) {
+          llmCalls += 1;
+          console.log(`  reconciled ${basename(paperJsonPath)} (+${result.newParts} new, -${result.removedParts} removed, LLM)`);
+        }
+      } catch (error) {
+        failed += 1;
+        console.error(`  reconcile failed ${paperJsonPath}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    });
+    console.log(`Reconcile done. papers=${papers} llmCalls=${llmCalls} newParts=${newTotal} removedParts=${removedTotal} skipped=${skipped} failed=${failed}`);
+    return;
+  }
 
   let alreadyTaggedSkipped = 0;
   const paperPaths = forceRetag

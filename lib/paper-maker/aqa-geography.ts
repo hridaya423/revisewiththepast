@@ -5,6 +5,12 @@ export type BoundingBox = {
   y1: number;
 };
 
+export type RegionSpan = {
+  pageNumber: number;
+  yTop: number;
+  yBottom: number;
+};
+
 export type QuestionBankPart = {
   partKey: string;
   unitKey: string;
@@ -30,6 +36,10 @@ export type QuestionBankPart = {
   pageNumber: number;
   pageNumbers: number[];
   bbox: BoundingBox | null;
+  regionSpans?: RegionSpan[] | null;
+  stemSpans?: RegionSpan[] | null;
+  referencedFigures?: string[];
+  regionVersion?: string;
   sourceMode: string;
   assetIds: string[];
   questionType?: string | null;
@@ -98,6 +108,7 @@ type SelectQuestionUnitsInput = {
   priorSelectedUnitMarks?: number[];
   priorPaperCount?: number;
   priorCoveredLeafTopicIds?: string[];
+  rng?: () => number;
 };
 
 type MutableTopicNode = Omit<TopicTreeNode, "leafTopicIds"> & { leafTopicIds?: string[] };
@@ -449,7 +460,7 @@ export function buildTopicTreeWithCounts(units: QuestionUnit[]): TopicTreeNodeWi
   return AQA_GEOGRAPHY_TOPIC_TREE.map(attachCounts);
 }
 
-export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0, priorCoveredLeafTopicIds = [] }: SelectQuestionUnitsInput) {
+export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0, priorCoveredLeafTopicIds = [], rng = Math.random }: SelectQuestionUnitsInput) {
   const selectedLeafSet = new Set(selectedLeafTopicIds);
   const allowedPaperCodes = paperCodes && paperCodes.length > 0 ? new Set(paperCodes) : null;
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
@@ -699,7 +710,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         : 0;
       const markBucketPenalty = (priorMarkUsageCount * (mode === "marks" ? 14 : 10)) + (currentMarkUsageCount * (mode === "marks" ? 18 : 12));
       const markCategoryPenalty = (priorMarkCategoryUsageCount * (mode === "marks" ? 18 : 14)) + (currentMarkCategoryUsageCount * (mode === "marks" ? 24 : 18));
-      const randomTieBreaker = Math.random() * 0.2;
+      const randomTieBreaker = rng() * 0.2;
       const futureSetPenalty = getFutureSetPenalty(unit);
       const isMaths = unit.subjectSlug === "mathematics";
       const desiredCategoryCount = desiredCategoryCounts.get(markCategory) ?? 0;
@@ -858,7 +869,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           : 0;
         const markBucketPenalty = (priorMarkUsageCount * (mode === "marks" ? 10 : 8)) + (currentMarkUsageCount * (mode === "marks" ? 14 : 10));
         const markCategoryPenalty = (priorMarkCategoryUsageCount * (mode === "marks" ? 10 : 8)) + (currentMarkCategoryUsageCount * (mode === "marks" ? 14 : 10));
-        const randomTieBreaker = Math.random() * 0.2;
+        const randomTieBreaker = rng() * 0.2;
         const futureSetPenalty = getFutureSetPenalty(unit);
         const isMaths = unit.subjectSlug === "mathematics";
         const desiredCategoryCount = desiredCategoryCounts.get(markCategory) ?? 0;

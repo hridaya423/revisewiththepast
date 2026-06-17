@@ -12,7 +12,9 @@
     "jobs:search": "tsx scripts/generate-search-jobs.ts",
     "papers:discover": "npm run jobs:search && tsx scripts/discover-and-download-papers.ts",
     "downloads:analyze": "npm run jobs:search && tsx scripts/analyze-download-coverage.ts",
-    "cdn:upload-downloads": "tsx scripts/upload-downloads-to-hackclub-cdn.ts"
+    "cdn:upload-downloads": "tsx scripts/upload-downloads-to-hackclub-cdn.ts",
+    "papers:qa": "NODE_OPTIONS=\"--import ./scripts/shims/server-only-register.mjs\" tsx scripts/qa-papers.ts",
+    "papers:backfill-regions": "tsx scripts/backfill-regions.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",

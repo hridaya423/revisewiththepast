@@ -29,7 +29,7 @@ export default async function PaperMakerPage({
     taggingCounts.byBoardSubject.map((row) => [`${row.boardCode}::${row.subjectSlug}`, row]),
   );
 
-  const subjectOptions = PAPER_MAKER_SUBJECTS.map((subject) => {
+  const subjectOptions = PAPER_MAKER_SUBJECTS.filter((subject) => subject.generationEnabled).map((subject) => {
     const counts = countsByBoardSubject.get(`${subject.boardCode}::${subject.subjectSlug}`);
     return {
       key: subject.key,
