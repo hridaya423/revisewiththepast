@@ -137,6 +137,7 @@ type QuestionStemAnchor = {
   context_lines: PageAnchoredLine[];
   subpart_start_page: number;
   subpart_start_top: number;
+  introducedLabels: string[];
 };
 
 type BoardConfig = {
@@ -1285,6 +1286,57 @@ function computeStemSpans(
   return spans.length > 0 ? spans : null;
 }
 
+
+function mergeStandaloneSourceStems(questionParts: ExtractedQuestionPart[]) {
+  const removed = new Set<ExtractedQuestionPart>();
+  for (let index = 1; index < questionParts.length; index += 1) {
+    const question = questionParts[index];
+    const source = questionParts[index - 1];
+    if (removed.has(source)) continue;
+    if (question.question_part_number !== null || source.question_part_number !== null) continue;
+    if (question.question_number !== source.question_number) continue;
+    if (!question.marks || source.marks) continue;
+    if (!source.region_spans || source.region_spans.length === 0) continue;
+    question.stem_spans = [...source.region_spans, ...(question.stem_spans ?? [])];
+    removed.add(source);
+  }
+  if (removed.size > 0) {
+    const kept = questionParts.filter((part) => !removed.has(part));
+    questionParts.length = 0;
+    questionParts.push(...kept);
+  }
+}
+
+function pruneMismatchedBaseStems(
+  questionParts: ExtractedQuestionPart[],
+  partAnchors: PartAnchor[],
+) {
+  const labelsByQuestion = new Map<string, Set<string>>();
+  for (const part of questionParts) {
+    let set = labelsByQuestion.get(part.question_number);
+    if (!set) {
+      set = new Set<string>();
+      labelsByQuestion.set(part.question_number, set);
+    }
+    for (const label of part.referenced_support_labels ?? []) set.add(label);
+  }
+
+  for (let index = 0; index < partAnchors.length; index += 1) {
+    const anchor = partAnchors[index];
+    if (anchor.stems.length === 0) continue;
+    const part = questionParts[index];
+    const partLabels = part.referenced_support_labels ?? [];
+    const questionLabels = labelsByQuestion.get(part.question_number) ?? new Set<string>();
+    anchor.stems = anchor.stems.filter((stem) => {
+      const introduced = stem.introducedLabels;
+      if (introduced.length === 0) return true;
+      if (introduced.some((label) => partLabels.includes(label))) return true;
+      if (introduced.some((label) => questionLabels.has(label))) return false;
+      return true;
+    });
+  }
+}
+
 function computeRegionSpans(
   questionParts: ExtractedQuestionPart[],
   partAnchors: PartAnchor[],
@@ -1411,13 +1463,24 @@ async function buildInkRowMask(
   const { data } = context.getImageData(0, 0, width, height);
   const x0 = Math.max(0, Math.floor(layout.content_x0 * INK_RENDER_SCALE) + 4);
   const x1 = Math.min(width, Math.ceil(layout.content_x1 * INK_RENDER_SCALE) - 4);
+  const isInk = (i: number) => data[i] < INK_PIXEL_THRESHOLD || data[i + 1] < INK_PIXEL_THRESHOLD || data[i + 2] < INK_PIXEL_THRESHOLD;
+
+  const colInk = new Int32Array(width);
+  for (let row = 0; row < height; row += 1) {
+    const base = row * width * 4;
+    for (let x = x0; x < x1; x += 1) {
+      if (isInk(base + x * 4)) colInk[x] += 1;
+    }
+  }
+  const verticalRuleThreshold = height * 0.7;
+
   const mask = new Uint8Array(height);
   for (let row = 0; row < height; row += 1) {
     let inked = 0;
     const base = row * width * 4;
     for (let x = x0; x < x1; x += 1) {
-      const i = base + x * 4;
-      if (data[i] < INK_PIXEL_THRESHOLD || data[i + 1] < INK_PIXEL_THRESHOLD || data[i + 2] < INK_PIXEL_THRESHOLD) {
+      if (colInk[x] > verticalRuleThreshold) continue;
+      if (isInk(base + x * 4)) {
         inked += 1;
         if (inked >= 2) break;
       }
@@ -1431,12 +1494,32 @@ async function trimSpansToInk(
   pdf: Awaited<ReturnType<typeof getDocument>["promise"]>,
   questionParts: ExtractedQuestionPart[],
   layoutByPage: Map<number, ExtractedPageLayout>,
+  pages: ExtractedPage[],
+  figures: ExtractedFigure[],
 ) {
   const { createCanvas } = await import("@napi-rs/canvas");
   const pagesNeeded = new Set<number>();
   for (const part of questionParts) {
     for (const span of part.region_spans ?? []) pagesNeeded.add(span.page_number);
     for (const span of part.stem_spans ?? []) pagesNeeded.add(span.page_number);
+  }
+
+  const linesByPage = new Map<number, TextLine[]>(pages.map((page) => [page.page_number, page.text_lines]));
+  const furnitureMaskByPage = new Map<number, Uint8Array>();
+  for (const pageNumber of pagesNeeded) {
+    const layout = layoutByPage.get(pageNumber);
+    if (!layout) continue;
+    const height = Math.ceil(layout.page_height * INK_RENDER_SCALE);
+    const furniture = new Uint8Array(height);
+    for (const line of linesByPage.get(pageNumber) ?? []) {
+      const text = normalizeText(line.text);
+      if (!text) continue;
+      if (!isFooterFurnitureLine(text) && !isHeaderFurnitureLine(text) && !isBookletMarkerLine(text)) continue;
+      const top = Math.max(0, Math.round((layout.page_height - line.bbox.y1) * INK_RENDER_SCALE));
+      const bottom = Math.min(height - 1, Math.round((layout.page_height - line.bbox.y0) * INK_RENDER_SCALE));
+      for (let row = top; row <= bottom; row += 1) furniture[row] = 1;
+    }
+    furnitureMaskByPage.set(pageNumber, furniture);
   }
 
   const maskByPage = new Map<number, InkMask>();
@@ -1451,11 +1534,76 @@ async function trimSpansToInk(
   }
 
   const MIN_INK_ROWS = Math.round(6 * INK_RENDER_SCALE);
+  const BAND_MERGE_GAP = Math.round(45 * INK_RENDER_SCALE);
+  const TRAILING_BAND_MAX = Math.round(120 * INK_RENDER_SCALE);
+  const BLANK_TRIM_ROWS = BLANK_TRIM_THRESHOLD * INK_RENDER_SCALE;
+
+  const findContentBottomRow = (ink: InkMask, topRow: number, bottomRow: number, firstInk: number): number => {
+    let cursor = bottomRow;
+    for (let guard = 0; guard < 8; guard += 1) {
+      while (cursor > topRow && !ink.mask[cursor]) cursor -= 1;
+      if (cursor <= firstInk) return Math.max(cursor, firstInk);
+      const bandBottom = cursor;
+      let bandTop = cursor;
+      while (bandTop - 1 >= topRow) {
+        let probe = bandTop - 1;
+        let gap = 0;
+        while (probe > topRow && !ink.mask[probe] && gap < BAND_MERGE_GAP) { probe -= 1; gap += 1; }
+        if (probe >= topRow && ink.mask[probe] && (bandTop - probe) <= BAND_MERGE_GAP) bandTop = probe;
+        else break;
+      }
+      let above = bandTop - 1;
+      let gapRows = 0;
+      while (above > topRow && !ink.mask[above]) { above -= 1; gapRows += 1; }
+      const isThin = (bandBottom - bandTop) <= TRAILING_BAND_MAX;
+      if (above > firstInk && isThin && gapRows > BLANK_TRIM_ROWS) {
+        cursor = above; 
+        continue;
+      }
+      return bandBottom;
+    }
+    return cursor;
+  };
+
+  const isFurnitureText = (text: string) =>
+    isFooterFurnitureLine(text) || isHeaderFurnitureLine(text) || isBookletMarkerLine(text);
+  const isStrongFooterFurniture = (text: string) => {
+    const normalized = normalizeText(text);
+    if (/^\d{1,3}$/.test(normalized)) return false;
+    return isFooterFurnitureLine(normalized) || isBookletMarkerLine(normalized);
+  };
+  const stripTrailingFurnitureByText = (span: RegionSpan): RegionSpan => {
+    const lines = (linesByPage.get(span.page_number) ?? [])
+      .filter((line) => line.bbox.y0 >= span.y_bottom - 1 && line.bbox.y1 <= span.y_top + 1 && normalizeText(line.text));
+    if (lines.length === 0) return span;
+    const byBottom = [...lines].sort((a, b) => a.bbox.y0 - b.bbox.y0);
+    let yBottom = span.y_bottom;
+    let bottomHasStrong = false;
+    for (const line of byBottom) {
+      if (!isFurnitureText(line.text)) break;
+      if (isStrongFooterFurniture(line.text)) bottomHasStrong = true;
+      yBottom = Math.max(yBottom, line.bbox.y1 + 2);
+    }
+    if (!bottomHasStrong) yBottom = span.y_bottom;
+    const byTop = [...lines].sort((a, b) => b.bbox.y1 - a.bbox.y1);
+    let yTop = span.y_top;
+    let topHasStrong = false;
+    for (const line of byTop) {
+      if (!isFurnitureText(line.text)) break;
+      if (isStrongFooterFurniture(line.text)) topHasStrong = true;
+      yTop = Math.min(yTop, line.bbox.y0 - 2);
+    }
+    if (!topHasStrong) yTop = span.y_top;
+    if (yTop - yBottom < MIN_SPAN_HEIGHT) return span;
+    return { page_number: span.page_number, y_top: yTop, y_bottom: yBottom };
+  };
 
   const trimSpan = (span: RegionSpan): RegionSpan | null => {
     const ink = maskByPage.get(span.page_number);
     const layout = layoutByPage.get(span.page_number);
-    if (!ink || !layout) return span;
+    if (!layout) return span;
+    if (!ink) return stripTrailingFurnitureByText(span);
+    const furniture = furnitureMaskByPage.get(span.page_number) ?? new Uint8Array(ink.height);
     const rowOf = (y: number) => Math.round((layout.page_height - y) * INK_RENDER_SCALE);
     const yOf = (row: number) => layout.page_height - row / INK_RENDER_SCALE;
     const topRow = Math.max(0, rowOf(span.y_top));
@@ -1474,16 +1622,31 @@ async function trimSpansToInk(
     }
     if (inkCount < MIN_INK_ROWS) return null;
 
+    let contentTop = firstInk;
+    let strippedTopFurniture = false;
+    while (contentTop < lastInk && (furniture[contentTop] || !ink.mask[contentTop])) {
+      if (furniture[contentTop]) strippedTopFurniture = true;
+      contentTop += 1;
+    }
+
+    let contentBottom = findContentBottomRow(ink, topRow, bottomRow, contentTop);
+    let strippedBottomFurniture = false;
+    while (contentBottom > contentTop && (furniture[contentBottom] || !ink.mask[contentBottom])) {
+      if (furniture[contentBottom]) strippedBottomFurniture = true;
+      contentBottom -= 1;
+    }
+
     let yTop = span.y_top;
     let yBottom = span.y_bottom;
-    if ((firstInk - topRow) / INK_RENDER_SCALE > BLANK_TRIM_THRESHOLD) {
-      yTop = Math.min(span.y_top, yOf(firstInk) + BLANK_KEEP_MARGIN);
+    if (strippedTopFurniture || (contentTop - topRow) / INK_RENDER_SCALE > BLANK_TRIM_THRESHOLD) {
+      yTop = Math.min(span.y_top, yOf(contentTop) + BLANK_KEEP_MARGIN);
     }
-    if ((bottomRow - lastInk) / INK_RENDER_SCALE > BLANK_TRIM_THRESHOLD) {
-      yBottom = Math.max(span.y_bottom, yOf(lastInk) - BLANK_KEEP_MARGIN);
+    if (strippedBottomFurniture || (bottomRow - contentBottom) / INK_RENDER_SCALE > BLANK_TRIM_THRESHOLD) {
+      yBottom = Math.max(span.y_bottom, yOf(contentBottom) - BLANK_KEEP_MARGIN);
     }
-    if (yTop - yBottom < MIN_SPAN_HEIGHT) return null;
-    return { page_number: span.page_number, y_top: yTop, y_bottom: yBottom };
+    const refined = stripTrailingFurnitureByText({ page_number: span.page_number, y_top: yTop, y_bottom: yBottom });
+    if (refined.y_top - refined.y_bottom < MIN_SPAN_HEIGHT) return null;
+    return refined;
   };
 
   const trimList = (spans: RegionSpan[] | null | undefined): RegionSpan[] | null => {
@@ -1495,6 +1658,12 @@ async function trimSpansToInk(
   for (const part of questionParts) {
     part.region_spans = trimList(part.region_spans);
     part.stem_spans = trimList(part.stem_spans);
+  }
+
+  for (const figure of figures) {
+    const trimmed = stripTrailingFurnitureByText(figure);
+    figure.y_top = trimmed.y_top;
+    figure.y_bottom = trimmed.y_bottom;
   }
 }
 
@@ -1531,6 +1700,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
   let pendingContextLines: PageAnchoredLine[] = [];
 
   const pushFinalizedPart = (activePart: ActiveQuestionPart, end: PartEndBoundary) => {
+    const finalized = finalizeQuestionPart(activePart, config, questionIdCounts);
     const stems: QuestionStemAnchor[] = [];
     if (activePart.question_part_number !== null) {
       if (questionBaseStem !== null && questionBaseStem.question_number === activePart.question_number) {
@@ -1547,7 +1717,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
         if (sectionStem.question_number === activePart.question_number && !stems.includes(sectionStem)) stems.push(sectionStem);
       }
     }
-    questionParts.push(finalizeQuestionPart(activePart, config, questionIdCounts));
+    questionParts.push(finalized);
     partAnchors.push({
       start_page: activePart.start_page,
       start_line_top: activePart.start_line_top,
@@ -1836,6 +2006,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
             context_lines: activePart.context_lines,
             subpart_start_page: pageNumber,
             subpart_start_top: line.bbox.y1,
+            introducedLabels: extractReferencedSupportLabels(stemText),
           };
           currentStemTransient = false;
           currentStemParentLetter = activePart.question_part_number;
@@ -1872,6 +2043,9 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
               context_lines: subquestionContextLines,
               subpart_start_page: pageNumber,
               subpart_start_top: line.bbox.y1,
+              introducedLabels: extractReferencedSupportLabels(
+                subquestionContextLines.map((contextLine) => contextLine.line.text).join(" "),
+              ),
             };
             currentStemTransient = true;
             if (subjectSlug === "english-literature") sectionStems.push(currentStem);
@@ -1903,6 +2077,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
             context_lines: activePart.context_lines,
             subpart_start_page: pageNumber,
             subpart_start_top: line.bbox.y1,
+            introducedLabels: extractReferencedSupportLabels(stemText),
           };
           currentStemTransient = false;
           currentStemParentLetter = activePart.question_part_number;
@@ -1936,6 +2111,9 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
               context_lines: subquestionContextLines,
               subpart_start_page: pageNumber,
               subpart_start_top: line.bbox.y1,
+              introducedLabels: extractReferencedSupportLabels(
+                subquestionContextLines.map((contextLine) => contextLine.line.text).join(" "),
+              ),
             };
             currentStemTransient = true;
             if (subjectSlug === "english-literature") sectionStems.push(currentStem);
@@ -2060,9 +2238,13 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
   const layoutByPage = new Map(pageLayouts.map((layout) => [layout.page_number, layout]));
   const figures = detectFigures(pages, skippedPages, partAnchors, layoutByPage);
   propagateFigureRefsToSubparts(questionParts);
+  pruneMismatchedBaseStems(questionParts, partAnchors);
   computeRegionSpans(questionParts, partAnchors, pages, skippedPages, layoutByPage);
   if (trimBlank) {
-    await trimSpansToInk(pdf, questionParts, layoutByPage);
+    await trimSpansToInk(pdf, questionParts, layoutByPage, pages, figures);
+  }
+  if (subjectSlug === "english-literature") {
+    mergeStandaloneSourceStems(questionParts);
   }
 
   return {

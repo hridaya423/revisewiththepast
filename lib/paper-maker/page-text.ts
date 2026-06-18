@@ -128,7 +128,7 @@ export const HEADER_FURNITURE_PATTERNS: RegExp[] = [
 
 export const FOOTER_FURNITURE_PATTERNS: RegExp[] = [
   /^turn over\b/i,
-  /^\*?p\d{4,}[a-z0-9]*\*?$/i,
+  /^\*?p\d{4,}[a-z0-9]*\*?(\s+(turn over|\d{1,3}|[►▶]))*\s*$/i,
   /^(?:ib\/)?[a-z]{1,3}\/(?:jun|nov)\d{2}\/[a-z0-9\/.]+$/i,
   /^©/,
   /^copyright/i,

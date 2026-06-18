@@ -28,6 +28,12 @@ import {
   getQuestionPageAssetsBySourceRelativePaths,
 } from "@/lib/paper-maker/convex";
 import { filterUnitsByDanglingContext, filterUnitsByFigureResolvability } from "@/lib/paper-maker/integrity";
+import {
+  getLocalFiguresBySource,
+  getLocalPageLayoutsBySource,
+  isLocalGeometryEnabled,
+  overlayQuestionBankWithLocalGeometry,
+} from "@/lib/paper-maker/local-geometry";
 import { findOrphanStemFigures, type OrphanFigureIssue } from "@/lib/paper-maker/region-render";
 import { estimatePaperTimeMinutes, getPaperMakerSubject, type PaperMakerSubjectDefinition, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
 import { generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
@@ -352,6 +358,9 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   if (questionBank.length === 0) {
     throw new PaperGenerationError(config.messages.noBank, 500);
   }
+  if (isLocalGeometryEnabled()) {
+    overlayQuestionBankWithLocalGeometry(questionBank);
+  }
 
   let effectiveBank = questionBank;
   if (config.tier && tier) {
@@ -385,10 +394,12 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let selectableUnits = allUnits;
   if (regionMode) {
     const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
-    [figuresBySource, pageLayoutsBySource] = await Promise.all([
-      getPaperFiguresBySourceRelativePaths(candidateSourcePaths),
-      getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths),
-    ]);
+    [figuresBySource, pageLayoutsBySource] = isLocalGeometryEnabled()
+      ? [getLocalFiguresBySource(candidateSourcePaths), getLocalPageLayoutsBySource(candidateSourcePaths)]
+      : await Promise.all([
+          getPaperFiguresBySourceRelativePaths(candidateSourcePaths),
+          getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths),
+        ]);
     const gate = filterUnitsByFigureResolvability(allUnits, {
       figuresBySource,
       pageLayoutsBySource,
