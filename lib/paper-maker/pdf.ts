@@ -1436,6 +1436,11 @@ async function renderRegionUnit(
   const sideMargin = SHORT_PAGE_SIDE_MARGIN;
   const availableWidth = REGION_OUTPUT_PAGE_WIDTH - sideMargin * 2;
   const availableFullHeight = REGION_OUTPUT_PAGE_HEIGHT - SHORT_PAGE_TOP_MARGIN - SHORT_PAGE_BOTTOM_MARGIN;
+  const CENTER_MIN_GAP = 24;
+  const drawXFor = (drawWidth: number) =>
+    availableWidth - drawWidth > CENTER_MIN_GAP
+      ? Math.max(sideMargin, (REGION_OUTPUT_PAGE_WIDTH - drawWidth) / 2)
+      : sideMargin;
 
   type PreparedCrop = {
     embeddedPage: PreparedSnippet["embeddedPage"];
@@ -1521,8 +1526,9 @@ async function renderRegionUnit(
       for (const crop of block) {
         const drawHeight = crop.height * blockScale;
         const drawWidth = crop.width * blockScale;
+        const drawX = drawXFor(drawWidth);
         flow.page!.drawPage(crop.embeddedPage, {
-          x: sideMargin,
+          x: drawX,
           y: flow.cursorY - drawHeight,
           width: drawWidth,
           height: drawHeight,
@@ -1543,8 +1549,9 @@ async function renderRegionUnit(
           flow.page = outputDoc.addPage([REGION_OUTPUT_PAGE_WIDTH, REGION_OUTPUT_PAGE_HEIGHT]);
           flow.cursorY = REGION_OUTPUT_PAGE_HEIGHT - SHORT_PAGE_TOP_MARGIN;
         }
+        const drawX = drawXFor(crop.width);
         flow.page!.drawPage(crop.embeddedPage, {
-          x: sideMargin,
+          x: drawX,
           y: flow.cursorY - crop.height,
           width: crop.width,
           height: crop.height,
