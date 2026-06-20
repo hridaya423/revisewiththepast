@@ -146,7 +146,7 @@ function checkResourcePagesWithoutQuestions(textPages: RenderedTextPage[]): QaFi
     const normalized = page.text.toLowerCase().replace(/\s+/g, " "); 
     const looksLikeSupportOnly = /\bfor use with question\b|\bfigure \d+\b|\bresource \d+\b/.test(normalized);
     if (!looksLikeSupportOnly) continue;
-    const hasQuestionInstruction = /\b(?:state|identify|describe|explain|suggest|calculate|outline|compare|evaluate|assess|complete|which|what|give)\b/.test(normalized)
+    const hasQuestionInstruction = /\b(?:state|identify|describe|explain|suggest|calculate|outline|compare|evaluate|assess|complete|devise|determine|show that|which|what|give)\b/.test(normalized)
       || /\b0\s*\d\s*\.\s*\d\b/.test(normalized);
     if (hasQuestionInstruction) continue;
     const labels = extractSupportLabels(normalized);

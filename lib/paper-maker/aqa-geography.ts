@@ -306,6 +306,7 @@ function buildStableSourceQuestionKey(part: QuestionBankPart) {
 
 function isLikelyBrokenMathematicsUnit(unit: QuestionUnit) {
   if (unit.subjectSlug !== "mathematics") return false;
+  if (unit.parts.length > 1) return false;
   const part = unit.parts[0];
   if (!part?.questionPartNumber) return false;
   if (unit.totalMarks > 12) return true;
@@ -428,6 +429,76 @@ export function buildTopicTreeWithCounts(units: QuestionUnit[]): TopicTreeNodeWi
   });
 
   return AQA_GEOGRAPHY_TOPIC_TREE.map(attachCounts);
+}
+
+export function groupQuestionUnitsBySourceQuestion(units: QuestionUnit[]): QuestionUnit[] {
+  const groupedParts = new Map<string, QuestionBankPart[]>();
+
+  for (const unit of units) {
+    const parts = groupedParts.get(unit.sourceQuestionKey) ?? [];
+    parts.push(...unit.parts);
+    groupedParts.set(unit.sourceQuestionKey, parts);
+  }
+
+  const grouped: QuestionUnit[] = [];
+  for (const [sourceQuestionKey, rawParts] of groupedParts.entries()) {
+    const parts = [...rawParts].sort((left, right) => {
+      if (left.pageNumber !== right.pageNumber) return left.pageNumber - right.pageNumber;
+      if ((left.questionPartNumber ?? "") !== (right.questionPartNumber ?? "")) {
+        return (left.questionPartNumber ?? "").localeCompare(right.questionPartNumber ?? "", undefined, { numeric: true });
+      }
+      return left.questionId.localeCompare(right.questionId, undefined, { numeric: true });
+    });
+    const first = parts[0];
+    if (!first) continue;
+
+    const pageMap = new Map<number, QuestionBankPart[]>();
+    for (const part of parts) {
+      for (const pageNumber of part.pageNumbers) {
+        const pageParts = pageMap.get(pageNumber) ?? [];
+        pageParts.push(part);
+        pageMap.set(pageNumber, pageParts);
+      }
+    }
+
+    grouped.push({
+      unitKey: first.unitKey,
+      groupUnitKey: first.unitKey,
+      sourceQuestionKey,
+      sourceRelativePath: first.sourceRelativePath,
+      questionPaperCdnUrl: first.questionPaperCdnUrl,
+      questionPaperFileName: first.questionPaperFileName,
+      boardCode: first.boardCode,
+      subjectSlug: first.subjectSlug,
+      paperCode: first.paperCode,
+      year: first.year,
+      session: first.session,
+      questionNumber: first.questionNumber,
+      sectionCode: first.sectionCode,
+      sectionName: first.sectionName,
+      totalMarks: parts.reduce((sum, part) => sum + (part.marks ?? 0), 0),
+      canonicalLeafs: Array.from(new Set(parts.map((part) => part.canonicalLeaf))),
+      parts,
+      pages: Array.from(pageMap.entries())
+        .map(([pageNumber, pageParts]) => {
+          const boxes = pageParts.map((part) => part.bbox).filter((bbox): bbox is BoundingBox => bbox !== null);
+          return {
+            pageNumber,
+            parts: pageParts,
+            bboxUnion: boxes.length > 0 ? unionBoundingBoxes(boxes) : null,
+          };
+        })
+        .sort((left, right) => left.pageNumber - right.pageNumber),
+    });
+  }
+
+  return grouped.sort((a, b) => {
+    if (a.totalMarks !== b.totalMarks) return a.totalMarks - b.totalMarks;
+    if (a.paperCode !== b.paperCode) return a.paperCode.localeCompare(b.paperCode, undefined, { numeric: true });
+    if ((a.sectionCode ?? "") !== (b.sectionCode ?? "")) return (a.sectionCode ?? "").localeCompare(b.sectionCode ?? "");
+    if (a.questionNumber !== b.questionNumber) return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
+    return (b.year ?? 0) - (a.year ?? 0);
+  });
 }
 
 export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0, priorCoveredLeafTopicIds = [], rng = Math.random }: SelectQuestionUnitsInput) {

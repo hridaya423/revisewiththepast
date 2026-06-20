@@ -1,9 +1,10 @@
 import { expandAqaBusinessTopicSelection } from "@/lib/paper-maker/aqa-business";
-import { expandAqaEnglishLanguageTopicSelection } from "@/lib/paper-maker/aqa-english-language";
+import { expandAqaEnglishLanguageTopicSelection, groupAqaEnglishLanguageSectionUnits } from "@/lib/paper-maker/aqa-english-language";
 import { expandAqaEnglishLiteratureTopicSelection } from "@/lib/paper-maker/aqa-english-literature";
 import {
   expandTopicSelection,
   groupQuestionPartsIntoUnits,
+  groupQuestionUnitsBySourceQuestion,
   selectQuestionUnits,
   type QuestionBankPart,
   type QuestionUnit,
@@ -240,7 +241,7 @@ const SUBJECT_GENERATION_CONFIGS: Partial<Record<PaperMakerSubjectKey, SubjectGe
   },
   "aqa-english-language": {
     expandTopics: (ids) => expandAqaEnglishLanguageTopicSelection(ids),
-    prefaceInserts: (selectedUnits) => getInsertAssetUrls("aqa", "english-language", selectedUnits, { sectionCode: "A", requireSupportDependency: true, allowWholeInsertFallback: true }),
+    prefaceInserts: (selectedUnits) => getInsertAssetUrls("aqa", "english-language", selectedUnits, { sectionCode: "A", allowWholeInsertFallback: true }),
     messages: {
       selectTopics: "Select at least one English Language topic.",
       noBank: "No tagged AQA English Language question bank is available in Convex.",
@@ -373,6 +374,10 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let allUnits = groupQuestionPartsIntoUnits(effectiveBank);
   if (subject.key === "edexcel-business") {
     allUnits = groupEdexcelBusinessQuestionUnits(allUnits);
+  } else if (subject.key === "aqa-english-language") {
+    allUnits = groupAqaEnglishLanguageSectionUnits(allUnits);
+  } else if (["edexcel-combined-science", "edexcel-biology", "edexcel-chemistry", "edexcel-physics", "edexcel-mathematics-higher", "ocr-computer-science"].includes(subject.key)) {
+    allUnits = groupQuestionUnitsBySourceQuestion(allUnits);
   }
   const selectedLeafTopicIds = input.selectAllTopics
     ? Array.from(new Set(allUnits.flatMap((unit) => unit.canonicalLeafs)))

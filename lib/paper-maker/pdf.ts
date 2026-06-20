@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 
 import { PDFDocument, rgb } from "pdf-lib";
 
+import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
 import type { BoundingBox, QuestionUnit, SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
 import {
   buildUnitRenderPlan,
@@ -115,6 +116,7 @@ const LINE_IGNORE_PATTERNS = [
   /^do not write on this page$/i,
   /^answer in the spaces provided$/i,
   /^additional page, if required\.?$/i,
+  /^extra space$/i,
   /^write the question numbers in the left-hand margin\.?$/i,
   /^copyright information$/i,
   /^do not write in this area$/i,
@@ -766,6 +768,38 @@ function shouldSkipBusinessRegionCrop(unit: QuestionUnit, crop: RegionCrop) {
   return visibleLines.every((line) => /^total for section\b/i.test(line.text.trim()));
 }
 
+function getVisibleMeaningfulLines(sourceRelativePath: string, pageNumber: number, cropBox: CropBox) {
+  const page = getExtractedPage(sourceRelativePath, pageNumber);
+  if (!page) return null;
+
+  return page.text_lines.filter((line) => (
+    line.bbox.y1 <= cropBox.top + 2
+    && line.bbox.y0 >= cropBox.bottom - 2
+    && !shouldIgnorePageLine(line.text)
+  ));
+}
+
+function isAnswerOnlyContinuationCrop(unit: QuestionUnit, crop: RegionCrop) {
+  if (crop.kind !== "question") return false;
+  const firstQuestionPage = Math.min(...unit.parts.flatMap((part) => part.regionSpans ?? []).map((span) => span.pageNumber));
+  if (Number.isFinite(firstQuestionPage) && crop.pageNumber <= firstQuestionPage) return false;
+
+  const meaningfulLines = getVisibleMeaningfulLines(unit.sourceRelativePath, crop.pageNumber, crop.cropBox);
+  if (!meaningfulLines) return false;
+  return meaningfulLines.length === 0;
+}
+
+function isAnswerOnlyContinuationPage(unit: QuestionUnit, pageNumber: number) {
+  const firstPageNumber = unit.pages[0]?.pageNumber ?? pageNumber;
+  if (pageNumber <= firstPageNumber) return false;
+
+  const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  if (!page) return false;
+
+  const meaningfulLines = page.text_lines.filter((line) => !shouldIgnorePageLine(line.text));
+  return meaningfulLines.length === 0;
+}
+
 function isGeographyUnit(unit: QuestionUnit) {
   return unit.boardCode === "aqa" && unit.subjectSlug === "geography";
 }
@@ -921,7 +955,10 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
   const prependedSupportPages = new Set<number>();
 
   if (isEnglishLanguageUnit(unit)) {
-    return actualFirstPageNumber ? [actualFirstPageNumber] : (firstPageNumber ? [firstPageNumber] : []);
+    const questionNumbers = new Set(unit.parts.map((part) => part.questionNumber));
+    if (questionNumbers.size <= 1) {
+      return actualFirstPageNumber ? [actualFirstPageNumber] : (firstPageNumber ? [firstPageNumber] : []);
+    }
   }
 
   if (isMathematicsUnit(unit) && actualFirstPageNumber) {
@@ -973,6 +1010,7 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
 
     const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
     if (page && isBoilerplateOnlyPage(page)) return false;
+    if (isAnswerOnlyContinuationPage(unit, pageNumber)) return false;
 
     const pageStarters = unitStartPages.get(`${unit.sourceRelativePath}::${pageNumber}`) ?? [];
     return pageStarters.every((entry) => entry.unitKey === unit.unitKey);
@@ -1441,6 +1479,35 @@ async function loadSourcePdfDocument(
   return sourceDoc;
 }
 
+async function addPdfPagesWithRasterFallback(
+  outputDoc: PDFDocument,
+  pdfPathOrUrl: string,
+  sourcePdfCache: Map<string, Uint8Array>,
+  sourceDocCache: Map<string, PDFDocument>,
+) {
+  try {
+    const insertDoc = await loadSourcePdfDocument(pdfPathOrUrl, sourcePdfCache, sourceDocCache);
+    const pageIndexes = Array.from({ length: insertDoc.getPageCount() }, (_, index) => index);
+    const probeDoc = await PDFDocument.create();
+    await probeDoc.copyPages(insertDoc, pageIndexes);
+    await probeDoc.save();
+    const copiedPages = await outputDoc.copyPages(insertDoc, pageIndexes);
+    for (const copiedPage of copiedPages) {
+      outputDoc.addPage(copiedPage);
+    }
+    return true;
+  } catch {
+    const bytes = await fetchPdfBytes(pdfPathOrUrl, sourcePdfCache);
+    const rendered = await renderPdfToPngBuffers(bytes, 1);
+    for (const page of rendered.pages) {
+      const png = await outputDoc.embedPng(page.png);
+      const outputPage = outputDoc.addPage([png.width, png.height]);
+      outputPage.drawImage(png, { x: 0, y: 0, width: png.width, height: png.height });
+    }
+    return rendered.pages.length > 0;
+  }
+}
+
 async function withSourcePdfCandidate<T>(
   unit: QuestionUnit,
   pageNumber: number,
@@ -1585,7 +1652,9 @@ async function renderRegionUnit(
   figures: RegionFigure[],
   flow: RegionRenderFlow,
 ) {
-  const plan = buildUnitRenderPlan(unit, layoutByPage, figures).filter((crop) => !shouldSkipBusinessRegionCrop(unit, crop));
+  const plan = buildUnitRenderPlan(unit, layoutByPage, figures)
+    .filter((crop) => !shouldSkipBusinessRegionCrop(unit, crop))
+    .filter((crop) => !isAnswerOnlyContinuationCrop(unit, crop));
   if (plan.length === 0) return false;
 
   const sideMargin = SHORT_PAGE_SIDE_MARGIN;
@@ -1740,12 +1809,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
 
   for (const prefacePdfPath of Array.from(new Set(prefaceSourcePdfs))) {
     try {
-      const insertDoc = await loadSourcePdfDocument(prefacePdfPath, sourcePdfCache, sourceDocCache);
-      const pageIndexes = Array.from({ length: insertDoc.getPageCount() }, (_, index) => index);
-      const copiedPages = await outputDoc.copyPages(insertDoc, pageIndexes);
-      for (const copiedPage of copiedPages) {
-        outputDoc.addPage(copiedPage);
-      }
+      await addPdfPagesWithRasterFallback(outputDoc, prefacePdfPath, sourcePdfCache, sourceDocCache);
     } catch {
       continue;
     }
@@ -1972,12 +2036,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
       if (isEnglishLanguageUnit(unit) && prefaceSourcePdfs.length === 0 && !prependedInsertBySource.has(unit.sourceRelativePath)) {
         for (const insertPdfPath of deriveDownloadedInsertPdfPaths(unit)) {
           try {
-            const insertDoc = await loadSourcePdfDocument(insertPdfPath, sourcePdfCache, sourceDocCache);
-            const pageIndexes = Array.from({ length: insertDoc.getPageCount() }, (_, index) => index);
-            const copiedPages = await outputDoc.copyPages(insertDoc, pageIndexes);
-            for (const copiedPage of copiedPages) {
-              outputDoc.addPage(copiedPage);
-            }
+            await addPdfPagesWithRasterFallback(outputDoc, insertPdfPath, sourcePdfCache, sourceDocCache);
           } catch {
             continue;
           }

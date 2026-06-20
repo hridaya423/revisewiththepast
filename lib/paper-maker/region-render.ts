@@ -80,10 +80,19 @@ function isScienceUnit(unit: QuestionUnit) {
 function cropBoxForSpan(
   span: { yTop: number; yBottom: number },
   layout: RegionPageLayout,
+  unit: QuestionUnit,
 ): RegionCropBox {
+  const isWideSciencePage = isScienceUnit(unit) && layout.pageWidth > 620;
+  const left = isWideSciencePage
+    ? Math.max(layout.contentX0, 70)
+    : Math.max(0, layout.contentX0 - CONTENT_X_PADDING);
+  const right = isWideSciencePage
+    ? Math.min(layout.contentX1, layout.pageWidth - 90)
+    : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
+
   return {
-    left: Math.max(0, layout.contentX0 - CONTENT_X_PADDING),
-    right: Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING),
+    left,
+    right,
     bottom: Math.max(layout.footerCeilingY, span.yBottom),
     top: Math.min(layout.pageHeight, span.yTop),
   };
@@ -186,7 +195,7 @@ export function buildUnitRenderPlan(
   for (const entry of merged) {
     const layout = layoutByPage.get(entry.pageNumber);
     if (!layout) continue;
-    const cropBox = cropBoxForSpan({ yTop: entry.top, yBottom: entry.bottom }, layout);
+    const cropBox = cropBoxForSpan({ yTop: entry.top, yBottom: entry.bottom }, layout, unit);
     if (cropBox.top - cropBox.bottom < 8) continue;
     crops.push({
       unitKey: unit.unitKey,
