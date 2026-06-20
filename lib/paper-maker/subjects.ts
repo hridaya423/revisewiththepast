@@ -167,10 +167,10 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     subjectSlug: "biology",
     coverTitle: "Biology",
     codeLabel: "1BI0",
-    description: "Generate Edexcel Biology papers from tagged source pages by tier and topic.",
+    description: "Generate Edexcel Biology Higher papers from tagged source pages by topic.",
     topicSelectionEnabled: true,
     generationEnabled: true,
-    availabilityNote: "Ready to build by tier and topic.",
+    availabilityNote: "Higher tier is ready to build by topic.",
     recommendedMinutesPerMark: 1.15,
     paperOptions: [
       { code: "paper-1", label: "Paper 1" },
@@ -178,7 +178,6 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     ],
     defaultPaperCodes: ["paper-1", "paper-2"],
     tiers: [
-      { key: "foundation", label: "Foundation" },
       { key: "higher", label: "Higher" },
     ],
   },
@@ -190,10 +189,10 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     subjectSlug: "chemistry",
     coverTitle: "Chemistry",
     codeLabel: "1CH0",
-    description: "Generate Edexcel Chemistry papers from tagged source pages by tier and topic.",
+    description: "Generate Edexcel Chemistry Foundation papers from tagged source pages by topic.",
     topicSelectionEnabled: true,
     generationEnabled: true,
-    availabilityNote: "Ready to build by tier and topic.",
+    availabilityNote: "Foundation tier is ready to build by topic.",
     recommendedMinutesPerMark: 1.15,
     paperOptions: [
       { code: "paper-1", label: "Paper 1" },
@@ -202,7 +201,6 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     defaultPaperCodes: ["paper-1", "paper-2"],
     tiers: [
       { key: "foundation", label: "Foundation" },
-      { key: "higher", label: "Higher" },
     ],
   },
   {

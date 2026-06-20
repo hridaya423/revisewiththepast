@@ -73,6 +73,10 @@ function figureCoverageOfSpan(
   return overlap > 0 ? overlap / spanHeight : 0;
 }
 
+function isScienceUnit(unit: QuestionUnit) {
+  return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
+}
+
 function cropBoxForSpan(
   span: { yTop: number; yBottom: number },
   layout: RegionPageLayout,
@@ -91,7 +95,13 @@ export function isUnitRegionRenderable(
 ): boolean {
   let sawSpan = false;
   for (const part of unit.parts) {
-    if (!part.regionSpans || part.regionSpans.length === 0) return false;
+    if (!part.regionSpans || part.regionSpans.length === 0) {
+      if (!part.stemSpans || part.stemSpans.length === 0) return false;
+      for (const span of part.stemSpans) {
+        if (!layoutByPage.has(span.pageNumber)) return false;
+      }
+      continue;
+    }
     for (const span of part.regionSpans) {
       sawSpan = true;
       if (!layoutByPage.has(span.pageNumber)) return false;
@@ -116,8 +126,12 @@ export function buildUnitRenderPlan(
   }
 
   const unreferencedFigures = figures.filter((figure) => !referenced.has(figure.label));
+  const questionPages = new Set(questionSpans.map((span) => span.pageNumber));
+  const referencedFigurePages = new Set(figures.filter((figure) => referenced.has(figure.label)).map((figure) => figure.pageNumber));
   const stemSpans = dedupeSpans(unit.parts.flatMap((part) => part.stemSpans ?? [])).filter(
     (span) => !unreferencedFigures.some((figure) => figureCoverageOfSpan(figure, span) > ORPHAN_FIGURE_SPAN_COVERAGE),
+  ).filter(
+    (span) => !isScienceUnit(unit) || referenced.size === 0 || questionPages.has(span.pageNumber) || referencedFigurePages.has(span.pageNumber),
   );
   const allRenderedSpans = [...questionSpans, ...stemSpans];
 

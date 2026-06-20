@@ -157,7 +157,11 @@ async function runPaper(
       writeFileSync(resolve(paperDir, pageName), page.png);
     }
 
-    report.findings = await runDeterministicChecks(rendered.pages, rendered.textPages);
+    report.findings = await runDeterministicChecks(rendered.pages, rendered.textPages, {
+      subjectKey: config.subjectKey,
+      totalMarks: result.selection.totalMarks,
+      selectedUnitCount: result.selection.selectedUnits.length,
+    });
     for (const issue of result.figureIntegrityIssues) {
       report.findings.push({
         check: "orphan-figure",

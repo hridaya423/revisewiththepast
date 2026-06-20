@@ -15,7 +15,7 @@ import {
   filterCombinedScienceQuestionBankByTier,
   type SubjectTierKey,
 } from "@/lib/paper-maker/combined-science";
-import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-business";
+import { expandEdexcelBusinessTopicSelection, groupEdexcelBusinessQuestionUnits } from "@/lib/paper-maker/edexcel-business";
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
 import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
 import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
@@ -36,7 +36,7 @@ import {
 } from "@/lib/paper-maker/local-geometry";
 import { findOrphanStemFigures, type OrphanFigureIssue } from "@/lib/paper-maker/region-render";
 import { estimatePaperTimeMinutes, getPaperMakerSubject, type PaperMakerSubjectDefinition, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
-import { generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
+import { filterUnitsBySourcePdfRenderability, generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
 
 export class PaperGenerationError extends Error {
   readonly status: number;
@@ -110,7 +110,7 @@ async function getInsertAssetUrls(
   boardCode: string,
   subjectSlug: string,
   units: QuestionUnit[],
-  options?: { sectionCode?: string; requireSupportDependency?: boolean },
+  options?: { sectionCode?: string; requireSupportDependency?: boolean; allowWholeInsertFallback?: boolean },
 ) {
   const extractSupportLabels = (text: string) => {
     const labels = new Set<string>();
@@ -169,7 +169,7 @@ async function getInsertAssetUrls(
       }
     }
 
-    if (supportLabels.size === 0 && match?.cdnUrl) {
+    if (options?.allowWholeInsertFallback && supportLabels.size === 0 && match?.cdnUrl) {
       urls.add(match.cdnUrl);
     }
   }
@@ -240,7 +240,7 @@ const SUBJECT_GENERATION_CONFIGS: Partial<Record<PaperMakerSubjectKey, SubjectGe
   },
   "aqa-english-language": {
     expandTopics: (ids) => expandAqaEnglishLanguageTopicSelection(ids),
-    prefaceInserts: (selectedUnits) => getInsertAssetUrls("aqa", "english-language", selectedUnits, { sectionCode: "A", requireSupportDependency: true }),
+    prefaceInserts: (selectedUnits) => getInsertAssetUrls("aqa", "english-language", selectedUnits, { sectionCode: "A", requireSupportDependency: true, allowWholeInsertFallback: true }),
     messages: {
       selectTopics: "Select at least one English Language topic.",
       noBank: "No tagged AQA English Language question bank is available in Convex.",
@@ -370,7 +370,10 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     }
   }
 
-  const allUnits = groupQuestionPartsIntoUnits(effectiveBank);
+  let allUnits = groupQuestionPartsIntoUnits(effectiveBank);
+  if (subject.key === "edexcel-business") {
+    allUnits = groupEdexcelBusinessQuestionUnits(allUnits);
+  }
   const selectedLeafTopicIds = input.selectAllTopics
     ? Array.from(new Set(allUnits.flatMap((unit) => unit.canonicalLeafs)))
     : config.expandTopics(input.selectedTopicNodeIds, allUnits, subject);
@@ -392,6 +395,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let figuresBySource: Awaited<ReturnType<typeof getPaperFiguresBySourceRelativePaths>> | undefined;
   let pageLayoutsBySource: Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>> | undefined;
   let selectableUnits = allUnits;
+  let pageAssetsBySource: Awaited<ReturnType<typeof getQuestionPageAssetsBySourceRelativePaths>> | undefined;
   if (regionMode) {
     const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
     [figuresBySource, pageLayoutsBySource] = isLocalGeometryEnabled()
@@ -407,6 +411,23 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     });
     const contextGate = filterUnitsByDanglingContext(gate.kept, { pageLayoutsBySource });
     selectableUnits = contextGate.kept;
+    const eligibleUnits = selectableUnits.filter((unit) => {
+      if (input.paperCodes.length > 0 && !input.paperCodes.includes(unit.paperCode)) return false;
+      if (input.excludeSourceQuestionKeys.includes(unit.sourceQuestionKey)) return false;
+      return unit.canonicalLeafs.some((leafId) => selectedLeafTopicIds.includes(leafId));
+    });
+    const eligibleSourcePaths = Array.from(new Set(eligibleUnits.map((unit) => unit.sourceRelativePath)));
+    pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(eligibleSourcePaths);
+    const sourceGate = await filterUnitsBySourcePdfRenderability(eligibleUnits, {
+      pageAssetsBySource,
+      figuresBySource,
+      pageLayoutsBySource,
+      regionMode,
+    });
+    if (sourceGate.excluded.length > 0) {
+      const renderableUnitKeys = new Set(sourceGate.kept.map((unit) => unit.unitKey));
+      selectableUnits = selectableUnits.filter((unit) => !eligibleUnits.includes(unit) || renderableUnitKeys.has(unit.unitKey));
+    }
   }
 
   const selection = selectQuestionUnits({
@@ -429,7 +450,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   }
 
   const selectedSourcePaths = selection.selectedUnits.map((unit) => unit.sourceRelativePath);
-  const pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(selectedSourcePaths);
+  pageAssetsBySource ??= await getQuestionPageAssetsBySourceRelativePaths(selectedSourcePaths);
 
   const figureIntegrityIssues: OrphanFigureIssue[] = [];
   if (figuresBySource && pageLayoutsBySource) {

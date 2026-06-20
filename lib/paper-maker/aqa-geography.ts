@@ -326,9 +326,9 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
     if ((part.marks ?? 0) <= 0) continue;
     if (hasQuestionNumberMismatch(part)) continue;
 
-     const relatedParts = relatedPartsByGroupUnitKey.get(part.unitKey) ?? [];
-     relatedParts.push(part);
-     relatedPartsByGroupUnitKey.set(part.unitKey, relatedParts);
+    const relatedParts = relatedPartsByGroupUnitKey.get(part.unitKey) ?? [];
+    relatedParts.push(part);
+    relatedPartsByGroupUnitKey.set(part.unitKey, relatedParts);
 
     const existing = units.get(part.partKey) ?? {
       unitKey: part.partKey,
@@ -365,30 +365,6 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
     return left.questionId.localeCompare(right.questionId, undefined, { numeric: true });
   };
 
-  const getBusinessRelevantParts = (unit: QuestionUnit) => {
-    if (unit.subjectSlug !== "business") return unit.parts;
-    if (unit.parts.some((part) => part.contextText)) return unit.parts;
-
-    const currentPart = unit.parts[0];
-    if (!currentPart) return unit.parts;
-
-    const relatedParts = [...(relatedPartsByGroupUnitKey.get(unit.groupUnitKey) ?? unit.parts)].sort(comparePartOrder);
-    const currentIndex = relatedParts.findIndex((part) => part.partKey === currentPart.partKey);
-    if (currentIndex <= 0) return unit.parts;
-
-    let anchorIndex = -1;
-    for (let index = currentIndex - 1; index >= 0; index -= 1) {
-      if (relatedParts[index]?.contextText) {
-        anchorIndex = index;
-        break;
-      }
-    }
-
-    if (anchorIndex < 0) return unit.parts;
-    const anchorPart = relatedParts[anchorIndex];
-    return anchorPart ? [anchorPart, currentPart] : unit.parts;
-  };
-
   const getMathematicsRelevantParts = (unit: QuestionUnit) => {
     if (unit.subjectSlug !== "mathematics") return unit.parts;
 
@@ -406,15 +382,9 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
     return previousPart ? [previousPart, currentPart] : unit.parts;
   };
 
-  const getRelevantPartsForUnit = (unit: QuestionUnit) => {
-    const businessParts = getBusinessRelevantParts(unit);
-    const businessAdjustedUnit = businessParts === unit.parts ? unit : { ...unit, parts: businessParts };
-    return getMathematicsRelevantParts(businessAdjustedUnit);
-  };
-
   for (const unit of units.values()) {
     const pageMap = new Map<number, QuestionBankPart[]>();
-    for (const part of getRelevantPartsForUnit(unit)) {
+    for (const part of getMathematicsRelevantParts(unit)) {
       for (const pageNumber of part.pageNumbers) {
         const parts = pageMap.get(pageNumber) ?? [];
         parts.push(part);

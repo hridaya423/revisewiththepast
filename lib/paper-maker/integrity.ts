@@ -97,6 +97,13 @@ function unitHasCapturedContext(unit: QuestionUnit): boolean {
   );
 }
 
+function isSelfContainedEnglishLiteratureExtract(unit: QuestionUnit): boolean {
+  if (unit.boardCode !== "aqa" || unit.subjectSlug !== "english-literature") return false;
+  const text = unitText(unit);
+  if (!/\b(?:this|following)\s+extract\b|\bread the following extract\b/i.test(text)) return false;
+  return unit.parts.some((part) => (part.regionSpans?.length ?? 0) > 0);
+}
+
 export function filterUnitsByDanglingContext(
   units: QuestionUnit[],
   options: { pageLayoutsBySource: Map<string, RegionPageLayout[]> },
@@ -116,6 +123,10 @@ export function filterUnitsByDanglingContext(
 
   for (const unit of units) {
     if (!isUnitRegionRenderable(unit, getLayoutMap(unit.sourceRelativePath)) || unitHasCapturedContext(unit)) {
+      kept.push(unit);
+      continue;
+    }
+    if (isSelfContainedEnglishLiteratureExtract(unit)) {
       kept.push(unit);
       continue;
     }

@@ -18,6 +18,12 @@ export type QaFinding = {
 export type RenderedTextPage = { pageNumber: number; text: string };
 export type RenderedPngPage = { pageNumber: number; png: Buffer };
 
+export type QaCheckOptions = {
+  subjectKey?: string;
+  totalMarks?: number;
+  selectedUnitCount?: number;
+};
+
 const BLANK_PAGE_INK_THRESHOLD = 0.005;
 const BLANK_PAGE_TEXT_THRESHOLD = 25;
 const CONTENT_PAGE_START = 2;
@@ -95,13 +101,80 @@ function checkRepeatedFurniture(textPages: RenderedTextPage[]): QaFinding[] {
   return findings;
 }
 
+function checkCoverOnlyOrMissingQuestions(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+  const contentPages = textPages.filter((page) => page.pageNumber >= CONTENT_PAGE_START);
+  const meaningfulLengths = contentPages.map((page) => meaningfulTextLength(page.text));
+  const meaningfulPages = meaningfulLengths.filter((length) => length >= BLANK_PAGE_TEXT_THRESHOLD).length;
+  const findings: QaFinding[] = [];
+
+  if ((options?.selectedUnitCount ?? 1) > 0 && meaningfulPages === 0) {
+    findings.push({
+      check: "cover-only-paper",
+      severity: "error",
+      message: "paper has selected units but no meaningful rendered question pages",
+    });
+  }
+
+  return findings;
+}
+
+function checkPageBloat(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+  if (!options?.totalMarks || options.totalMarks <= 0) return [];
+  const contentPageCount = Math.max(0, textPages.length - 1);
+  const maxExpectedPages = Math.max(6, Math.ceil(options.totalMarks / 2) + 5);
+  if (contentPageCount <= maxExpectedPages) return [];
+  return [{
+    check: "page-bloat",
+    severity: "warning",
+    message: `${contentPageCount} content pages for ${options.totalMarks} marks exceeds expected ceiling ${maxExpectedPages}`,
+  }];
+}
+
+function checkResourcePagesWithoutQuestions(textPages: RenderedTextPage[]): QaFinding[] {
+  const findings: QaFinding[] = [];
+  const textByPage = new Map(textPages.map((page) => [page.pageNumber, page.text.toLowerCase().replace(/\s+/g, " ")]));
+  const extractSupportLabels = (text: string) => {
+    const labels = new Set<string>();
+    for (const match of text.matchAll(/\b(?:figure|resource|table|map|graph|photo|photograph)\s+(\d{1,3})\b/g)) {
+      labels.add(match[1]);
+    }
+    return Array.from(labels);
+  };
+
+  for (const page of textPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+    const normalized = page.text.toLowerCase().replace(/\s+/g, " "); 
+    const looksLikeSupportOnly = /\bfor use with question\b|\bfigure \d+\b|\bresource \d+\b/.test(normalized);
+    if (!looksLikeSupportOnly) continue;
+    const hasQuestionInstruction = /\b(?:state|identify|describe|explain|suggest|calculate|outline|compare|evaluate|assess|complete|which|what|give)\b/.test(normalized)
+      || /\b0\s*\d\s*\.\s*\d\b/.test(normalized);
+    if (hasQuestionInstruction) continue;
+    const labels = extractSupportLabels(normalized);
+    const adjacentText = `${textByPage.get(page.pageNumber - 1) ?? ""} ${textByPage.get(page.pageNumber + 1) ?? ""}`;
+    if (labels.length > 0 && labels.some((label) => new RegExp(`\\bfigure\\s+${label}\\b|\\bresource\\s+${label}\\b`).test(adjacentText))) {
+      continue;
+    }
+    findings.push({
+      check: "support-page-without-question",
+      severity: "warning",
+      pageNumber: page.pageNumber,
+      message: "resource/figure page appears without a nearby question prompt",
+    });
+  }
+  return findings;
+}
+
 export async function runDeterministicChecks(
   pngPages: RenderedPngPage[],
   textPages: RenderedTextPage[],
+  options?: QaCheckOptions,
 ): Promise<QaFinding[]> {
   const blank = await checkBlankPages(pngPages, textPages);
   return [
     ...blank,
+    ...checkCoverOnlyOrMissingQuestions(textPages, options),
+    ...checkPageBloat(textPages, options),
+    ...checkResourcePagesWithoutQuestions(textPages),
     ...checkRepeatedFurniture(textPages),
   ];
 }
