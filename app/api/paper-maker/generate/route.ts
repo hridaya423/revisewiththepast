@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 import { generateCustomPaper, PaperGenerationError } from "@/lib/paper-maker/generate";
+import type { QuestionMixProfile } from "@/lib/paper-maker/aqa-geography";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ type GeneratePaperRequest = {
   subjectTier?: SubjectTierKey;
   selectedTopicNodeIds?: string[];
   targetMarks?: number;
+  questionMix?: QuestionMixProfile;
   timeMinutes?: number;
   targetMode?: "marks" | "time";
   paperCodes?: string[];
@@ -24,6 +26,10 @@ type GeneratePaperRequest = {
 
 function badRequest(message: string, status = 400) {
   return new Response(message, { status });
+}
+
+function shouldExcludeWholeSourceQuestion(subjectKey: string) {
+  return subjectKey === "aqa-business" || subjectKey === "edexcel-business" || subjectKey === "aqa-english-language";
 }
 
 export async function POST(request: NextRequest) {
@@ -51,6 +57,7 @@ export async function POST(request: NextRequest) {
   const targetMarks = typeof body.targetMarks === "number" && Number.isFinite(body.targetMarks)
     ? Math.max(1, Math.min(200, Math.round(body.targetMarks)))
     : 40;
+  const questionMix: QuestionMixProfile = body.questionMix === "short-form" || body.questionMix === "long-form" ? body.questionMix : "balanced";
   const maxQuestions = typeof body.maxQuestions === "number" && Number.isFinite(body.maxQuestions)
     ? Math.max(1, Math.min(40, Math.round(body.maxQuestions)))
     : undefined;
@@ -76,6 +83,7 @@ export async function POST(request: NextRequest) {
       subjectTier,
       selectedTopicNodeIds,
       targetMarks,
+      questionMix,
       requestedTimeMinutes,
       targetMode,
       paperCodes,
@@ -88,6 +96,9 @@ export async function POST(request: NextRequest) {
     });
 
     const { selection } = result;
+    const exclusionKeys = selection.selectedUnits.map((unit) => (
+      shouldExcludeWholeSourceQuestion(result.subject.key) ? unit.sourceQuestionKey : unit.unitKey
+    ));
     const headers: Record<string, string> = {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${result.fileName}"`,
@@ -98,7 +109,8 @@ export async function POST(request: NextRequest) {
       "X-Covered-Leaf-Topic-Ids": encodeURIComponent(selection.coveredLeafTopicIds.join("\n")),
       "X-Time-Minutes": String(result.timeMinutes),
       "X-Target-Mode": result.targetMode,
-      "X-Selected-Source-Question-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.sourceQuestionKey).join("\n")),
+      "X-Question-Mix": questionMix,
+      "X-Selected-Source-Question-Keys": encodeURIComponent(exclusionKeys.join("\n")),
       "X-Selected-Unit-Keys": encodeURIComponent(selection.selectedUnits.map((unit) => unit.unitKey).join("\n")),
       "X-Selected-Unit-Marks": encodeURIComponent(selection.selectedUnits.map((unit) => String(unit.totalMarks)).join("\n")),
     };

@@ -109,6 +109,7 @@ export const HEADER_FURNITURE_PATTERNS: RegExp[] = [
   /^there may be more space than you need/i,
   /^some questions must be answered with a cross/i,
   /^if you change your mind about an answer/i,
+  /^mark your new answer with a cross/i,
   /^for the multiple[- ]choice questions/i,
   /^correct method\b/i,
   /^wrong methods?\b/i,
@@ -124,6 +125,7 @@ export const HEADER_FURNITURE_PATTERNS: RegExp[] = [
   /^section [a-z]\b.{0,40}$/i,
   /^additional answer space$/i,
   /^if additional space is required/i,
+  /^end of sources$/i,
 ];
 
 export const FOOTER_FURNITURE_PATTERNS: RegExp[] = [

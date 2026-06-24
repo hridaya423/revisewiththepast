@@ -1,4 +1,4 @@
-import { expandAqaBusinessTopicSelection } from "@/lib/paper-maker/aqa-business";
+import { expandAqaBusinessTopicSelection, groupAqaBusinessQuestionUnits } from "@/lib/paper-maker/aqa-business";
 import { expandAqaEnglishLanguageTopicSelection, groupAqaEnglishLanguageSectionUnits } from "@/lib/paper-maker/aqa-english-language";
 import { expandAqaEnglishLiteratureTopicSelection } from "@/lib/paper-maker/aqa-english-literature";
 import {
@@ -6,6 +6,8 @@ import {
   groupQuestionPartsIntoUnits,
   groupQuestionUnitsBySourceQuestion,
   selectQuestionUnits,
+  sortQuestionUnitsForRendering,
+  type QuestionMixProfile,
   type QuestionBankPart,
   type QuestionUnit,
 } from "@/lib/paper-maker/aqa-geography";
@@ -28,7 +30,7 @@ import {
   getPaperPageLayoutsBySourceRelativePaths,
   getQuestionPageAssetsBySourceRelativePaths,
 } from "@/lib/paper-maker/convex";
-import { filterUnitsByDanglingContext, filterUnitsByFigureResolvability } from "@/lib/paper-maker/integrity";
+import { filterUnitsByCopyrightPlaceholders, filterUnitsByDanglingContext, filterUnitsByFigureResolvability } from "@/lib/paper-maker/integrity";
 import {
   getLocalFiguresBySource,
   getLocalPageLayoutsBySource,
@@ -54,6 +56,7 @@ export type GenerateCustomPaperInput = {
   subjectTier?: SubjectTierKey;
   selectedTopicNodeIds: string[];
   targetMarks: number;
+  questionMix?: QuestionMixProfile;
   requestedTimeMinutes?: number;
   targetMode: "marks" | "time";
   paperCodes: string[];
@@ -180,6 +183,25 @@ async function getInsertAssetUrls(
 
 function capitalizeTier(tier: SubjectTierKey) {
   return tier[0].toUpperCase() + tier.slice(1);
+}
+
+function getFirstRenderedPage(unit: QuestionUnit) {
+  return unit.pages.reduce((min, page) => Math.min(min, page.pageNumber), Number.POSITIVE_INFINITY);
+}
+
+function sortBusinessSelectedUnitsForRendering(units: QuestionUnit[]) {
+  units.sort((left, right) => {
+    if (left.sourceRelativePath !== right.sourceRelativePath) {
+      return left.sourceRelativePath.localeCompare(right.sourceRelativePath, undefined, { numeric: true });
+    }
+    const leftPage = getFirstRenderedPage(left);
+    const rightPage = getFirstRenderedPage(right);
+    if (leftPage !== rightPage) return leftPage - rightPage;
+    if ((left.sectionCode ?? "") !== (right.sectionCode ?? "")) {
+      return (left.sectionCode ?? "").localeCompare(right.sectionCode ?? "");
+    }
+    return left.questionNumber.localeCompare(right.questionNumber, undefined, { numeric: true });
+  });
 }
 
 const SUBJECT_GENERATION_CONFIGS: Partial<Record<PaperMakerSubjectKey, SubjectGenerationConfig>> = {
@@ -374,11 +396,14 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let allUnits = groupQuestionPartsIntoUnits(effectiveBank);
   if (subject.key === "edexcel-business") {
     allUnits = groupEdexcelBusinessQuestionUnits(allUnits);
+  } else if (subject.key === "aqa-business") {
+    allUnits = groupAqaBusinessQuestionUnits(allUnits);
   } else if (subject.key === "aqa-english-language") {
     allUnits = groupAqaEnglishLanguageSectionUnits(allUnits);
-  } else if (["edexcel-combined-science", "edexcel-biology", "edexcel-chemistry", "edexcel-physics", "edexcel-mathematics-higher", "ocr-computer-science"].includes(subject.key)) {
+  } else if (["edexcel-combined-science", "edexcel-biology", "edexcel-chemistry", "edexcel-physics", "ocr-computer-science", "edexcel-mathematics-higher"].includes(subject.key)) {
     allUnits = groupQuestionUnitsBySourceQuestion(allUnits);
   }
+  allUnits = filterUnitsByCopyrightPlaceholders(allUnits).kept;
   const selectedLeafTopicIds = input.selectAllTopics
     ? Array.from(new Set(allUnits.flatMap((unit) => unit.canonicalLeafs)))
     : config.expandTopics(input.selectedTopicNodeIds, allUnits, subject);
@@ -396,7 +421,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
       )
     : input.targetMarks;
 
-  const regionMode = (process.env.PAPER_MAKER_REGION_MODE ?? "auto") !== "legacy";
+  const regionMode = (process.env.PAPER_MAKER_REGION_MODE ?? "auto") !== "legacy" && subject.key !== "edexcel-combined-science";
   let figuresBySource: Awaited<ReturnType<typeof getPaperFiguresBySourceRelativePaths>> | undefined;
   let pageLayoutsBySource: Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>> | undefined;
   let selectableUnits = allUnits;
@@ -439,6 +464,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     units: selectableUnits,
     selectedLeafTopicIds,
     targetMarks: resolvedTargetMarks,
+    questionMix: input.questionMix,
     paperCodes: input.paperCodes,
     maxQuestions: input.maxQuestions,
     tolerance: 7,
@@ -453,6 +479,9 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   if (selection.selectedUnits.length === 0) {
     throw new PaperGenerationError(config.messages.noSelection(tier));
   }
+
+  if (subject.key === "aqa-business" || subject.key === "edexcel-business") sortBusinessSelectedUnitsForRendering(selection.selectedUnits);
+  else sortQuestionUnitsForRendering(selection.selectedUnits);
 
   const selectedSourcePaths = selection.selectedUnits.map((unit) => unit.sourceRelativePath);
   pageAssetsBySource ??= await getQuestionPageAssetsBySourceRelativePaths(selectedSourcePaths);

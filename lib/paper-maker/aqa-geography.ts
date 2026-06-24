@@ -96,10 +96,13 @@ export type QuestionUnit = {
   pages: QuestionUnitPage[];
 };
 
+export type QuestionMixProfile = "balanced" | "short-form" | "long-form";
+
 type SelectQuestionUnitsInput = {
   units: QuestionUnit[];
   selectedLeafTopicIds: string[];
   targetMarks: number;
+  questionMix?: QuestionMixProfile;
   paperCodes?: string[];
   maxQuestions?: number;
   tolerance?: number;
@@ -292,6 +295,22 @@ function getMarkCategory(totalMarks: number) {
   return "high" as const;
 }
 
+export function compareQuestionUnitsForRendering(a: QuestionUnit, b: QuestionUnit) {
+  if (a.totalMarks !== b.totalMarks) return a.totalMarks - b.totalMarks;
+  if (a.paperCode !== b.paperCode) return a.paperCode.localeCompare(b.paperCode, undefined, { numeric: true });
+  if ((a.sectionCode ?? "") !== (b.sectionCode ?? "")) return (a.sectionCode ?? "").localeCompare(b.sectionCode ?? "");
+  if (a.sourceRelativePath !== b.sourceRelativePath) return a.sourceRelativePath.localeCompare(b.sourceRelativePath, undefined, { numeric: true });
+  const aPage = a.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
+  const bPage = b.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
+  if (aPage !== bPage) return aPage - bPage;
+  if (a.questionNumber !== b.questionNumber) return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
+  return a.unitKey.localeCompare(b.unitKey, undefined, { numeric: true });
+}
+
+export function sortQuestionUnitsForRendering(units: QuestionUnit[]) {
+  units.sort(compareQuestionUnitsForRendering);
+}
+
 function buildStableSourceQuestionKey(part: QuestionBankPart) {
   return [
     part.boardCode,
@@ -308,7 +327,10 @@ function isLikelyBrokenMathematicsUnit(unit: QuestionUnit) {
   if (unit.subjectSlug !== "mathematics") return false;
   if (unit.parts.length > 1) return false;
   const part = unit.parts[0];
-  if (!part?.questionPartNumber) return false;
+  if (!part?.questionPartNumber) {
+    return part?.sourceMode === "full_page"
+      && (part.regionSpans ?? []).some((span) => span.pageNumber < part.pageNumber && span.yTop - span.yBottom < 80);
+  }
   if (unit.totalMarks > 12) return true;
   return unit.totalMarks > 6 && part.promptText.trim().length < 80;
 }
@@ -371,16 +393,12 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
 
     const currentPart = unit.parts[0];
     if (!currentPart?.questionPartNumber) return unit.parts;
-    if (!/part\s*\([a-z]\)|your answer to part|this graph|this equation|this table|this shape|the graph|the equation/i.test(currentPart.promptText)) {
-      return unit.parts;
-    }
 
     const relatedParts = [...(relatedPartsByGroupUnitKey.get(unit.groupUnitKey) ?? unit.parts)].sort(comparePartOrder);
     const currentIndex = relatedParts.findIndex((part) => part.partKey === currentPart.partKey);
     if (currentIndex <= 0) return unit.parts;
 
-    const previousPart = relatedParts[currentIndex - 1];
-    return previousPart ? [previousPart, currentPart] : unit.parts;
+    return [...relatedParts.slice(0, currentIndex), currentPart];
   };
 
   for (const unit of units.values()) {
@@ -501,7 +519,7 @@ export function groupQuestionUnitsBySourceQuestion(units: QuestionUnit[]): Quest
   });
 }
 
-export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0, priorCoveredLeafTopicIds = [], rng = Math.random }: SelectQuestionUnitsInput) {
+export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, questionMix = "balanced", paperCodes, maxQuestions, tolerance = 7, excludedSourceQuestionKeys = [], remainingPaperCount = 1, priorSelectedUnitMarks = [], priorPaperCount = 0, priorCoveredLeafTopicIds = [], rng = Math.random }: SelectQuestionUnitsInput) {
   const selectedLeafSet = new Set(selectedLeafTopicIds);
   const allowedPaperCodes = paperCodes && paperCodes.length > 0 ? new Set(paperCodes) : null;
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
@@ -509,7 +527,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     if (!unit.questionPaperCdnUrl) return false;
     if (isLikelyBrokenMathematicsUnit(unit)) return false;
     if (allowedPaperCodes && !allowedPaperCodes.has(unit.paperCode)) return false;
-    if (excludedSourceQuestionKeySet.has(unit.sourceQuestionKey)) return false;
+    if (excludedSourceQuestionKeySet.has(unit.sourceQuestionKey) || excludedSourceQuestionKeySet.has(unit.unitKey)) return false;
     return unit.canonicalLeafs.some((leaf) => selectedLeafSet.has(leaf));
   });
   const safeTolerance = Math.max(3, Math.min(12, tolerance));
@@ -548,7 +566,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const averageUnitMarks = candidates.length > 0
     ? candidates.reduce((sum, unit) => sum + unit.totalMarks, 0) / candidates.length
     : 0;
-  const estimatedQuestionCount = Math.max(4, Math.min(12, Math.round(targetMarks / Math.max(1.5, averageUnitMarks || 3))));
+  const estimatedQuestionCount = Math.max(4, Math.min(targetMarks >= 80 ? 30 : 16, Math.round(targetMarks / Math.max(1.5, averageUnitMarks || 3))));
   const desiredCategoryCounts = (() => {
     const counts = new Map<"low" | "medium" | "high", number>([
       ["low", 0],
@@ -557,13 +575,14 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     ]);
     if (estimatedQuestionCount <= 0) return counts;
 
-    const totalCandidateCount = Math.max(1, candidates.length);
-    const baseLow = (candidateMarkCategoryCounts.get("low") ?? 0) / totalCandidateCount;
-    const baseMedium = (candidateMarkCategoryCounts.get("medium") ?? 0) / totalCandidateCount;
-    const baseHigh = (candidateMarkCategoryCounts.get("high") ?? 0) / totalCandidateCount;
-    const lowRatio = Math.min(0.38, Math.max(0.18, baseLow));
-    const mediumRatio = Math.min(0.62, Math.max(0.38, baseMedium || 0.5));
-    const highRatio = Math.min(0.28, Math.max(0.08, baseHigh || 0.12));
+    const profileRatios = questionMix === "short-form"
+      ? { low: 0.38, medium: 0.48, high: 0.14 }
+      : questionMix === "long-form"
+        ? { low: 0.12, medium: 0.38, high: 0.5 }
+        : { low: 0.3, medium: 0.5, high: 0.2 };
+    const lowRatio = profileRatios.low;
+    const mediumRatio = profileRatios.medium;
+    const highRatio = profileRatios.high;
     const ratioTotal = lowRatio + mediumRatio + highRatio;
     counts.set("low", Math.round((estimatedQuestionCount * lowRatio) / ratioTotal));
     counts.set("medium", Math.round((estimatedQuestionCount * mediumRatio) / ratioTotal)); 
@@ -596,11 +615,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     }
 
     return {
-      selectedUnits: [...selected].sort((a, b) => {
-        if (a.totalMarks !== b.totalMarks) return a.totalMarks - b.totalMarks;
-        if (a.paperCode !== b.paperCode) return a.paperCode.localeCompare(b.paperCode, undefined, { numeric: true });
-        return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
-      }),
+      selectedUnits: [...selected].sort(compareQuestionUnitsForRendering),
       totalMarks: currentMarks,
       coveredLeafTopicIds: Array.from(finalCoveredLeafs),
       requestedLeafTopicIds: Array.from(selectedLeafSet),
@@ -638,6 +653,18 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     };
 
     const getBucketPreferenceBonus = (unit: QuestionUnit) => {
+      if (questionMix === "short-form") {
+        if (unit.totalMarks <= 2) return 220;
+        if (unit.totalMarks <= 4) return 170;
+        if (unit.totalMarks <= 6) return 20;
+        return -180;
+      }
+      if (questionMix === "long-form") {
+        if (unit.totalMarks >= 8) return 240;
+        if (unit.totalMarks >= 6) return 180;
+        if (unit.totalMarks >= 4) return 40;
+        return -140;
+      }
       const progress = targetMarks > 0 ? currentMarks / targetMarks : 0;
       if (mode === "marks") {
         if (progress < 0.4) {
@@ -756,6 +783,9 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       const isMaths = unit.subjectSlug === "mathematics";
       const desiredCategoryCount = desiredCategoryCounts.get(markCategory) ?? 0;
       const projectedCategoryCount = currentMarkCategoryUsageCount + 1;
+      const balancedHighOverage = questionMix === "balanced" && markCategory === "high"
+        ? Math.max(0, projectedCategoryCount - Math.max(1, desiredCategoryCount))
+        : 0;
       const priorAverageCategoryCount = priorPaperCount > 0 ? priorMarkCategoryUsageCount / priorPaperCount : 0;
       const categoryQuotaBonus = projectedCategoryCount <= desiredCategoryCount
         ? (desiredCategoryCount - currentMarkCategoryUsageCount) * (isMaths ? 26 : 10)
@@ -786,6 +816,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           - markBucketPenalty
           - markCategoryPenalty
           - crossPaperCategoryPenalty
+          - (balancedHighOverage * (isMaths ? 900 : 260))
           - (futureSetPenalty * 18)
           - (overshoot * 180)
           - (samePaperPenalty * 20)
@@ -915,6 +946,9 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         const isMaths = unit.subjectSlug === "mathematics";
         const desiredCategoryCount = desiredCategoryCounts.get(markCategory) ?? 0;
         const projectedCategoryCount = currentMarkCategoryUsageCount + 1;
+        const balancedHighOverage = questionMix === "balanced" && markCategory === "high"
+          ? Math.max(0, projectedCategoryCount - Math.max(1, desiredCategoryCount))
+          : 0;
         const priorAverageCategoryCount = priorPaperCount > 0 ? priorMarkCategoryUsageCount / priorPaperCount : 0;
         const categoryQuotaBonus = projectedCategoryCount <= desiredCategoryCount
           ? (desiredCategoryCount - currentMarkCategoryUsageCount) * (isMaths ? 18 : 8)
@@ -935,6 +969,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
           - markBucketPenalty
           - markCategoryPenalty
           - crossPaperCategoryPenalty
+          - (balancedHighOverage * (isMaths ? 700 : 220))
           - (repeatedRunLeafPenalty * (mode === "marks" ? 20 : 40) * multiPaperSpreadMultiplier)
           - (futureSetPenalty * 8);
 
@@ -996,7 +1031,12 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     return left.selectedUnits.length - right.selectedUnits.length;
   };
 
-  const attempts = [runGreedySelection("balanced"), runGreedySelection("marks")];
+  const balancedAttempt = runGreedySelection("balanced");
+  if (questionMix === "balanced" && balancedAttempt.totalMarks >= minimumAcceptableMarks && balancedAttempt.totalMarks <= maximumAcceptableMarks) {
+    return balancedAttempt;
+  }
+
+  const attempts = [balancedAttempt, runGreedySelection("marks")];
   attempts.sort(compareSelections);
   return attempts[0] ?? finalizeSelection([], 0);
 }

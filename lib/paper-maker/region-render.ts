@@ -77,24 +77,33 @@ function isScienceUnit(unit: QuestionUnit) {
   return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
 }
 
+function shouldTrimExamGutter(unit: QuestionUnit) {
+  return unit.boardCode === "edexcel" || unit.boardCode === "ocr";
+}
+
 function cropBoxForSpan(
   span: { yTop: number; yBottom: number },
   layout: RegionPageLayout,
   unit: QuestionUnit,
 ): RegionCropBox {
   const isWideSciencePage = isScienceUnit(unit) && layout.pageWidth > 620;
+  const trimGutter = shouldTrimExamGutter(unit);
   const left = isWideSciencePage
-    ? Math.max(layout.contentX0, 70)
+    ? Math.max(0, layout.contentX0 - CONTENT_X_PADDING)
+    : trimGutter
+      ? Math.max(0, layout.contentX0 - CONTENT_X_PADDING)
     : Math.max(0, layout.contentX0 - CONTENT_X_PADDING);
   const right = isWideSciencePage
-    ? Math.min(layout.contentX1, layout.pageWidth - 90)
+    ? Math.min(layout.contentX1, layout.pageWidth - 32)
+    : trimGutter
+      ? Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING)
     : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
 
   return {
     left,
     right,
     bottom: Math.max(layout.footerCeilingY, span.yBottom),
-    top: Math.min(layout.pageHeight, span.yTop),
+    top: Math.min(layout.pageHeight, layout.headerFloorY > 0 ? layout.headerFloorY : layout.pageHeight, span.yTop),
   };
 }
 

@@ -22,6 +22,7 @@ export type QaCheckOptions = {
   subjectKey?: string;
   totalMarks?: number;
   selectedUnitCount?: number;
+  selectedUnitMarks?: number[];
 };
 
 const BLANK_PAGE_INK_THRESHOLD = 0.005;
@@ -101,6 +102,52 @@ function checkRepeatedFurniture(textPages: RenderedTextPage[]): QaFinding[] {
   return findings;
 }
 
+function checkVisibleFurniture(textPages: RenderedTextPage[]): QaFinding[] {
+  const findings: QaFinding[] = [];
+  const badPatterns = [
+    /\bturn over\b/i,
+    /\bdo not write (?:in|outside)/i,
+    /\bend of sources\b/i,
+    /\bmark your new answer with a cross\b/i,
+  ];
+  for (const page of textPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+    const normalized = page.text.replace(/\s+/g, " ");
+    if (!badPatterns.some((pattern) => pattern.test(normalized))) continue;
+    findings.push({
+      check: "visible-source-furniture",
+      severity: "warning",
+      pageNumber: page.pageNumber,
+      message: "source paper furniture is visible on generated page",
+    });
+  }
+  return findings;
+}
+
+function checkQuestionMix(options?: QaCheckOptions): QaFinding[] {
+  const marks = options?.selectedUnitMarks ?? [];
+  if (marks.length < 4 || (options?.totalMarks ?? 0) < 30) return [];
+  const low = marks.filter((mark) => mark <= 2).length;
+  const medium = marks.filter((mark) => mark > 2 && mark <= 5).length;
+  const high = marks.filter((mark) => mark > 5).length;
+  const findings: QaFinding[] = [];
+  if (medium === 0 || low === 0 || high === 0) {
+    findings.push({
+      check: "question-mix-skew",
+      severity: "warning",
+      message: `question mix is skewed: ${low} short, ${medium} medium, ${high} extended`,
+    });
+  }
+  if (high >= marks.length - 1) {
+    findings.push({
+      check: "question-mix-too-heavy",
+      severity: "warning",
+      message: `paper is dominated by extended questions: ${high}/${marks.length}`,
+    });
+  }
+  return findings;
+}
+
 function checkCoverOnlyOrMissingQuestions(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
   const contentPages = textPages.filter((page) => page.pageNumber >= CONTENT_PAGE_START);
   const meaningfulLengths = contentPages.map((page) => meaningfulTextLength(page.text));
@@ -143,11 +190,12 @@ function checkResourcePagesWithoutQuestions(textPages: RenderedTextPage[]): QaFi
 
   for (const page of textPages) {
     if (page.pageNumber < CONTENT_PAGE_START) continue;
-    const normalized = page.text.toLowerCase().replace(/\s+/g, " "); 
+    const normalized = page.text.toLowerCase().replace(/\s+/g, " ");
     const looksLikeSupportOnly = /\bfor use with question\b|\bfigure \d+\b|\bresource \d+\b/.test(normalized);
     if (!looksLikeSupportOnly) continue;
     const hasQuestionInstruction = /\b(?:state|identify|describe|explain|suggest|calculate|outline|compare|evaluate|assess|complete|devise|determine|show that|which|what|give)\b/.test(normalized)
-      || /\b0\s*\d\s*\.\s*\d\b/.test(normalized);
+      || /\b0\s*\d\s*\.\s*\d\b/.test(normalized)
+      || /\(\s*(?:[a-z]|[ivx]{1,4})\s*\)/.test(normalized);
     if (hasQuestionInstruction) continue;
     const labels = extractSupportLabels(normalized);
     const adjacentText = `${textByPage.get(page.pageNumber - 1) ?? ""} ${textByPage.get(page.pageNumber + 1) ?? ""}`;
@@ -164,6 +212,88 @@ function checkResourcePagesWithoutQuestions(textPages: RenderedTextPage[]): QaFi
   return findings;
 }
 
+function checkCopyrightPlaceholders(textPages: RenderedTextPage[]): QaFinding[] {
+  const findings: QaFinding[] = [];
+  const placeholderPattern = /\b(?:cannot be|not|has been|item)\s+(?:reproduced|removed)\s+here\s+due\s+to\s+third[- ]party\s+copyright\s+restrictions\b|\bitem\s+removed\s+due\s+to\s+third[- ]party\s+copyright\s+restrictions\b/i;
+
+  for (const page of textPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+    if (!placeholderPattern.test(page.text.replace(/\s+/g, " "))) continue;
+    findings.push({
+      check: "copyright-placeholder",
+      severity: "error",
+      pageNumber: page.pageNumber,
+      message: "page contains a missing third-party copyrighted figure/extract placeholder",
+    });
+  }
+
+  return findings;
+}
+
+function checkGenericExtraAnswerPages(textPages: RenderedTextPage[]): QaFinding[] {
+  const findings: QaFinding[] = [];
+  const genericExtraPagePattern = /additional page, if required|write the question numbers in the left-hand margin|\bextra answer space\b/i;
+
+  for (const page of textPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+    if (!genericExtraPagePattern.test(page.text.replace(/\s+/g, " "))) continue;
+    findings.push({
+      check: "generic-extra-answer-page",
+      severity: "error",
+      pageNumber: page.pageNumber,
+      message: "generic source extra-answer page rendered inside the generated paper",
+    });
+  }
+
+  return findings;
+}
+
+function normalizeRenderedText(text: string) {
+  return text.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function checkBusinessMissingReferences(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+  if (options?.subjectKey !== "aqa-business" && options?.subjectKey !== "edexcel-business") return [];
+
+  const findings: QaFinding[] = [];
+  const normalizedPages = textPages.map((page) => ({
+    pageNumber: page.pageNumber,
+    text: normalizeRenderedText(page.text),
+  }));
+
+  const getContextWindow = (pageNumber: number) => normalizedPages
+    .filter((page) => page.pageNumber >= pageNumber - 3 && page.pageNumber <= pageNumber + 1)
+    .map((page) => page.text)
+    .join(" ");
+
+  for (const page of normalizedPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+
+    const references = Array.from(page.text.matchAll(/\b(?:using|use|from|in)\s+(item|table|figure)\s+([a-z]|\d{1,3})\b/g));
+    for (const match of references) {
+      const kind = match[1];
+      const label = match[2];
+      const context = getContextWindow(page.pageNumber).replace(
+        new RegExp(`\\b(?:using|use|from|in)\\s+${kind}\\s+${label}\\b`, "gi"),
+        " ",
+      );
+      const labelPattern = kind === "item"
+        ? new RegExp(`\\bitem\\s*${label}\\s*:`, "i")
+        : new RegExp(`\\b${kind}\\s*${label}\\b`, "i");
+      if (labelPattern.test(context)) continue;
+
+      findings.push({
+        check: "missing-business-reference",
+        severity: "error",
+        pageNumber: page.pageNumber,
+        message: `question references ${kind} ${label.toUpperCase()} but that ${kind} is not visible nearby`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 export async function runDeterministicChecks(
   pngPages: RenderedPngPage[],
   textPages: RenderedTextPage[],
@@ -174,7 +304,12 @@ export async function runDeterministicChecks(
     ...blank,
     ...checkCoverOnlyOrMissingQuestions(textPages, options),
     ...checkPageBloat(textPages, options),
+    ...checkCopyrightPlaceholders(textPages),
+    ...checkGenericExtraAnswerPages(textPages),
     ...checkResourcePagesWithoutQuestions(textPages),
+    ...checkBusinessMissingReferences(textPages, options),
+    ...checkVisibleFurniture(textPages),
+    ...checkQuestionMix(options),
     ...checkRepeatedFurniture(textPages),
   ];
 }

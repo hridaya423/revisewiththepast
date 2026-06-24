@@ -23,7 +23,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 
-import type { TopicTreeNodeWithCounts } from "@/lib/paper-maker/aqa-geography";
+import type { QuestionMixProfile, TopicTreeNodeWithCounts } from "@/lib/paper-maker/aqa-geography";
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 import {
   estimatePaperTimeMinutes,
@@ -63,6 +63,12 @@ type SelectedTopicSummary = {
 };
 
 type WorkspaceSubjectOption = PaperMakerWorkspaceProps["subjectOptions"][number];
+
+const QUESTION_MIX_OPTIONS: { key: QuestionMixProfile; label: string; description: string }[] = [
+  { key: "balanced", label: "Balanced", description: "A proper exam blend of short, medium, and extended questions." },
+  { key: "short-form", label: "Short form", description: "More 1-4 mark recall and calculation questions." },
+  { key: "long-form", label: "Long form", description: "More extended response questions, with some short scaffolding." },
+];
 
 const SUBJECT_ICONS: Record<string, React.ElementType> = {
   "aqa-geography": Globe,
@@ -427,6 +433,7 @@ export function PaperMakerWorkspace({
   const [selectedLeafIds, setSelectedLeafIds] = useState<Set<string>>(new Set());
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(defaultSubject?.topics.map((topic) => topic.id) ?? []));
   const [targetMarks, setTargetMarks] = useState(40);
+  const [questionMix, setQuestionMix] = useState<QuestionMixProfile>("balanced");
   const [timeMinutes, setTimeMinutes] = useState(() => clampTimeMinutes(estimatePaperTimeMinutes(defaultMinutesPerMark, 40)));
   const [targetMode, setTargetMode] = useState<PaperBuildTargetMode>("marks");
   const [selectedPaperCodes, setSelectedPaperCodes] = useState<Set<string>>(new Set(defaultSubject?.defaultPaperCodes ?? []));
@@ -664,6 +671,7 @@ export function PaperMakerWorkspace({
               subjectTier: activeSubject?.tiers.length ? selectedTier : undefined,
               selectedTopicNodeIds,
               targetMarks,
+              questionMix,
               timeMinutes,
               targetMode,
               paperCodes: Array.from(selectedPaperCodes),
@@ -761,7 +769,7 @@ export function PaperMakerWorkspace({
         setError(cause instanceof Error ? cause.message : String(cause));
       }
     });
-  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, timeMinutes, targetMode, selectedPaperCodes, paperCount, isAuthenticated]);
+  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, questionMix, timeMinutes, targetMode, selectedPaperCodes, paperCount, isAuthenticated]);
 
   useEffect(() => {
     activeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1108,6 +1116,34 @@ export function PaperMakerWorkspace({
             </div>
 
             <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-white p-5 shadow-sm">
+              <div>
+                <p className="text-[0.82rem] font-semibold text-[#1a2e1a]">Question mix</p>
+                <p className="text-[0.72rem] text-[#3d5a3f]/45">Shape the mark distribution instead of leaving it to chance.</p>
+              </div>
+              <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                {QUESTION_MIX_OPTIONS.map((option) => {
+                  const isActive = questionMix === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setQuestionMix(option.key)}
+                      disabled={!generationEnabled}
+                      className={`rounded-xl border p-4 text-left transition-all disabled:opacity-40 ${
+                        isActive
+                          ? "border-[#1a2e1a] bg-[#1a2e1a] text-white"
+                          : "border-[#1a2e1a]/10 bg-[#f8f7f4] text-[#1a2e1a] hover:bg-[#f1eee6]"
+                      }`}
+                    >
+                      <span className="block text-[0.82rem] font-semibold">{option.label}</span>
+                      <span className={`mt-1 block text-[0.72rem] ${isActive ? "text-white/70" : "text-[#3d5a3f]/55"}`}>{option.description}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-white p-5 shadow-sm">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-[0.82rem] font-semibold text-[#1a2e1a]">Source papers</p>
@@ -1162,7 +1198,7 @@ export function PaperMakerWorkspace({
                     {activeTier ? ` · ${activeTier.label}` : ""}
                   </p>
                   <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/55">
-                    {targetMarks} marks · {timeMinutes} minutes · {selectedPaperCodes.size} source paper{selectedPaperCodes.size === 1 ? "" : "s"}
+                    {targetMarks} marks · {timeMinutes} minutes · {QUESTION_MIX_OPTIONS.find((option) => option.key === questionMix)?.label} · {selectedPaperCodes.size} source paper{selectedPaperCodes.size === 1 ? "" : "s"}
                   </p>
 
                   {topicSelectionEnabled && selectedTopicPreview.length > 0 ? (

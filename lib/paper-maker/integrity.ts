@@ -76,6 +76,13 @@ export type ContextGateResult = {
   excluded: Array<{ unitKey: string; reason: string }>;
 };
 
+export type CopyrightPlaceholderGateResult = {
+  kept: QuestionUnit[];
+  excluded: Array<{ unitKey: string; reason: string }>;
+};
+
+const COPYRIGHT_PLACEHOLDER_PATTERN = /\b(?:cannot be|not|has been|item)\s+(?:reproduced|removed)\s+here\s+due\s+to\s+third[- ]party\s+copyright\s+restrictions\b|\bitem\s+removed\s+due\s+to\s+third[- ]party\s+copyright\s+restrictions\b/i;
+
 const DANGLING_CONTEXT_PATTERNS: RegExp[] = [
   /\b(these|the|those|both|following)\s+(two\s+|three\s+)?options\b/i,
   /\b(the|this|that|above|below|following|each)\s+(extract|source|passage)\b/i,
@@ -87,6 +94,21 @@ function unitText(unit: QuestionUnit): string {
     .map((part) => `${part.promptText ?? ""} ${part.contextText ?? ""}`)
     .join(" ")
     .toLowerCase();
+}
+
+export function filterUnitsByCopyrightPlaceholders(units: QuestionUnit[]): CopyrightPlaceholderGateResult {
+  const kept: QuestionUnit[] = [];
+  const excluded: CopyrightPlaceholderGateResult["excluded"] = [];
+
+  for (const unit of units) {
+    if (COPYRIGHT_PLACEHOLDER_PATTERN.test(unitText(unit))) {
+      excluded.push({ unitKey: unit.unitKey, reason: "third-party copyright placeholder" });
+      continue;
+    }
+    kept.push(unit);
+  }
+
+  return { kept, excluded };
 }
 
 function unitHasCapturedContext(unit: QuestionUnit): boolean {

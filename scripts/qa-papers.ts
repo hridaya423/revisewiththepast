@@ -7,6 +7,7 @@ loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: tr
 loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
 
 import { generateCustomPaper, PaperGenerationError } from "@/lib/paper-maker/generate";
+import type { QuestionMixProfile } from "@/lib/paper-maker/aqa-geography";
 import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
@@ -17,6 +18,7 @@ type CliOptions = {
   papers: number;
   seed: number;
   marks: number;
+  mix: QuestionMixProfile;
   out: string;
   renderScale: number;
 };
@@ -44,8 +46,20 @@ type PaperRunReport = {
   selectedUnitKeys?: string[];
   selectedSourceQuestionKeys?: string[];
   selectedUnitMarks?: number[];
+  selectedCoveredLeafTopicIds?: string[];
   findings: QaCheckFinding[];
 };
+
+type PriorSelectionState = {
+  sourceQuestionKeys: string[];
+  unitMarks: number[];
+  paperCount: number;
+  coveredLeafTopicIds: string[];
+};
+
+function shouldExcludeWholeSourceQuestion(subjectKey: string) {
+  return subjectKey === "aqa-business" || subjectKey === "edexcel-business" || subjectKey === "aqa-english-language";
+}
 
 function parseCliOptions(argv: string[]): CliOptions {
   const options: CliOptions = {
@@ -53,6 +67,7 @@ function parseCliOptions(argv: string[]): CliOptions {
     papers: 3,
     seed: 42,
     marks: 40,
+    mix: "balanced",
     out: "qa-reports",
     renderScale: 2,
   };
@@ -70,6 +85,11 @@ function parseCliOptions(argv: string[]): CliOptions {
     else if (arg === "--papers") options.papers = Math.max(1, Number.parseInt(next(), 10) || 1);
     else if (arg === "--seed") options.seed = Number.parseInt(next(), 10) || 42;
     else if (arg === "--marks") options.marks = Math.max(1, Math.min(200, Number.parseInt(next(), 10) || 40));
+    else if (arg === "--mix") {
+      const value = next();
+      if (value !== "balanced" && value !== "short-form" && value !== "long-form") throw new Error(`Unknown mix: ${value}`);
+      options.mix = value;
+    }
     else if (arg === "--out") options.out = next();
     else if (arg === "--scale") options.renderScale = Math.max(1, Math.min(4, Number.parseFloat(next()) || 2));
     else throw new Error(`Unknown argument: ${arg}`);
@@ -117,6 +137,7 @@ async function runPaper(
   paperIndex: number,
   options: CliOptions,
   paperDir: string,
+  priorState: PriorSelectionState,
 ): Promise<PaperRunReport> {
   const seed = options.seed + paperIndex * 1000;
   const startedAt = Date.now();
@@ -138,13 +159,14 @@ async function runPaper(
       selectedTopicNodeIds: [],
       selectAllTopics: true,
       targetMarks: options.marks,
+      questionMix: options.mix,
       targetMode: "marks",
       paperCodes: [],
-      excludeSourceQuestionKeys: [],
-      remainingPaperCount: 1,
-      priorSelectedUnitMarks: [],
-      priorPaperCount: 0,
-      priorCoveredLeafTopicIds: [],
+      excludeSourceQuestionKeys: priorState.sourceQuestionKeys,
+      remainingPaperCount: Math.max(1, options.papers - paperIndex),
+      priorSelectedUnitMarks: priorState.unitMarks,
+      priorPaperCount: priorState.paperCount,
+      priorCoveredLeafTopicIds: priorState.coveredLeafTopicIds,
       seed,
     });
 
@@ -161,6 +183,7 @@ async function runPaper(
       subjectKey: config.subjectKey,
       totalMarks: result.selection.totalMarks,
       selectedUnitCount: result.selection.selectedUnits.length,
+      selectedUnitMarks: result.selection.selectedUnits.map((unit) => unit.totalMarks),
     });
     for (const issue of result.figureIntegrityIssues) {
       report.findings.push({
@@ -177,6 +200,14 @@ async function runPaper(
     report.selectedUnitKeys = result.selection.selectedUnits.map((unit) => unit.unitKey);
     report.selectedSourceQuestionKeys = result.selection.selectedUnits.map((unit) => unit.sourceQuestionKey);
     report.selectedUnitMarks = result.selection.selectedUnits.map((unit) => unit.totalMarks);
+    report.selectedCoveredLeafTopicIds = result.selection.coveredLeafTopicIds;
+
+    priorState.sourceQuestionKeys.push(...result.selection.selectedUnits.map((unit) => (
+      shouldExcludeWholeSourceQuestion(config.subjectKey) ? unit.sourceQuestionKey : unit.unitKey
+    )));
+    priorState.unitMarks.push(...report.selectedUnitMarks);
+    priorState.paperCount += 1;
+    priorState.coveredLeafTopicIds.push(...report.selectedCoveredLeafTopicIds);
   } catch (error) {
     report.error = error instanceof PaperGenerationError
       ? `${error.status}: ${error.message}`
@@ -198,12 +229,21 @@ async function main() {
 
 
   const reports: PaperRunReport[] = [];
+  const priorSelectionByConfig = new Map<string, PriorSelectionState>();
   for (const config of configs) {
+    const priorState = priorSelectionByConfig.get(config.configKey) ?? {
+      sourceQuestionKeys: [],
+      unitMarks: [],
+      paperCount: 0,
+      coveredLeafTopicIds: [],
+    };
+    priorSelectionByConfig.set(config.configKey, priorState);
+
     for (let paperIndex = 0; paperIndex < options.papers; paperIndex += 1) {
       const paperDir = resolve(runDir, config.configKey, `paper-${paperIndex + 1}`);
       const label = `${config.configKey} paper ${paperIndex + 1}/${options.papers}`;
       process.stdout.write(`→ ${label} ... `);
-      const report = await runPaper(config, paperIndex, options, paperDir);
+      const report = await runPaper(config, paperIndex, options, paperDir, priorState);
       reports.push(report);
       if (report.ok) {
         const errors = report.findings.filter((finding) => finding.severity === "error").length;

@@ -513,7 +513,12 @@ function extractAqaStandaloneQuestionNumber(text: string) {
   return null;
 }
 
-function extractSubquestion(text: string, line: TextLine, currentQuestionNumber: string | null, config: BoardConfig) {
+function isImplausibleQuestionNumber(boardCode: string, subjectSlug: string, questionNumber: string) {
+  const parsed = Number(questionNumber);
+  return boardCode === "edexcel" && subjectSlug === "combined-science" && Number.isFinite(parsed) && parsed > 12;
+}
+
+function extractSubquestion(text: string, line: TextLine, currentQuestionNumber: string | null, config: BoardConfig, boardCode: string, subjectSlug: string) {
   const normalized = normalizeText(text);
   if (config.name === "AQA") {
     if (line.bbox.x0 > 90) return null;
@@ -553,6 +558,7 @@ function extractSubquestion(text: string, line: TextLine, currentQuestionNumber:
   const match = normalized.match(config.subquestionRe);
   if (!match) return null;
   if (match[0].length === normalized.length) return null;
+  if (isImplausibleQuestionNumber(boardCode, subjectSlug, match[1])) return null;
   return {
     questionNumber: match[1],
     partNumber: match[2].replace(/\s+/g, ""),
@@ -638,6 +644,7 @@ function extractTopLevelQuestionStart(
 
   const candidate = Number(match[1]);
   if (Number.isNaN(candidate)) return null;
+  if (isImplausibleQuestionNumber(boardCode, subjectSlug, match[1])) return null;
   if (isEdexcelMaths && line.bbox.y0 < 120) return null;
   if (currentQuestionNumber) {
     const current = Number(currentQuestionNumber);
@@ -1987,7 +1994,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
         continue;
       }
 
-      const subquestion = extractSubquestion(detectionText, line, currentQuestionNumber, config);
+      const subquestion = extractSubquestion(detectionText, line, currentQuestionNumber, config, boardCode, subjectSlug);
       if (subquestion) {
         const activePart = active as ActiveQuestionPart | null;
         const activeIsLetteredSetupParent = activePart !== null
