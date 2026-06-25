@@ -1244,9 +1244,12 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
   }
 
   return rawPageNumbers.filter((pageNumber, index) => {
+    const unitPage = unit.pages.find((entry) => entry.pageNumber === pageNumber);
+    const isContextPage = unitPage?.parts.some((part) => part.sourceMode === "context_stem") ?? false;
     if (index === 0) return true;
     if (actualFirstPageNumber && pageNumber === actualFirstPageNumber) return true;
     if (prependedSupportPages.has(pageNumber)) return true;
+    if (isContextPage) return true;
 
     const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
     if (page && isBoilerplateOnlyPage(page)) return false;
@@ -1595,6 +1598,10 @@ function resolveStandardCropBox(
   unitStartPages: Map<string, QuestionUnit[]>,
 ) {
   const isFullPageSource = unit.parts.some((part) => part.sourceMode === "full_page");
+  const isContextPage = unit.pages.find((entry) => entry.pageNumber === pageNumber)?.parts.some((part) => part.sourceMode === "context_stem") ?? false;
+  if (isContextPage) {
+    return { left: 0, right: pageWidth, bottom: 0, top: pageHeight };
+  }
   if (isMathematicsUnit(unit)) {
     return { left: 0, right: pageWidth, bottom: 0, top: pageHeight };
   }

@@ -123,6 +123,10 @@ function makeSectionContextPart(anchor: QuestionBankPart): QuestionBankPart | nu
   };
 }
 
+function isSectionContextAnchor(part: QuestionBankPart) {
+  return Boolean(part.contextText && /before answering questions?\s+\d/i.test(part.contextText));
+}
+
 export function groupEdexcelBusinessQuestionUnits(units: QuestionUnit[]): QuestionUnit[] {
   const partsByGroup = new Map<string, QuestionBankPart[]>();
   const partsBySourceSection = new Map<string, QuestionBankPart[]>();
@@ -150,8 +154,8 @@ export function groupEdexcelBusinessQuestionUnits(units: QuestionUnit[]): Questi
     const sectionParts = [...(partsBySourceSection.get(sectionKey) ?? [])].sort(compareBusinessPartOrder);
     const firstSectionIndex = sectionParts.findIndex((part) => part.partKey === first.partKey);
     const needsSectionContext = /^(?:B|C)$/i.test(first.sectionCode ?? "");
-    const externalAnchor = needsSectionContext && firstSectionIndex > 0
-      ? sectionParts.slice(0, firstSectionIndex).filter((part) => part.contextText).at(-1) ?? null
+    const externalAnchor = needsSectionContext
+      ? sectionParts.slice(0, Math.max(firstSectionIndex + 1, 0)).find(isSectionContextAnchor) ?? null
       : null;
     const contextPart = externalAnchor ? makeSectionContextPart(externalAnchor) : null;
     const renderParts = [...(contextPart ? [contextPart] : []), ...actualParts].sort(compareBusinessPartOrder);
