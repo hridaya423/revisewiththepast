@@ -378,6 +378,40 @@ export const deleteTaggedByBoardSubjects = mutationGeneric({
   },
 });
 
+export const deleteTaggedByBoardSubjectTier = mutationGeneric({
+  args: {
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    tier: v.union(v.literal("foundation"), v.literal("higher"), v.literal("none")),
+  },
+  handler: async (ctx, args) => {
+    await invalidateSubjectDetailSnapshot(ctx, args.boardCode, args.subjectSlug);
+    const papers = await ctx.db
+      .query("taggedPapers")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .collect();
+
+    let deletedPapers = 0;
+    let deletedQuestionParts = 0;
+    for (const paper of papers) {
+      if (inferTierFromSourceRelativePath(paper.sourceRelativePath) !== args.tier) continue;
+      const parts = await ctx.db
+        .query("taggedQuestionParts")
+        .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", paper._id))
+        .collect();
+      for (const part of parts) {
+        await ctx.db.delete(part._id);
+        deletedQuestionParts += 1;
+      }
+      await ctx.db.delete(paper._id);
+      deletedPapers += 1;
+    }
+
+    return { ...args, deletedPapers, deletedQuestionParts };
+  },
+});
+
 export const getTaggedPaperBySourceFile = queryGeneric({
   args: { sourceFile: v.string() },
   handler: async (ctx, args) => {
