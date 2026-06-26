@@ -157,8 +157,12 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
       .withIndex("by_source_file", (q) => q.eq("sourceFile", args.sourceFile))
       .unique();
 
+    const targetTier = inferTierFromSourceRelativePath(args.sourceRelativePath);
     const existingCandidates = Array.from(new Map(
-      [...existingByIdentity, ...(existingBySourceFile ? [existingBySourceFile] : [])]
+      [
+        ...existingByIdentity.filter((paper) => inferTierFromSourceRelativePath(paper.sourceRelativePath) === targetTier),
+        ...(existingBySourceFile ? [existingBySourceFile] : []),
+      ]
         .map((paper) => [String(paper._id), paper]),
     ).values());
     const existing = existingCandidates
@@ -230,6 +234,83 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
       taggedPaperId,
       questionCount: args.questionParts.length,
     };
+  },
+});
+
+export const upsertTaggedPaperWithQuestionsBySourcePath = mutationGeneric({
+  args: {
+    sourceFile: v.string(),
+    sourceRelativePath: v.string(),
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    paperCode: v.string(),
+    year: v.union(v.number(), v.null()),
+    session: v.union(v.string(), v.null()),
+    parserVersion: v.string(),
+    taggerProvider: v.string(),
+    taggerModel: v.string(),
+    taxonomyVersion: v.string(),
+    questionParts: v.array(taggedQuestionPartValidator),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    await invalidateSubjectDetailSnapshot(ctx, args.boardCode, args.subjectSlug);
+    const existing = await ctx.db
+      .query("taggedPapers")
+      .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
+      .first();
+
+    const taggedPaperId = existing?._id ?? await ctx.db.insert("taggedPapers", {
+      sourceFile: args.sourceFile,
+      sourceRelativePath: args.sourceRelativePath,
+      boardCode: args.boardCode,
+      subjectSlug: args.subjectSlug,
+      paperCode: args.paperCode,
+      year: args.year,
+      session: args.session,
+      parserVersion: args.parserVersion,
+      taggerProvider: args.taggerProvider,
+      taggerModel: args.taggerModel,
+      taxonomyVersion: args.taxonomyVersion,
+      questionCount: args.questionParts.length,
+      taggedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        sourceFile: args.sourceFile,
+        boardCode: args.boardCode,
+        subjectSlug: args.subjectSlug,
+        paperCode: args.paperCode,
+        year: args.year,
+        session: args.session,
+        parserVersion: args.parserVersion,
+        taggerProvider: args.taggerProvider,
+        taggerModel: args.taggerModel,
+        taxonomyVersion: args.taxonomyVersion,
+        questionCount: args.questionParts.length,
+        taggedAt: now,
+        updatedAt: now,
+      });
+      const existingParts = await ctx.db
+        .query("taggedQuestionParts")
+        .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", existing._id))
+        .collect();
+      for (const part of existingParts) await ctx.db.delete(part._id);
+    }
+
+    for (const part of args.questionParts) {
+      await ctx.db.insert("taggedQuestionParts", {
+        taggedPaperId,
+        ...part,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return { taggedPaperId, questionCount: args.questionParts.length };
   },
 });
 
