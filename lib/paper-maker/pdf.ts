@@ -58,16 +58,18 @@ type ExtractedPaper = {
 };
 
 type PreparedSnippet = Awaited<ReturnType<typeof prepareSnippet>>;
+type RenderedSnippet = PreparedSnippet & { sourcePageNumber: number };
 
 type ShortPageItem = {
   pageWidth: number;
   pageHeight: number;
-  snippets: PreparedSnippet[];
+  snippets: RenderedSnippet[];
   scale: number;
   scaledHeight: number;
   questionNumber: number;
   maskSourceFurniture: boolean;
   sourceUnit: QuestionUnit;
+  drawExternalQuestionNumber: boolean;
 };
 
 type VisiblePageGeometry = {
@@ -100,13 +102,13 @@ const MATH_OUTPUT_PAGE_WIDTH = 595.28;
 const MATH_OUTPUT_PAGE_HEIGHT = 841.89;
 const SOURCE_OUTPUT_PAGE_WIDTH = 595.28;
 const SOURCE_OUTPUT_PAGE_HEIGHT = 841.89;
-const GENERATED_NUMBER_BADGE_WIDTH = 32;
-const GENERATED_NUMBER_BADGE_HEIGHT = 24;
+const GENERATED_NUMBER_FONT_SIZE = 13;
 
 const SUPPORT_CONTEXT_PATTERN = /\bfigure\b|\bstudy\b|\bmap\b|\bdiagram\b|\bgraph\b|\bphoto\b|\bresource\b|\bapparatus\b|\btable\b|\bchart\b|\bmodel\b|\bspectrum\b|\bresults\b/i;
 
 const PAGE_SKIP_PATTERNS = [
   /there are no questions printed on this page/i,
+  /do not write on this page answer in the spaces provided/i,
   /additional page, if required/i,
 ];
 
@@ -236,29 +238,285 @@ function drawGeneratedAnswerSpacePage(outputDoc: PDFDocument, questionNumber: nu
   }
 }
 
-function drawGeneratedQuestionBadge(page: import("pdf-lib").PDFPage, questionNumber: number, x: number, topY: number) {
-  const y = topY - GENERATED_NUMBER_BADGE_HEIGHT;
-  page.drawRectangle({
-    x,
-    y,
-    width: GENERATED_NUMBER_BADGE_WIDTH,
-    height: GENERATED_NUMBER_BADGE_HEIGHT,
-    color: rgb(1, 1, 1),
+function getSourceQuestionNumberBox(unit: QuestionUnit, pageNumber: number, cropBox: CropBox) {
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  if (!extractedPage) return null;
+
+  const sourceNumber = unit.questionNumber.trim().replace(/^0+/, "") || unit.questionNumber.trim();
+  if (!sourceNumber) return null;
+  const escaped = sourceNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const startsWithNumber = new RegExp(`^\\s*(?:0\\s*)?${escaped}\\b`);
+  const standaloneNumber = new RegExp(`^\\s*(?:0\\s*)?${escaped}\\s*\\.?\\s*$`);
+  const visibleLines = extractedPage.text_lines.filter((line) => (
+    line.bbox.y1 <= cropBox.top + 2
+    && line.bbox.y0 >= cropBox.bottom - 2
+  ));
+  const promptLine = findPromptLine(extractedPage, unit.parts[0]?.promptText ?? "");
+  const promptTop = promptLine?.bbox.y1 ?? null;
+
+  const inlineLine = visibleLines
+    .filter((line) => {
+      const trimmed = line.text.trim();
+      if (!startsWithNumber.test(trimmed)) return false;
+      if (!isMathematicsUnit(unit)) return true;
+      const remainder = trimmed.replace(startsWithNumber, "").trim();
+      return /^(?:\([a-z]\)|[A-Za-z])/.test(remainder);
+    })
+    .filter((line) => line.bbox.x0 <= cropBox.left + 180)
+    .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
+
+  if (inlineLine) {
+    const height = Math.max(10, inlineLine.bbox.y1 - inlineLine.bbox.y0);
+    const sourceMarker = inlineLine.text.match(/^\s*[\d\s.]+/)?.[0] ?? "";
+    const isAqaCompoundMarker = unit.boardCode === "aqa" && /\d\s*\.\s*\d/.test(sourceMarker);
+    const width = isAqaCompoundMarker ? 58 : Math.max(12, sourceMarker.replace(/\s+/g, "").length * 7 + 3);
+    return {
+      left: inlineLine.bbox.x0 - 3,
+      right: inlineLine.bbox.x0 + width,
+      bottom: inlineLine.bbox.y0 - (isAqaCompoundMarker ? 6 : 2),
+      top: inlineLine.bbox.y0 + height + (isAqaCompoundMarker ? 7 : 3),
+    } satisfies CropBox;
+  }
+
+  const standaloneLine = visibleLines
+    .filter((line) => standaloneNumber.test(line.text.trim()))
+    .filter((line) => line.bbox.x0 <= cropBox.left + 180)
+    .filter((line) => line.bbox.y0 > cropBox.bottom + 80)
+    .filter((line) => !promptLine || (line.bbox.y1 >= promptLine.bbox.y0 - 28 && line.bbox.y0 <= promptLine.bbox.y1 + 70))
+    .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
+
+  if (!standaloneLine) return null;
+  return {
+    left: standaloneLine.bbox.x0 - 3,
+    right: standaloneLine.bbox.x1 + 10,
+    bottom: standaloneLine.bbox.y0 - 3,
+    top: standaloneLine.bbox.y1 + 3,
+  } satisfies CropBox;
+}
+
+function getAqaCompoundMarkerLine(unit: QuestionUnit, pageNumber: number, cropBox: CropBox) {
+  if (unit.boardCode !== "aqa") return null;
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  if (!extractedPage) return null;
+  const sourceQuestion = (unit.parts[0]?.questionNumber ?? unit.questionNumber).replace(/^0+/, "");
+  const sourcePart = (unit.parts[0]?.questionPartNumber ?? "").replace(/^0+/, "");
+  return extractedPage.text_lines
+    .filter((line) => line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)
+    .filter((line) => {
+      const match = line.text.trim().match(/^((?:\d\s*)+)\.\s*((?:\d\s*)+)/);
+      if (!match) return false;
+      const question = match[1].replace(/\s+/g, "").replace(/^0+/, "") || "0";
+      const part = match[2].replace(/\s+/g, "").replace(/^0+/, "") || "0";
+      return question === sourceQuestion && (!sourcePart || part === sourcePart);
+    })
+    .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
+}
+
+function getAqaCompoundMarkerMaskRight(unit: QuestionUnit, pageNumber: number, cropBox: CropBox, markerLine: ExtractedTextLine, fallbackRight: number) {
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  if (!extractedPage) return fallbackRight;
+
+  const continuationLine = extractedPage.text_lines
+    .filter((line) => line.bbox.y1 <= markerLine.bbox.y0 + 2 && line.bbox.y0 >= markerLine.bbox.y0 - 60)
+    .filter((line) => line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)
+    .filter((line) => line.bbox.x0 > markerLine.bbox.x0 + 50 && line.bbox.x0 < fallbackRight + 18)
+    .filter((line) => !/^\[/.test(line.text.trim()))
+    .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
+
+  return continuationLine ? Math.min(fallbackRight, continuationLine.bbox.x0 - 4) : fallbackRight;
+}
+
+function isAqaSourceFurnitureLine(text: string, line: ExtractedTextLine, cropBox: CropBox) {
+  const normalized = text.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!normalized) return false;
+  if (/^question \d+\b/.test(normalized)) return true;
+  if (/^section [a-z]\b/.test(normalized)) return true;
+  if (/^answer (?:all|two|question|either)\b/.test(normalized)) return true;
+  if (/^end of question \d+\b/.test(normalized)) return true;
+  if (/^turn over/.test(normalized)) return true;
+  if (/^\(?\d{2}\)?$/.test(normalized)) return true;
+  if (/^\*\d{2}\*$/.test(normalized)) return true;
+  if (/^(?:ib\/g|g\/jun|jun\d+)/.test(normalized)) return true;
+  if (/^question \d+ continues on the next page/.test(normalized)) return true;
+  return /^\d+$/.test(normalized) && line.bbox.x0 <= cropBox.left + 22;
+}
+
+function drawAqaSourceFurnitureLineMasks(
+  page: import("pdf-lib").PDFPage,
+  unit: QuestionUnit,
+  sourcePageNumber: number,
+  sourceCropBox: CropBox,
+  drawX: number,
+  drawY: number,
+  scaleX: number,
+  scaleY: number,
+) {
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, sourcePageNumber);
+  if (!extractedPage) return;
+  for (const line of extractedPage.text_lines) {
+    if (line.bbox.y1 > sourceCropBox.top + 2 || line.bbox.y0 < sourceCropBox.bottom - 2) continue;
+    if (!isAqaSourceFurnitureLine(line.text, line, sourceCropBox)) continue;
+    const x = drawX + (Math.max(sourceCropBox.left, line.bbox.x0 - 4) - sourceCropBox.left) * scaleX;
+    const y = drawY + (line.bbox.y0 - 4 - sourceCropBox.bottom) * scaleY;
+    const width = (Math.min(sourceCropBox.right, Math.max(line.bbox.x1 + 10, line.bbox.x0 + 90)) - Math.max(sourceCropBox.left, line.bbox.x0 - 4)) * scaleX;
+    const height = (line.bbox.y1 - line.bbox.y0 + 8) * scaleY;
+    if (width > 0 && height > 0) page.drawRectangle({ x, y, width, height, color: rgb(1, 1, 1) });
+  }
+}
+
+function isEdexcelMathsSourceFurnitureLine(text: string) {
+  const normalized = text.trim().toLowerCase().replace(/\s+/g, " ");
+  return /^answer all questions\.?$/.test(normalized)
+    || /^write your answers in the spaces provided\.?$/.test(normalized)
+    || /^you must write down all the stages in your working\.?$/.test(normalized);
+}
+
+function drawEdexcelMathsSourceFurnitureLineMasks(
+  page: import("pdf-lib").PDFPage,
+  unit: QuestionUnit,
+  sourcePageNumber: number,
+  sourceCropBox: CropBox,
+  drawX: number,
+  drawY: number,
+  scaleX: number,
+  scaleY: number,
+) {
+  if (unit.boardCode !== "edexcel" || !isMathematicsUnit(unit)) return;
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, sourcePageNumber);
+  if (!extractedPage) return;
+  for (const line of extractedPage.text_lines) {
+    if (line.bbox.y1 > sourceCropBox.top + 2 || line.bbox.y0 < sourceCropBox.bottom - 2) continue;
+    if (!isEdexcelMathsSourceFurnitureLine(line.text)) continue;
+    const left = Math.max(sourceCropBox.left, line.bbox.x0 - 8);
+    const right = Math.min(sourceCropBox.right, line.bbox.x1 + 8);
+    const x = drawX + (left - sourceCropBox.left) * scaleX;
+    const y = drawY + (line.bbox.y0 - 4 - sourceCropBox.bottom) * scaleY;
+    const width = (right - left) * scaleX;
+    const height = (line.bbox.y1 - line.bbox.y0 + 8) * scaleY;
+    if (width > 0 && height > 0) page.drawRectangle({ x, y, width, height, color: rgb(1, 1, 1) });
+  }
+}
+
+function drawQuestionNumberReplacement(
+  page: import("pdf-lib").PDFPage,
+  unit: QuestionUnit,
+  sourcePageNumber: number,
+  sourceCropBox: CropBox,
+  questionNumber: number,
+  drawX: number,
+  drawY: number,
+  drawWidth: number,
+  drawHeight: number,
+) {
+  if (unit.boardCode === "aqa") {
+    const scaleX = drawWidth / Math.max(1, sourceCropBox.right - sourceCropBox.left);
+    const scaleY = drawHeight / Math.max(1, sourceCropBox.top - sourceCropBox.bottom);
+    let drew = false;
+    const toOutput = (box: CropBox) => ({
+      x: drawX + (box.left - sourceCropBox.left) * scaleX,
+      y: drawY + (box.bottom - sourceCropBox.bottom) * scaleY,
+      width: (box.right - box.left) * scaleX,
+      height: (box.top - box.bottom) * scaleY,
+    });
+
+    drawAqaSourceFurnitureLineMasks(page, unit, sourcePageNumber, sourceCropBox, drawX, drawY, scaleX, scaleY);
+
+    const markerLine = getAqaCompoundMarkerLine(unit, sourcePageNumber, sourceCropBox);
+    if (markerLine) {
+      const markerText = markerLine.text.trim().match(/^0?\s*\d+\s*\.\s*\d+(?:\s+\d+)?/)?.[0] ?? "";
+      const markerDigitCount = markerText.match(/\d/g)?.length ?? 0;
+      const markerWidth = markerDigitCount >= 4 ? 82 : 56;
+      const markerRight = getAqaCompoundMarkerMaskRight(unit, sourcePageNumber, sourceCropBox, markerLine, markerLine.bbox.x0 + markerWidth);
+      const markerBox = toOutput({
+        left: markerLine.bbox.x0 - 6,
+        right: markerRight,
+        bottom: markerLine.bbox.y0 - 7,
+        top: markerLine.bbox.y1 + 7,
+      });
+      page.drawRectangle({ ...markerBox, color: rgb(1, 1, 1) });
+      page.drawText(`${questionNumber}.`, {
+        x: markerBox.x + 10 * scaleX,
+        y: markerBox.y + Math.max(1, (markerBox.height - GENERATED_NUMBER_FONT_SIZE * scaleY) / 2),
+        size: GENERATED_NUMBER_FONT_SIZE * Math.min(scaleX, scaleY),
+        color: rgb(0.1, 0.1, 0.1),
+      });
+      drew = true;
+    }
+    return drew;
+  }
+
+  const scaleX = drawWidth / Math.max(1, sourceCropBox.right - sourceCropBox.left);
+  const scaleY = drawHeight / Math.max(1, sourceCropBox.top - sourceCropBox.bottom);
+  const toOutput = (box: CropBox) => ({
+    x: drawX + (box.left - sourceCropBox.left) * scaleX,
+    y: drawY + (box.bottom - sourceCropBox.bottom) * scaleY,
+    width: (box.right - box.left) * scaleX,
+    height: (box.top - box.bottom) * scaleY,
   });
-  page.drawText(String(questionNumber), {
-    x: x + 5,
-    y: y + 6,
-    size: 13,
+  let drew = false;
+
+  drawEdexcelMathsSourceFurnitureLineMasks(page, unit, sourcePageNumber, sourceCropBox, drawX, drawY, scaleX, scaleY);
+
+  if (unit.boardCode === "edexcel") {
+    const sourceNumber = unit.questionNumber.trim().replace(/^0+/, "") || unit.questionNumber.trim();
+    const escaped = sourceNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const totalPattern = new RegExp(`total for question\\s+${escaped}\\s+is`, "i");
+    const extractedPage = getExtractedPage(unit.sourceRelativePath, sourcePageNumber);
+    const totalLines = extractedPage?.text_lines.filter((line) => (
+      line.bbox.y1 <= sourceCropBox.top + 2
+      && line.bbox.y0 >= sourceCropBox.bottom - 2
+      && totalPattern.test(line.text)
+    )) ?? [];
+    for (const line of totalLines) {
+      const totalBox = toOutput({
+        left: line.bbox.x0 - 2,
+        right: line.bbox.x1 + 2,
+        bottom: line.bbox.y0 - 2,
+        top: line.bbox.y1 + 2,
+      });
+      page.drawRectangle({ ...totalBox, color: rgb(1, 1, 1) });
+      page.drawText(line.text.replace(/Question\s+\d+/i, `Question ${questionNumber}`), {
+        x: totalBox.x + 1,
+        y: totalBox.y + Math.max(1, (totalBox.height - GENERATED_NUMBER_FONT_SIZE * scaleY) / 2),
+        size: GENERATED_NUMBER_FONT_SIZE * Math.min(scaleX, scaleY),
+        color: rgb(0.1, 0.1, 0.1),
+      });
+      drew = true;
+    }
+  }
+
+  const numberBox = getSourceQuestionNumberBox(unit, sourcePageNumber, sourceCropBox);
+  if (!numberBox) return drew;
+
+  const x = drawX + (numberBox.left - sourceCropBox.left) * scaleX;
+  const y = drawY + (numberBox.bottom - sourceCropBox.bottom) * scaleY;
+  const width = (numberBox.right - numberBox.left) * scaleX;
+  const height = (numberBox.top - numberBox.bottom) * scaleY;
+
+  page.drawRectangle({ x, y, width, height, color: rgb(1, 1, 1) });
+  page.drawText(`${questionNumber}.`, {
+    x: x + (unit.boardCode === "aqa" ? 8 : 2) * scaleX,
+    y: y + Math.max(1, (height - GENERATED_NUMBER_FONT_SIZE * scaleY) / 2),
+    size: GENERATED_NUMBER_FONT_SIZE * Math.min(scaleX, scaleY),
     color: rgb(0.1, 0.1, 0.1),
   });
+  return true;
 }
 
 function drawSourceFurnitureMask(page: import("pdf-lib").PDFPage, unit: QuestionUnit, x: number, y: number, width: number, height: number) {
   if (unit.boardCode === "aqa") {
-    page.drawRectangle({ x: x + Math.max(0, width - 18), y, width: Math.min(18, width), height, color: rgb(1, 1, 1) });
+    page.drawRectangle({ x: x + width, y, width: 30, height, color: rgb(1, 1, 1) });
+    page.drawRectangle({ x: x + Math.max(0, width - 54), y, width: Math.min(20, width), height, color: rgb(1, 1, 1) });
+    page.drawRectangle({ x: x + Math.max(0, width - 34), y, width: Math.min(34, width), height, color: rgb(1, 1, 1) });
     return;
   }
   if (unit.boardCode === "edexcel") {
+    if (isMathematicsUnit(unit)) {
+      page.drawRectangle({ x, y, width: Math.min(52, width), height, color: rgb(1, 1, 1) });
+      page.drawRectangle({ x: x + Math.max(0, width - 52), y, width: Math.min(52, width), height, color: rgb(1, 1, 1) });
+      page.drawRectangle({ x, y, width, height: Math.min(76, height), color: rgb(1, 1, 1) });
+      return;
+    }
     page.drawRectangle({ x, y, width: Math.min(62, width), height, color: rgb(1, 1, 1) });
     if (unit.subjectSlug === "business") {
       page.drawRectangle({ x: x + Math.max(0, width - 8), y, width: Math.min(8, width), height, color: rgb(1, 1, 1) });
@@ -279,7 +537,7 @@ function shouldMaskSourceFurniture(unit: QuestionUnit) {
 
 function trimSourceFurnitureCropBox(unit: QuestionUnit, cropBox: CropBox, pageWidth: number) {
   if (unit.boardCode === "aqa") {
-    const right = Math.min(cropBox.right, pageWidth - 45);
+    const right = Math.min(cropBox.right, pageWidth - 8);
     return right - cropBox.left >= MIN_VISIBLE_CROP_HEIGHT ? { ...cropBox, right } : cropBox;
   }
   if (unit.boardCode !== "edexcel" && unit.boardCode !== "ocr") return cropBox;
@@ -423,6 +681,11 @@ function isBoilerplateOnlyPage(page: ExtractedPaperPage) {
   return PAGE_SKIP_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
+function isBoilerplateRegionCrop(unit: QuestionUnit, crop: RegionCrop) {
+  const page = getExtractedPage(unit.sourceRelativePath, crop.pageNumber);
+  return Boolean(page && isBoilerplateOnlyPage(page));
+}
+
 function findPromptLine(page: ExtractedPaperPage, promptText: string) {
   const tokens = getPromptSearchTokens(promptText);
   if (tokens.length === 0) return null;
@@ -453,19 +716,22 @@ function findMathUnitStartLine(page: ExtractedPaperPage, unit: QuestionUnit) {
   if (!part) return null;
 
   const relevantLines = page.text_lines.filter((line) => !shouldIgnorePageLine(line.text));
+  const escapedQuestion = part.questionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const directQuestionLine = relevantLines.find((line) => {
+    const trimmed = line.text.trim();
+    if (!new RegExp(`^(?:0\\s*)?${escapedQuestion}\\b`, "i").test(trimmed)) return false;
+    const remainder = trimmed.replace(new RegExp(`^(?:0\\s*)?${escapedQuestion}\\b`, "i"), "").trim();
+    return /[A-Za-z(]/.test(remainder);
+  });
+
+  if ((part.contextText || part.sourceMode === "full_page") && directQuestionLine) return directQuestionLine;
+
   if (part.questionPartNumber) {
     const escaped = part.questionPartNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const directPartLine = relevantLines.find((line) => new RegExp(`^\(\s*${escaped}\s*\)`, "i").test(line.text.trim()));
     if (directPartLine) return directPartLine;
   }
 
-  const escapedQuestion = part.questionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const directQuestionLine = relevantLines.find((line) => {
-    const trimmed = line.text.trim();
-    if (!new RegExp(`^(?:0\s*)?${escapedQuestion}\b`, "i").test(trimmed)) return false;
-    const remainder = trimmed.replace(new RegExp(`^(?:0\s*)?${escapedQuestion}\b`, "i"), "").trim();
-    return /[A-Za-z(]/.test(remainder);
-  });
   if (directQuestionLine) return directQuestionLine;
 
   return findPromptLine(page, part.promptText);
@@ -576,7 +842,7 @@ function resolveMathQuestionCropBox(
     pageHeight,
     supportBox
       ? Math.max(startLine.bbox.y1 + 72, supportBox.top)
-      : (immediateContextTop ? immediateContextTop + 18 : startLine.bbox.y1 + 56),
+      : (immediateContextTop ? immediateContextTop + 18 : startLine.bbox.y1 + 20),
   );
   const bottomFloor = nextSiblingLine ? nextSiblingLine.bbox.y1 : 0;
   const regionLines = relevantLines.filter((line) => line.bbox.y0 < topCeiling && line.bbox.y1 > bottomFloor);
@@ -595,7 +861,7 @@ function resolveMathQuestionCropBox(
     ? supportBox.top + 18
     : immediateContextTop
       ? immediateContextTop + 18
-      : Math.max(startLine.bbox.y1 + 24, highestTextY + 12);
+      : Math.max(startLine.bbox.y1 + 10, highestTextY + 8);
 
   const cropBox = {
     left: 0,
@@ -968,6 +1234,7 @@ function isAnswerContinuationOnlyLine(text: string) {
   if (/^additional (?:answer )?space/.test(normalized)) return true;
   if (/^extra space for question\b/.test(normalized)) return true;
   if (/^extra space$/.test(normalized)) return true;
+  if (/^end of section\b/.test(normalized)) return true;
   return false;
 }
 
@@ -988,6 +1255,28 @@ function isGenericAdditionalAnswerPageCrop(unit: QuestionUnit, crop: RegionCrop)
   return /additional page, if required/.test(text)
     || /write the question numbers in the left-hand margin/.test(text)
     || /extra answer space/.test(text);
+}
+
+function isGenericAdditionalAnswerPage(unit: QuestionUnit, pageNumber: number) {
+  const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  if (!page) return false;
+  const text = page.page_text.toLowerCase().replace(/\s+/g, " ");
+  if (/additional page, if required/.test(text)
+    || /write the question numbers in the left-hand margin/.test(text)
+    || /extra answer space/.test(text)) {
+    return true;
+  }
+  if (unit.boardCode !== "ocr") return false;
+  const meaningfulLines = page.text_lines
+    .map((line) => line.text.trim())
+    .filter(Boolean)
+    .filter((line) => !/^ocr is (?:an exempt charity|committed)\b/i.test(line))
+    .filter((line) => !/^copyright information$/i.test(line))
+    .filter((line) => !/^©\s*ocr/i.test(line))
+    .filter((line) => !/^h\d+/i.test(line))
+    .filter((line) => !/^\(?\d+\)?$/.test(line))
+    .filter((line) => !/^\[\d+\]$/.test(line));
+  return meaningfulLines.length === 0 || meaningfulLines.every((line) => /^[._\-\s]+$/.test(line) || isAnswerContinuationOnlyLine(line));
 }
 
 function shouldSkipRegionAnswerContinuation(unit: QuestionUnit, crop: RegionCrop) {
@@ -1243,6 +1532,21 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
     }
   }
 
+  if (unit.boardCode === "ocr" && firstPageNumber > 1) {
+    const firstPage = getExtractedPage(unit.sourceRelativePath, firstPageNumber);
+    const sourceNumber = unit.questionNumber.trim().replace(/^0+/, "") || unit.questionNumber.trim();
+    const escaped = sourceNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const hasQuestionStart = firstPage?.text_lines.some((line) => new RegExp(`^\\s*(?:0\\s*)?${escaped}\\b`).test(line.text.trim())) ?? true;
+    const previousPageNumber = firstPageNumber - 1;
+    if (!hasQuestionStart && !rawPageNumbers.includes(previousPageNumber)) {
+      const previousPage = getExtractedPage(unit.sourceRelativePath, previousPageNumber);
+      if (previousPage && !isBoilerplateOnlyPage(previousPage) && !isGenericAdditionalAnswerPage(unit, previousPageNumber) && !isAnswerOnlyContinuationPage(unit, previousPageNumber)) {
+        rawPageNumbers.unshift(previousPageNumber);
+        prependedSupportPages.add(previousPageNumber);
+      }
+    }
+  }
+
   return rawPageNumbers.filter((pageNumber, index) => {
     const unitPage = unit.pages.find((entry) => entry.pageNumber === pageNumber);
     const isContextPage = unitPage?.parts.some((part) => part.sourceMode === "context_stem") ?? false;
@@ -1253,6 +1557,7 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
 
     const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
     if (page && isBoilerplateOnlyPage(page)) return false;
+    if (isGenericAdditionalAnswerPage(unit, pageNumber)) return false;
     if (isAnswerOnlyContinuationPage(unit, pageNumber)) return false;
 
     const pageStarters = unitStartPages.get(`${unit.sourceRelativePath}::${pageNumber}`) ?? [];
@@ -1373,23 +1678,26 @@ async function prepareSnippet(
     embeddedPage,
     width: cropBox.right - cropBox.left,
     height: cropBox.top - cropBox.bottom,
+    cropBox,
   };
 }
 
 function buildShortPageItem(
   pageWidth: number,
   pageHeight: number,
-  snippets: PreparedSnippet[],
+  snippets: RenderedSnippet[],
   allowDownscale: boolean,
   questionNumber: number,
   maskSourceFurniture: boolean,
   sourceUnit: QuestionUnit,
+  drawExternalQuestionNumber = false,
 ) {
   if (snippets.length === 0) {
     return null;
   }
 
-  const availableWidth = pageWidth - SHORT_PAGE_SIDE_MARGIN * 2;
+  const externalNumberGutter = drawExternalQuestionNumber ? 52 : 0;
+  const availableWidth = pageWidth - SHORT_PAGE_SIDE_MARGIN * 2 - externalNumberGutter;
   const availableHeight = pageHeight - SHORT_PAGE_TOP_MARGIN - SHORT_PAGE_BOTTOM_MARGIN;
   const naturalWidth = Math.max(...snippets.map((snippet) => snippet.width));
   const naturalHeight = snippets.reduce((sum, snippet) => sum + snippet.height, 0) + SHORT_PAGE_GAP * (snippets.length - 1);
@@ -1416,26 +1724,45 @@ function buildShortPageItem(
     questionNumber,
     maskSourceFurniture,
     sourceUnit,
+    drawExternalQuestionNumber,
   } satisfies ShortPageItem;
 }
 
 function drawShortPageItem(page: import("pdf-lib").PDFPage, item: ShortPageItem, cursorTop: number) {
   let snippetTop = cursorTop;
+  let drewQuestionNumber = false;
   for (const snippet of item.snippets) {
     const scaledWidth = snippet.width * item.scale;
     const scaledHeight = snippet.height * item.scale;
-    const topY = snippetTop;
+    const snippetX = SHORT_PAGE_SIDE_MARGIN + (item.drawExternalQuestionNumber ? 52 : 0);
     page.drawPage(snippet.embeddedPage, {
-      x: SHORT_PAGE_SIDE_MARGIN,
+      x: snippetX,
       y: snippetTop - scaledHeight,
       width: scaledWidth,
       height: scaledHeight,
     });
     if (item.maskSourceFurniture) {
-      drawSourceFurnitureMask(page, item.sourceUnit, SHORT_PAGE_SIDE_MARGIN, snippetTop - scaledHeight, scaledWidth, scaledHeight);
+      drawSourceFurnitureMask(page, item.sourceUnit, snippetX, snippetTop - scaledHeight, scaledWidth, scaledHeight);
     }
-    if (snippet === item.snippets[0]) {
-      drawGeneratedQuestionBadge(page, item.questionNumber, SHORT_PAGE_SIDE_MARGIN, topY);
+    if (!drewQuestionNumber || item.sourceUnit.boardCode === "aqa") {
+      if (item.drawExternalQuestionNumber) {
+        page.drawRectangle({
+          x: SHORT_PAGE_SIDE_MARGIN - 6,
+          y: snippetTop - 32,
+          width: 52,
+          height: 38,
+          color: rgb(1, 1, 1),
+        });
+        page.drawText(`${item.questionNumber}.`, {
+          x: SHORT_PAGE_SIDE_MARGIN,
+          y: snippetTop - 16,
+          size: GENERATED_NUMBER_FONT_SIZE,
+          color: rgb(0.1, 0.1, 0.1),
+        });
+        drewQuestionNumber = true;
+      } else {
+        drewQuestionNumber = drawQuestionNumberReplacement(page, item.sourceUnit, snippet.sourcePageNumber, snippet.cropBox, item.questionNumber, snippetX, snippetTop - scaledHeight, scaledWidth, scaledHeight) || drewQuestionNumber;
+      }
     }
     snippetTop -= scaledHeight + SHORT_PAGE_GAP;
   }
@@ -1926,6 +2253,7 @@ async function renderRegionUnit(
   questionNumber: number,
 ) {
   const plan = buildUnitRenderPlan(unit, layoutByPage, figures)
+    .filter((crop) => !isBoilerplateRegionCrop(unit, crop))
     .filter((crop) => !shouldSkipBusinessRegionCrop(unit, crop))
     .filter((crop) => !isEnglishLiteratureOtherOptionPage(unit, crop))
     .filter((crop) => !shouldSkipRegionAnswerContinuation(unit, crop));
@@ -1942,6 +2270,8 @@ async function renderRegionUnit(
 
   type PreparedCrop = {
     embeddedPage: PreparedSnippet["embeddedPage"];
+    cropBox: CropBox;
+    pageNumber: number;
     kind: typeof plan[number]["kind"];
     width: number;
     height: number;
@@ -1984,7 +2314,7 @@ async function renderRegionUnit(
 
         let scale = Math.min(1, availableWidth / cropWidth);
         if (cropHeight * scale > availableFullHeight) scale = Math.min(scale, availableFullHeight / cropHeight);
-        return { embeddedPage: snippet.embeddedPage, kind: crop.kind, width: cropWidth * scale, height: cropHeight * scale, startsUnit: prepared.length === 0, maskSourceFurniture: shouldMaskSourceFurniture(unit) };
+        return { embeddedPage: snippet.embeddedPage, cropBox: adjustedCropBox, pageNumber: crop.pageNumber, kind: crop.kind, width: cropWidth * scale, height: cropHeight * scale, startsUnit: prepared.length === 0, maskSourceFurniture: shouldMaskSourceFurniture(unit) };
       },
     );
     if (item) prepared.push(item);
@@ -2046,8 +2376,8 @@ async function renderRegionUnit(
         if (crop.maskSourceFurniture) {
           drawSourceFurnitureMask(flow.page!, unit, drawX, flow.cursorY - drawHeight, drawWidth, drawHeight);
         }
-        if (crop.startsUnit) {
-          drawGeneratedQuestionBadge(flow.page!, questionNumber, drawX, flow.cursorY);
+        if (crop.startsUnit || unit.boardCode === "aqa") {
+          drawQuestionNumberReplacement(flow.page!, unit, crop.pageNumber, crop.cropBox, questionNumber, drawX, flow.cursorY - drawHeight, drawWidth, drawHeight);
         }
         flow.cursorY -= drawHeight + SHORT_PAGE_GAP;
       }
@@ -2075,8 +2405,8 @@ async function renderRegionUnit(
         if (crop.maskSourceFurniture) {
           drawSourceFurnitureMask(flow.page!, unit, drawX, flow.cursorY - crop.height, crop.width, crop.height);
         }
-        if (crop.startsUnit) {
-          drawGeneratedQuestionBadge(flow.page!, questionNumber, drawX, flow.cursorY);
+        if (crop.startsUnit || unit.boardCode === "aqa") {
+          drawQuestionNumberReplacement(flow.page!, unit, crop.pageNumber, crop.cropBox, questionNumber, drawX, flow.cursorY - crop.height, crop.width, crop.height);
         }
         flow.cursorY -= crop.height + SHORT_PAGE_GAP;
       }
@@ -2239,7 +2569,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                 await probeDoc.save();
                 const supportSnippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, toPdfCropBox(polishedSupportCrop), sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                 const questionSnippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, toPdfCropBox(polishedQuestionCrop), sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-                candidateItem = buildShortPageItem(targetPageWidth, targetPageHeight, [supportSnippet, questionSnippet], true, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, shouldMaskSourceFurniture(unit), unit);
+                candidateItem = buildShortPageItem(targetPageWidth, targetPageHeight, [{ ...supportSnippet, sourcePageNumber: pageNumber }, { ...questionSnippet, sourcePageNumber: pageNumber }], true, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, shouldMaskSourceFurniture(unit), unit);
               }
             }
 
@@ -2270,7 +2600,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             await prepareSnippet(probeDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
             await probeDoc.save();
             const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
-            return buildShortPageItem(targetPageWidth, targetPageHeight, [snippet], false, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, shouldMaskSourceFurniture(unit), unit);
+            return buildShortPageItem(targetPageWidth, targetPageHeight, [{ ...snippet, sourcePageNumber: pageNumber }], false, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, shouldMaskSourceFurniture(unit), unit);
           },
         );
 
@@ -2344,7 +2674,10 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             const isFirstRenderPage = !drewQuestionBadge;
             const answerLayout = shouldUseAnswerLayout(unit);
             const pageOccupancyCount = getPageOccupancyCount(selectedPageOccupancy, unit.sourceRelativePath, pageNumber);
-            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, resolveStandardCropBox(
+            const mathCropBox = isMaths
+              ? resolveMathQuestionCropBox(unit, allUnits, pageNumber, pageWidth, pageHeight, unitStartPages)
+              : null;
+            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, mathCropBox ?? resolveStandardCropBox(
               unit,
               pageNumber,
               pageWidth,
@@ -2367,6 +2700,9 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             if (isBusinessUnit(unit) && isSourceFurnitureOnlyPage(unit, pageNumber, cropBox)) {
               return true;
             }
+            if (unit.boardCode === "ocr" && isEmptyQuestionCrop(unit, pageNumber, cropBox)) {
+              return true;
+            }
             if (isBusinessFillerSourcePage(unit, pageNumber)) {
               return true;
             }
@@ -2379,7 +2715,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                 await probeDoc.save();
                 const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                 const outputPage = outputDoc.addPage([targetPageWidth, targetPageHeight]);
-                const scale = normalizeSourcePage
+                const scale = normalizeSourcePage || isMaths
                   ? Math.min(targetPageWidth / snippet.width, targetPageHeight / snippet.height)
                   : 1;
                 const drawWidth = snippet.width * scale;
@@ -2391,9 +2727,18 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                   height: drawHeight,
                 });
                 if (shouldMaskSourceFurniture(unit)) drawSourceFurnitureMask(outputPage, unit, 0, 0, targetPageWidth, targetPageHeight);
-                if (!drewQuestionBadge) {
-                  drawGeneratedQuestionBadge(outputPage, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, 0, targetPageHeight);
-                  drewQuestionBadge = true;
+                if (!drewQuestionBadge || isMaths || normalizeSourcePage || unit.boardCode === "aqa") {
+                  drewQuestionBadge = drawQuestionNumberReplacement(
+                    outputPage,
+                    unit,
+                    pageNumber,
+                    cropBox,
+                    generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1,
+                    (targetPageWidth - drawWidth) / 2,
+                    (targetPageHeight - drawHeight) / 2,
+                    drawWidth,
+                    drawHeight,
+                  ) || drewQuestionBadge;
                 }
                 renderedAnyPage = true;
                 return true;
@@ -2408,9 +2753,9 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
               if (shouldMaskSourceFurniture(unit)) {
                 drawSourceFurnitureMask(outputPage, unit, 0, 0, targetPageWidth, targetPageHeight);
               }
-              if (!drewQuestionBadge) {
-                drawGeneratedQuestionBadge(outputPage, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, 0, targetPageHeight);
-                drewQuestionBadge = true;
+              if (!drewQuestionBadge || isMaths || normalizeSourcePage || unit.boardCode === "aqa") {
+                const { width: outputWidth, height: outputHeight } = outputPage.getSize();
+                drewQuestionBadge = drawQuestionNumberReplacement(outputPage, unit, pageNumber, cropBox, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, 0, 0, outputWidth, outputHeight) || drewQuestionBadge;
               }
               renderedAnyPage = true;
               return true;
@@ -2424,20 +2769,26 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             await probeDoc.save();
             const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, pdfCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
             const outputPage = outputDoc.addPage([targetPageWidth, targetPageHeight]);
-            const drawY = Math.max(0, targetPageHeight - cropHeight - STANDARD_PAGE_TOP_MARGIN);
+            const centerSnippet = isMaths || normalizeSourcePage;
+            const availableWidth = targetPageWidth - (centerSnippet ? SHORT_PAGE_SIDE_MARGIN * 2 : 0);
+            const availableHeight = targetPageHeight - STANDARD_PAGE_TOP_MARGIN - SHORT_PAGE_BOTTOM_MARGIN;
+            const scale = centerSnippet ? Math.min(1, availableWidth / cropWidth, availableHeight / cropHeight) : 1;
+            const drawWidth = cropWidth * scale;
+            const drawHeight = cropHeight * scale;
+            const drawX = centerSnippet ? (targetPageWidth - drawWidth) / 2 : 0;
+            const drawY = Math.max(SHORT_PAGE_BOTTOM_MARGIN, targetPageHeight - drawHeight - STANDARD_PAGE_TOP_MARGIN);
             outputPage.drawPage(snippet.embeddedPage, {
-              x: 0,
+              x: drawX,
               y: drawY,
-              width: cropWidth,
-              height: cropHeight,
+              width: drawWidth,
+              height: drawHeight,
             });
             if (shouldMaskSourceFurniture(unit)) {
-              const maskWidth = unit.boardCode === "edexcel" && unit.subjectSlug === "business" ? targetPageWidth : cropWidth;
-              drawSourceFurnitureMask(outputPage, unit, 0, drawY, maskWidth, cropHeight);
+              const maskWidth = unit.boardCode === "edexcel" && unit.subjectSlug === "business" ? targetPageWidth : drawWidth;
+              drawSourceFurnitureMask(outputPage, unit, drawX, drawY, maskWidth, drawHeight);
             }
-            if (!drewQuestionBadge) {
-              drawGeneratedQuestionBadge(outputPage, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, 0, drawY + cropHeight);
-              drewQuestionBadge = true;
+            if (!drewQuestionBadge || isMaths || normalizeSourcePage || unit.boardCode === "aqa") {
+              drewQuestionBadge = drawQuestionNumberReplacement(outputPage, unit, pageNumber, cropBox, generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1, drawX, drawY, drawWidth, drawHeight) || drewQuestionBadge;
             }
             renderedAnyPage = true;
             return true;

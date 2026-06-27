@@ -97,7 +97,9 @@ function cropBoxForSpan(
     ? Math.min(layout.contentX1, layout.pageWidth - 32)
     : trimGutter
       ? Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING)
-    : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
+    : unit.boardCode === "aqa"
+      ? Math.min(layout.pageWidth, layout.pageWidth - 8)
+      : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
 
   return {
     left,
