@@ -687,9 +687,11 @@ function extractStandaloneQuestionNumber(
 
 function extractMarks(text: string, questionPartNumber: string | null, config: BoardConfig) {
   const normalized = normalizeText(text);
-  const totalQuestionMatch = normalized.match(/\(total for question \d+ is (\d{1,2}) marks?\)/i);
+  const totalQuestionMatch = normalized.match(/\(total for question \d+ (?:is|=) (\d{1,2}) marks?\)/i);
   const matches = Array.from(normalized.matchAll(config.marksRe));
   if (matches.length === 0) {
+    const romanMcItems = normalized.match(/\([ivx]{1,4}\)/gi) ?? [];
+    if (romanMcItems.length > 0 && /\bA\s+.+\bB\s+.+\bC\s+.+\bD\s+/i.test(normalized)) return romanMcItems.length;
     return totalQuestionMatch ? Number(totalQuestionMatch[1]) : null;
   }
 
@@ -722,6 +724,27 @@ function isTotalForQuestionLine(text: string, questionNumber: string) {
 
 function isTotalForPaperLine(text: string) {
   return /^total for paper\s*=\s*\d+\s+marks$/i.test(normalizeText(text));
+}
+
+function normalizeLanguageReadingMarks(questionParts: ExtractedQuestionPart[], pages: ExtractedPage[]) {
+  const totalByQuestion = new Map<string, number>();
+  for (const page of pages) {
+    for (const line of page.text_lines) {
+      const match = normalizeText(line.text).match(/^\(total for question (\d{1,2}) = (\d{1,2}) marks?\)$/i);
+      if (match) totalByQuestion.set(match[1], Number(match[2]));
+    }
+  }
+
+  for (const [questionNumber, expectedMarks] of totalByQuestion) {
+    const parts = questionParts.filter((part) => part.question_number === questionNumber);
+    if (parts.length === expectedMarks && parts.some((part) => part.marks === null)) {
+      for (const part of parts) part.marks = 1;
+    }
+    const sum = parts.reduce((total, part) => total + (part.marks ?? 0), 0);
+    if (parts.length === expectedMarks && sum !== expectedMarks) {
+      for (const part of parts) part.marks = 1;
+    }
+  }
 }
 
 function extractReferencedQuestionNumber(text: string) {
@@ -2252,6 +2275,9 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
   }
   if (subjectSlug === "english-literature") {
     mergeStandaloneSourceStems(questionParts);
+  }
+  if (boardCode === "edexcel" && (subjectSlug === "french" || subjectSlug === "spanish") && /reading|1fr0-3|1sp0-3/i.test(basename(pdfPath))) {
+    normalizeLanguageReadingMarks(questionParts, pages);
   }
 
   return {
