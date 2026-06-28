@@ -38,7 +38,7 @@ import {
   overlayQuestionBankWithLocalGeometry,
 } from "@/lib/paper-maker/local-geometry";
 import { findOrphanStemFigures, type OrphanFigureIssue } from "@/lib/paper-maker/region-render";
-import { estimatePaperTimeMinutes, getPaperMakerSubject, type PaperMakerSubjectDefinition, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
+import { estimatePaperTimeMinutes, getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefinition, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
 import { filterUnitsBySourcePdfRenderability, generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
 
 export class PaperGenerationError extends Error {
@@ -503,6 +503,9 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     ? (input.requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
     : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
 
+  const selectedPapers = subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || input.paperCodes.includes(paper.code));
+  const examContext = getCoverExamContext(subject, selectedPapers);
+
   const pdfBytes = await generateStrictSourcePaperPdf({
     title: config.title(resolvedTargetMarks, coverTierLabel),
     selectedUnits: selection.selectedUnits,
@@ -518,8 +521,11 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
       codeLabel: subject.codeLabel,
       totalMarks: selection.totalMarks,
       timeMinutes,
-      paperLabels: subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || input.paperCodes.includes(paper.code)).map((paper) => paper.label),
+      paperLabels: selectedPapers.map((paper) => paper.label),
       tierLabel: coverTierLabel,
+      questionCount: new Set(selection.selectedUnits.map((unit) => unit.sourceQuestionKey)).size,
+      materials: examContext.materials,
+      instructions: examContext.instructions,
     },
   });
 

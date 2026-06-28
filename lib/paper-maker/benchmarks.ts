@@ -47,7 +47,8 @@ function parseTimeAllowedMinutes(text: string) {
 
 function parseTotalMarks(text: string) {
   const match = text.match(/total number of marks available for this paper is\s+(\d+)/i)
-    ?? text.match(/total for paper\s*=\s*(\d+)\s+marks/i);
+    ?? text.match(/total for paper\s*=\s*(\d+)\s+marks/i)
+    ?? text.match(/(?:maximum|total) (?:number of )?marks? for this paper is\s+(\d+)/i);
   return match ? Number(match[1]) : null;
 }
 
@@ -109,6 +110,7 @@ export function buildRealPaperBenchmark(units: QuestionUnit[]): RealPaperBenchma
         paperCode: paper.paperCode,
         year: paper.year,
         totalMarks: extractedMetrics.totalMarks ?? paper.totalMarks,
+        declaredTotalMarks: extractedMetrics.totalMarks,
         timeMinutes: extractedMetrics.timeMinutes,
         questionCount: paper.questionKeys.size,
       };
@@ -128,13 +130,16 @@ export function buildRealPaperBenchmark(units: QuestionUnit[]): RealPaperBenchma
   }
 
   const papersWithTime = papers.filter((paper) => typeof paper.timeMinutes === "number" && paper.timeMinutes > 0);
+  const papersWithTimeAndDeclaredMarks = papersWithTime.filter(
+    (paper) => typeof paper.declaredTotalMarks === "number" && paper.declaredTotalMarks > 0,
+  );
   const averageMarks = papers.reduce((sum, paper) => sum + paper.totalMarks, 0) / papers.length;
   const averageQuestionCount = papers.reduce((sum, paper) => sum + paper.questionCount, 0) / papers.length;
   const averageTimeMinutes = papersWithTime.length > 0
     ? papersWithTime.reduce((sum, paper) => sum + (paper.timeMinutes ?? 0), 0) / papersWithTime.length
     : null;
-  const averageMinutesPerMark = papersWithTime.length > 0
-    ? papersWithTime.reduce((sum, paper) => sum + ((paper.timeMinutes ?? 0) / paper.totalMarks), 0) / papersWithTime.length
+  const averageMinutesPerMark = papersWithTimeAndDeclaredMarks.length > 0
+    ? papersWithTimeAndDeclaredMarks.reduce((sum, paper) => sum + ((paper.timeMinutes ?? 0) / (paper.declaredTotalMarks ?? 1)), 0) / papersWithTimeAndDeclaredMarks.length
     : null;
 
   return {

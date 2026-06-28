@@ -762,7 +762,7 @@ function extractCommandWord(text: string) {
     }
   }
   return null;
-}
+} 
 
 function mergeBBoxes(lines: TextLine[]) {
   if (lines.length === 0) return null;
