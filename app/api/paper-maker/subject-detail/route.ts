@@ -19,6 +19,7 @@ import {
   upsertSubjectDetailSnapshotInConvex,
 } from "@/lib/paper-maker/convex";
 import { buildEdexcelBusinessTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-business";
+import { buildEdexcelFrenchTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-french";
 import { buildEdexcelMathematicsTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-mathematics";
 import { buildEdexcelSeparateScienceTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-separate-science";
 import { buildOcrComputerScienceTopicTreeWithCounts } from "@/lib/paper-maker/ocr-computer-science";
@@ -33,13 +34,17 @@ export async function GET(request: NextRequest) {
   const subject = getPaperMakerSubject(subjectKey ?? undefined);
   if (!subject) return badRequest("Unknown subject selection.");
 
-  const cachedSnapshot = await getSubjectDetailSnapshotFromConvex(subject.boardCode, subject.subjectSlug);
+  const useCachedSnapshot = subject.key !== "edexcel-french-reading";
+  const cachedSnapshot = useCachedSnapshot ? await getSubjectDetailSnapshotFromConvex(subject.boardCode, subject.subjectSlug) : null;
   if (cachedSnapshot) {
     return Response.json(cachedSnapshot);
   }
 
   const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug, { cache: true });
-  const units = groupQuestionPartsIntoUnits(questionBank);
+  const filteredQuestionBank = subject.key === "edexcel-french-reading"
+    ? questionBank.filter((part) => part.paperCode === "reading")
+    : questionBank;
+  const units = groupQuestionPartsIntoUnits(filteredQuestionBank);
   const benchmark = buildRealPaperBenchmark(units);
 
   let topics: TopicTreeNodeWithCounts[] = [];
@@ -61,6 +66,16 @@ export async function GET(request: NextRequest) {
     const higherUnits = filterUnitsByTier(units, "higher");
     taggedQuestionUnits = higherUnits.length;
     topics = buildEdexcelMathematicsTopicTreeWithCounts(higherUnits);
+  } else if (subject.key === "edexcel-french-reading") {
+    const tierCounts = countUnitsByTier(units);
+    topicsByTier = {
+      foundation: buildEdexcelFrenchTopicTreeWithCounts(filterUnitsByTier(units, "foundation")),
+      higher: buildEdexcelFrenchTopicTreeWithCounts(filterUnitsByTier(units, "higher")),
+    };
+    tiers = subject.tiers.map((tier) => ({
+      ...tier,
+      taggedQuestionUnits: tierCounts[tier.key],
+    }));
   } else if (subject.key === "ocr-computer-science") {
     topics = buildOcrComputerScienceTopicTreeWithCounts(units);
   } else if (subject.key === "edexcel-combined-science") {

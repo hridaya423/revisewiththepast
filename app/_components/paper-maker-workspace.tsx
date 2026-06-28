@@ -80,6 +80,7 @@ const SUBJECT_ICONS: Record<string, React.ElementType> = {
   "edexcel-biology": Dna,
   "edexcel-chemistry": Beaker,
   "edexcel-physics": Zap,
+  "edexcel-french-reading": BookOpen,
   "edexcel-mathematics-higher": Calculator,
   "ocr-computer-science": Cpu,
 };

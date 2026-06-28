@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "papers:extract": "tsx scripts/extract-papers.ts",
+    "papers:build-lite": "tsx scripts/build-extracted-lite.ts",
     "papers:tag": "tsx scripts/tag-papers.ts",
     "jobs:search": "tsx scripts/generate-search-jobs.ts",
     "papers:discover": "npm run jobs:search && tsx scripts/discover-and-download-papers.ts",

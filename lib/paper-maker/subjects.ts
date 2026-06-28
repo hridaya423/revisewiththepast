@@ -1,6 +1,6 @@
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 
-export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "aqa-english-literature" | "edexcel-business" | "edexcel-combined-science" | "edexcel-biology" | "edexcel-chemistry" | "edexcel-physics" | "edexcel-mathematics-higher" | "ocr-computer-science";
+export type PaperMakerSubjectKey = "aqa-geography" | "aqa-business" | "aqa-english-language" | "aqa-english-literature" | "edexcel-business" | "edexcel-combined-science" | "edexcel-biology" | "edexcel-chemistry" | "edexcel-physics" | "edexcel-french-reading" | "edexcel-mathematics-higher" | "ocr-computer-science";
 
 export type PaperOption = {
   code: string;
@@ -227,6 +227,28 @@ export const PAPER_MAKER_SUBJECTS: PaperMakerSubjectDefinition[] = [
     ],
   },
   {
+    key: "edexcel-french-reading",
+    label: "Edexcel French Reading",
+    boardLabel: "Edexcel",
+    boardCode: "edexcel",
+    subjectSlug: "french",
+    coverTitle: "French",
+    codeLabel: "1FR0",
+    description: "Generate Edexcel French reading papers from tagged source-page questions by tier and topic.",
+    topicSelectionEnabled: true,
+    generationEnabled: true,
+    availabilityNote: "Reading papers are ready to build by tier and topic.",
+    recommendedMinutesPerMark: 1.05,
+    paperOptions: [
+      { code: "reading", label: "Paper 3: Reading" },
+    ],
+    defaultPaperCodes: ["reading"],
+    tiers: [
+      { key: "foundation", label: "Foundation" },
+      { key: "higher", label: "Higher" },
+    ],
+  },
+  {
     key: "edexcel-mathematics-higher",
     label: "Edexcel Maths Higher",
     boardLabel: "Edexcel",
@@ -327,6 +349,11 @@ export function getCoverExamContext(
       return {
         materials: ["For this paper you must have:", `${PEN_LINE}.`],
         instructions: [...instructions, "• You must not use a dictionary or thesaurus."],
+      };
+    case "french":
+      return {
+        materials: ["For this paper you must have:", `${PEN_LINE}.`],
+        instructions: [...instructions, "• You must not use a dictionary."],
       };
     case "business":
       return {

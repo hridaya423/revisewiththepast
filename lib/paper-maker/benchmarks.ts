@@ -1,7 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import type { QuestionUnit } from "@/lib/paper-maker/aqa-geography";
+import { readExtractedPaperJson } from "@/lib/paper-maker/extracted-store";
 
 export type RealPaperBenchmark = {
   sampleSize: number;
@@ -27,17 +25,6 @@ type ExtractedPaper = {
 
 const extractedPaperMetricsCache = new Map<string, { totalMarks: number | null; timeMinutes: number | null }>();
 
-function deriveExtractedPaperJsonPath(sourceRelativePath: string) {
-  const normalizedPath = sourceRelativePath.replaceAll("\\", "/");
-  const segments = normalizedPath.split("/").filter(Boolean);
-  const boardCode = segments[0] ?? "";
-  const subjectSlug = segments[1] ?? "";
-  const extraDirs = segments.slice(2, -1).filter((segment) => segment !== "none");
-  const fileName = segments.at(-1) ?? normalizedPath;
-  const paperDirName = fileName.replace(/\.pdf$/i, "");
-  return resolve(process.cwd(), "data/extracted", boardCode, subjectSlug, ...extraDirs, paperDirName, "paper.json");
-}
-
 function parseTimeAllowedMinutes(text: string) {
   const match = text.match(/time allowed:\s*(?:(\d+)\s*hour(?:s)?(?:\s*(\d+)\s*minutes?)?|(?:(\d+)\s*minutes?))/i);
   if (!match) return null;
@@ -56,27 +43,14 @@ export function getExtractedPaperMetrics(sourceRelativePath: string) {
   const cached = extractedPaperMetricsCache.get(sourceRelativePath);
   if (cached) return cached;
 
-  const filePath = deriveExtractedPaperJsonPath(sourceRelativePath);
-  if (!existsSync(filePath)) {
-    const emptyMetrics = { totalMarks: null, timeMinutes: null };
-    extractedPaperMetricsCache.set(sourceRelativePath, emptyMetrics);
-    return emptyMetrics;
-  }
-
-  try {
-    const paper = JSON.parse(readFileSync(filePath, "utf8")) as ExtractedPaper;
-    const coverText = paper.pages?.[0]?.page_text ?? "";
-    const metrics = {
-      totalMarks: parseTotalMarks(coverText),
-      timeMinutes: parseTimeAllowedMinutes(coverText),
-    };
-    extractedPaperMetricsCache.set(sourceRelativePath, metrics);
-    return metrics;
-  } catch {
-    const emptyMetrics = { totalMarks: null, timeMinutes: null };
-    extractedPaperMetricsCache.set(sourceRelativePath, emptyMetrics);
-    return emptyMetrics;
-  }
+  const paper = readExtractedPaperJson<ExtractedPaper>(sourceRelativePath);
+  const coverText = paper?.pages?.[0]?.page_text ?? "";
+  const metrics = {
+    totalMarks: parseTotalMarks(coverText),
+    timeMinutes: parseTimeAllowedMinutes(coverText),
+  };
+  extractedPaperMetricsCache.set(sourceRelativePath, metrics);
+  return metrics;
 }
 
 export function buildRealPaperBenchmark(units: QuestionUnit[]): RealPaperBenchmark {

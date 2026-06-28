@@ -5,6 +5,7 @@ import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf
 
 import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
 import { compareQuestionUnitsForRendering, type BoundingBox, type QuestionUnit, type SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
+import { readExtractedPaperJson } from "@/lib/paper-maker/extracted-store";
 import {
   buildUnitRenderPlan,
   isUnitRegionRenderable,
@@ -842,36 +843,14 @@ function expandCropBox(cropBox: CropBox, width: number, height: number, padding 
   };
 }
 
-function deriveExtractedPaperJsonPath(sourceRelativePath: string) {
-  const normalizedPath = sourceRelativePath.replaceAll("\\", "/");
-  const segments = normalizedPath.split("/").filter(Boolean);
-  const boardCode = segments[0] ?? "";
-  const subjectSlug = segments[1] ?? "";
-  const extraDirs = segments.slice(2, -1).filter((segment) => segment !== "none");
-  const fileName = segments.at(-1) ?? normalizedPath;
-  const paperDirName = fileName.replace(/\.pdf$/i, "");
-  return resolve(process.cwd(), "data/extracted", boardCode, subjectSlug, ...extraDirs, paperDirName, "paper.json");
-}
-
 function loadExtractedPaper(sourceRelativePath: string) {
   if (extractedPaperCache.has(sourceRelativePath)) {
     return extractedPaperCache.get(sourceRelativePath) ?? null;
   }
 
-  const filePath = deriveExtractedPaperJsonPath(sourceRelativePath);
-  if (!existsSync(filePath)) {
-    extractedPaperCache.set(sourceRelativePath, null);
-    return null;
-  }
-
-  try {
-    const parsed = JSON.parse(readFileSync(filePath, "utf8")) as ExtractedPaper;
-    extractedPaperCache.set(sourceRelativePath, parsed);
-    return parsed;
-  } catch {
-    extractedPaperCache.set(sourceRelativePath, null);
-    return null;
-  }
+  const parsed = readExtractedPaperJson<ExtractedPaper>(sourceRelativePath);
+  extractedPaperCache.set(sourceRelativePath, parsed);
+  return parsed;
 }
 
 function getExtractedPage(sourceRelativePath: string, pageNumber: number) {

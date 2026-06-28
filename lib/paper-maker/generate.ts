@@ -19,6 +19,7 @@ import {
   type SubjectTierKey,
 } from "@/lib/paper-maker/combined-science";
 import { expandEdexcelBusinessTopicSelection, groupEdexcelBusinessQuestionUnits } from "@/lib/paper-maker/edexcel-business";
+import { expandEdexcelFrenchTopicSelection } from "@/lib/paper-maker/edexcel-french";
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
 import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
 import { expandOcrComputerScienceTopicSelection } from "@/lib/paper-maker/ocr-computer-science";
@@ -239,6 +240,25 @@ const SUBJECT_GENERATION_CONFIGS: Partial<Record<PaperMakerSubjectKey, SubjectGe
   "edexcel-biology": makeSeparateScienceConfig("biology"),
   "edexcel-chemistry": makeSeparateScienceConfig("chemistry"),
   "edexcel-physics": makeSeparateScienceConfig("physics"),
+  "edexcel-french-reading": {
+    tier: {
+      required: true,
+      missingTierMessage: "Select Foundation or Higher for French Reading.",
+      filter: filterQuestionBankByTier,
+      noTierBankMessage: (tier) => `No tagged ${tier} Edexcel French reading questions are available.`,
+      includeSelectedTierHeader: true,
+      coverTierLabel: capitalizeTier,
+    },
+    expandTopics: (ids) => expandEdexcelFrenchTopicSelection(ids),
+    messages: {
+      selectTopics: "Select at least one French topic.",
+      noBank: "No tagged Edexcel French question bank is available in Convex.",
+      noTopicsMapped: "The selected French topics do not map to any question-bank topics.",
+      noSelection: (tier) => `No ${tier} source-page French reading questions matched the selected topics and filters.`,
+    },
+    title: (marks, tierLabel) => `Edexcel French Reading ${tierLabel} Custom Paper (${marks} marks target)`,
+    fileName: (marks, tier) => `edexcel-french-reading-${tier}-${marks}m.pdf`,
+  },
   "aqa-business": {
     expandTopics: (ids) => expandAqaBusinessTopicSelection(ids),
     messages: {
