@@ -4,7 +4,7 @@ import { buildAqaBusinessTopicTreeWithCounts } from "@/lib/paper-maker/aqa-busin
 import { buildAqaEnglishLanguageTopicTreeWithCounts } from "@/lib/paper-maker/aqa-english-language";
 import { buildAqaEnglishLiteratureTopicTreeWithCounts } from "@/lib/paper-maker/aqa-english-literature";
 import type { TopicTreeNodeWithCounts } from "@/lib/paper-maker/aqa-geography";
-import { buildTopicTreeWithCounts, groupQuestionPartsIntoUnits } from "@/lib/paper-maker/aqa-geography";
+import { buildTopicTreeWithCounts } from "@/lib/paper-maker/aqa-geography";
 import { buildRealPaperBenchmark } from "@/lib/paper-maker/benchmarks";
 import {
   buildCombinedScienceTopicTreeWithCounts,
@@ -24,6 +24,7 @@ import { buildEdexcelMathematicsTopicTreeWithCounts } from "@/lib/paper-maker/ed
 import { buildEdexcelSeparateScienceTopicTreeWithCounts } from "@/lib/paper-maker/edexcel-separate-science";
 import { buildOcrComputerScienceTopicTreeWithCounts } from "@/lib/paper-maker/ocr-computer-science";
 import { getPaperMakerSubject, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
+import { groupQuestionUnitsForSubject } from "@/lib/paper-maker/units";
 
 function badRequest(message: string, status = 400) {
   return new Response(message, { status });
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
   const filteredQuestionBank = subject.key === "edexcel-french-reading"
     ? questionBank.filter((part) => part.paperCode === "reading")
     : questionBank;
-  const units = groupQuestionPartsIntoUnits(filteredQuestionBank);
+  const units = groupQuestionUnitsForSubject(subject.key, filteredQuestionBank);
   const benchmark = buildRealPaperBenchmark(units);
 
   let topics: TopicTreeNodeWithCounts[] = [];

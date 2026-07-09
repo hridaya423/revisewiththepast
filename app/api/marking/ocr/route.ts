@@ -2,7 +2,16 @@ import { NextRequest } from "next/server";
 
 import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
 import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingResponseInConvex } from "@/lib/marking/convex";
-import { OCR_MODEL, OCR_PROVIDER, runDeepseekOcrOnImage } from "@/lib/marking/replicate";
+import { extractAnswerRegionText } from "@/lib/marking/answer-extraction";
+import {
+  HANDWRITTEN_OCR_MODEL,
+  HANDWRITTEN_OCR_PROVIDER,
+  OCR_MODEL,
+  OCR_PROVIDER,
+  isHandwrittenOcrConfigured,
+  runDeepseekOcrOnImage,
+  runHandwrittenOcrOnImage,
+} from "@/lib/marking/replicate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,15 +70,37 @@ export async function POST(request: NextRequest) {
     const predictionIds: Array<string | null> = [];
 
     for (const pageUrl of pageUrls) {
-      const ocr = await runDeepseekOcrOnImage(pageUrl);
+      const ocr = await runDeepseekOcrOnImage(pageUrl).catch(() => ({ text: "", output: null, predictionId: null }));
       transcripts.push(ocr.text.trim());
       outputs.push(ocr.output);
       predictionIds.push(ocr.predictionId);
     }
 
-    const mergedText = transcripts
+    const printedText = transcripts
       .map((text, index) => (pageUrls.length > 1 ? `Page ${index + 1}\n${text}` : text))
       .join("\n\n");
+
+    const savedPaperQuestion = (bundle.savedPaperQuestions ?? []).find((entry) => entry.unitKey === questionKey);
+    const promptText = savedPaperQuestion?.promptText ?? "";
+    const contextText = savedPaperQuestion?.contextText ?? null;
+    const printedAnswer = extractAnswerRegionText({ fullOcrText: printedText, promptText, contextText });
+
+    let mergedText = printedText;
+    let usedHandwritten = false;
+    let handwrittenText = "";
+    if (!printedAnswer.answerText && isHandwrittenOcrConfigured()) {
+      const handwrittenBlocks: string[] = [];
+      for (let index = 0; index < pageUrls.length; index += 1) {
+        const handwritten = await runHandwrittenOcrOnImage(pageUrls[index]).catch(() => ({ text: "", output: null, predictionId: null }));
+        const text = handwritten.text.trim();
+        if (text) handwrittenBlocks.push(pageUrls.length > 1 ? `Page ${index + 1}\n${text}` : text);
+      }
+      handwrittenText = handwrittenBlocks.join("\n\n").trim();
+      if (handwrittenText) {
+        usedHandwritten = true;
+        mergedText = `${printedText}\n\n${handwrittenText}`.trim();
+      }
+    }
 
     await upsertMarkingResponseInConvex({
       submissionId,
@@ -78,9 +109,9 @@ export async function POST(request: NextRequest) {
       questionPartNumber,
       sourceImageUrl: pageUrls[0],
       ocrText: mergedText,
-      ocrProvider: OCR_PROVIDER,
-      ocrModel: OCR_MODEL,
-      ocrRawJson: JSON.stringify({ predictionIds, pageUrls, outputs }),
+      ocrProvider: usedHandwritten ? HANDWRITTEN_OCR_PROVIDER : OCR_PROVIDER,
+      ocrModel: usedHandwritten ? HANDWRITTEN_OCR_MODEL : OCR_MODEL,
+      ocrRawJson: JSON.stringify({ predictionIds, pageUrls, outputs, usedHandwritten, handwrittenOcr: handwrittenText || undefined }),
     });
     await setMarkingSubmissionStatusInConvex(submissionId, "ocr_complete");
 
@@ -89,6 +120,7 @@ export async function POST(request: NextRequest) {
       questionKey,
       ocrText: mergedText,
       predictionIds,
+      usedHandwritten,
     });
   } catch (error) {
     if (isUnauthorizedError(error)) return unauthorizedResponse();

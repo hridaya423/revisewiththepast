@@ -22,6 +22,10 @@ function tokenize(text: string) {
   return normalizeInlineText(text).toLowerCase().split(" ").filter((token) => token.length > 2);
 }
 
+function hasAnswerSignal(line: string) {
+  return /\d|[=+\-*/^√π×÷<>]|\b[a-z]\b/i.test(line);
+}
+
 export function requiresManualReview(promptText: string, contextText: string | null = null) {
   const combined = `${promptText}\n${contextText ?? ""}`;
   return MANUAL_REVIEW_PATTERNS.some((pattern) => pattern.test(combined));
@@ -50,14 +54,14 @@ export function extractAnswerRegionText(params: {
     if (/^do not write outside the box/i.test(line)) continue;
 
     const lineTokens = tokenize(line);
-    if (lineTokens.length === 0) continue;
+    if (lineTokens.length === 0 && !hasAnswerSignal(line)) continue;
 
     const overlapCount = lineTokens.filter((token) => promptTokens.has(token)).length;
     const overlapRatio = overlapCount / lineTokens.length;
 
     if (!passedPromptBlock) {
       if (overlapRatio >= 0.6 && lineTokens.length >= 4) continue;
-      if (/^\d+\s*(?:\([a-z]\)|\([ivx]+\)|\b)/i.test(line)) continue;
+      if (/^\d+\s*(?:\([a-z]\)|\([ivx]+\))/i.test(line)) continue;
       passedPromptBlock = true;
     }
 
@@ -70,10 +74,7 @@ export function extractAnswerRegionText(params: {
     answerLines.push(line);
   }
 
-  const dottedAnswerMatch = fullOcrText.match(/\.{3,}\s*([^\n.][^\n]{0,80})/);
-  const answerText = normalizeInlineText(answerLines.join("\n"))
-    || normalizeInlineText(dottedAnswerMatch?.[1] ?? "")
-    || "";
+  const answerText = normalizeInlineText(answerLines.join("\n")) || "";
 
   return {
     answerText,

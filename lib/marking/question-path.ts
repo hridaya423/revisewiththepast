@@ -85,8 +85,7 @@ export function partPathMatchesLine(partPath: string[], lineText: string) {
 
 export function isPartStartLineForPath(lineText: string, partPath: string[]) {
   if (partPath.length === 0) return false;
-  const lastPart = partPath[partPath.length - 1];
-  return new RegExp(`\\(\\s*${lastPart.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*\\)`, "i").test(lineText);
+  return partPathMatchesLine(partPath, lineText);
 }
 
 export function isSiblingPartStartLine(lineText: string, partPath: string[]) {

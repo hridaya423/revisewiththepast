@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
-import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
+import { getPdfDocument, renderPdfPageToPng, renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
 import { compareQuestionUnitsForRendering, type BoundingBox, type QuestionUnit, type SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
 import { readExtractedPaperJson } from "@/lib/paper-maker/extracted-store";
 import {
@@ -482,8 +482,6 @@ function getSourceQuestionNumberBox(unit: QuestionUnit, pageNumber: number, crop
     && line.bbox.y0 >= cropBox.bottom - 2
   ));
   const promptLine = findPromptLine(extractedPage, unit.parts[0]?.promptText ?? "");
-  const promptTop = promptLine?.bbox.y1 ?? null;
-
   const inlineLine = visibleLines
     .filter((line) => {
       const trimmed = line.text.trim();
@@ -1869,10 +1867,7 @@ async function prepareSnippet(
   sourceDocCache: Map<string, PDFDocument>,
   sourcePageIndex = 0,
 ) {
-  const sourceDoc = await loadSourcePdfDocument(pageAssetUrl, sourcePdfCache, sourceDocCache);
-
-  const workingDoc = await PDFDocument.create();
-  const [workingPage] = await workingDoc.copyPages(sourceDoc, [sourcePageIndex]);
+  const workingPage = await prepareWorkingPage(pageAssetUrl, sourcePdfCache, sourceDocCache, sourcePageIndex);
   const embeddedPage = await outputDoc.embedPage(workingPage, cropBox);
   try {
     await embeddedPage.embed();
@@ -1887,6 +1882,60 @@ async function prepareSnippet(
     width: cropBox.right - cropBox.left,
     height: cropBox.top - cropBox.bottom,
     cropBox,
+  };
+}
+
+async function prepareWorkingPage(
+  pageAssetUrl: string,
+  sourcePdfCache: Map<string, Uint8Array>,
+  sourceDocCache: Map<string, PDFDocument>,
+  sourcePageIndex: number,
+) {
+  const sourceDoc = await loadSourcePdfDocument(pageAssetUrl, sourcePdfCache, sourceDocCache);
+  const workingDoc = await PDFDocument.create();
+  try {
+    const [workingPage] = await workingDoc.copyPages(sourceDoc, [sourcePageIndex]);
+    return workingPage;
+  } catch {
+    const { sourceDoc: rasterDoc } = await rasterizeSourcePdfPage(pageAssetUrl, sourcePageIndex, sourcePdfCache, sourceDocCache);
+    const [workingPage] = await workingDoc.copyPages(rasterDoc, [0]);
+    return workingPage;
+  }
+}
+
+async function rasterizeSourcePdfPage(
+  pageAssetUrl: string,
+  sourcePageIndex: number,
+  sourcePdfCache: Map<string, Uint8Array>,
+  sourceDocCache: Map<string, PDFDocument>,
+) {
+  const rasterUrl = `${pageAssetUrl}#raster-page-${sourcePageIndex}`;
+  const cachedDoc = sourceDocCache.get(rasterUrl);
+  if (cachedDoc) {
+    return {
+      candidate: { pdfUrl: rasterUrl, sourcePageIndex: 0 } satisfies SourcePdfCandidate,
+      sourceDoc: cachedDoc,
+      sourcePdfPage: cachedDoc.getPage(0),
+    };
+  }
+
+  const sourceBytes = await fetchPdfBytes(pageAssetUrl, sourcePdfCache);
+  const pdfJsDoc = await getPdfDocument(sourceBytes.slice());
+  const pdfJsPageNumber = sourcePageIndex + 1;
+  const pdfJsPage = await pdfJsDoc.getPage(pdfJsPageNumber);
+  const viewport = pdfJsPage.getViewport({ scale: 1 });
+  const png = await renderPdfPageToPng(pdfJsDoc, pdfJsPageNumber, 2);
+  const rasterDoc = await PDFDocument.create();
+  const page = rasterDoc.addPage([viewport.width, viewport.height]);
+  const image = await rasterDoc.embedPng(png);
+  page.drawImage(image, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+  sourcePdfCache.set(rasterUrl, await rasterDoc.save());
+  sourceDocCache.set(rasterUrl, rasterDoc);
+
+  return {
+    candidate: { pdfUrl: rasterUrl, sourcePageIndex: 0 } satisfies SourcePdfCandidate,
+    sourceDoc: rasterDoc,
+    sourcePdfPage: page,
   };
 }
 
@@ -2334,13 +2383,22 @@ async function withSourcePdfCandidate<T>(
 
   let lastError: unknown = null;
   for (const candidate of candidates) {
+    let activeCandidate = candidate;
     try {
-      const sourceDoc = await loadSourcePdfDocument(candidate.pdfUrl, sourcePdfCache, sourceDocCache);
-      const sourcePdfPage = sourceDoc.getPage(candidate.sourcePageIndex);
-      return await attempt(candidate, sourceDoc, sourcePdfPage);
+      let sourceDoc = await loadSourcePdfDocument(candidate.pdfUrl, sourcePdfCache, sourceDocCache);
+      let sourcePdfPage: import("pdf-lib").PDFPage;
+      try {
+        sourcePdfPage = sourceDoc.getPage(candidate.sourcePageIndex);
+      } catch {
+        const raster = await rasterizeSourcePdfPage(candidate.pdfUrl, candidate.sourcePageIndex, sourcePdfCache, sourceDocCache);
+        activeCandidate = raster.candidate;
+        sourceDoc = raster.sourceDoc;
+        sourcePdfPage = raster.sourcePdfPage;
+      }
+      return await attempt(activeCandidate, sourceDoc, sourcePdfPage);
     } catch (error) {
       lastError = error;
-      clearSourcePdfCandidateCaches(candidate, sourcePdfCache, sourceDocCache);
+      clearSourcePdfCandidateCaches(activeCandidate, sourcePdfCache, sourceDocCache);
     }
   }
 

@@ -1,12 +1,13 @@
 import "server-only";
 
-import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
-
 import { OpenRouter } from "@openrouter/sdk";
 
 import { getMarkableUnitsByUnitKeys } from "@/lib/marking/paper-maker";
-import { getPdfDocument } from "@/lib/marking/pdfjs-server";
+import {
+  locateMarkSchemePagesForUnit,
+  normalizeQuestionNumber,
+  type StructuredPdfLine,
+} from "@/lib/marking/mark-scheme";
 import {
   formatQuestionPathLabel,
   isPartStartLineForPath,
@@ -14,38 +15,11 @@ import {
   parseQuestionPathFromPrompt,
 } from "@/lib/marking/question-path";
 import { requiresManualReview } from "@/lib/marking/answer-extraction";
-import { getPaperAssetsByBoardSubjectFromConvex } from "@/lib/paper-maker/convex";
-import type { PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
+import { getPaperMakerSubject, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
 
 const AI_KEY = process.env.HACKCLUB_AI_API_KEY ?? process.env.OPENROUTER_API_KEY;
 const AI_SERVER_URL = process.env.HACKCLUB_AI_API_KEY ? "https://ai.hackclub.com/proxy/v1" : undefined;
 const AI_MODEL = process.env.OPENROUTER_MODEL ?? "google/gemini-3.1-flash-lite";
-
-type PositionedPdfItem = {
-  text: string;
-  x: number;
-  y: number;
-};
-
-type StructuredPdfLine = {
-  pageNumber: number;
-  y: number;
-  leftText: string;
-  answerText: string;
-  markText: string;
-  schemeText: string;
-  guidanceText: string;
-  fullText: string;
-};
-
-type CachedPdfPage = {
-  pageNumber: number;
-  text: string;
-  lines: StructuredPdfLine[];
-};
-
-const PDF_TEXT_CACHE = new Map<string, CachedPdfPage[]>();
-const PAPER_ASSET_CACHE = new Map<string, Awaited<ReturnType<typeof getPaperAssetsByBoardSubjectFromConvex>>>();
 
 type SubmissionBundle = {
   submission: {
@@ -128,108 +102,69 @@ function normalizeInlineText(text: string) {
   return text.replace(/\s+/g, " ").trim();
 }
 
-function inferTierFromSourceRelativePath(sourceRelativePath: string) {
-  const normalized = sourceRelativePath.toLowerCase();
-  if (normalized.includes("/foundation/")) return "foundation" as const;
-  if (normalized.includes("/higher/")) return "higher" as const;
-  return "none" as const;
-}
-
-function deriveDownloadedPdfPath(relativePath: string) {
-  return resolve(process.cwd(), "data", "downloads", ...relativePath.split("/").filter(Boolean));
+function deriveExamLabel(subjectKey: string) {
+  const subject = getPaperMakerSubject(subjectKey);
+  if (!subject) return "GCSE";
+  return `GCSE ${subject.boardLabel} ${subject.coverTitle}`.replace(/\s+/g, " ").trim();
 }
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function buildStructuredLines(pageNumber: number, items: PositionedPdfItem[]) {
-  const grouped = new Map<number, PositionedPdfItem[]>();
-
-  for (const item of items) {
-    const bucket = Math.round(item.y / 3) * 3;
-    const existing = grouped.get(bucket) ?? [];
-    existing.push(item);
-    grouped.set(bucket, existing);
-  }
-
-  return Array.from(grouped.entries())
-    .sort((a, b) => b[0] - a[0])
-    .map(([bucketY, bucketItems]) => {
-      const sortedItems = [...bucketItems]
-        .filter((item) => item.text.trim().length > 0)
-        .sort((a, b) => a.x - b.x);
-
-      const leftText = normalizeInlineText(sortedItems.filter((item) => item.x < 120).map((item) => item.text).join(" "));
-      const answerText = normalizeInlineText(sortedItems.filter((item) => item.x >= 120 && item.x < 210).map((item) => item.text).join(" "));
-      const markText = normalizeInlineText(sortedItems.filter((item) => item.x >= 210 && item.x < 250).map((item) => item.text).join(" "));
-      const schemeText = normalizeInlineText(sortedItems.filter((item) => item.x >= 250 && item.x < 560).map((item) => item.text).join(" "));
-      const guidanceText = normalizeInlineText(sortedItems.filter((item) => item.x >= 560).map((item) => item.text).join(" "));
-      const fullText = normalizeInlineText([leftText, answerText, markText, schemeText, guidanceText].filter(Boolean).join(" "));
-
-      return {
-        pageNumber,
-        y: bucketY,
-        leftText,
-        answerText,
-        markText,
-        schemeText,
-        guidanceText,
-        fullText,
-      } satisfies StructuredPdfLine;
-    })
-    .filter((line) => line.fullText.length > 0);
+function hasAnswerSignal(line: string) {
+  return /\d|[=+\-*/^√π×÷<>]|\b[a-z]\b/i.test(line);
 }
 
-async function loadPdfTextPages(relativePath: string, remoteUrl: string) {
-  if (PDF_TEXT_CACHE.has(relativePath)) return PDF_TEXT_CACHE.get(relativePath)!;
-
-  const localPath = deriveDownloadedPdfPath(relativePath);
-  const data = existsSync(localPath)
-    ? new Uint8Array(readFileSync(localPath))
-    : new Uint8Array(await fetch(remoteUrl).then(async (response) => {
-      if (!response.ok) throw new Error(`Failed to load mark scheme PDF (${response.status})`);
-      return new Uint8Array(await response.arrayBuffer());
-    }));
-
-  const document = await getPdfDocument(data);
-  const pages: CachedPdfPage[] = [];
-
-  for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
-    const page = await document.getPage(pageNumber);
-    const textContent = await page.getTextContent();
-    const positionedItems: PositionedPdfItem[] = textContent.items
-      .filter((item) => "str" in item && Array.isArray((item as { transform?: unknown }).transform))
-      .map((item) => {
-        const textItem = item as { str: string; transform: number[] };
-        return {
-          text: textItem.str,
-          x: textItem.transform[4] ?? 0,
-          y: textItem.transform[5] ?? 0,
-        };
-      });
-
-    pages.push({
-      pageNumber,
-      text: normalizeInlineText(positionedItems.map((item) => item.text).join(" ")),
-      lines: buildStructuredLines(pageNumber, positionedItems),
-    });
-  }
-
-  PDF_TEXT_CACHE.set(relativePath, pages);
-  return pages;
+function getScoringTier(tier: SubmissionBundle["submission"]["tier"]) {
+  return tier === "foundation" || tier === "higher" ? tier : null;
 }
 
-function detectPageQuestionNumber(text: string) {
-  const headerMatch = text.match(/Additional guidance\s+(\d+)\b/i);
-  if (headerMatch) return headerMatch[1];
-  const fallbackMatch = text.match(/\b(\d+)\s*\([a-z]\)/i);
-  if (fallbackMatch) return fallbackMatch[1];
-  return null;
+export function normalizeScoreModelResult(
+  parsed: {
+    awardedMarks?: unknown;
+    confidence?: unknown;
+    needsReview?: unknown;
+    rationale?: unknown;
+    markBreakdown?: Array<{ criterion?: unknown; awarded?: unknown; evidence?: unknown }>;
+  } | undefined,
+  maxMarks: number,
+) {
+  const rawAwardedMarks = typeof parsed?.awardedMarks === "number" ? parsed.awardedMarks : Number.NaN;
+  const rawConfidence = typeof parsed?.confidence === "number" ? parsed.confidence : Number.NaN;
+  const markBreakdown = Array.isArray(parsed?.markBreakdown) ? parsed.markBreakdown : [];
+  const valid = Number.isInteger(rawAwardedMarks)
+    && rawAwardedMarks >= 0
+    && rawAwardedMarks <= maxMarks
+    && Number.isFinite(rawConfidence)
+    && rawConfidence >= 0
+    && rawConfidence <= 1
+    && typeof parsed?.needsReview === "boolean";
+  const confidence = valid ? rawConfidence : 0;
+
+  return {
+    awardedMarks: valid ? rawAwardedMarks : 0,
+    confidence,
+    needsReview: parsed?.needsReview === true || !valid || confidence < 0.65,
+    rationale: typeof parsed?.rationale === "string" && parsed.rationale.trim()
+      ? parsed.rationale.trim()
+      : valid
+        ? "Auto-scored against the retrieved mark scheme excerpt."
+        : "The scoring model returned an invalid or incomplete result.",
+    markBreakdown: markBreakdown
+      .map((entry) => ({
+        criterion: typeof entry.criterion === "string" ? entry.criterion : "criterion",
+        awarded: entry.awarded === true,
+        evidence: typeof entry.evidence === "string" ? entry.evidence : "",
+      }))
+      .filter((entry) => entry.criterion || entry.evidence),
+  };
 }
 
 function isQuestionStartLine(line: StructuredPdfLine, questionNumber: string) {
   const normalized = line.leftText.toLowerCase();
+  const numberMatch = normalized.match(/^(\d+)\b/);
+  if (numberMatch && normalizeQuestionNumber(numberMatch[1]) === questionNumber) return true;
   const questionPattern = new RegExp(`^${escapeRegExp(questionNumber)}\\b`, "i");
   return questionPattern.test(normalized) || normalized.startsWith(`${questionNumber} (`.toLowerCase());
 }
@@ -242,7 +177,7 @@ function isDifferentQuestionLine(line: StructuredPdfLine, questionNumber: string
   if (!line.leftText) return false;
   const match = line.leftText.match(/^(\d+)\b/);
   if (!match) return false;
-  return match[1] !== questionNumber;
+  return normalizeQuestionNumber(match[1]) !== questionNumber;
 }
 
 function formatStructuredLines(lines: StructuredPdfLine[]) {
@@ -323,7 +258,7 @@ function cleanOcrTextForScoring(promptText: string, contextText: string | null, 
     .filter((line) => {
       const normalized = normalizeInlineText(line).toLowerCase();
       const tokens = normalized.split(" ").filter((token) => token.length > 2);
-      if (tokens.length === 0) return false;
+      if (tokens.length === 0) return hasAnswerSignal(line);
       const overlapCount = tokens.filter((token) => promptTokens.has(token)).length;
       const overlapRatio = overlapCount / tokens.length;
       if (tokens.length <= 12 && overlapRatio >= 0.75) return false;
@@ -333,53 +268,11 @@ function cleanOcrTextForScoring(promptText: string, contextText: string | null, 
     .trim();
 }
 
-async function getPaperAssets(boardCode: string, subjectSlug: string) {
-  const key = `${boardCode}::${subjectSlug}`;
-  if (!PAPER_ASSET_CACHE.has(key)) {
-    PAPER_ASSET_CACHE.set(key, await getPaperAssetsByBoardSubjectFromConvex(boardCode, subjectSlug));
-  }
-  return PAPER_ASSET_CACHE.get(key)!;
-}
-
 async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof getMarkableUnitsByUnitKeys>>[number]) {
-  const paperAssets = await getPaperAssets(unit.boardCode, unit.subjectSlug);
-  const targetTier = inferTierFromSourceRelativePath(unit.sourceRelativePath);
-  const markSchemeAsset = paperAssets.find((asset) => asset.kind === "mark_scheme"
-    && asset.paperCode === unit.paperCode
-    && asset.year === unit.year
-    && asset.session === unit.session
-    && asset.tier === targetTier);
+  const { markSchemeAsset, collectedPages } = await locateMarkSchemePagesForUnit(unit);
+  const targetQuestionNumber = normalizeQuestionNumber(unit.questionNumber);
 
-  if (!markSchemeAsset) {
-    throw new Error(`No mark scheme asset found for ${unit.paperCode} ${unit.year ?? ""} ${unit.session ?? ""}`.trim());
-  }
-
-  const pages = await loadPdfTextPages(markSchemeAsset.relativePath, markSchemeAsset.cdnUrl);
-  const targetQuestionNumber = unit.questionNumber;
-  const collectedPages: CachedPdfPage[] = [];
-  let collecting = false;
-
-  for (const page of pages) {
-    const pageQuestionNumber = detectPageQuestionNumber(page.text);
-    if (!collecting) {
-      if (pageQuestionNumber === targetQuestionNumber) {
-        collecting = true;
-        collectedPages.push(page);
-      }
-      continue;
-    }
-
-    if (pageQuestionNumber && pageQuestionNumber !== targetQuestionNumber) {
-      break;
-    }
-    collectedPages.push(page);
-  }
-
-  if (collectedPages.length === 0) {
-    throw new Error(`Could not isolate mark scheme text for question ${targetQuestionNumber}`);
-  }
-
-  const questionPartNumber = unit.parts[0]?.questionPartNumber ?? null;
+  const questionPartNumber = unit.parts.length === 1 ? unit.parts[0]?.questionPartNumber ?? null : null;
   const questionPath = parseQuestionPathFromPrompt(
     unit.parts.map((part) => part.promptText).join("\n\n"),
     targetQuestionNumber,
@@ -388,6 +281,9 @@ async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof get
   const questionLines = collectedPages.flatMap((page) => page.lines);
   const relevantQuestionLines = questionLines.filter((line) => !/^(paper:|question\s+answer\s+mark\s+mark scheme|additional guidance|pmt)$/i.test(line.fullText));
   const questionStartIndex = relevantQuestionLines.findIndex((line) => isQuestionStartLine(line, targetQuestionNumber));
+  if (questionStartIndex < 0) {
+    throw new Error(`Could not locate question ${targetQuestionNumber} inside the retrieved mark scheme pages.`);
+  }
   const boundedQuestionLines = questionStartIndex >= 0
     ? relevantQuestionLines.slice(questionStartIndex)
     : relevantQuestionLines;
@@ -403,6 +299,9 @@ async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof get
   let partLines = trimmedQuestionLines;
   if (questionPath.length > 0) {
     const startIndex = trimmedQuestionLines.findIndex((line) => isPartStartLineForPath(line.leftText, questionPath));
+    if (startIndex < 0) {
+      throw new Error(`Could not locate question part ${formatQuestionPathLabel(targetQuestionNumber, questionPath)} in the mark scheme.`);
+    }
     if (startIndex >= 0) {
       const collected: StructuredPdfLine[] = [];
       for (let index = startIndex; index < trimmedQuestionLines.length; index += 1) {
@@ -415,6 +314,9 @@ async function buildMarkSchemeSnippetForUnit(unit: Awaited<ReturnType<typeof get
     }
   } else if (questionPartNumber) {
     const startIndex = trimmedQuestionLines.findIndex((line) => isPartStartLine(line, questionPartNumber));
+    if (startIndex < 0) {
+      throw new Error(`Could not locate question part (${questionPartNumber}) in the mark scheme.`);
+    }
     if (startIndex >= 0) {
       const collected: StructuredPdfLine[] = [];
       for (let index = startIndex; index < trimmedQuestionLines.length; index += 1) {
@@ -454,34 +356,42 @@ export async function resolveSubmissionQuestionContext(bundle: SubmissionBundle,
     throw new Error("This submission is not linked to a saved generated paper question.");
   }
 
-  const unit = (await getMarkableUnitsByUnitKeys(bundle.submission.subjectKey as PaperMakerSubjectKey, [savedPaperQuestion.unitKey]))[0];
+  const unit = (await getMarkableUnitsByUnitKeys(
+    bundle.submission.subjectKey as PaperMakerSubjectKey,
+    [savedPaperQuestion.unitKey],
+    getScoringTier(bundle.submission.tier),
+  ))[0];
   if (!unit) {
     throw new Error(`Could not resolve source unit for ${savedPaperQuestion.unitKey}`);
   }
 
   const response = bundle.responses.find((entry) => entry.questionKey === questionKey);
-  if (!response?.ocrText?.trim()) {
-    throw new Error("OCR text is missing for this question.");
-  }
+  const rawOcrText = response?.ocrText?.trim() ?? "";
+  const hasRawOcrText = rawOcrText.length > 0;
 
   const markScheme = await buildMarkSchemeSnippetForUnit(unit);
-  const alreadyAnswerExtracted = Boolean(response.ocrRawJson?.includes("answerExtraction"));
-  const cleanedOcrText = alreadyAnswerExtracted
-    ? response.ocrText
-    : cleanOcrTextForScoring(
-      savedPaperQuestion.promptText,
-      savedPaperQuestion.contextText ?? null,
-      response.ocrText,
-    );
+  const alreadyAnswerExtracted = Boolean(response?.ocrRawJson?.includes("answerExtraction"));
+  const cleanedOcrText = !hasRawOcrText
+    ? ""
+    : alreadyAnswerExtracted
+      ? response!.ocrText
+      : cleanOcrTextForScoring(
+        savedPaperQuestion.promptText,
+        savedPaperQuestion.contextText ?? null,
+        response!.ocrText,
+      );
+  const scoringOcrText = cleanedOcrText.trim();
 
   return {
     unit,
     response: {
-      ...response,
-      ocrText: cleanedOcrText || response.ocrText,
+      questionKey,
+      ocrText: scoringOcrText,
+      ocrRawJson: response?.ocrRawJson,
     },
     savedPaperQuestion,
     markScheme,
+    hasOcrText: scoringOcrText.length > 0,
   };
 }
 
@@ -489,7 +399,11 @@ export async function buildCombinedMarkScheme(bundle: SubmissionBundle) {
   const questions = bundle.savedPaperQuestions ?? [];
   const results = await Promise.all(questions.map(async (question) => {
     try {
-      const unit = (await getMarkableUnitsByUnitKeys(bundle.submission.subjectKey as PaperMakerSubjectKey, [question.unitKey]))[0];
+      const unit = (await getMarkableUnitsByUnitKeys(
+        bundle.submission.subjectKey as PaperMakerSubjectKey,
+        [question.unitKey],
+        getScoringTier(bundle.submission.tier),
+      ))[0];
       if (!unit) {
         return {
           ok: false as const,
@@ -525,36 +439,46 @@ export async function buildCombinedMarkScheme(bundle: SubmissionBundle) {
 }
 
 export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKey: string): Promise<AutoScoreResult> {
-  const { unit, response, savedPaperQuestion, markScheme } = await resolveSubmissionQuestionContext(bundle, questionKey);
-  if (savedPaperQuestion.isChoiceQuestion || savedPaperQuestion.questionType === "multiple-choice") {
-    return {
-      awardedMarks: 0,
-      confidence: 0,
-      needsReview: true,
-      skipped: true,
-      rationale: "Multiple-choice questions are excluded from AI marking and should use a deterministic answer-detection path or manual review.",
-      evidence: {
-        sourceUnit: {
-          unitKey: unit.unitKey,
-          sourceRelativePath: unit.sourceRelativePath,
-          paperCode: unit.paperCode,
-          year: unit.year,
-          session: unit.session,
-          questionNumber: unit.questionNumber,
-          questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
-          totalMarks: unit.totalMarks,
-          promptText: unit.parts.map((part) => part.promptText).join("\n\n"),
-          contextText: unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
-        },
-        markScheme,
-        studentOcrText: response.ocrText,
+  const { unit, response, savedPaperQuestion, markScheme, hasOcrText } = await resolveSubmissionQuestionContext(bundle, questionKey);
+
+  const buildSkipped = (rationale: string): AutoScoreResult => ({
+    awardedMarks: 0,
+    confidence: 0,
+    needsReview: true,
+    skipped: true,
+    rationale,
+    evidence: {
+      sourceUnit: {
+        unitKey: unit.unitKey,
+        sourceRelativePath: unit.sourceRelativePath,
+        paperCode: unit.paperCode,
+        year: unit.year,
+        session: unit.session,
+        questionNumber: unit.questionNumber,
+        questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
+        totalMarks: unit.totalMarks,
+        promptText: unit.parts.map((part) => part.promptText).join("\n\n"),
+        contextText: unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
       },
-    };
+      markScheme,
+      studentOcrText: response.ocrText,
+    },
+  });
+
+  if (savedPaperQuestion.isChoiceQuestion || savedPaperQuestion.questionType === "multiple-choice") {
+    return buildSkipped("Multiple-choice questions are excluded from AI marking and should use a deterministic answer-detection path or manual review.");
+  }
+  if (requiresManualReview(savedPaperQuestion.promptText, savedPaperQuestion.contextText ?? null)) {
+    return buildSkipped("This question needs manual review because it depends on a graph, construction, or diagram.");
+  }
+  if (!hasOcrText) {
+    return buildSkipped("No student answer was detected for this question. Check the script pages and mark manually.");
   }
   const client = getClient();
+  const examLabel = deriveExamLabel(bundle.submission.subjectKey);
 
   const systemPrompt = [
-    "You are a cautious GCSE Edexcel Mathematics marker.",
+    `You are a cautious ${examLabel} marker.`,
     "Mark only the specific question part requested.",
     "Use the mark scheme excerpt as the authority.",
     "Do not invent unseen working.",
@@ -563,7 +487,7 @@ export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKe
   ].join(" ");
 
   const userPrompt = JSON.stringify({
-    task: "Mark one Edexcel GCSE Maths response.",
+    task: `Mark one ${examLabel} response.`,
     question: {
       questionNumber: unit.questionNumber,
       questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
@@ -611,26 +535,14 @@ export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKe
     throw new Error("The scoring model returned no content.");
   }
 
-  const parsed = JSON.parse(content) as {
-    awardedMarks?: number;
-    confidence?: number;
-    needsReview?: boolean;
-    rationale?: string;
-    markBreakdown?: Array<{ criterion?: string; awarded?: boolean; evidence?: string }>;
-  };
-
-  const awardedMarks = Math.max(0, Math.min(unit.totalMarks, Math.round(parsed.awardedMarks ?? 0)));
-  const confidence = Math.max(0, Math.min(1, Number(parsed.confidence ?? 0.5)));
-  const needsReview = parsed.needsReview === true || confidence < 0.65;
-  const rationale = typeof parsed.rationale === "string" && parsed.rationale.trim()
-    ? parsed.rationale.trim()
-    : "Auto-scored against the retrieved mark scheme excerpt.";
+  const parsed = JSON.parse(content) as Parameters<typeof normalizeScoreModelResult>[0];
+  const score = normalizeScoreModelResult(parsed, unit.totalMarks);
 
   return {
-    awardedMarks,
-    confidence,
-    needsReview,
-    rationale,
+    awardedMarks: score.awardedMarks,
+    confidence: score.confidence,
+    needsReview: score.needsReview,
+    rationale: score.rationale,
     evidence: {
       sourceUnit: {
         unitKey: unit.unitKey,
@@ -646,13 +558,7 @@ export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKe
       },
       markScheme,
       studentOcrText: response.ocrText,
-      markBreakdown: (parsed.markBreakdown ?? [])
-        .map((entry) => ({
-          criterion: entry.criterion ?? "criterion",
-          awarded: entry.awarded === true,
-          evidence: entry.evidence ?? "",
-        }))
-        .filter((entry) => entry.criterion || entry.evidence),
+      markBreakdown: score.markBreakdown,
     },
   };
 }
@@ -672,6 +578,14 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
     }
     try {
       const context = await resolveSubmissionQuestionContext(bundle, question.unitKey);
+      if (!context.hasOcrText) {
+        return {
+          questionKey: question.unitKey,
+          skipped: true,
+          reason: "No student answer was detected for this question. Check the script pages and mark manually.",
+          context,
+        };
+      }
       return { questionKey: question.unitKey, skipped: false, reason: null, context };
     } catch (error) {
       return {
@@ -706,8 +620,9 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
       markScheme: context.markScheme.partText,
     }));
 
+    const examLabel = deriveExamLabel(bundle.submission.subjectKey);
     const systemPrompt = [
-      "You are a cautious GCSE Edexcel Mathematics marker.",
+      `You are a cautious ${examLabel} marker.`,
       "Mark a whole paper in one pass.",
       "Every question already has its own relevant mark scheme excerpt.",
       "Do not mix criteria across questions.",
@@ -716,7 +631,7 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
     ].join(" ");
 
     const userPrompt = JSON.stringify({
-      task: "Mark this whole Edexcel GCSE Maths paper question-by-question.",
+      task: `Mark this whole ${examLabel} paper question-by-question.`,
       questions: payload,
       outputSchema: {
         results: payload.map((question) => ({
@@ -802,18 +717,15 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
     }
 
     const modelResult = parsedByQuestionKey.get(entry.questionKey);
-    const awardedMarks = Math.max(0, Math.min(entry.context.unit.totalMarks, Math.round(modelResult?.awardedMarks ?? 0)));
-    const confidence = Math.max(0, Math.min(1, Number(modelResult?.confidence ?? 0.5)));
+    const score = normalizeScoreModelResult(modelResult, entry.context.unit.totalMarks);
 
     return {
       questionKey: entry.questionKey,
       result: {
-        awardedMarks,
-        confidence,
-        needsReview: modelResult?.needsReview === true || confidence < 0.65,
-        rationale: typeof modelResult?.rationale === "string" && modelResult.rationale.trim()
-          ? modelResult.rationale.trim()
-          : "Auto-scored against the retrieved mark scheme excerpt.",
+        awardedMarks: score.awardedMarks,
+        confidence: score.confidence,
+        needsReview: score.needsReview,
+        rationale: score.rationale,
         evidence: {
           sourceUnit: {
             unitKey: entry.context.unit.unitKey,
@@ -829,13 +741,7 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
           },
           markScheme: entry.context.markScheme,
           studentOcrText: entry.context.response.ocrText,
-          markBreakdown: (modelResult?.markBreakdown ?? [])
-            .map((breakdown) => ({
-              criterion: breakdown.criterion ?? "criterion",
-              awarded: breakdown.awarded === true,
-              evidence: breakdown.evidence ?? "",
-            }))
-            .filter((breakdown) => breakdown.criterion || breakdown.evidence),
+          markBreakdown: score.markBreakdown,
         },
       } satisfies AutoScoreResult,
     };

@@ -1,10 +1,8 @@
-import { expandAqaBusinessTopicSelection, groupAqaBusinessQuestionUnits } from "@/lib/paper-maker/aqa-business";
-import { expandAqaEnglishLanguageTopicSelection, groupAqaEnglishLanguageSectionUnits } from "@/lib/paper-maker/aqa-english-language";
+import { expandAqaBusinessTopicSelection } from "@/lib/paper-maker/aqa-business";
+import { expandAqaEnglishLanguageTopicSelection } from "@/lib/paper-maker/aqa-english-language";
 import { expandAqaEnglishLiteratureTopicSelection } from "@/lib/paper-maker/aqa-english-literature";
 import {
   expandTopicSelection,
-  groupQuestionPartsIntoUnits,
-  groupQuestionUnitsBySourceQuestion,
   selectQuestionUnits,
   sortQuestionUnitsForRendering,
   type QuestionMixProfile,
@@ -18,7 +16,7 @@ import {
   filterCombinedScienceQuestionBankByTier,
   type SubjectTierKey,
 } from "@/lib/paper-maker/combined-science";
-import { expandEdexcelBusinessTopicSelection, groupEdexcelBusinessQuestionUnits } from "@/lib/paper-maker/edexcel-business";
+import { expandEdexcelBusinessTopicSelection } from "@/lib/paper-maker/edexcel-business";
 import { expandEdexcelFrenchTopicSelection } from "@/lib/paper-maker/edexcel-french";
 import { expandEdexcelMathematicsTopicSelection } from "@/lib/paper-maker/edexcel-mathematics";
 import { expandEdexcelSeparateScienceTopicSelection } from "@/lib/paper-maker/edexcel-separate-science";
@@ -41,6 +39,7 @@ import {
 import { findOrphanStemFigures, type OrphanFigureIssue } from "@/lib/paper-maker/region-render";
 import { estimatePaperTimeMinutes, getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefinition, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
 import { filterUnitsBySourcePdfRenderability, generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
+import { groupQuestionUnitsForSubject } from "@/lib/paper-maker/units";
 
 export class PaperGenerationError extends Error {
   readonly status: number;
@@ -413,16 +412,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     }
   }
 
-  let allUnits = groupQuestionPartsIntoUnits(effectiveBank);
-  if (subject.key === "edexcel-business") {
-    allUnits = groupEdexcelBusinessQuestionUnits(allUnits);
-  } else if (subject.key === "aqa-business") {
-    allUnits = groupAqaBusinessQuestionUnits(allUnits);
-  } else if (subject.key === "aqa-english-language") {
-    allUnits = groupAqaEnglishLanguageSectionUnits(allUnits);
-  } else if (["edexcel-combined-science", "edexcel-biology", "edexcel-chemistry", "edexcel-physics", "ocr-computer-science", "edexcel-mathematics-higher"].includes(subject.key)) {
-    allUnits = groupQuestionUnitsBySourceQuestion(allUnits);
-  }
+  let allUnits = groupQuestionUnitsForSubject(subject.key, effectiveBank);
   allUnits = filterUnitsByCopyrightPlaceholders(allUnits).kept;
   const selectedLeafTopicIds = input.selectAllTopics
     ? Array.from(new Set(allUnits.flatMap((unit) => unit.canonicalLeafs)))

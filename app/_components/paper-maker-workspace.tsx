@@ -288,6 +288,8 @@ function TopicNode({
 
 function SuccessModal({
   result,
+  subjectKey,
+  subjectTier,
   subjectLabel,
   tierLabel,
   minutesPerMark,
@@ -295,7 +297,9 @@ function SuccessModal({
   onClose,
   onBuildAnother,
 }: {
-  result: { paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number };
+  result: { paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number; savedPaperIds: string[]; markSchemeUnitKeys: string[][]; saveWarning?: string | null };
+  subjectKey: string;
+  subjectTier?: string;
   subjectLabel: string;
   tierLabel?: string;
   minutesPerMark: number;
@@ -304,6 +308,55 @@ function SuccessModal({
   onBuildAnother: () => void;
 }) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [markSchemeState, setMarkSchemeState] = useState<{ status: "idle" | "loading" | "error" | "warning"; message?: string }>({ status: "idle" });
+
+  const hasUnitKeys = result.markSchemeUnitKeys.some((keys) => keys.length > 0);
+  const markingHref = !isAuthenticated
+    ? "/auth?redirect=/marking"
+    : result.savedPaperIds.length === 1
+      ? `/marking/start/${result.savedPaperIds[0]}`
+      : "/marking";
+
+  const generateMarkScheme = async () => {
+    if (!hasUnitKeys) {
+      setMarkSchemeState({ status: "error", message: "Mark scheme is only available for a freshly generated paper." });
+      return;
+    }
+    setMarkSchemeState({ status: "loading" });
+    try {
+      let warning: string | null = null;
+      for (let index = 0; index < result.markSchemeUnitKeys.length; index += 1) {
+        const unitKeys = result.markSchemeUnitKeys[index];
+        if (unitKeys.length === 0) continue;
+        const response = await fetch("/api/paper-maker/generate-mark-scheme", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ subjectKey, subjectTier, selectedUnitKeys: unitKeys }),
+        });
+        if (!response.ok) {
+          throw new Error((await response.text()) || "Failed to generate mark scheme.");
+        }
+        const failureCount = Number(response.headers.get("X-Mark-Scheme-Failures") ?? 0);
+        if (failureCount > 0) {
+          warning = `${failureCount} mark scheme section${failureCount === 1 ? "" : "s"} could not be assembled. The downloaded PDF includes placeholder pages with details.`;
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = result.markSchemeUnitKeys.filter((keys) => keys.length > 0).length === 1
+          ? `${subjectKey}-mark-scheme.pdf`
+          : `${subjectKey}-mark-scheme-${index + 1}.pdf`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(url);
+      }
+      setMarkSchemeState(warning ? { status: "warning", message: warning } : { status: "idle" });
+    } catch (cause) {
+      setMarkSchemeState({ status: "error", message: cause instanceof Error ? cause.message : String(cause) });
+    }
+  };
 
   useEffect(() => {
     if (!modalRef.current) return;
@@ -369,12 +422,31 @@ function SuccessModal({
         </div>
 
         <div className="mt-6 flex flex-col gap-2.5">
-          <a
-            href={isAuthenticated ? "/marking" : "/auth?redirect=/marking"}
-            className="btn-press inline-flex w-full items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white"
+          <button
+            type="button"
+            onClick={generateMarkScheme}
+            disabled={!hasUnitKeys || markSchemeState.status === "loading"}
+            className="btn-press inline-flex w-full items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white disabled:opacity-50"
           >
-            Open marking studio
-          </a>
+            {markSchemeState.status === "loading" ? "Building mark scheme..." : "Generate mark scheme"}
+          </button>
+          {markSchemeState.status === "error" ? (
+            <p className="-mt-1 text-[0.78rem] text-red-700">{markSchemeState.message}</p>
+          ) : null}
+          {markSchemeState.status === "warning" ? (
+            <p className="-mt-1 text-[0.78rem] text-amber-700">{markSchemeState.message}</p>
+          ) : null}
+          {result.saveWarning ? (
+            <p className="rounded-2xl bg-amber-50 px-4 py-3 text-left text-[0.78rem] text-amber-800">{result.saveWarning}</p>
+          ) : null}
+          {result.saveWarning && isAuthenticated ? null : (
+            <a
+              href={markingHref}
+              className="btn-press inline-flex w-full items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white"
+            >
+              Open marking studio
+            </a>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -441,7 +513,7 @@ export function PaperMakerWorkspace({
   const [selectedTier, setSelectedTier] = useState<SubjectTierKey>(initialTier ?? defaultSubject?.tiers[0]?.key ?? "foundation");
   const [error, setError] = useState<string | null>(null);
   const [paperCount, setPaperCount] = useState(1);
-  const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number; savedPaperIds: string[] } | null>(null);
+  const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number; savedPaperIds: string[]; markSchemeUnitKeys: string[][]; saveWarning?: string | null } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isLoadingSubjectDetail, setIsLoadingSubjectDetail] = useState(false);
   const [topicSearch, setTopicSearch] = useState("");
@@ -658,6 +730,7 @@ export function PaperMakerWorkspace({
         const priorCoveredLeafTopicIds: string[] = [];
         let saveWarning: string | null = null;
         const savedPaperIds: string[] = [];
+        const markSchemeUnitKeys: string[][] = [];
         let lastQuestionCount = 0;
         let lastTotalMarks = 0;
         let lastCoveredTopics = 0;
@@ -717,6 +790,9 @@ export function PaperMakerWorkspace({
           }
 
           const encodedUnitKeys = response.headers.get("X-Selected-Unit-Keys");
+          if (encodedUnitKeys) {
+            markSchemeUnitKeys.push(decodeURIComponent(encodedUnitKeys).split("\n").filter(Boolean));
+          }
 
           const url = URL.createObjectURL(blob);
           const anchor = document.createElement("a");
@@ -765,6 +841,8 @@ export function PaperMakerWorkspace({
           coveredTopics: lastCoveredTopics,
           timeMinutes: lastTimeMinutes,
           savedPaperIds,
+          markSchemeUnitKeys,
+          saveWarning,
         });
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
@@ -1278,6 +1356,8 @@ export function PaperMakerWorkspace({
       {result ? (
         <SuccessModal
           result={result}
+          subjectKey={selectedSubjectKey}
+          subjectTier={activeSubject?.tiers.length ? selectedTier : undefined}
           subjectLabel={activeSubject?.label ?? ""}
           tierLabel={activeTier?.label}
           minutesPerMark={activeMinutesPerMark}

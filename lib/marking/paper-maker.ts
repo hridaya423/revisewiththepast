@@ -1,8 +1,10 @@
 import "server-only";
 
-import { groupQuestionPartsIntoUnits, type QuestionUnit } from "@/lib/paper-maker/aqa-geography";
+import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
+import type { QuestionUnit } from "@/lib/paper-maker/aqa-geography";
 import { getPaperMakerQuestionBankFromConvex } from "@/lib/paper-maker/convex";
-import type { PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
+import { getPaperMakerSubject, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
+import { filterQuestionBankForSubjectTier, groupQuestionUnitsForSubject } from "@/lib/paper-maker/units";
 import { compareExamQuestionOrder } from "@/lib/marking/question-path";
 import type { DetectedPaperIdentity } from "@/lib/marking/paper-identity";
 
@@ -13,17 +15,18 @@ function inferTierFromSourceRelativePath(sourceRelativePath: string) {
   return "none" as const;
 }
 
-export async function getMarkableUnitsForSubject(subjectKey: PaperMakerSubjectKey): Promise<QuestionUnit[]> {
-  if (subjectKey !== "edexcel-mathematics-higher") {
-    throw new Error(`Saved paper support is not implemented for ${subjectKey} yet.`);
+export async function getMarkableUnitsForSubject(subjectKey: PaperMakerSubjectKey, subjectTier?: SubjectTierKey | null): Promise<QuestionUnit[]> {
+  const subject = getPaperMakerSubject(subjectKey);
+  if (!subject) {
+    throw new Error(`Unknown subject ${subjectKey}.`);
   }
 
-  const questionBank = await getPaperMakerQuestionBankFromConvex("edexcel", "mathematics");
-  return groupQuestionPartsIntoUnits(questionBank);
+  const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+  return groupQuestionUnitsForSubject(subjectKey, filterQuestionBankForSubjectTier(subjectKey, questionBank, subjectTier));
 }
 
-export async function getMarkableUnitsByUnitKeys(subjectKey: PaperMakerSubjectKey, unitKeys: string[]) {
-  const units = await getMarkableUnitsForSubject(subjectKey);
+export async function getMarkableUnitsByUnitKeys(subjectKey: PaperMakerSubjectKey, unitKeys: string[], subjectTier?: SubjectTierKey | null) {
+  const units = await getMarkableUnitsForSubject(subjectKey, subjectTier);
   const unitsByKey = new Map(units.map((unit) => [unit.unitKey, unit] as const));
   return unitKeys
     .map((unitKey) => unitsByKey.get(unitKey))
@@ -31,7 +34,10 @@ export async function getMarkableUnitsByUnitKeys(subjectKey: PaperMakerSubjectKe
 }
 
 export async function getMarkableUnitsForPaperIdentity(identity: DetectedPaperIdentity) {
-  const units = await getMarkableUnitsForSubject("edexcel-mathematics-higher");
+  const units = await getMarkableUnitsForSubject(
+    "edexcel-mathematics-higher",
+    identity.tier === "foundation" || identity.tier === "higher" ? identity.tier : null,
+  );
   return units.filter((unit) => {
     if (unit.paperCode !== identity.paperCode) return false;
     if (unit.year !== identity.year) return false;

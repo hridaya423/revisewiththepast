@@ -50,7 +50,11 @@ export async function POST(request: NextRequest) {
   const selectedUnitKeys = unitKeysRaw.split("\n").map((value) => value.trim()).filter(Boolean);
   if (selectedUnitKeys.length === 0) return badRequest("selectedUnitKeys is required.");
 
-  const selectedUnits = await getMarkableUnitsByUnitKeys(subjectKey, selectedUnitKeys);
+  const selectedUnits = await getMarkableUnitsByUnitKeys(
+    subjectKey,
+    selectedUnitKeys,
+    subjectTierRaw === "foundation" || subjectTierRaw === "higher" ? subjectTierRaw : null,
+  );
   if (selectedUnits.length !== selectedUnitKeys.length) {
     return badRequest("Could not resolve every selected unit for this generated paper.");
   }

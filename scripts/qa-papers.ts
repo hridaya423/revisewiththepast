@@ -11,6 +11,7 @@ import type { QuestionMixProfile } from "@/lib/paper-maker/aqa-geography";
 import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
 import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
+import { assembleMarkSchemePdf } from "@/lib/marking/mark-scheme";
 import { runDeterministicChecks } from "@/lib/paper-maker/validate";
 
 type CliOptions = {
@@ -47,6 +48,8 @@ type PaperRunReport = {
   selectedSourceQuestionKeys?: string[];
   selectedUnitMarks?: number[];
   selectedCoveredLeafTopicIds?: string[];
+  markSchemeIncludedCount?: number;
+  markSchemeFailureCount?: number;
   findings: QaCheckFinding[];
 };
 
@@ -190,6 +193,36 @@ async function runPaper(
         check: "orphan-figure",
         severity: "error",
         message: `Unit ${issue.unitKey} renders ${issue.figureLabel} (source page ${issue.pageNumber}) but no part references it.`,
+      });
+    }
+
+    try {
+      const markScheme = await assembleMarkSchemePdf(result.selection.selectedUnits);
+      writeFileSync(resolve(paperDir, "mark-scheme.pdf"), Buffer.from(markScheme.bytes));
+      report.markSchemeIncludedCount = markScheme.includedCount;
+      report.markSchemeFailureCount = markScheme.failures.length;
+      if (markScheme.includedCount !== result.selection.selectedUnits.length) {
+        report.findings.push({
+          check: "mark-scheme-coverage",
+          severity: "error",
+          message: `Assembled ${markScheme.includedCount}/${result.selection.selectedUnits.length} selected unit mark schemes.`,
+        });
+      }
+      for (const failure of markScheme.failures) {
+        report.findings.push({
+          check: "mark-scheme-assembly",
+          severity: "error",
+          unitKey: failure.unitKey,
+          message: `${failure.label}: ${failure.error}`,
+        });
+      }
+    } catch (error) {
+      report.markSchemeIncludedCount = 0;
+      report.markSchemeFailureCount = result.selection.selectedUnits.length;
+      report.findings.push({
+        check: "mark-scheme-assembly",
+        severity: "error",
+        message: error instanceof Error ? error.message : String(error),
       });
     }
 

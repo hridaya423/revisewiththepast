@@ -148,13 +148,18 @@ function checkQuestionMix(options?: QaCheckOptions): QaFinding[] {
   return findings;
 }
 
-function checkCoverOnlyOrMissingQuestions(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+async function checkCoverOnlyOrMissingQuestions(pngPages: RenderedPngPage[], textPages: RenderedTextPage[], options?: QaCheckOptions): Promise<QaFinding[]> {
   const contentPages = textPages.filter((page) => page.pageNumber >= CONTENT_PAGE_START);
   const meaningfulLengths = contentPages.map((page) => meaningfulTextLength(page.text));
   const meaningfulPages = meaningfulLengths.filter((length) => length >= BLANK_PAGE_TEXT_THRESHOLD).length;
+  const inkedPages = await Promise.all(
+    pngPages
+      .filter((page) => page.pageNumber >= CONTENT_PAGE_START)
+      .map(async (page) => await computeInkCoverage(page.png)),
+  );
   const findings: QaFinding[] = [];
 
-  if ((options?.selectedUnitCount ?? 1) > 0 && meaningfulPages === 0) {
+  if ((options?.selectedUnitCount ?? 1) > 0 && meaningfulPages === 0 && !inkedPages.some((coverage) => coverage >= BLANK_PAGE_INK_THRESHOLD)) {
     findings.push({
       check: "cover-only-paper",
       severity: "error",
@@ -302,7 +307,7 @@ export async function runDeterministicChecks(
   const blank = await checkBlankPages(pngPages, textPages);
   return [
     ...blank,
-    ...checkCoverOnlyOrMissingQuestions(textPages, options),
+    ...await checkCoverOnlyOrMissingQuestions(pngPages, textPages, options),
     ...checkPageBloat(textPages, options),
     ...checkCopyrightPlaceholders(textPages),
     ...checkGenericExtraAnswerPages(textPages),

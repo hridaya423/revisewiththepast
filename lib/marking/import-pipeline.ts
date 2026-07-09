@@ -22,7 +22,15 @@ import {
 } from "@/lib/marking/paper-maker";
 import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
 import { parseQuestionPathFromPrompt } from "@/lib/marking/question-path";
-import { OCR_MODEL, OCR_PROVIDER, runDeepseekOcrOnImage } from "@/lib/marking/replicate";
+import {
+  HANDWRITTEN_OCR_MODEL,
+  HANDWRITTEN_OCR_PROVIDER,
+  OCR_MODEL,
+  OCR_PROVIDER,
+  isHandwrittenOcrConfigured,
+  runDeepseekOcrOnImage,
+  runHandwrittenOcrOnImage,
+} from "@/lib/marking/replicate";
 import { autoScoreMathPaper } from "@/lib/marking/scoring";
 import type { QuestionUnit } from "@/lib/paper-maker/aqa-geography";
 import { fetchAuthMutation } from "@/lib/auth-server";
@@ -197,6 +205,64 @@ function matchUnitsToPage(pageText: string, units: QuestionUnit[]) {
   });
 }
 
+type PageImage = { url: string; uploadId: string; size: number; fileName: string };
+
+async function buildHandwrittenOcrText(
+  pageNumbers: number[],
+  pageImageByNumber: Map<number, PageImage>,
+  cache: Map<number, string>,
+): Promise<string> {
+  if (!isHandwrittenOcrConfigured()) return "";
+  const blocks: string[] = [];
+  for (const pageNumber of pageNumbers) {
+    if (!cache.has(pageNumber)) {
+      const image = pageImageByNumber.get(pageNumber);
+      let text = "";
+      if (image) {
+        try {
+          const handwritten = await runHandwrittenOcrOnImage(image.url);
+          text = handwritten.text.trim();
+        } catch (error) {
+          console.warn(`Handwritten OCR failed for page ${pageNumber}:`, error);
+        }
+      }
+      cache.set(pageNumber, text);
+    }
+    const cached = cache.get(pageNumber) ?? "";
+    if (cached) blocks.push(`Page ${pageNumber}\n${cached}`.trim());
+  }
+  return blocks.join("\n\n").trim();
+}
+
+async function resolveAnswerOcr(params: {
+  merged: { text: string; pages: number[] };
+  promptText: string;
+  contextText: string | null;
+  pageImageByNumber: Map<number, PageImage>;
+  handwrittenOcrByNumber: Map<number, string>;
+}): Promise<{ ocrText: string; usedHandwritten: boolean; handwrittenText: string; answerExtraction: unknown }> {
+  const { merged, promptText, contextText, pageImageByNumber, handwrittenOcrByNumber } = params;
+  const extracted = extractAnswerRegionText({ fullOcrText: merged.text, promptText, contextText });
+
+  if (extracted.answerText) {
+    return { ocrText: extracted.answerText, usedHandwritten: false, handwrittenText: "", answerExtraction: extracted.rawJson };
+  }
+
+  const handwrittenText = await buildHandwrittenOcrText(merged.pages, pageImageByNumber, handwrittenOcrByNumber);
+  if (!handwrittenText) {
+    return { ocrText: merged.text, usedHandwritten: false, handwrittenText: "", answerExtraction: extracted.rawJson };
+  }
+
+  const combined = `${merged.text}\n\n${handwrittenText}`.trim();
+  const reExtracted = extractAnswerRegionText({ fullOcrText: combined, promptText, contextText });
+  return {
+    ocrText: reExtracted.answerText || handwrittenText,
+    usedHandwritten: true,
+    handwrittenText,
+    answerExtraction: reExtracted.rawJson,
+  };
+}
+
 export async function importFinishedPaper(options: ImportFinishedPaperOptions): Promise<ImportFinishedPaperResult> {
   const { file, studentLabel, skipAutoScore = false, existingSubmissionId } = options;
   const pdfBytes = new Uint8Array(await file.arrayBuffer());
@@ -237,7 +303,10 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
       fileName,
     });
 
-    const ocr = await runDeepseekOcrOnImage(upload.url);
+    const ocr = await runDeepseekOcrOnImage(upload.url).catch((error) => {
+      console.warn(`Printed OCR failed for page ${rendered.pageNumber}:`, error);
+      return { text: "", output: null, predictionId: null };
+    });
     pageOcrByNumber.set(rendered.pageNumber, ocr.text.trim());
   }
 
@@ -358,6 +427,7 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
     }
   }
 
+  const handwrittenOcrByNumber = new Map<number, string>();
   for (const unit of orderedUnits) {
     const merged = mergedResponses.get(unit.unitKey);
     if (!merged) {
@@ -372,10 +442,12 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
 
     const promptText = unit.parts.map((part) => part.promptText).join("\n\n");
     const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null;
-    const extracted = extractAnswerRegionText({
-      fullOcrText: merged.text,
+    const resolved = await resolveAnswerOcr({
+      merged,
       promptText,
       contextText,
+      pageImageByNumber,
+      handwrittenOcrByNumber,
     });
 
     const primaryPage = merged.pages[0];
@@ -388,13 +460,15 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
       questionNumber: unit.questionNumber,
       questionPartNumber: unit.parts[0]?.questionPartNumber ?? undefined,
       sourceImageUrl,
-      ocrText: extracted.answerText || merged.text,
-      ocrProvider: OCR_PROVIDER,
-      ocrModel: OCR_MODEL,
+      ocrText: resolved.ocrText,
+      ocrProvider: resolved.usedHandwritten ? HANDWRITTEN_OCR_PROVIDER : OCR_PROVIDER,
+      ocrModel: resolved.usedHandwritten ? HANDWRITTEN_OCR_MODEL : OCR_MODEL,
       ocrRawJson: JSON.stringify({
         importedFromPdf: true,
         fullPageOcr: merged.text,
-        answerExtraction: extracted.rawJson,
+        handwrittenOcr: resolved.handwrittenText || undefined,
+        usedHandwritten: resolved.usedHandwritten,
+        answerExtraction: resolved.answerExtraction,
         scriptPages: merged.pages,
       }),
     });
@@ -487,7 +561,10 @@ async function attachScriptToExistingSubmission(params: {
       size: upload.size,
       fileName,
     });
-    const ocr = await runDeepseekOcrOnImage(upload.url);
+    const ocr = await runDeepseekOcrOnImage(upload.url).catch((error) => {
+      console.warn(`Printed OCR failed for page ${rendered.pageNumber}:`, error);
+      return { text: "", output: null, predictionId: null };
+    });
     pageOcrByNumber.set(rendered.pageNumber, ocr.text.trim());
   }
 
@@ -536,6 +613,7 @@ async function attachScriptToExistingSubmission(params: {
     }
   }
 
+  const handwrittenOcrByNumber = new Map<number, string>();
   for (const savedQuestion of bundle.savedPaperQuestions) {
     const unit = paperUnits.find((entry) => entry.unitKey === savedQuestion.unitKey);
     if (!unit) continue;
@@ -552,7 +630,13 @@ async function attachScriptToExistingSubmission(params: {
 
     const promptText = unit.parts.map((part) => part.promptText).join("\n\n");
     const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null;
-    const extracted = extractAnswerRegionText({ fullOcrText: merged.text, promptText, contextText });
+    const resolved = await resolveAnswerOcr({
+      merged,
+      promptText,
+      contextText,
+      pageImageByNumber,
+      handwrittenOcrByNumber,
+    });
     const primaryPage = merged.pages[0];
     const sourceImageUrl = primaryPage ? pageImageByNumber.get(primaryPage)?.url : undefined;
     const manualReview = requiresManualReview(promptText, contextText);
@@ -563,14 +647,16 @@ async function attachScriptToExistingSubmission(params: {
       questionNumber: unit.questionNumber,
       questionPartNumber: unit.parts[0]?.questionPartNumber ?? undefined,
       sourceImageUrl,
-      ocrText: extracted.answerText || merged.text,
-      ocrProvider: OCR_PROVIDER,
-      ocrModel: OCR_MODEL,
+      ocrText: resolved.ocrText,
+      ocrProvider: resolved.usedHandwritten ? HANDWRITTEN_OCR_PROVIDER : OCR_PROVIDER,
+      ocrModel: resolved.usedHandwritten ? HANDWRITTEN_OCR_MODEL : OCR_MODEL,
       ocrRawJson: JSON.stringify({
         importedFromPdf: true,
         attachedToSubmission: true,
         fullPageOcr: merged.text,
-        answerExtraction: extracted.rawJson,
+        handwrittenOcr: resolved.handwrittenText || undefined,
+        usedHandwritten: resolved.usedHandwritten,
+        answerExtraction: resolved.answerExtraction,
         scriptPages: merged.pages,
       }),
     });
