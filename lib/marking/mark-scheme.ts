@@ -249,6 +249,13 @@ function aqaOtherPartPattern(questionNumber: string, partNumber: string) {
   return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*(?!${partNumber}\\b)\\d{1,2}\\b`, "i");
 }
 
+function aqaDifferentQuestionStart(text: string, questionNumber: string) {
+  for (const match of text.matchAll(/\b0?(\d{1,2})\s*(?:\.|\s)\s*\d{1,2}\b/g)) {
+    if (normalizeQuestionNumber(match[1]) !== questionNumber) return match;
+  }
+  return null;
+}
+
 function narrowAqaNumberedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage[]) {
   const questionNumber = normalizeQuestionNumber(unit.questionNumber);
   const parts = unit.parts.map((part) => part.questionPartNumber).filter((part): part is string => Boolean(part));
@@ -265,16 +272,23 @@ function narrowAqaNumberedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage
     const nextPartPattern = aqaOtherPartPattern(questionNumber, parts[0]);
     const firstPageRemainder = page.text.slice(startOffset);
     const firstNextMatch = firstPageRemainder.slice(1).match(nextPartPattern);
-    const firstText = normalizeInlineText(firstPageRemainder.slice(0, firstNextMatch?.index === undefined ? undefined : 1 + firstNextMatch.index));
+    const firstOtherQuestion = aqaDifferentQuestionStart(firstPageRemainder.slice(1), questionNumber);
+    const firstEnd = Math.min(
+      firstNextMatch?.index === undefined ? Infinity : 1 + firstNextMatch.index,
+      firstOtherQuestion?.index === undefined ? Infinity : 1 + firstOtherQuestion.index,
+    );
+    const firstText = normalizeInlineText(firstPageRemainder.slice(0, Number.isFinite(firstEnd) ? firstEnd : undefined));
     if (firstText) selectedPages.push({ ...page, pageNumber: 0, text: firstText, lines: [] });
-    if (firstNextMatch) return selectedPages;
+    if (firstNextMatch || firstOtherQuestion) return selectedPages;
 
     for (let index = startIndex + 1; index < pages.length; index += 1) {
       const continuation = pages[index];
       const nextMatch = continuation.text.match(nextPartPattern);
-      const text = normalizeInlineText(continuation.text.slice(0, nextMatch?.index));
+      const otherQuestion = aqaDifferentQuestionStart(continuation.text, questionNumber);
+      const end = Math.min(nextMatch?.index ?? Infinity, otherQuestion?.index ?? Infinity);
+      const text = normalizeInlineText(continuation.text.slice(0, Number.isFinite(end) ? end : undefined));
       if (text) selectedPages.push({ ...continuation, pageNumber: 0, text, lines: [] });
-      if (nextMatch || /\bSection\s+[B-Z]\b/i.test(continuation.text)) break;
+      if (nextMatch || otherQuestion || /\bSection\s+[B-Z]\b/i.test(continuation.text)) break;
     }
     return selectedPages;
   }
@@ -538,9 +552,24 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
       let drewLabel = false;
       let copiedPages = 0;
       let fallbackSegmentIndex = 0;
-      for (const page of collectedPages) {
+      const renderedPages = unit.subjectSlug === "french" && collectedPages.length > 0
+        ? [{ ...collectedPages[0], pageNumber: 0, text: collectedPages.map((page) => page.text).join("\n"), lines: [] }]
+        : unit.boardCode === "aqa" && unit.subjectSlug === "business" && collectedPages.length > 0
+        ? [{ ...collectedPages[0], pageNumber: 0, text: collectedPages.map((page) => page.text).join("\n"), lines: [] }]
+        : unit.boardCode === "aqa" && unit.subjectSlug === "geography"
+          ? collectedPages.reduce<CachedPdfPage[]>((pages, page) => {
+          const previous = pages.at(-1);
+          if (page.pageNumber < 1 && previous && previous.pageNumber < 1) {
+            previous.text = `${previous.text}\n${page.text}`;
+          } else {
+            pages.push({ ...page });
+          }
+          return pages;
+        }, [])
+          : collectedPages;
+      for (const page of renderedPages) {
         if (page.pageNumber > 0 && normalizeInlineText(page.text).length < 120 && !pageHasQuestionStart(page, normalizeQuestionNumber(unit.questionNumber))) continue;
-        if (page.pageNumber < 1 || unit.subjectSlug === "mathematics" || unit.subjectSlug === "business" || unit.subjectSlug === "computer-science") {
+        if (page.pageNumber < 1 || unit.subjectSlug === "mathematics" || unit.subjectSlug === "business" || unit.subjectSlug === "computer-science" || unit.subjectSlug === "french") {
           tableLayout = drawMarkSchemeTableRow(outputDoc, tableLayout, {
             unit,
             order,
@@ -733,6 +762,7 @@ function extractIndicativeContent(text: string) {
     .replace(/\s+\d+\s+Level\s+Marks\s+Description\b.+$/i, "")
     .replace(/\s+Level\s+Marks\s+Description\b.+$/i, "")
     .replace(/\s+Qu\s+Pt\s+Marking\s+Guidance\s+Total\s+marks\b.+$/i, "")
+    .replace(/\s+\d+\s+Mark Scheme\s*-\s*(?:Hot desert|Cold) environment\b/gi, "")
     .replace(/\s+\d+\s+0?\d{1,2}\s+\d{1,2}\s+.+$/i, "")
     .replace(/\s+0?\d{1,2}\s+\d{1,2}\s+Using\s+Figure\b.+$/i, "")
     .replace(/\s+PMT\s+MARK SCHEME\b.+$/i, "")
@@ -745,6 +775,7 @@ function continuationIndicativeContent(unit: MarkableUnit, text: string) {
   return text
     .replace(/\bPMT\b/g, " ")
     .replace(/\bMARK SCHEME\s*-\s*GCSE\s+GEOGRAPHY\s*-\s*[^\d]+\d{4}\b/gi, " ")
+    .replace(/\bMark Scheme\s*-\s*(?:Hot desert|Cold) environment\b/gi, " ")
     .replace(/\bQu\s+Pt\s+Marking\s+Guidance\s+Total\s+marks\b.+$/i, " ")
     .replace(/\b(?:cont\.)?\s*\d+\s+Indicative content\b/gi, " ")
     .replace(/\bIndicative content\b/gi, " ")
@@ -1114,9 +1145,183 @@ function drawOcrMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout |
   return current;
 }
 
+function bulletItemsThatFit(items: BulletLine[], maxHeight: number, fonts: MarkSchemeFonts, size: number, maxWidth: number, lineHeight: number) {
+  let height = 0;
+  let count = 0;
+  for (const item of items) {
+    const itemHeight = bulletItemsHeight([item], fonts, size, maxWidth, lineHeight);
+    if (count > 0 && height + itemHeight > maxHeight) break;
+    if (count === 0 && itemHeight > maxHeight) return 1;
+    height += itemHeight;
+    count += 1;
+  }
+  return count;
+}
+
+function splitBulletItem(item: BulletLine, maxHeight: number, fonts: MarkSchemeFonts, size: number, maxWidth: number, lineHeight: number) {
+  const indent = item.indent ? 14 : 0;
+  const lines = wrapText(item.text, item.bold ? fonts.bold : fonts.regular, size, maxWidth - indent - 12);
+  const linesPerChunk = Math.max(1, Math.floor(maxHeight / lineHeight));
+  const chunks: BulletLine[] = [];
+  for (let index = 0; index < lines.length; index += linesPerChunk) {
+    chunks.push({
+      ...item,
+      text: lines.slice(index, index + linesPerChunk).join(" "),
+      bullet: index === 0 ? item.bullet : false,
+    });
+  }
+  return chunks;
+}
+
+function drawAqaGeographyMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string }, fonts: MarkSchemeFonts) {
+  const entry = buildStructuredEntry(row.unit, row.text);
+  const contentW = MS_GUIDANCE_W - 18;
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW).slice(0, 4);
+  const levelItems = entry.levels.length > 0 ? levelGuidanceItems(entry.guidance).slice(0, 3) : [];
+  const guidanceLines = entry.levels.length > 0 ? [] : guidanceDisplayLines(entry.guidance, fonts, 8, contentW).slice(0, 18);
+  const answerHeight = entry.answerLetter && entry.answerText ? 24 : 0;
+  const levelsHeight = levelTableHeight(entry.levels, fonts, contentW);
+  const levelItemsHeight = levelItems.length > 0 ? bulletItemsHeight(levelItems, fonts, 7.8, contentW, 9) + 8 : 0;
+  const indicativeItems = indicativeContentItems(entry.indicativeContent);
+  let remainingItems = indicativeItems;
+  let current = layout ?? newTablePage(outputDoc, fonts, 1);
+  let continuation = false;
+
+  do {
+    const rowPromptLines = continuation ? [] : promptLines;
+    const rowLevelsHeight = continuation ? 0 : levelsHeight;
+    const rowLevelItems = continuation ? [] : levelItems;
+    const rowLevelItemsHeight = continuation ? 0 : levelItemsHeight;
+    const rowGuidanceLines = continuation ? [] : guidanceLines;
+    const rowAnswerHeight = continuation ? 0 : answerHeight;
+    const fixedHeight = 36
+      + rowPromptLines.length * 11
+      + rowAnswerHeight
+      + rowGuidanceLines.length * 11
+      + rowLevelsHeight
+      + rowLevelItemsHeight
+      + (rowLevelsHeight > 0 ? 34 : 12);
+    const titleHeight = remainingItems.length > 0 ? 25 : 0;
+    const firstItemHeight = remainingItems.length > 0 ? bulletItemsHeight([remainingItems[0]], fonts, 7.8, contentW, 9) : 0;
+
+    if (current.y !== MS_TOP - 22 && current.y - MS_BOTTOM < fixedHeight + titleHeight + firstItemHeight) {
+      current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+      continue;
+    }
+
+    const itemCapacity = current.y - MS_BOTTOM - fixedHeight - titleHeight;
+    if (remainingItems.length > 0 && itemCapacity >= 9 && itemCapacity < firstItemHeight) {
+      remainingItems = [...splitBulletItem(remainingItems[0], itemCapacity, fonts, 7.8, contentW, 9), ...remainingItems.slice(1)];
+      continue;
+    }
+    const itemCount = itemCapacity < firstItemHeight
+      ? 0
+      : bulletItemsThatFit(remainingItems, itemCapacity, fonts, 7.8, contentW, 9);
+    const rowItems = remainingItems.slice(0, itemCount);
+    const indicativeHeight = rowItems.length > 0 ? titleHeight + bulletItemsHeight(rowItems, fonts, 7.8, contentW, 9) : 0;
+    const rowHeight = Math.max(58, fixedHeight + indicativeHeight);
+    const y = current.y - rowHeight;
+    const textX = MS_LEFT + MS_QUESTION_W + MS_PART_W + 8;
+
+    current.page.drawRectangle({ x: MS_LEFT, y, width: MS_RIGHT - MS_LEFT, height: rowHeight, borderColor: rgb(0.05, 0.05, 0.05), borderWidth: 0.7 });
+    current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W, y }, end: { x: MS_LEFT + MS_QUESTION_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y }, end: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawLine({ start: { x: MS_RIGHT - MS_MARKS_W, y }, end: { x: MS_RIGHT - MS_MARKS_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawText(continuation ? "" : rowQuestionLabel(row.order), { x: MS_LEFT + 8, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
+    current.page.drawText(String(row.unit.totalMarks), { x: MS_RIGHT - MS_MARKS_W + 20, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+
+    let textY = y + rowHeight - 18;
+    textY = drawWrappedLines(current.page, rowPromptLines, textX, textY, 8.8, fonts.bold, 11);
+    if (!continuation && entry.answerLetter && entry.answerText) {
+      textY -= 8;
+      current.page.drawText(`${entry.answerLetter}.`, { x: textX, y: textY, size: 9.4, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
+      current.page.drawText(entry.answerText, { x: textX + 24, y: textY, size: 9.4, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+      textY -= 18;
+    }
+    if (!continuation && entry.levels.length > 0) textY = drawLevelTable(current.page, entry.levels, textX, textY - 8, contentW, fonts) - 12;
+    if (rowGuidanceLines.length > 0) textY = drawWrappedLines(current.page, rowGuidanceLines, textX, textY - 4, 8, fonts.regular, 10);
+    if (rowLevelItems.length > 0) textY = drawBulletItems(current.page, rowLevelItems, textX, textY - 8, 7.8, fonts, contentW, 9);
+    if (rowItems.length > 0) {
+      current.page.drawText("Indicative content", { x: textX, y: textY - 8, size: 8, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
+      drawBulletItems(current.page, rowItems, textX, textY - 19, 7.8, fonts, contentW, 9);
+    }
+
+    remainingItems = remainingItems.slice(itemCount);
+    current.y = y - 12;
+    if (remainingItems.length > 0) {
+      current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+      continuation = true;
+    }
+  } while (remainingItems.length > 0);
+
+  return current;
+}
+
+function drawAqaBusinessMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string }, fonts: MarkSchemeFonts) {
+  const entry = buildStructuredEntry(row.unit, row.text);
+  const contentW = MS_GUIDANCE_W - 18;
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW).slice(0, 4);
+  const guidanceLines = guidanceDisplayLines(entry.guidance || row.text, fonts, 8, contentW);
+  const answerHeight = entry.answerLetter && entry.answerText ? 24 : 0;
+  let remainingLines = guidanceLines;
+  let current = layout ?? newTablePage(outputDoc, fonts, 1);
+  let continuation = false;
+
+  do {
+    const rowPromptLines = continuation ? [] : promptLines;
+    const rowAnswerHeight = continuation ? 0 : answerHeight;
+    const fixedHeight = 36 + rowPromptLines.length * 11 + rowAnswerHeight + 12;
+    const firstLineHeight = remainingLines.length > 0 ? 10 : 0;
+    if (current.y !== MS_TOP - 22 && current.y - MS_BOTTOM < fixedHeight + firstLineHeight) {
+      current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+      continue;
+    }
+
+    const lineCapacity = Math.max(0, Math.floor((current.y - MS_BOTTOM - fixedHeight) / 10));
+    const rowLines = remainingLines.slice(0, lineCapacity);
+    const rowHeight = Math.max(58, fixedHeight + rowLines.length * 10);
+    const y = current.y - rowHeight;
+    const textX = MS_LEFT + MS_QUESTION_W + MS_PART_W + 8;
+
+    current.page.drawRectangle({ x: MS_LEFT, y, width: MS_RIGHT - MS_LEFT, height: rowHeight, borderColor: rgb(0.05, 0.05, 0.05), borderWidth: 0.7 });
+    current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W, y }, end: { x: MS_LEFT + MS_QUESTION_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y }, end: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawLine({ start: { x: MS_RIGHT - MS_MARKS_W, y }, end: { x: MS_RIGHT - MS_MARKS_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawText(continuation ? "" : rowQuestionLabel(row.order), { x: MS_LEFT + 8, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
+    current.page.drawText(String(row.unit.totalMarks), { x: MS_RIGHT - MS_MARKS_W + 20, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+
+    let textY = y + rowHeight - 18;
+    textY = drawWrappedLines(current.page, rowPromptLines, textX, textY, 8.8, fonts.bold, 11);
+    if (!continuation && entry.answerLetter && entry.answerText) {
+      textY -= 8;
+      current.page.drawText(`${entry.answerLetter}.`, { x: textX, y: textY, size: 9.4, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
+      current.page.drawText(entry.answerText, { x: textX + 24, y: textY, size: 9.4, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+      textY -= 18;
+    }
+    drawWrappedLines(current.page, rowLines, textX, textY - 4, 8, fonts.regular, 10);
+
+    remainingLines = remainingLines.slice(rowLines.length);
+    current.y = y - 12;
+    if (remainingLines.length > 0) {
+      current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+      continuation = true;
+    }
+  } while (remainingLines.length > 0);
+
+  return current;
+}
+
 function drawMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean }, fonts: MarkSchemeFonts) {
   if (row.unit.subjectSlug === "mathematics") return drawMathMarkSchemeTableRow(outputDoc, layout, row, fonts);
   if (row.unit.subjectSlug === "computer-science") return drawOcrMarkSchemeTableRow(outputDoc, layout, row, fonts);
+  if (row.unit.boardCode === "aqa" && row.unit.subjectSlug === "geography" && extractIndicativeContent(cleanFallbackGuidance(row.text, row.unit))) {
+    return drawAqaGeographyMarkSchemeTableRow(outputDoc, layout, row, fonts);
+  }
+  if (row.unit.boardCode === "aqa" && row.unit.subjectSlug === "business" && buildStructuredEntry(row.unit, row.text).levels.length === 0) {
+    return drawAqaBusinessMarkSchemeTableRow(outputDoc, layout, row, fonts);
+  }
   const entry = buildStructuredEntry(row.unit, row.text, row.continuation);
   if (row.continuation && row.unit.boardCode === "aqa" && row.unit.subjectSlug === "geography" && !entry.guidance && !entry.indicativeContent && entry.levels.length === 0) return layout;
   const contentW = MS_GUIDANCE_W - 18;

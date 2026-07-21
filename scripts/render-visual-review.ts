@@ -19,6 +19,7 @@ type QaReport = {
 const PAGE_WIDTH = 360;
 const GAP = 16;
 const LABEL_HEIGHT = 28;
+const MARKSCHEME_PAGE_COUNT = Number(process.env.MARKSCHEME_PAGE_COUNT ?? 4);
 
 function usage(): never {
   console.error("Usage: tsx scripts/render-visual-review.ts <report.json> [...report.json]");
@@ -61,7 +62,7 @@ async function renderReview(reportPath: string) {
     }
 
     if (existsSync(pdf)) {
-      for (let pageIndex = 0; pageIndex < 4; pageIndex += 1) {
+      for (let pageIndex = 0; pageIndex < MARKSCHEME_PAGE_COUNT; pageIndex += 1) {
         const rendered = await renderPdfCard(pdf, pageIndex, `${paper.configKey} markscheme p${pageIndex + 1}`);
         if (rendered) cards.push(rendered);
       }
