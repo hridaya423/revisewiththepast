@@ -1,36 +1,66 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #f4f2ec;
+  --bg: #ffffff;
   --bg-warm: #ece9e1;
+  --bg-warm-soft: #f2efe8;
+  --bg-workspace: #f5f1e8;
   --bg-elevated: #ffffff;
-  --text: #1a2e1a;
-  --text-secondary: #3d5a3f;
-  --text-muted: #6b8a6d;
-  --text-subtle: #9ab09c;
-  --accent: #5a8a5c;
-  --accent-deep: #4a7a4c;
-  --accent-glow: rgba(90, 138, 92, 0.15);
-  --accent-warm: #a08050;
-  --accent-warm-deep: #8a6e40;
-  --border: rgba(26, 46, 26, 0.08);
-  --border-strong: rgba(26, 46, 26, 0.14);
-  --shadow: rgba(26, 46, 26, 0.06);
-  --shadow-lg: rgba(26, 46, 26, 0.1);
+  --bg-soft: #f8f7f4;
+  --text: #0d1734;
+  --text-secondary: #35415f;
+  --text-muted: #657087;
+  --text-subtle: #8790a2;
+  --accent: #4747d8;
+  --accent-deep: #3535b2;
+  --accent-soft: #f0f0ff;
+  --accent-glow: rgba(71, 71, 216, 0.14);
+  --accent-warm: #62e2b6;
+  --accent-warm-deep: #12a978;
+  --accent-warm-soft: #e7fbf4;
+  --info: #496d8c;
+  --info-soft: #e8f0f7;
+  --warning: #946200;
+  --warning-soft: #fff0c7;
+  --danger: #b33a3a;
+  --danger-soft: #fbe3e3;
+  --success: #0a6b4f;
+  --success-soft: #e7fbf4;
+  --border: rgba(13, 23, 52, 0.12);
+  --border-strong: rgba(13, 23, 52, 0.2);
+  --shadow: rgba(13, 23, 52, 0.07);
+  --shadow-lg: rgba(13, 23, 52, 0.13);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-bg-warm: var(--bg-warm);
+  --color-bg-warm-soft: var(--bg-warm-soft);
+  --color-bg-workspace: var(--bg-workspace);
   --color-bg-elevated: var(--bg-elevated);
+  --color-bg-soft: var(--bg-soft);
   --color-text: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
   --color-text-subtle: var(--text-subtle);
   --color-accent: var(--accent);
   --color-accent-deep: var(--accent-deep);
+  --color-accent-soft: var(--accent-soft);
   --color-accent-warm: var(--accent-warm);
   --color-accent-warm-deep: var(--accent-warm-deep);
+  --color-accent-warm-soft: var(--accent-warm-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --font-sans: var(--font-sans-ui);
   --font-serif: var(--font-display);
   --font-mono: var(--font-geist-mono);
@@ -42,6 +72,7 @@
 
 html {
   scroll-behavior: smooth;
+  max-width: 100%;
 }
 
 body {
@@ -49,18 +80,40 @@ body {
   color: var(--text);
   font-family: var(--font-sans-ui), sans-serif;
   text-rendering: optimizeLegibility;
-  min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv02", "cv03";
+  max-width: 100%;
 }
 
 a {
-  color: inherit;
   text-decoration: none;
 }
 
 ::selection {
-  background: rgba(90, 138, 92, 0.2);
+  background: rgba(71, 71, 216, 0.18);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 2px var(--bg-elevated);
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:disabled,
+input:disabled,
+textarea:disabled,
+select:disabled {
+  cursor: not-allowed;
 }
 
 ::-webkit-scrollbar {
@@ -72,63 +125,112 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(26, 46, 26, 0.12);
+  background: rgba(23, 33, 63, 0.14);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(26, 46, 26, 0.2);
+  background: rgba(23, 33, 63, 0.24);
 }
 
-input[type="checkbox"] {
+.ui-checkbox {
   appearance: none;
   -webkit-appearance: none;
   width: 1.15rem;
   height: 1.15rem;
-  border: 1.5px solid rgba(26, 46, 26, 0.18);
-  border-radius: 0.35rem;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 0.2rem;
   background: transparent;
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
 }
 
-input[type="checkbox"]:hover {
+.ui-checkbox:hover {
   border-color: var(--accent);
 }
 
-input[type="checkbox"]:checked {
+.ui-checkbox:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--accent-glow);
+}
+
+.topic-checkbox {
+  position: absolute;
+  left: 40px;
+  top: 50%;
+  margin: 0;
+  transform: translateY(-50%);
+}
+
+.paper-number-input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.ui-checkbox:checked {
   background: var(--accent-glow);
   border-color: var(--accent);
 }
 
-input[type="checkbox"]:checked::after {
+.ui-checkbox:checked::after {
   content: "";
   position: absolute;
-  left: 4px;
-  top: 1px;
+  left: 50%;
+  top: 50%;
   width: 5px;
   height: 9px;
   border: solid var(--accent);
   border-width: 0 1.5px 1.5px 0;
-  transform: rotate(45deg);
+  transform: translate(-50%, -58%) rotate(45deg);
 }
 
-input[type="checkbox"]:indeterminate {
+.ui-checkbox:indeterminate {
   background: var(--accent-glow);
   border-color: var(--accent);
 }
 
-input[type="checkbox"]:indeterminate::after {
+.ui-checkbox:indeterminate::after {
   content: "";
   position: absolute;
-  left: 3px;
-  top: 6px;
+  left: 50%;
+  top: 50%;
   width: 8px;
   height: 1.5px;
   background: var(--accent);
   border: none;
-  transform: none;
+  transform: translate(-50%, -50%);
+}
+
+.ui-range {
+  appearance: none;
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) 0 var(--range-progress), rgba(13, 23, 52, 0.14) var(--range-progress) 100%);
+  cursor: pointer;
+}
+
+.ui-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 3px solid var(--bg-elevated);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(13, 23, 52, 0.14);
+}
+
+.ui-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 3px solid var(--bg-elevated);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(13, 23, 52, 0.14);
+}
+
+.ui-range:disabled {
+  opacity: 0.4;
 }
 
 input[type="number"] {
@@ -172,21 +274,58 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .card-lift {
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-.card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 32px rgba(26, 46, 26, 0.08);
-}
-.card-lift:active {
-  transform: translateY(0);
+  transition: transform 180ms var(--ease-out), box-shadow 180ms var(--ease-out), border-color 180ms ease, background-color 180ms ease;
 }
 
 .btn-press {
-  transition: transform 0.15s ease, background-color 0.15s ease;
+  transition: transform 140ms var(--ease-out), background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
 }
 .btn-press:active {
   transform: scale(0.97);
+}
+
+.paper-surface {
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  box-shadow: 0 14px 36px rgba(13, 23, 52, 0.12), 0 2px 8px rgba(13, 23, 52, 0.06);
+}
+
+.skeleton {
+  background: linear-gradient(100deg, rgba(27, 26, 24, 0.045) 20%, rgba(255, 255, 255, 0.82) 42%, rgba(27, 26, 24, 0.045) 64%);
+  background-size: 240% 100%;
+  animation: skeleton-shift 1.4s linear infinite;
+}
+
+@keyframes skeleton-shift {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card-lift:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(38, 33, 24, 0.07);
+  }
+}
+
+.exam-paper,
+.exam-paper .font-serif {
+  font-family: var(--font-display), serif;
+  font-weight: 400;
+  letter-spacing: -0.012em;
+}
+
+.exam-shadow {
+  box-shadow: 0 18px 48px rgba(23, 33, 63, 0.14);
+}
+
+.learning-block {
+  border-radius: 8px;
+  background: var(--accent-soft);
+}
+
+.brand-reveal {
+  animation: slide-up-fade 520ms var(--ease-out) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -196,11 +335,8 @@ input[type="number"]::-webkit-inner-spin-button {
   .status-breathe {
     animation: none;
   }
-  .card-lift:hover {
-    transform: none;
-  }
-  .card-lift:active {
-    transform: none;
+  .skeleton {
+    animation: none;
   }
   .btn-press:active {
     transform: none;

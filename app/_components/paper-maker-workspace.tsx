@@ -1,27 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
-import gsap from "gsap";
-import {
-  Globe,
-  Briefcase,
-  BookOpen,
-  Cpu,
-  Building2,
-  FlaskConical,
-  Calculator,
-  Dna,
-  Beaker,
-  Zap,
-  Search,
-  X,
-  Minus,
-  Check,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type CSSProperties } from "react";
+import { AlignLeft, ArrowLeft, ArrowRight, Check, Clock3, List, Scale, Search, X, type LucideIcon } from "lucide-react";
 
 import type { QuestionMixProfile, TopicTreeNodeWithCounts } from "@/lib/paper-maker/aqa-geography";
 import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
@@ -32,10 +14,21 @@ import {
   type PaperMakerSubjectKey,
 } from "@/lib/paper-maker/subjects";
 import { useAuth } from "@/app/_components/auth-provider";
+import { EmbossIcon } from "@/app/_components/emboss/emboss-icon";
+import { EMBOSS_PRESETS } from "@/app/_components/emboss/params";
+import {
+  buildSelectedTopicSummaries,
+  flattenLeafIds,
+  getSelectionState,
+  TopicNode,
+  type SelectedTopicSummary,
+} from "@/app/_components/paper-maker/topic-tree";
+import { SUBJECT_COLORS, SUBJECT_ICONS } from "@/app/_components/subject-presentation";
 
 type PaperMakerWorkspaceProps = {
   initialSubjectKey?: PaperMakerSubjectKey;
   initialTier?: SubjectTierKey;
+  initialTopicIds?: string[];
   subjectOptions: {
     key: PaperMakerSubjectKey;
     label: string;
@@ -56,34 +49,68 @@ type PaperMakerWorkspaceProps = {
   }[];
 };
 
-type SelectedTopicSummary = {
-  id: string;
-  label: string;
-  leafTopicIds: string[];
-};
-
 type WorkspaceSubjectOption = PaperMakerWorkspaceProps["subjectOptions"][number];
 
-const QUESTION_MIX_OPTIONS: { key: QuestionMixProfile; label: string; description: string }[] = [
-  { key: "balanced", label: "Balanced", description: "A proper exam blend of short, medium, and extended questions." },
-  { key: "short-form", label: "Short form", description: "More 1-4 mark recall and calculation questions." },
-  { key: "long-form", label: "Long form", description: "More extended response questions, with some short scaffolding." },
-];
+function SubjectEmboss({ subjectKey, surface, size = 52 }: { subjectKey: string; surface: string; size?: number }) {
+  const presentation = SUBJECT_COLORS[subjectKey] ?? { accent: "#4747D8", soft: "#F0F0FF" };
+  const Icon = SUBJECT_ICONS[subjectKey];
+  if (!Icon) return null;
+  return <EmbossIcon icon={Icon} flag={subjectKey === "edexcel-french-reading" ? "fr" : undefined} color={presentation.accent} surface={surface} params={EMBOSS_PRESETS.subject} size={size} />;
+}
 
-const SUBJECT_ICONS: Record<string, React.ElementType> = {
-  "aqa-geography": Globe,
-  "aqa-business": Briefcase,
-  "aqa-english-language": BookOpen,
-  "aqa-english-literature": BookOpen,
-  "edexcel-business": Building2,
-  "edexcel-combined-science": FlaskConical,
-  "edexcel-biology": Dna,
-  "edexcel-chemistry": Beaker,
-  "edexcel-physics": Zap,
-  "edexcel-french-reading": BookOpen,
-  "edexcel-mathematics-higher": Calculator,
-  "ocr-computer-science": Cpu,
+type GenerationResult = {
+  paperCount: number;
+  questionCount: number;
+  totalMarks: number;
+  coveredTopics: number;
+  timeMinutes: number;
+  savedPaperIds: string[];
+  markSchemeUnitKeys: string[][];
+  saveWarning?: string | null;
+  markSchemeGenerated?: boolean;
+  markSchemeWarning?: string | null;
 };
+
+async function downloadMarkSchemePdfs({ unitKeysByPaper, subjectKey, subjectTier }: { unitKeysByPaper: string[][]; subjectKey: string; subjectTier?: string }) {
+  if (!unitKeysByPaper.some((keys) => keys.length > 0)) return { generated: false, warning: "No mark-scheme source data was returned for this paper." };
+  let warning: string | null = null;
+  let generated = false;
+
+  for (let index = 0; index < unitKeysByPaper.length; index += 1) {
+    const unitKeys = unitKeysByPaper[index];
+    if (unitKeys.length === 0) continue;
+    try {
+      const response = await fetch("/api/paper-maker/generate-mark-scheme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectKey, subjectTier, selectedUnitKeys: unitKeys }),
+      });
+      if (!response.ok) throw new Error(await response.text() || "Failed to generate mark scheme.");
+      const failureCount = Number(response.headers.get("X-Mark-Scheme-Failures") ?? 0);
+      if (failureCount > 0) warning = `${failureCount} mark scheme section${failureCount === 1 ? "" : "s"} could not be assembled. The PDF includes placeholder pages with details.`;
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = unitKeysByPaper.filter((keys) => keys.length > 0).length === 1 ? `${subjectKey}-mark-scheme.pdf` : `${subjectKey}-mark-scheme-${index + 1}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      generated = true;
+    } catch (cause) {
+      warning = cause instanceof Error ? cause.message : "The paper downloaded, but its mark scheme could not be generated.";
+    }
+  }
+
+  return { generated, warning };
+}
+
+const QUESTION_MIX_OPTIONS: { key: QuestionMixProfile; label: string; description: string; icon: LucideIcon }[] = [
+  { key: "balanced", label: "Balanced", description: "A mix of short and extended questions.", icon: Scale },
+  { key: "short-form", label: "Short form", description: "More 1–4 mark questions.", icon: List },
+  { key: "long-form", label: "Long form", description: "More extended-response questions.", icon: AlignLeft },
+];
 
 const MIN_MARKS = 10;
 const MAX_MARKS = 120;
@@ -98,6 +125,31 @@ function clampTimeMinutes(value: number) {
   return Math.max(MIN_TIME_MINUTES, Math.min(MAX_TIME_MINUTES, Math.round(value / 5) * 5 || MIN_TIME_MINUTES));
 }
 
+export function recommendedPaperCodes(subjectKey: PaperMakerSubjectKey, selectedLeafIds: Set<string>, defaults: string[]) {
+  if (selectedLeafIds.size === 0) return defaults;
+  const ids = Array.from(selectedLeafIds).join(" ").toLowerCase();
+  const selected = new Set<string>();
+
+  if (subjectKey === "edexcel-combined-science") {
+    if (ids.includes("biology")) ["biology-1", "biology-2"].forEach((code) => selected.add(code));
+    if (ids.includes("chemistry")) ["chemistry-1", "chemistry-2"].forEach((code) => selected.add(code));
+    if (ids.includes("physics")) ["physics-1", "physics-2"].forEach((code) => selected.add(code));
+  }
+
+  if (subjectKey === "aqa-english-language" || subjectKey === "aqa-english-literature") {
+    if (ids.includes("paper-1")) selected.add("paper-1");
+    if (ids.includes("paper-2")) selected.add("paper-2");
+  }
+
+  if (subjectKey === "aqa-geography") {
+    if (["natural-hazards", "living-world", "physical-landscapes"].some((id) => ids.includes(id))) selected.add("paper-1");
+    if (["urban-issues", "changing-economic-world", "resource-management"].some((id) => ids.includes(id))) selected.add("paper-2");
+    if (["issue-evaluation", "fieldwork"].some((id) => ids.includes(id))) selected.add("paper-3");
+  }
+
+  return selected.size > 0 ? defaults.filter((code) => selected.has(code)) : defaults;
+}
+
 function resolveMinutesPerMark(benchmarkMinutesPerMark: number | null | undefined, recommendedMinutesPerMark: number | undefined) {
   const fallback = recommendedMinutesPerMark && Number.isFinite(recommendedMinutesPerMark) && recommendedMinutesPerMark > 0
     ? recommendedMinutesPerMark
@@ -109,178 +161,65 @@ function resolveMinutesPerMark(benchmarkMinutesPerMark: number | null | undefine
 
 function resolveSubjectTopics(subject: WorkspaceSubjectOption | undefined, tierKey: SubjectTierKey) {
   if (!subject) return [];
-  if (subject.tiers.length > 0) {
-    return subject.topicsByTier?.[tierKey] ?? [];
-  }
+  if (subject.tiers.length > 0) return subject.topicsByTier?.[tierKey] ?? [];
   return subject.topics;
 }
 
-function flattenLeafIds(nodes: TopicTreeNodeWithCounts[]) {
-  return Array.from(new Set(nodes.flatMap((node) => node.leafTopicIds)));
-}
+type BuilderStage = "subject" | "topics" | "paper";
 
-function getSelectionState(node: TopicTreeNodeWithCounts, selectedLeafIds: Set<string>) {
-  const matchedLeafCount = node.leafTopicIds.filter((leafId) => selectedLeafIds.has(leafId)).length;
-  return {
-    checked: matchedLeafCount > 0 && matchedLeafCount === node.leafTopicIds.length,
-    partial: matchedLeafCount > 0 && matchedLeafCount < node.leafTopicIds.length,
-  };
-}
-
-function buildSelectedTopicSummaries(nodes: TopicTreeNodeWithCounts[], selectedLeafIds: Set<string>): SelectedTopicSummary[] {
-  const summaries: SelectedTopicSummary[] = [];
-  const walk = (node: TopicTreeNodeWithCounts) => {
-    const selection = getSelectionState(node, selectedLeafIds);
-    if (!node.children?.length) {
-      if (selection.checked) {
-        summaries.push({ id: node.id, label: node.label, leafTopicIds: node.leafTopicIds });
-      }
-      return;
-    }
-    node.children.forEach(walk);
-  };
-  nodes.forEach(walk);
-  return summaries;
-}
-
-function Stepper({ step, onChange }: { step: number; onChange: (step: number) => void }) {
-  const steps = [
-    { number: 1, label: "Subject" },
-    { number: 2, label: "Topics" },
-    { number: 3, label: "Build" },
+function BuilderProgress({ stage, subjectReady, topicsReady, topicSelectionEnabled, onStageChange }: { stage: BuilderStage; subjectReady: boolean; topicsReady: boolean; topicSelectionEnabled: boolean; onStageChange: (stage: BuilderStage) => void }) {
+  const steps: Array<{ key: BuilderStage; label: string; ready: boolean; disabled: boolean }> = [
+    { key: "subject", label: "Subject", ready: subjectReady, disabled: false },
+    ...(topicSelectionEnabled ? [{ key: "topics" as const, label: "Topics", ready: topicsReady, disabled: !subjectReady }] : []),
+    { key: "paper", label: "Paper", ready: false, disabled: !subjectReady || (topicSelectionEnabled && !topicsReady) },
   ];
 
   return (
-    <div className="flex items-center justify-center" aria-label="Paper maker steps">
-      {steps.map((item, index) => {
-        const isActive = step === item.number;
-        const isComplete = step > item.number;
-        const isFuture = step < item.number;
-
-        return (
-          <div key={item.number} className="flex items-center">
-            <button
-              type="button"
-              onClick={() => {
-                if (!isFuture) onChange(item.number);
-              }}
-              disabled={isFuture}
-              className={`btn-press flex items-center gap-2.5 rounded-full px-4 py-2.5 text-[0.82rem] transition-all ${
-                isActive
-                  ? "bg-[#1a2e1a] text-white shadow-[0_4px_14px_rgba(26,46,26,0.18)]"
-                  : isComplete
-                    ? "border border-[#1a2e1a]/10 bg-white text-[#1a2e1a] hover:bg-[#f8f7f4]"
-                    : "border border-[#1a2e1a]/8 bg-transparent text-[#1a2e1a]/35 cursor-not-allowed"
-              }`}
-            >
-              <span
-                className={`flex h-6 w-6 items-center justify-center rounded-full text-[0.72rem] font-semibold ${
-                  isActive ? "bg-white/15" : isComplete ? "bg-accent-warm/15 text-accent-warm" : "bg-[#1a2e1a]/[0.05]"
-                }`}
-              >
-                {isComplete ? <Check className="h-3 w-3" strokeWidth={2.5} /> : item.number}
-              </span>
-              <span className="font-medium">{item.label}</span>
-            </button>
-            {index < steps.length - 1 && (
-              <div className="mx-1.5 h-px w-8 bg-[#1a2e1a]/10" />
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <nav className="flex items-center gap-1" aria-label="Paper builder steps">
+      {steps.map((step, index) => (
+        <button key={step.key} type="button" onClick={() => onStageChange(step.key)} disabled={step.disabled} aria-current={stage === step.key ? "step" : undefined} className={`inline-flex min-h-10 items-center gap-2 border-b-2 px-3 text-[0.74rem] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${stage === step.key ? "border-accent text-accent" : "border-transparent text-text-secondary hover:border-text/15 hover:text-accent"}`}>
+            {step.label}
+            {step.ready && stage !== step.key ? <Check className="h-4 w-4 text-success" /> : <span className="font-mono text-[0.66rem] text-text-subtle">{index + 1}</span>}
+        </button>
+      ))}
+    </nav>
   );
 }
 
-function TopicNode({
-  node,
-  depth,
-  expandedIds,
-  selectedLeafIds,
-  onToggleExpanded,
-  onToggleSelected,
+function TopicSelectionSummary({
+  topics,
+  onClear,
+  onRemove,
 }: {
-  node: TopicTreeNodeWithCounts;
-  depth: number;
-  expandedIds: Set<string>;
-  selectedLeafIds: Set<string>;
-  onToggleExpanded: (id: string) => void;
-  onToggleSelected: (node: TopicTreeNodeWithCounts) => void;
+  topics: SelectedTopicSummary[];
+  onClear: () => void;
+  onRemove: (topic: SelectedTopicSummary) => void;
 }) {
-  const hasChildren = Boolean(node.children?.length);
-  const isExpanded = expandedIds.has(node.id);
-  const selection = getSelectionState(node, selectedLeafIds);
+  const preview = topics.slice(0, 5);
+  const overflow = Math.max(0, topics.length - preview.length);
 
   return (
-    <div className="topic-node">
-      <div
-        className={`flex items-center gap-2.5 rounded-xl border bg-white px-3.5 py-2.5 transition-all card-lift ${
-          selection.checked || selection.partial
-            ? "border-accent/25 shadow-[0_4px_16px_rgba(90,138,92,0.08)]"
-            : "border-[#1a2e1a]/[0.05]"
-        }`}
-        style={{ marginLeft: depth > 0 ? `${depth * 16}px` : undefined }}
-      >
-        {hasChildren ? (
-          <button
-            type="button"
-            onClick={() => onToggleExpanded(node.id)}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#f8f7f4] text-[#1a2e1a]/55 transition-colors hover:bg-[#f1eee6]"
-            aria-label={isExpanded ? `Collapse ${node.label}` : `Expand ${node.label}`}
-          >
-            {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-          </button>
-        ) : (
-          <div className="h-7 w-7 shrink-0" />
-        )}
-
-        <button
-          type="button"
-          onClick={() => onToggleSelected(node)}
-          role="checkbox"
-          aria-checked={selection.partial ? "mixed" : selection.checked}
-          className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
-        >
-          <span
-            className={`flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[4px] border-[1.5px] transition-all ${
-              selection.checked
-                ? "border-accent bg-accent text-white"
-                : selection.partial
-                  ? "border-accent bg-accent/15 text-accent"
-                  : "border-[#1a2e1a]/15 bg-white text-transparent"
-            }`}
-            aria-hidden="true"
-          >
-            {selection.partial ? <Minus className="h-3 w-3" strokeWidth={2.5} /> : selection.checked ? <Check className="h-3 w-3" strokeWidth={2.5} /> : null}
-          </span>
-
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <p className={`truncate font-medium text-[#1a2e1a] ${depth === 0 ? "text-[0.94rem]" : "text-[0.88rem]"}`}>
-                {node.label}
-              </p>
-              <span className="shrink-0 rounded-full bg-[#f8f7f4] px-2 py-0.5 text-[0.68rem] tabular-nums text-[#1a2e1a]/50">
-                {node.questionUnitCount}
-              </span>
-            </div>
+    <div className="flex items-start justify-between gap-4 border-t border-text/10 pt-4">
+      <div className="min-w-0">
+        <p className="text-[0.72rem] font-semibold text-text">{topics.length ? `${topics.length} topic areas selected` : "No topic areas selected"}</p>
+        <p className="mt-1 text-[0.68rem] leading-5 text-text-muted">
+          {topics.length ? "Only these areas will be used in the generated paper." : "Select at least one area to keep the paper focused."}
+        </p>
+        {preview.length ? (
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[0.68rem] text-text-secondary">
+            {preview.map((topic) => (
+              <button key={topic.id} type="button" onClick={() => onRemove(topic)} className="border-b border-text/20 pb-px text-left hover:border-accent hover:text-accent">
+                {topic.label}
+              </button>
+            ))}
+            {overflow ? <span className="font-medium text-text-muted">+{overflow} more</span> : null}
           </div>
-        </button>
+        ) : null}
       </div>
-
-      {hasChildren && isExpanded ? (
-        <div className="mt-1.5 space-y-1.5">
-          {node.children?.map((child) => (
-            <TopicNode
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              expandedIds={expandedIds}
-              selectedLeafIds={selectedLeafIds}
-              onToggleExpanded={onToggleExpanded}
-              onToggleSelected={onToggleSelected}
-            />
-          ))}
-        </div>
+      {topics.length ? (
+        <button type="button" onClick={onClear} className="shrink-0 text-[0.68rem] font-semibold text-text-muted hover:text-accent">
+          Clear
+        </button>
       ) : null}
     </div>
   );
@@ -297,7 +236,7 @@ function SuccessModal({
   onClose,
   onBuildAnother,
 }: {
-  result: { paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number; savedPaperIds: string[]; markSchemeUnitKeys: string[][]; saveWarning?: string | null };
+  result: GenerationResult;
   subjectKey: string;
   subjectTier?: string;
   subjectLabel: string;
@@ -307,15 +246,36 @@ function SuccessModal({
   onClose: () => void;
   onBuildAnother: () => void;
 }) {
+  const router = useRouter();
   const modalRef = useRef<HTMLDivElement>(null);
+  const titleId = "paper-ready-title";
   const [markSchemeState, setMarkSchemeState] = useState<{ status: "idle" | "loading" | "error" | "warning"; message?: string }>({ status: "idle" });
-
+  const [markingState, setMarkingState] = useState<{ status: "idle" | "loading" | "error"; message?: string }>({ status: "idle" });
   const hasUnitKeys = result.markSchemeUnitKeys.some((keys) => keys.length > 0);
-  const markingHref = !isAuthenticated
-    ? "/auth?redirect=/marking"
-    : result.savedPaperIds.length === 1
-      ? `/marking/start/${result.savedPaperIds[0]}`
-      : "/marking";
+
+  const openMarkingStudio = async () => {
+    if (!isAuthenticated) {
+      router.push("/auth?redirect=/marking");
+      return;
+    }
+    if (result.savedPaperIds.length !== 1) {
+      router.push("/marking");
+      return;
+    }
+    setMarkingState({ status: "loading" });
+    try {
+      const response = await fetch("/api/marking/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ savedPaperId: result.savedPaperIds[0] }),
+      });
+      if (!response.ok) throw new Error(await response.text() || "Could not start marking this paper.");
+      const payload = await response.json() as { submissionId: string };
+      router.push(`/marking/${payload.submissionId}`);
+    } catch (cause) {
+      setMarkingState({ status: "error", message: cause instanceof Error ? cause.message : "Could not start marking this paper." });
+    }
+  };
 
   const generateMarkScheme = async () => {
     if (!hasUnitKeys) {
@@ -323,271 +283,168 @@ function SuccessModal({
       return;
     }
     setMarkSchemeState({ status: "loading" });
-    try {
-      let warning: string | null = null;
-      for (let index = 0; index < result.markSchemeUnitKeys.length; index += 1) {
-        const unitKeys = result.markSchemeUnitKeys[index];
-        if (unitKeys.length === 0) continue;
-        const response = await fetch("/api/paper-maker/generate-mark-scheme", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ subjectKey, subjectTier, selectedUnitKeys: unitKeys }),
-        });
-        if (!response.ok) {
-          throw new Error((await response.text()) || "Failed to generate mark scheme.");
-        }
-        const failureCount = Number(response.headers.get("X-Mark-Scheme-Failures") ?? 0);
-        if (failureCount > 0) {
-          warning = `${failureCount} mark scheme section${failureCount === 1 ? "" : "s"} could not be assembled. The downloaded PDF includes placeholder pages with details.`;
-        }
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = result.markSchemeUnitKeys.filter((keys) => keys.length > 0).length === 1
-          ? `${subjectKey}-mark-scheme.pdf`
-          : `${subjectKey}-mark-scheme-${index + 1}.pdf`;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
-        URL.revokeObjectURL(url);
-      }
-      setMarkSchemeState(warning ? { status: "warning", message: warning } : { status: "idle" });
-    } catch (cause) {
-      setMarkSchemeState({ status: "error", message: cause instanceof Error ? cause.message : String(cause) });
-    }
+    const outcome = await downloadMarkSchemePdfs({ unitKeysByPaper: result.markSchemeUnitKeys, subjectKey, subjectTier });
+    if (!outcome.generated) setMarkSchemeState({ status: "error", message: outcome.warning ?? "Could not generate the mark scheme." });
+    else setMarkSchemeState(outcome.warning ? { status: "warning", message: outcome.warning } : { status: "idle" });
   };
 
   useEffect(() => {
-    if (!modalRef.current) return;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
-
-    const ctx = gsap.context(() => {
-      gsap.from(modalRef.current, {
-        scale: 0.92,
-        opacity: 0,
-        duration: 0.45,
-        ease: "back.out(1.7)",
-        clearProps: "transform,opacity",
-      });
-      gsap.from(".stat-number", {
-        textContent: 0,
-        duration: 0.8,
-        delay: 0.3,
-        ease: "power2.out",
-        snap: { textContent: 1 },
-      });
-    }, modalRef);
-    return () => ctx.revert();
-  }, []);
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    modalRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key !== "Tab" || !modalRef.current) return;
+      const focusable = Array.from(modalRef.current.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])"));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      previousFocus?.focus();
+    };
+  }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1a2e1a]/30 p-4 backdrop-blur-sm" onClick={onClose}>
-      <div
-        ref={modalRef}
-        className="w-full max-w-md rounded-[1.8rem] bg-white p-8 text-center shadow-[0_24px_60px_rgba(26,46,26,0.18)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-accent/10 text-accent">
-          <Check className="h-7 w-7" strokeWidth={2.5} />
-        </div>
-        <h3 className="mt-5 font-serif text-[1.5rem] text-[#1a2e1a]">Paper ready</h3>
-        <p className="mt-2 text-[0.88rem] text-[#3d5a3f]/60">
-          Your custom {result.paperCount === 1 ? "paper has" : `${result.paperCount} papers have`} been generated and downloaded.
-        </p>
-
-        <div className="mt-5 rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[#faf8f3] p-5 text-left">
-          <p className="text-[0.68rem] uppercase tracking-[0.18em] text-accent-warm">
-            {subjectLabel}
-            {tierLabel ? ` · ${tierLabel}` : ""}
-          </p>
-          <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-text/30 p-4 backdrop-blur-[3px]" onClick={onClose}>
+      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="max-h-[calc(100dvh-2rem)] w-full max-w-[520px] overflow-y-auto border border-text/15 bg-bg-workspace shadow-[0_24px_70px_rgba(13,23,52,0.2)] outline-none" onClick={(event) => event.stopPropagation()}>
+        <div className="p-6 sm:p-8">
+          <div className="flex items-start justify-between gap-5">
             <div>
-              <p className="stat-number font-serif tabular-nums text-[1.35rem] text-[#1a2e1a]">{result.paperCount}</p>
-              <p className="text-[0.68rem] text-[#3d5a3f]/50">paper{result.paperCount === 1 ? "" : "s"}</p>
+              <h3 id={titleId} className="text-[1.7rem] font-semibold tracking-[-0.05em] text-text">Paper ready.</h3>
+              <p className="mt-1.5 max-w-[42ch] text-[0.78rem] leading-5 text-text-muted">Your custom {result.paperCount === 1 ? "paper has" : `${result.paperCount} papers have`} been generated and downloaded.</p>
             </div>
-            <div>
-              <p className="stat-number font-serif tabular-nums text-[1.35rem] text-[#1a2e1a]">{result.totalMarks}</p>
-              <p className="text-[0.68rem] text-[#3d5a3f]/50">marks</p>
-            </div>
-            <div>
-              <p className="stat-number font-serif tabular-nums text-[1.35rem] text-[#1a2e1a]">{result.timeMinutes}</p>
-              <p className="text-[0.68rem] text-[#3d5a3f]/50">minutes</p>
-            </div>
+            <button type="button" onClick={onClose} className="btn-press -mr-2 -mt-2 flex h-9 w-9 shrink-0 items-center justify-center text-text-muted hover:bg-white/70 hover:text-text" aria-label="Close"><X className="h-4 w-4" /></button>
           </div>
-          <p className="mt-3 text-center text-[0.68rem] text-[#3d5a3f]/50">
-            Using ~{minutesPerMark.toFixed(2)} min per mark
-          </p>
-        </div>
 
-        <div className="mt-6 flex flex-col gap-2.5">
-          <button
-            type="button"
-            onClick={generateMarkScheme}
-            disabled={!hasUnitKeys || markSchemeState.status === "loading"}
-            className="btn-press inline-flex w-full items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white disabled:opacity-50"
-          >
-            {markSchemeState.status === "loading" ? "Building mark scheme..." : "Generate mark scheme"}
-          </button>
-          {markSchemeState.status === "error" ? (
-            <p className="-mt-1 text-[0.78rem] text-red-700">{markSchemeState.message}</p>
-          ) : null}
-          {markSchemeState.status === "warning" ? (
-            <p className="-mt-1 text-[0.78rem] text-amber-700">{markSchemeState.message}</p>
-          ) : null}
-          {result.saveWarning ? (
-            <p className="rounded-2xl bg-amber-50 px-4 py-3 text-left text-[0.78rem] text-amber-800">{result.saveWarning}</p>
-          ) : null}
-          {result.saveWarning && isAuthenticated ? null : (
-            <a
-              href={markingHref}
-              className="btn-press inline-flex w-full items-center justify-center rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white"
-            >
-              Open marking studio
-            </a>
-          )}
-          <button
-            type="button"
-            onClick={onClose}
-            className="btn-press w-full rounded-full bg-[#1a2e1a] px-5 py-3 text-[0.9rem] font-semibold text-white transition-colors hover:bg-[#2a4a2a]"
-          >
-            Back to builder
-          </button>
-          <button
-            type="button"
-            onClick={onBuildAnother}
-            className="btn-press w-full rounded-full border border-[#1a2e1a]/10 bg-white px-5 py-3 text-[0.9rem] font-medium text-[#1a2e1a] transition-colors hover:bg-[#f8f7f4]"
-          >
-            Build another paper
-          </button>
+          <section className="mt-6 border-y border-text/12 py-5" aria-label="Generated paper summary">
+            <p className="text-[0.65rem] font-bold tracking-[-0.01em] text-accent">{subjectLabel}{tierLabel ? ` · ${tierLabel}` : ""}</p>
+            <dl className="mt-4 grid grid-cols-3 divide-x divide-text/10">
+              <div className="pr-4"><dt className="text-[0.6rem] text-text-muted">Papers</dt><dd className="mt-1 font-mono text-[1.05rem] font-semibold tabular-nums text-text">{result.paperCount}</dd></div>
+              <div className="px-4"><dt className="text-[0.6rem] text-text-muted">Marks</dt><dd className="mt-1 font-mono text-[1.05rem] font-semibold tabular-nums text-text">{result.totalMarks}</dd></div>
+              <div className="pl-4"><dt className="text-[0.6rem] text-text-muted">Duration</dt><dd className="mt-1 font-mono text-[1.05rem] font-semibold tabular-nums text-text">{result.timeMinutes} min</dd></div>
+            </dl>
+            <p className="mt-4 text-[0.6rem] text-text-muted">About {minutesPerMark.toFixed(2)} minutes per mark</p>
+          </section>
+
+          <div className="mt-5 space-y-3">
+            {result.markSchemeGenerated ? <div className="flex items-center gap-2 border-l-2 border-success bg-success-soft/70 px-3 py-2.5 text-[0.7rem] font-semibold text-success"><Check className="h-3.5 w-3.5 shrink-0" />{result.paperCount > 1 ? "Papers and mark schemes downloaded" : "Paper and mark scheme downloaded"}</div> : <button type="button" onClick={generateMarkScheme} disabled={!hasUnitKeys || markSchemeState.status === "loading"} className="btn-press inline-flex min-h-10 w-full items-center justify-center border border-text/12 bg-white/55 px-4 text-[0.7rem] font-semibold text-text-secondary hover:border-accent/50 hover:text-accent disabled:opacity-50">{markSchemeState.status === "loading" ? "Building mark scheme…" : result.paperCount > 1 ? `Generate ${result.paperCount} mark schemes` : "Generate mark scheme"}</button>}
+            {markSchemeState.status === "error" ? <p className="text-[0.7rem] text-danger">{markSchemeState.message}</p> : null}
+            {markSchemeState.status === "warning" ? <p className="text-[0.7rem] text-warning">{markSchemeState.message}</p> : null}
+            {result.markSchemeWarning ? <p className="text-[0.7rem] text-warning">{result.markSchemeWarning}</p> : null}
+            {result.saveWarning ? <p className="border-l-2 border-warning bg-warning-soft px-3 py-2.5 text-[0.7rem] leading-5 text-text-secondary">{result.saveWarning}</p> : null}
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {result.saveWarning && isAuthenticated ? null : <button type="button" onClick={openMarkingStudio} disabled={markingState.status === "loading"} className="btn-press inline-flex min-h-11 items-center justify-center border border-text/15 bg-white px-4 text-[0.7rem] font-semibold text-text hover:border-accent hover:text-accent disabled:opacity-50">{markingState.status === "loading" ? "Opening studio…" : "Open marking studio"}</button>}
+              <button type="button" onClick={onClose} className={`btn-press inline-flex min-h-11 items-center justify-center gap-2 bg-accent px-4 text-[0.7rem] font-bold text-white hover:bg-accent-deep ${result.saveWarning && isAuthenticated ? "sm:col-span-2" : ""}`}>Back to builder<ArrowRight className="h-3.5 w-3.5" /></button>
+            </div>
+            {markingState.status === "error" ? <p className="text-[0.7rem] text-danger">{markingState.message}</p> : null}
+            <button type="button" onClick={onBuildAnother} className="btn-press mx-auto block px-4 py-2 text-[0.68rem] font-semibold text-text-muted hover:text-accent">Build another paper</button>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function MobileCommandBar({ summary, canGenerate, onGenerate, isPending }: {
-  summary: string;
-  canGenerate: boolean;
-  onGenerate: () => void;
-  isPending: boolean;
-}) {
-  return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-[#1a2e1a]/[0.06] bg-white/95 px-5 py-3 backdrop-blur-xl lg:hidden">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <p className="truncate text-[0.78rem] text-[#3d5a3f]/60">{summary}</p>
-        <button
-          type="button"
-          onClick={onGenerate}
-          disabled={!canGenerate || isPending}
-          className="btn-press shrink-0 rounded-full bg-[#1a2e1a] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#2a4a2a] disabled:opacity-40"
-        >
-          {isPending ? "Building..." : "Generate"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-export function PaperMakerWorkspace({
-  subjectOptions,
-  initialSubjectKey,
-  initialTier,
-}: PaperMakerWorkspaceProps) {
+export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initialTier, initialTopicIds = [] }: PaperMakerWorkspaceProps) {
   const { isAuthenticated } = useAuth();
   const [subjectOptionsState, setSubjectOptionsState] = useState(subjectOptions);
   const defaultSubject = subjectOptionsState.find((subject) => subject.key === initialSubjectKey) ?? subjectOptionsState[0];
+  const defaultTierKey = initialTier && defaultSubject?.tiers.some((tier) => tier.key === initialTier) ? initialTier : defaultSubject?.tiers[0]?.key ?? "foundation";
   const defaultMinutesPerMark = resolveMinutesPerMark(defaultSubject?.benchmarkMinutesPerMark, defaultSubject?.recommendedMinutesPerMark);
   const router = useRouter();
   const pathname = usePathname();
-  const [step, setStep] = useState(initialSubjectKey ? 2 : 1);
   const [selectedSubjectKey, setSelectedSubjectKey] = useState<PaperMakerSubjectKey>(defaultSubject?.key ?? "aqa-geography");
-  const [selectedLeafIds, setSelectedLeafIds] = useState<Set<string>>(new Set());
+  const [selectedLeafIds, setSelectedLeafIds] = useState<Set<string>>(() => new Set(initialTopicIds));
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(defaultSubject?.topics.map((topic) => topic.id) ?? []));
   const [targetMarks, setTargetMarks] = useState(40);
   const [questionMix, setQuestionMix] = useState<QuestionMixProfile>("balanced");
   const [timeMinutes, setTimeMinutes] = useState(() => clampTimeMinutes(estimatePaperTimeMinutes(defaultMinutesPerMark, 40)));
   const [targetMode, setTargetMode] = useState<PaperBuildTargetMode>("marks");
   const [selectedPaperCodes, setSelectedPaperCodes] = useState<Set<string>>(new Set(defaultSubject?.defaultPaperCodes ?? []));
-  const [selectedTier, setSelectedTier] = useState<SubjectTierKey>(initialTier ?? defaultSubject?.tiers[0]?.key ?? "foundation");
+  const [paperSourcesCustomized, setPaperSourcesCustomized] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<SubjectTierKey>(defaultTierKey);
   const [error, setError] = useState<string | null>(null);
   const [paperCount, setPaperCount] = useState(1);
-  const [result, setResult] = useState<{ paperCount: number; questionCount: number; totalMarks: number; coveredTopics: number; timeMinutes: number; savedPaperIds: string[]; markSchemeUnitKeys: string[][]; saveWarning?: string | null } | null>(null);
+  const [generationMode, setGenerationMode] = useState<"paper" | "paper-and-mark-scheme" | null>(null);
+  const [result, setResult] = useState<GenerationResult | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [isLoadingSubjectDetail, setIsLoadingSubjectDetail] = useState(false);
+  const [loadingSubjectKey, setLoadingSubjectKey] = useState<PaperMakerSubjectKey | null>(null);
+  const [subjectDetailError, setSubjectDetailError] = useState<string | null>(null);
   const [topicSearch, setTopicSearch] = useState("");
-  const activeStepRef = useRef<HTMLDivElement | null>(null);
+  const [activeTopicGroupId, setActiveTopicGroupId] = useState<string | null>(() => defaultSubject?.topics[0]?.id ?? null);
+  const [hasChosenSubject, setHasChosenSubject] = useState(Boolean(initialSubjectKey));
+  const [builderStage, setBuilderStage] = useState<BuilderStage>(() => {
+    if (!initialSubjectKey) return "subject";
+    return defaultSubject?.topicSelectionEnabled && initialTopicIds.length === 0 ? "topics" : "paper";
+  });
+  const subjectDetailRequestRef = useRef<AbortController | null>(null);
+  const stageHeadingRef = useRef<HTMLHeadingElement>(null);
 
-  const activeSubject = useMemo(
-    () => subjectOptionsState.find((subject) => subject.key === selectedSubjectKey) ?? subjectOptionsState[0],
-    [selectedSubjectKey, subjectOptionsState],
-  );
+  const activeSubject = useMemo(() => subjectOptionsState.find((subject) => subject.key === selectedSubjectKey) ?? subjectOptionsState[0], [selectedSubjectKey, subjectOptionsState]);
   const activeTopics = useMemo(() => resolveSubjectTopics(activeSubject, selectedTier), [activeSubject, selectedTier]);
-  const totalLeafIds = useMemo(() => flattenLeafIds(activeTopics), [activeTopics]);
   const generationEnabled = activeSubject?.generationEnabled ?? false;
+  const isLoadingSubjectDetail = loadingSubjectKey === selectedSubjectKey;
   const topicSelectionEnabled = activeSubject?.topicSelectionEnabled ?? false;
   const activeTier = activeSubject?.tiers.find((tier) => tier.key === selectedTier) ?? activeSubject?.tiers[0];
   const activePaperOptions = activeSubject?.paperOptions ?? [];
   const activeMinutesPerMark = resolveMinutesPerMark(activeSubject?.benchmarkMinutesPerMark, activeSubject?.recommendedMinutesPerMark);
-  const selectedTopicSummaries = useMemo(
-    () => buildSelectedTopicSummaries(activeTopics, selectedLeafIds),
-    [activeTopics, selectedLeafIds],
-  );
-  const selectedTopicNodeIds = useMemo(
-    () => selectedTopicSummaries.map((summary) => summary.id),
-    [selectedTopicSummaries],
-  );
-  const selectedTopicPreview = useMemo(() => selectedTopicSummaries.slice(0, 4), [selectedTopicSummaries]);
-  const selectedTopicOverflowCount = Math.max(0, selectedTopicSummaries.length - selectedTopicPreview.length);
+  const selectedTopicSummaries = useMemo(() => buildSelectedTopicSummaries(activeTopics, selectedLeafIds), [activeTopics, selectedLeafIds]);
+  const selectedTopicNodeIds = useMemo(() => selectedTopicSummaries.map((summary) => summary.id), [selectedTopicSummaries]);
+  const resolvedPaperCodes = useMemo(() => paperSourcesCustomized || !activeSubject ? selectedPaperCodes : new Set(recommendedPaperCodes(activeSubject.key, selectedLeafIds, activeSubject.defaultPaperCodes)), [activeSubject, paperSourcesCustomized, selectedLeafIds, selectedPaperCodes]);
+  const canGenerate = hasChosenSubject && !isLoadingSubjectDetail && generationEnabled && resolvedPaperCodes.size > 0 && (!topicSelectionEnabled || selectedTopicNodeIds.length > 0);
+  const topicsReady = !topicSelectionEnabled || selectedTopicNodeIds.length > 0;
 
-  const canGenerate = !isLoadingSubjectDetail && generationEnabled && selectedPaperCodes.size > 0 && (!topicSelectionEnabled || selectedTopicNodeIds.length > 0);
+  const goToStage = useCallback((stage: BuilderStage) => {
+    if (stage !== "subject" && !hasChosenSubject) return;
+    if (stage === "paper" && topicSelectionEnabled && !topicsReady) return;
+    setBuilderStage(stage);
+    window.requestAnimationFrame(() => stageHeadingRef.current?.focus());
+  }, [hasChosenSubject, topicSelectionEnabled, topicsReady]);
 
   const filteredTopics = useMemo(() => {
     if (!topicSearch.trim()) return activeTopics;
     const searchLower = topicSearch.toLowerCase();
-    const filterNodes = (nodes: TopicTreeNodeWithCounts[]): TopicTreeNodeWithCounts[] => {
-      return nodes.reduce<TopicTreeNodeWithCounts[]>((acc, node) => {
-        const matchesSelf = node.label.toLowerCase().includes(searchLower);
-        const filteredChildren = node.children?.length ? filterNodes(node.children) : [];
-        if (matchesSelf || filteredChildren.length > 0) {
-          acc.push({ ...node, children: filteredChildren.length > 0 ? filteredChildren : node.children });
-        }
-        return acc;
-      }, []);
-    };
+    const filterNodes = (nodes: TopicTreeNodeWithCounts[]): TopicTreeNodeWithCounts[] => nodes.reduce<TopicTreeNodeWithCounts[]>((acc, node) => {
+      const matchesSelf = node.label.toLowerCase().includes(searchLower);
+      const filteredChildren = node.children?.length ? filterNodes(node.children) : [];
+      if (matchesSelf || filteredChildren.length > 0) acc.push({ ...node, children: filteredChildren.length > 0 ? filteredChildren : node.children });
+      return acc;
+    }, []);
     return filterNodes(activeTopics);
   }, [activeTopics, topicSearch]);
-
-  const summaryText = useMemo(() => {
-    const parts = [activeSubject?.label ?? ""];
-    if (activeTier) parts.push(activeTier.label);
-    if (topicSelectionEnabled) parts.push(`${selectedTopicSummaries.length} topic${selectedTopicSummaries.length === 1 ? "" : "s"}`);
-    parts.push(`${selectedPaperCodes.size} paper${selectedPaperCodes.size === 1 ? "" : "s"}`);
-    parts.push(`${targetMarks} marks`);
-    return parts.join(" · ");
-  }, [activeSubject, activeTier, topicSelectionEnabled, selectedTopicSummaries.length, selectedPaperCodes.size, targetMarks]);
+  const activeTopicGroup = useMemo(() => filteredTopics.find((topic) => topic.id === activeTopicGroupId) ?? filteredTopics[0], [activeTopicGroupId, filteredTopics]);
 
   const groupedSubjectOptions = useMemo(() => {
-    const boardOrder = ["AQA", "Edexcel", "OCR"];
     const buckets = new Map<string, WorkspaceSubjectOption[]>();
     for (const subject of subjectOptionsState) {
       const group = buckets.get(subject.boardLabel) ?? [];
       group.push(subject);
       buckets.set(subject.boardLabel, group);
     }
-    return Array.from(buckets.entries())
-      .sort((a, b) => boardOrder.indexOf(a[0]) - boardOrder.indexOf(b[0]))
-      .map(([boardLabel, subjects]) => ({ boardLabel, subjects }));
+    return Array.from(buckets.entries()).map(([boardLabel, subjects]) => ({ boardLabel, subjects }));
   }, [subjectOptionsState]);
 
   const loadSubjectDetail = useCallback(async (key: PaperMakerSubjectKey) => {
-    setIsLoadingSubjectDetail(true);
+    subjectDetailRequestRef.current?.abort();
+    const controller = new AbortController();
+    subjectDetailRequestRef.current = controller;
+    setLoadingSubjectKey(key);
+    setSubjectDetailError(null);
     try {
-      const response = await fetch(`/api/paper-maker/subject-detail?subjectKey=${encodeURIComponent(key)}`);
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
+      const response = await fetch(`/api/paper-maker/subject-detail?subjectKey=${encodeURIComponent(key)}`, { signal: controller.signal });
+      if (!response.ok) throw new Error(await response.text());
       const detail = await response.json() as {
         key: PaperMakerSubjectKey;
         taggedQuestionUnits: number;
@@ -597,24 +454,19 @@ export function PaperMakerWorkspace({
         tiers: { key: SubjectTierKey; label: string; taggedQuestionUnits: number }[];
         detailLoaded: boolean;
       };
-
-      setSubjectOptionsState((current) => current.map((subject) => (
-        subject.key === detail.key
-          ? {
-              ...subject,
-              taggedQuestionUnits: detail.taggedQuestionUnits,
-              benchmarkMinutesPerMark: detail.benchmarkMinutesPerMark,
-              topics: detail.topics,
-              topicsByTier: detail.topicsByTier,
-              tiers: detail.tiers,
-              detailLoaded: detail.detailLoaded,
-            }
-          : subject
-      )));
+      setSubjectOptionsState((current) => current.map((subject) => subject.key === detail.key ? { ...subject, taggedQuestionUnits: detail.taggedQuestionUnits, benchmarkMinutesPerMark: detail.benchmarkMinutesPerMark, topics: detail.topics, topicsByTier: detail.topicsByTier, tiers: detail.tiers, detailLoaded: detail.detailLoaded } : subject));
+      const detailTier = detail.tiers.some((tier) => tier.key === selectedTier) ? selectedTier : detail.tiers[0]?.key ?? "foundation";
+      const detailTopics = detail.tiers.length > 0 ? detail.topicsByTier?.[detailTier] ?? [] : detail.topics;
+      if (detail.tiers.length > 0 && detailTier !== selectedTier) setSelectedTier(detailTier);
+      setExpandedIds(new Set(detailTopics.map((topic) => topic.id)));
+      setActiveTopicGroupId(detailTopics[0]?.id ?? null);
+    } catch (cause) {
+      if (cause instanceof DOMException && cause.name === "AbortError") return;
+      setSubjectDetailError(cause instanceof Error ? cause.message : "Could not load this subject.");
     } finally {
-      setIsLoadingSubjectDetail(false);
+      if (subjectDetailRequestRef.current === controller) setLoadingSubjectKey(null);
     }
-  }, []);
+  }, [selectedTier]);
 
   const toggleExpanded = useCallback((id: string) => {
     setExpandedIds((current) => {
@@ -629,23 +481,21 @@ export function PaperMakerWorkspace({
     setSelectedLeafIds((current) => {
       const next = new Set(current);
       const selection = getSelectionState(node, current);
-      if (selection.checked) {
-        for (const leafId of node.leafTopicIds) next.delete(leafId);
-      } else {
-        for (const leafId of node.leafTopicIds) next.add(leafId);
-      }
+      if (selection.checked) node.leafTopicIds.forEach((leafId) => next.delete(leafId));
+      else node.leafTopicIds.forEach((leafId) => next.add(leafId));
       return next;
     });
   }, []);
 
   const togglePaperCode = useCallback((code: string) => {
-    setSelectedPaperCodes((current) => {
-      const next = new Set(current);
+    setPaperSourcesCustomized(true);
+    setSelectedPaperCodes(() => {
+      const next = new Set(resolvedPaperCodes);
       if (next.has(code)) next.delete(code);
       else next.add(code);
       return next;
     });
-  }, []);
+  }, [resolvedPaperCodes]);
 
   const updateFromMarks = useCallback((nextMarks: number) => {
     const safeMarks = clampMarks(nextMarks);
@@ -666,47 +516,37 @@ export function PaperMakerWorkspace({
     const nextTier = subject?.tiers[0]?.key ?? "foundation";
     const nextTopics = resolveSubjectTopics(subject, nextTier);
     setSelectedSubjectKey(key);
+    setHasChosenSubject(true);
     setSelectedTier(nextTier);
     setSelectedPaperCodes(new Set(subject?.defaultPaperCodes ?? []));
+    setPaperSourcesCustomized(false);
     setSelectedLeafIds(new Set());
     setExpandedIds(new Set(nextTopics.map((topic) => topic.id)));
+    setActiveTopicGroupId(nextTopics[0]?.id ?? null);
     setTopicSearch("");
+    setPaperSourcesCustomized(false);
     if (targetMode === "time") {
       const nextMinutesPerMark = resolveMinutesPerMark(subject?.benchmarkMinutesPerMark, subject?.recommendedMinutesPerMark);
       setTargetMarks(clampMarks(estimateTargetMarksFromTimeMinutes(timeMinutes, nextMinutesPerMark, nextMinutesPerMark)));
     } else {
       setTargetMode("marks");
-      setTimeMinutes(clampTimeMinutes(estimatePaperTimeMinutes(
-        resolveMinutesPerMark(subject?.benchmarkMinutesPerMark, subject?.recommendedMinutesPerMark),
-        targetMarks,
-      )));
+      setTimeMinutes(clampTimeMinutes(estimatePaperTimeMinutes(resolveMinutesPerMark(subject?.benchmarkMinutesPerMark, subject?.recommendedMinutesPerMark), targetMarks)));
     }
     setError(null);
+    setSubjectDetailError(null);
     setResult(null);
-    setStep(2);
-    if (!subject?.detailLoaded) {
-      void loadSubjectDetail(key);
-    }
-  }, [subjectOptionsState, targetMode, targetMarks, timeMinutes, loadSubjectDetail]);
-
-  useEffect(() => {
-    if (!activeSubject || activeSubject.detailLoaded) return;
-    void loadSubjectDetail(activeSubject.key);
-  }, [activeSubject, loadSubjectDetail]);
-
-  useEffect(() => {
-    if (!activeSubject?.detailLoaded || activeTopics.length === 0 || expandedIds.size > 0) return;
-    setExpandedIds(new Set(activeTopics.map((topic) => topic.id)));
-  }, [activeSubject?.detailLoaded, activeTopics, expandedIds.size]);
-
-  useEffect(() => {
+    setBuilderStage(subject?.topicSelectionEnabled ? "topics" : "paper");
     const params = new URLSearchParams();
-    params.set("subject", selectedSubjectKey);
-    if (activeSubject?.tiers.length) {
-      params.set("tier", selectedTier);
-    }
+    params.set("subject", key);
+    if (subject?.tiers.length) params.set("tier", nextTier);
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [activeSubject?.tiers.length, pathname, router, selectedSubjectKey, selectedTier]);
+  }, [subjectOptionsState, targetMode, targetMarks, timeMinutes, pathname, router]);
+
+  useEffect(() => {
+    if (!hasChosenSubject || !activeSubject || activeSubject.detailLoaded) return;
+    const timeoutId = window.setTimeout(() => void loadSubjectDetail(activeSubject.key), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [activeSubject, hasChosenSubject, loadSubjectDetail]);
 
   const handleTierChange = useCallback((tierKey: SubjectTierKey) => {
     const nextTopics = resolveSubjectTopics(activeSubject, tierKey);
@@ -714,23 +554,29 @@ export function PaperMakerWorkspace({
     setSelectedTier(tierKey);
     setSelectedLeafIds((current) => new Set(Array.from(current).filter((leafId) => availableLeafIds.has(leafId))));
     setExpandedIds(new Set(nextTopics.map((topic) => topic.id)));
+    setActiveTopicGroupId(nextTopics[0]?.id ?? null);
     setTopicSearch("");
     setError(null);
     setResult(null);
-  }, [activeSubject]);
+    setBuilderStage("topics");
+    const params = new URLSearchParams();
+    params.set("subject", selectedSubjectKey);
+    params.set("tier", tierKey);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [activeSubject, pathname, router, selectedSubjectKey]);
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback((includeMarkScheme = false) => {
     setError(null);
     setResult(null);
-
+    setGenerationMode(includeMarkScheme ? "paper-and-mark-scheme" : "paper");
     startTransition(async () => {
       try {
         const excludedSourceQuestionKeys = new Set<string>();
         const priorSelectedUnitMarks: number[] = [];
         const priorCoveredLeafTopicIds: string[] = [];
-        let saveWarning: string | null = null;
         const savedPaperIds: string[] = [];
         const markSchemeUnitKeys: string[][] = [];
+        let saveWarning: string | null = null;
         let lastQuestionCount = 0;
         let lastTotalMarks = 0;
         let lastCoveredTopics = 0;
@@ -748,7 +594,7 @@ export function PaperMakerWorkspace({
               questionMix,
               timeMinutes,
               targetMode,
-              paperCodes: Array.from(selectedPaperCodes),
+              paperCodes: Array.from(resolvedPaperCodes),
               excludeSourceQuestionKeys: Array.from(excludedSourceQuestionKeys),
               remainingPaperCount: paperCount - paperIndex,
               priorSelectedUnitMarks,
@@ -756,11 +602,7 @@ export function PaperMakerWorkspace({
               priorCoveredLeafTopicIds,
             }),
           });
-
-          if (!response.ok) {
-            const message = await response.text();
-            throw new Error(message || "Failed to generate paper.");
-          }
+          if (!response.ok) throw new Error((await response.text()) || "Failed to generate paper.");
 
           const blob = await response.blob();
           lastQuestionCount = Number(response.headers.get("X-Question-Count") ?? 0);
@@ -768,31 +610,16 @@ export function PaperMakerWorkspace({
           lastCoveredTopics = Number(response.headers.get("X-Covered-Topics") ?? 0);
           lastTimeMinutes = Number(response.headers.get("X-Time-Minutes") ?? timeMinutes);
           const encodedKeys = response.headers.get("X-Selected-Source-Question-Keys");
-          if (encodedKeys) {
-            for (const key of decodeURIComponent(encodedKeys).split("\n").filter(Boolean)) {
-              excludedSourceQuestionKeys.add(key);
-            }
-          }
+          if (encodedKeys) decodeURIComponent(encodedKeys).split("\n").filter(Boolean).forEach((key) => excludedSourceQuestionKeys.add(key));
           const encodedMarks = response.headers.get("X-Selected-Unit-Marks");
-          if (encodedMarks) {
-            for (const value of decodeURIComponent(encodedMarks).split("\n").filter(Boolean)) {
-              const parsed = Number(value);
-              if (Number.isFinite(parsed)) {
-                priorSelectedUnitMarks.push(parsed);
-              }
-            }
-          }
+          if (encodedMarks) decodeURIComponent(encodedMarks).split("\n").filter(Boolean).forEach((value) => {
+            const parsed = Number(value);
+            if (Number.isFinite(parsed)) priorSelectedUnitMarks.push(parsed);
+          });
           const encodedCoveredLeafs = response.headers.get("X-Covered-Leaf-Topic-Ids");
-          if (encodedCoveredLeafs) {
-            for (const leafId of decodeURIComponent(encodedCoveredLeafs).split("\n").filter(Boolean)) {
-              priorCoveredLeafTopicIds.push(leafId);
-            }
-          }
-
+          if (encodedCoveredLeafs) decodeURIComponent(encodedCoveredLeafs).split("\n").filter(Boolean).forEach((leafId) => priorCoveredLeafTopicIds.push(leafId));
           const encodedUnitKeys = response.headers.get("X-Selected-Unit-Keys");
-          if (encodedUnitKeys) {
-            markSchemeUnitKeys.push(decodeURIComponent(encodedUnitKeys).split("\n").filter(Boolean));
-          }
+          if (encodedUnitKeys) markSchemeUnitKeys.push(decodeURIComponent(encodedUnitKeys).split("\n").filter(Boolean));
 
           const url = URL.createObjectURL(blob);
           const anchor = document.createElement("a");
@@ -811,100 +638,80 @@ export function PaperMakerWorkspace({
             saveFormData.append("timeMinutes", String(lastTimeMinutes));
             saveFormData.append("selectedUnitKeys", decodeURIComponent(encodedUnitKeys));
             saveFormData.append("file", new File([blob], anchor.download, { type: "application/pdf" }));
-
-            const saveResponse = await fetch("/api/paper-maker/save-generated", {
-              method: "POST",
-              body: saveFormData,
-            });
-
+            const saveResponse = await fetch("/api/paper-maker/save-generated", { method: "POST", body: saveFormData });
             if (saveResponse.ok) {
               const payload = await saveResponse.json() as { savedPaperId?: string };
               if (payload.savedPaperId) savedPaperIds.push(payload.savedPaperId);
             }
-
-            if (!saveResponse.ok && !saveWarning) {
-              saveWarning = await saveResponse.text() || "The paper downloaded, but saving it failed.";
-            }
+            if (!saveResponse.ok && !saveWarning) saveWarning = await saveResponse.text() || "The paper downloaded, but saving it failed.";
           }
 
           URL.revokeObjectURL(url);
         }
 
-        if (saveWarning) {
-          setError(saveWarning);
+        let markSchemeGenerated = false;
+        let markSchemeWarning: string | null = null;
+        if (includeMarkScheme) {
+          const outcome = await downloadMarkSchemePdfs({ unitKeysByPaper: markSchemeUnitKeys, subjectKey: selectedSubjectKey, subjectTier: activeSubject?.tiers.length ? selectedTier : undefined });
+          markSchemeGenerated = outcome.generated;
+          markSchemeWarning = outcome.warning;
         }
-
-        setResult({
-          paperCount,
-          questionCount: lastQuestionCount,
-          totalMarks: lastTotalMarks,
-          coveredTopics: lastCoveredTopics,
-          timeMinutes: lastTimeMinutes,
-          savedPaperIds,
-          markSchemeUnitKeys,
-          saveWarning,
-        });
+        if (saveWarning) setError(saveWarning);
+        setResult({ paperCount, questionCount: lastQuestionCount, totalMarks: lastTotalMarks, coveredTopics: lastCoveredTopics, timeMinutes: lastTimeMinutes, savedPaperIds, markSchemeUnitKeys, saveWarning, markSchemeGenerated, markSchemeWarning });
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : String(cause));
+      } finally {
+        setGenerationMode(null);
       }
     });
-  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, questionMix, timeMinutes, targetMode, selectedPaperCodes, paperCount, isAuthenticated]);
+  }, [selectedSubjectKey, activeSubject, selectedTier, selectedTopicNodeIds, targetMarks, questionMix, timeMinutes, targetMode, resolvedPaperCodes, paperCount, isAuthenticated]);
 
-  useEffect(() => {
-    activeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [step]);
+  const removeTopic = useCallback((topic: SelectedTopicSummary) => {
+    setSelectedLeafIds((current) => {
+      const next = new Set(current);
+      topic.leafTopicIds.forEach((leafId) => next.delete(leafId));
+      return next;
+    });
+  }, []);
+
+  useEffect(() => () => subjectDetailRequestRef.current?.abort(), []);
 
   return (
-    <div className="relative pb-24 lg:pb-0">
-      <div className="-mx-5 border-b border-[#1a2e1a]/[0.06] bg-[#f4f2ec] px-5 py-4 sm:-mx-8 sm:px-8 lg:-mx-12 lg:px-12">
-        <Stepper step={step} onChange={setStep} />
-      </div>
+    <div className="pb-24 lg:pb-0">
+      <header className="mx-auto max-w-[1240px] pb-5">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <div>
+            <h1 className="text-[clamp(1.85rem,3vw,2.55rem)] font-bold leading-tight tracking-[-0.05em] text-text">Build a practice paper</h1>
+            <p className="mt-1.5 max-w-[58ch] text-[0.8rem] leading-5 text-text-muted">Choose your course and topics, then set the paper length.</p>
+          </div>
+          <div className="lg:justify-self-end"><BuilderProgress stage={builderStage} subjectReady={hasChosenSubject} topicsReady={topicsReady} topicSelectionEnabled={topicSelectionEnabled} onStageChange={goToStage} /></div>
+        </div>
+        {isPending ? <p className="mt-3 text-[0.72rem] font-semibold text-accent" aria-live="polite">Preparing your download…</p> : null}
+      </header>
 
-      <div ref={activeStepRef} className="mt-8">
-        {step === 1 ? (
-          <section className="space-y-6">
-            <div className="max-w-2xl">
-              <p className="text-[0.68rem] uppercase tracking-[0.24em] text-accent-warm">Step 01</p>
-              <h2 className="mt-2 font-serif text-[1.7rem] text-[#1a2e1a]">Choose a paper to build</h2>
-              <p className="mt-2 text-[0.95rem] text-[#3d5a3f]/65">Pick the subject first. Everything else stays hidden until you need it.</p>
-            </div>
-
-            <div className="space-y-5">
+      <div className={`mx-auto mt-5 ${builderStage === "subject" ? "max-w-[1240px]" : "max-w-[1180px]"}`}>
+        {builderStage === "subject" ? (
+          <section aria-labelledby="subject-heading">
+            <h2 ref={stageHeadingRef} tabIndex={-1} id="subject-heading" className="sr-only">Choose your course</h2>
+            <div className="mt-3 space-y-8">
               {groupedSubjectOptions.map((group) => (
-                <section key={group.boardLabel} className="space-y-3">
-                  <p className="text-[0.68rem] uppercase tracking-[0.22em] text-accent-warm">{group.boardLabel}</p>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                <section key={group.boardLabel} className="grid gap-4 lg:grid-cols-[136px_minmax(0,1fr)] lg:gap-6" aria-labelledby={`board-${group.boardLabel.toLowerCase()}`}>
+                  <div className="flex items-baseline justify-between border-b border-text/12 pb-3 lg:block lg:border-b-0 lg:pt-4">
+                    <h3 id={`board-${group.boardLabel.toLowerCase()}`} className="text-[0.9rem] font-bold tracking-[-0.025em] text-text">{group.boardLabel}</h3>
+                    <span className="mt-1.5 block text-[0.65rem] text-text-muted">{group.subjects.length} course{group.subjects.length === 1 ? "" : "s"}</span>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {group.subjects.map((subject) => {
-                      const isActive = subject.key === selectedSubjectKey;
-                      const Icon = SUBJECT_ICONS[subject.key];
-
+                      const subjectName = subject.label.startsWith(`${subject.boardLabel} `) ? subject.label.slice(subject.boardLabel.length + 1) : subject.label;
+                      const tierText = subject.tiers.length ? subject.tiers.map((tier) => tier.label).join(" + ") : null;
                       return (
-                        <button
-                          key={subject.key}
-                          type="button"
-                          onClick={() => handleSubjectChange(subject.key)}
-                          className={`card-lift rounded-[1.4rem] border p-6 text-left transition-all ${
-                            isActive
-                              ? "border-accent/30 bg-white shadow-[0_6px_24px_rgba(90,138,92,0.12)]"
-                              : "border-[#1a2e1a]/[0.06] bg-white/70 hover:bg-white hover:shadow-[0_4px_16px_rgba(26,46,26,0.06)]"
-                          }`}
-                        >
-                          <div className="flex items-start gap-4">
-                            {Icon ? (
-                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors ${
-                                isActive ? "bg-accent/10 text-accent" : "bg-[#f4f2ec] text-[#6b8a6d]"
-                              }`}>
-                                <Icon className="h-5 w-5" strokeWidth={1.5} />
-                              </div>
-                            ) : null}
-                            <div className="min-w-0 flex-1">
-                              <h3 className="mt-1 font-serif text-[1.3rem] tracking-[-0.02em] text-[#1a2e1a]">{subject.label}</h3>
-                            </div>
-                          </div>
-                          <p className="mt-3 text-[0.88rem] leading-6 text-[#3d5a3f]/60">{subject.description}</p>
-                          <p className="mt-2 text-[0.75rem] tabular-nums text-[#3d5a3f]/45">
-                            {subject.taggedQuestionUnits} tagged question part{subject.taggedQuestionUnits === 1 ? "" : "s"}
-                          </p>
+                        <button key={subject.key} type="button" onClick={() => handleSubjectChange(subject.key)} className="btn-press group grid min-h-[108px] grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 rounded-[6px] border border-text/10 bg-white px-5 py-4 text-left transition-[border-color,background-color,transform] hover:-translate-y-0.5 hover:border-text/20 hover:bg-bg-elevated">
+                          <SubjectEmboss subjectKey={subject.key} surface="#FFFFFF" size={50} />
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[0.94rem] font-bold tracking-[-0.028em] text-text">{subjectName}</span>
+                            {tierText ? <span className="mt-1.5 block text-[0.69rem] text-text-muted">{tierText}</span> : null}
+                          </span>
+                          <ArrowRight className="h-4 w-4 shrink-0 text-text-subtle transition-transform group-hover:translate-x-0.5 group-hover:text-accent" aria-hidden="true" />
                         </button>
                       );
                     })}
@@ -912,472 +719,147 @@ export function PaperMakerWorkspace({
                 </section>
               ))}
             </div>
-
-            <div className="flex justify-end">
-              <button type="button" onClick={() => setStep(2)} className="btn-press rounded-full bg-[#1a2e1a] px-5 py-3 text-[0.88rem] font-semibold text-white transition-colors hover:bg-[#2a4a2a]">
-                Continue to {topicSelectionEnabled ? "topics" : "paper options"}
-              </button>
-            </div>
           </section>
-        ) : null}
-
-        {step === 2 ? (
-          <section className="space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-[0.68rem] uppercase tracking-[0.24em] text-accent-warm">Step 02</p>
-                <h2 className="mt-2 font-serif text-[1.7rem] text-[#1a2e1a]">Choose what to pull from</h2>
-                <p className="mt-2 text-[0.95rem] text-[#3d5a3f]/65">
-                  {activeSubject?.key === "edexcel-combined-science"
-                    ? "Pick the tier first, then choose the Biology, Chemistry, or Physics areas you want."
-                    : "Select whole topic areas. The builder will use real past-paper questions from those areas only."}
-                </p>
+        ) : (
+          <div className="space-y-6">
+            <section className="grid gap-4 border-b border-text/12 pb-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center" aria-labelledby="course-heading">
+              <div className="flex min-w-0 items-center gap-3">
+                <SubjectEmboss subjectKey={selectedSubjectKey} surface="#F5F1E8" size={50} />
+                <div className="min-w-0">
+                  <h2 id="course-heading" className="truncate text-[1.08rem] font-semibold tracking-[-0.035em] text-text">{activeSubject?.label ?? "Choose a course"}</h2>
+                  {activeTier ? <p className="mt-0.5 text-[0.68rem] font-medium text-text-muted">{activeTier.label}</p> : null}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={() => setStep(1)} className="btn-press rounded-full border border-[#1a2e1a]/10 px-4 py-2.5 text-[0.82rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white">
-                  Back
-                </button>
-                <button type="button" onClick={() => setStep(3)} disabled={isLoadingSubjectDetail} className="btn-press rounded-full bg-[#1a2e1a] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[#2a4a2a] disabled:opacity-40">
-                  Continue
-                </button>
-              </div>
-            </div>
-
-            {isLoadingSubjectDetail && !activeSubject?.detailLoaded ? (
-              <div className="rounded-[1.4rem] border border-[#1a2e1a]/[0.06] bg-white px-5 py-10 text-center">
-                <p className="text-[0.88rem] font-medium text-[#1a2e1a]">Loading subject topics...</p>
-                <p className="mt-2 text-[0.8rem] text-[#3d5a3f]/55">Fetching tagged topic structure and counts for {activeSubject?.label}.</p>
-              </div>
-            ) : topicSelectionEnabled ? (
-              <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] xl:items-start">
-                <aside className="rounded-[1.4rem] border border-[#1a2e1a]/[0.06] bg-white p-5 xl:sticky xl:top-[100px]">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[0.68rem] uppercase tracking-[0.16em] text-accent-warm">Your paper</p>
-                      <p className="mt-1 font-serif text-[1.1rem] text-[#1a2e1a]">{activeSubject?.label}{activeTier ? ` · ${activeTier.label}` : ""}</p>
-                    </div>
-                    {selectedTopicSummaries.length > 0 ? (
-                      <button
-                        type="button"
-                        onClick={() => setSelectedLeafIds(new Set())}
-                        className="btn-press rounded-full border border-[#1a2e1a]/10 px-3 py-1 text-[0.72rem] font-medium text-[#1a2e1a]/60 transition-colors hover:bg-[#f8f7f4]"
-                      >
-                        Clear
-                      </button>
-                    ) : null}
+              <div className="grid w-full grid-cols-1 items-center gap-2 sm:flex sm:w-auto sm:min-w-0 sm:shrink-0 sm:flex-wrap sm:justify-end sm:gap-3">
+                {activeSubject?.tiers.length ? (
+                  <div className="flex w-full min-w-0 overflow-hidden rounded-[4px] border border-text/12 bg-white sm:w-auto">
+                    {activeSubject.tiers.map((tier) => <button key={tier.key} type="button" onClick={() => handleTierChange(tier.key)} className={`btn-press w-1/2 min-w-0 flex-none border-r border-text/12 px-3 py-2 text-[0.7rem] font-semibold last:border-r-0 sm:w-auto ${selectedTier === tier.key ? "bg-accent text-white" : "text-text-muted hover:text-accent"}`}>{tier.label}</button>)}
                   </div>
-
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="font-serif text-[2.2rem] leading-none text-[#1a2e1a]">{selectedTopicSummaries.length}</span>
-                    <span className="text-[0.82rem] text-[#3d5a3f]/55">topic{selectedTopicSummaries.length === 1 ? "" : "s"} selected</span>
-                  </div>
-
-                  <p className="mt-2 text-[0.78rem] leading-6 text-[#3d5a3f]/50">
-                    {selectedTopicSummaries.length === 0
-                      ? `Choose one or more areas from ${totalLeafIds.length} available tagged topic strands.`
-                      : "Your final paper will only draw from the areas listed below."}
-                  </p>
-
-                  {selectedTopicSummaries.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {selectedTopicSummaries.map((topic) => (
-                        <span key={topic.id} className="inline-flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/[0.06] px-2.5 py-1 text-[0.72rem] text-[#1a2e1a]">
-                          {topic.label}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedLeafIds((current) => {
-                                const next = new Set(current);
-                                for (const leafId of topic.leafTopicIds) next.delete(leafId);
-                                return next;
-                              });
-                            }}
-                            className="text-[#1a2e1a]/40 transition-colors hover:text-[#1a2e1a]"
-                            aria-label={`Remove ${topic.label}`}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </aside>
-
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3d5a3f]/40" />
-                    <input
-                      type="text"
-                      value={topicSearch}
-                      onChange={(e) => setTopicSearch(e.target.value)}
-                      placeholder="Search topics..."
-                      className="w-full rounded-xl border border-[#1a2e1a]/[0.06] bg-white py-2.5 pl-10 pr-4 text-[0.88rem] text-[#1a2e1a] placeholder:text-[#3d5a3f]/35 outline-none transition-shadow focus:shadow-[0_0_0_2px_rgba(90,138,92,0.2)] focus:border-accent/30"
-                    />
-                    {topicSearch && (
-                      <button
-                        type="button"
-                        onClick={() => setTopicSearch("")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3d5a3f]/40 hover:text-[#1a2e1a]"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
-
-                  {activeSubject?.tiers.length ? (
-                    <div className="rounded-[1.4rem] border border-[#1a2e1a]/[0.06] bg-white p-4">
-                      <p className="text-[0.7rem] uppercase tracking-[0.14em] text-accent-warm">Tier</p>
-                      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                        {activeSubject.tiers.map((tier) => {
-                          const isActive = tier.key === selectedTier;
-                          return (
-                            <button
-                              key={tier.key}
-                              type="button"
-                              onClick={() => handleTierChange(tier.key)}
-                              className={`card-lift rounded-[1.1rem] border px-4 py-3.5 text-left transition-all ${
-                                isActive
-                                  ? "border-accent/30 bg-[#f8f7f4] shadow-[0_2px_12px_rgba(90,138,92,0.08)]"
-                                  : "border-[#1a2e1a]/[0.06] bg-white hover:bg-[#faf9f6]"
-                              }`}
-                            >
-                              <p className="text-[0.7rem] uppercase tracking-[0.14em] text-accent-warm">{tier.label}</p>
-                              <p className="mt-1 font-serif text-[1.35rem] text-[#1a2e1a]">{tier.taggedQuestionUnits}</p>
-                              <p className="text-[0.78rem] text-[#3d5a3f]/50">tagged question units</p>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {filteredTopics.map((topic) => (
-                    <TopicNode
-                      key={topic.id}
-                      node={topic}
-                      depth={0}
-                      expandedIds={expandedIds}
-                      selectedLeafIds={selectedLeafIds}
-                      onToggleExpanded={toggleExpanded}
-                      onToggleSelected={toggleSelected}
-                    />
-                  ))}
-
-                  {filteredTopics.length === 0 ? (
-                    <div className="rounded-[1.4rem] border border-dashed border-[#1a2e1a]/10 bg-white/70 px-5 py-8 text-center">
-                      <Search className="mx-auto h-6 w-6 text-[#3d5a3f]/30" />
-                      <p className="mt-2 text-[0.88rem] text-[#3d5a3f]/60">
-                        {topicSearch ? "No topics match your search. Try a broader term." : "No tagged topics are available for this selection yet."}
-                      </p>
-                    </div>
-                  ) : null}
-                </div>
+                ) : null}
+                <button type="button" onClick={() => goToStage("subject")} className="btn-press inline-flex min-h-10 w-full items-center justify-center gap-2 whitespace-nowrap rounded-[4px] border border-text/15 bg-white px-4 text-[0.7rem] font-semibold text-text-secondary hover:border-accent hover:text-accent sm:w-auto sm:min-w-[132px]">Change course<ArrowRight className="h-3.5 w-3.5" /></button>
               </div>
-            ) : (
-              <div className="rounded-[1.4rem] border border-[#1a2e1a]/[0.06] bg-white p-5">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {activeSubject?.tiers.map((tier) => {
-                    const isActive = tier.key === selectedTier;
-                    return (
-                      <button
-                        key={tier.key}
-                        type="button"
-                        onClick={() => handleTierChange(tier.key)}
-                        className={`card-lift rounded-[1.1rem] border px-4 py-3.5 text-left transition-all ${
-                          isActive
-                            ? "border-accent/30 bg-[#f8f7f4] shadow-[0_2px_12px_rgba(90,138,92,0.08)]"
-                            : "border-[#1a2e1a]/[0.06] bg-white hover:bg-[#faf9f6]"
-                        }`}
-                      >
-                        <p className="text-[0.7rem] uppercase tracking-[0.14em] text-accent-warm">{tier.label}</p>
-                        <p className="mt-1 font-serif text-[1.35rem] text-[#1a2e1a]">{tier.taggedQuestionUnits}</p>
-                        <p className="text-[0.78rem] text-[#3d5a3f]/50">tagged question units</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </section>
-        ) : null}
+            </section>
 
-        {step === 3 ? (
-          <section className="mx-auto max-w-4xl space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div className="max-w-2xl">
-                <p className="text-[0.68rem] uppercase tracking-[0.24em] text-accent-warm">Step 03</p>
-                <h2 className="mt-2 font-serif text-[1.7rem] text-[#1a2e1a]">Review and generate</h2>
-                <p className="mt-2 text-[0.95rem] text-[#3d5a3f]/65">Set the paper length, choose which source papers to include, then generate the PDF.</p>
-              </div>
-              <button type="button" onClick={() => setStep(2)} className="btn-press rounded-full border border-[#1a2e1a]/10 px-4 py-2.5 text-[0.82rem] font-medium text-[#1a2e1a] transition-colors hover:bg-white">
-                Back
-              </button>
-            </div>
-
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-              <div className="mb-4">
-                <p className="text-[0.82rem] font-semibold text-[#1a2e1a]">Paper length</p>
-                <p className="text-[0.72rem] text-[#3d5a3f]/45">Marks and time stay in sync. Adjust either one.</p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className={`rounded-xl border p-4 transition-all ${targetMode === "marks" ? "border-accent/30 bg-[#faf8f3]" : "border-[#1a2e1a]/10 bg-[#f8f7f4]"}`}>
-                  <label htmlFor="paper-target-marks" className="text-[0.72rem] uppercase tracking-[0.1em] text-accent-warm">Marks</label>
-                  <div className="mt-2 flex items-end gap-2">
-                    <input
-                      id="paper-target-marks"
-                      type="number"
-                      min={MIN_MARKS}
-                      max={MAX_MARKS}
-                      step={5}
-                      value={targetMarks}
-                      onChange={(event) => updateFromMarks(Number(event.target.value) || MIN_MARKS)}
-                      disabled={!generationEnabled}
-                      className="h-12 w-24 rounded-lg border border-[#1a2e1a]/10 bg-white px-3 text-center font-serif text-[1.35rem] text-[#1a2e1a] outline-none focus:border-accent/30 focus:shadow-[0_0_0_2px_rgba(90,138,92,0.2)]"
-                    />
-                    <span className="pb-1 text-[0.78rem] text-[#3d5a3f]/50">marks</span>
-                  </div>
-                </div>
-
-                <div className={`rounded-xl border p-4 transition-all ${targetMode === "time" ? "border-accent/30 bg-[#faf8f3]" : "border-[#1a2e1a]/10 bg-[#f8f7f4]"}`}>
-                  <label htmlFor="paper-time-minutes" className="text-[0.72rem] uppercase tracking-[0.1em] text-accent-warm">Time</label>
-                  <div className="mt-2 flex items-end gap-2">
-                    <input
-                      id="paper-time-minutes"
-                      type="number"
-                      min={MIN_TIME_MINUTES}
-                      max={MAX_TIME_MINUTES}
-                      step={5}
-                      value={timeMinutes}
-                      onChange={(event) => updateFromTime(Number(event.target.value) || MIN_TIME_MINUTES)}
-                      disabled={!generationEnabled}
-                      className="h-12 w-24 rounded-lg border border-[#1a2e1a]/10 bg-white px-3 text-center font-serif text-[1.35rem] text-[#1a2e1a] outline-none focus:border-accent/30 focus:shadow-[0_0_0_2px_rgba(90,138,92,0.2)]"
-                    />
-                    <span className="pb-1 text-[0.78rem] text-[#3d5a3f]/50">minutes</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-xl border border-[#1a2e1a]/10 bg-[#f8f7f4] p-4">
-                <input
-                  type="range"
-                  min={MIN_MARKS}
-                  max={MAX_MARKS}
-                  step={5}
-                  value={targetMarks}
-                  onChange={(event) => updateFromMarks(Number(event.target.value))}
-                  disabled={!generationEnabled}
-                  className="w-full accent-accent"
-                />
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {[30, 45, 60, 75, 90].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => updateFromTime(preset)}
-                      disabled={!generationEnabled}
-                      className={`btn-press rounded-full border px-2.5 py-1 text-[0.74rem] transition-all ${
-                        timeMinutes === preset && targetMode === "time"
-                          ? "border-[#1a2e1a] bg-[#1a2e1a] text-white"
-                          : "border-[#1a2e1a]/10 bg-white text-[#1a2e1a] hover:bg-[#f1eee6]"
-                      }`}
-                    >
-                      {preset}m
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="mt-3 flex items-center gap-1.5 text-[0.72rem] text-[#3d5a3f]/45">
-                <Clock className="h-3 w-3" />
-                Based on ~{activeMinutesPerMark.toFixed(2)} min per mark
-              </p>
-            </div>
-
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-white p-5 shadow-sm">
-              <div>
-                <p className="text-[0.82rem] font-semibold text-[#1a2e1a]">Question mix</p>
-                <p className="text-[0.72rem] text-[#3d5a3f]/45">Shape the mark distribution instead of leaving it to chance.</p>
-              </div>
-              <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                {QUESTION_MIX_OPTIONS.map((option) => {
-                  const isActive = questionMix === option.key;
-                  return (
-                    <button
-                      key={option.key}
-                      type="button"
-                      onClick={() => setQuestionMix(option.key)}
-                      disabled={!generationEnabled}
-                      className={`rounded-xl border p-4 text-left transition-all disabled:opacity-40 ${
-                        isActive
-                          ? "border-[#1a2e1a] bg-[#1a2e1a] text-white"
-                          : "border-[#1a2e1a]/10 bg-[#f8f7f4] text-[#1a2e1a] hover:bg-[#f1eee6]"
-                      }`}
-                    >
-                      <span className="block text-[0.82rem] font-semibold">{option.label}</span>
-                      <span className={`mt-1 block text-[0.72rem] ${isActive ? "text-white/70" : "text-[#3d5a3f]/55"}`}>{option.description}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-white p-5 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-[0.82rem] font-semibold text-[#1a2e1a]">Source papers</p>
-                  <p className="text-[0.72rem] text-[#3d5a3f]/45">Limit where questions come from.</p>
-                </div>
-                <div className="flex items-center gap-3 text-[0.72rem]">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaperCodes(new Set(activePaperOptions.map((paper) => paper.code)))}
-                    className="text-[#1a2e1a]/55 transition-colors hover:text-[#1a2e1a]"
-                  >
-                    Select all
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaperCodes(new Set())}
-                    className="text-[#1a2e1a]/55 transition-colors hover:text-[#1a2e1a]"
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {activePaperOptions.map((paper) => {
-                  const isActive = selectedPaperCodes.has(paper.code);
-                  return (
-                    <button
-                      key={paper.code}
-                      type="button"
-                      onClick={() => togglePaperCode(paper.code)}
-                      disabled={!generationEnabled}
-                      className={`btn-press rounded-full border px-3 py-1.5 text-[0.78rem] font-medium transition-all disabled:opacity-40 ${
-                        isActive
-                          ? "border-[#1a2e1a] bg-[#1a2e1a] text-white"
-                          : "border-[#1a2e1a]/10 bg-[#f8f7f4] text-[#1a2e1a] hover:bg-[#f1eee6]"
-                      }`}
-                    >
-                      {paper.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[#faf8f3] p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-[0.68rem] uppercase tracking-[0.18em] text-accent-warm">Build summary</p>
-                  <p className="mt-1 font-serif text-[1.2rem] text-[#1a2e1a]">
-                    {activeSubject?.label}
-                    {activeTier ? ` · ${activeTier.label}` : ""}
-                  </p>
-                  <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/55">
-                    {targetMarks} marks · {timeMinutes} minutes · {QUESTION_MIX_OPTIONS.find((option) => option.key === questionMix)?.label} · {selectedPaperCodes.size} source paper{selectedPaperCodes.size === 1 ? "" : "s"}
-                  </p>
-
-                  {topicSelectionEnabled && selectedTopicPreview.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {selectedTopicPreview.map((topic) => (
-                        <span key={topic.id} className="inline-flex items-center rounded-full border border-accent/20 bg-white px-2.5 py-1 text-[0.72rem] text-[#1a2e1a]">
-                          {topic.label}
-                        </span>
-                      ))}
-                      {selectedTopicOverflowCount > 0 ? (
-                        <span className="inline-flex items-center rounded-full border border-[#1a2e1a]/12 bg-white px-2.5 py-1 text-[0.72rem] text-[#3d5a3f]/65">
-                          +{selectedTopicOverflowCount} more
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="flex shrink-0 gap-2 rounded-full border border-[#1a2e1a]/10 bg-white p-1">
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      type="button"
-                      onClick={() => setPaperCount(count)}
-                      className={`btn-press rounded-full px-3.5 py-1.5 text-[0.76rem] font-semibold transition-all ${
-                        paperCount === count
-                          ? "bg-[#1a2e1a] text-white"
-                          : "text-[#1a2e1a]/65 hover:bg-[#f8f7f4]"
-                      }`}
-                    >
-                      {count} paper{count === 1 ? "" : "s"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {error ? (
-              <div className="rounded-[1rem] border border-red-200 bg-red-50 px-4 py-3">
-                <p className="text-[0.8rem] font-medium text-red-700">Something went wrong</p>
-                <p className="mt-0.5 text-[0.78rem] text-red-600/80">{error}</p>
+            {subjectDetailError ? (
+              <div className="border border-danger/20 bg-danger-soft px-4 py-4" role="alert">
+                <p className="text-[0.78rem] font-semibold text-danger">We could not load {activeSubject?.label}.</p>
+                <p className="mt-1 text-[0.74rem] leading-5 text-danger/80">{subjectDetailError}</p>
+                <button type="button" onClick={() => activeSubject && loadSubjectDetail(activeSubject.key)} className="btn-press mt-3 border border-danger/30 bg-danger px-3 py-2 text-[0.72rem] font-semibold text-white">Try loading again</button>
               </div>
             ) : null}
 
-            <div className="hidden lg:block lg:sticky lg:bottom-5">
-              <div className="rounded-[1.2rem] border border-[#1a2e1a]/10 bg-white/95 p-4 shadow-[0_10px_28px_rgba(22,40,22,0.08)] backdrop-blur">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="truncate text-[0.82rem] text-[#3d5a3f]/65">{summaryText}</p>
-                  <button
-                    type="button"
-                    onClick={handleGenerate}
-                    disabled={!canGenerate || isPending}
-                    className="btn-press inline-flex items-center gap-2 rounded-full bg-[#1a2e1a] px-6 py-3 text-[0.9rem] font-semibold text-[#f8faf8] shadow-[0_8px_24px_rgba(22,40,22,0.18)] transition-shadow hover:shadow-[0_12px_32px_rgba(22,40,22,0.24)] disabled:opacity-40"
-                  >
-                    {isPending ? (
-                      <>
-                        <span className="status-breathe inline-block h-2 w-2 rounded-full bg-white/70" />
-                        Assembling paper...
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[#f8faf8]">Generate paper</span>
-                        <ArrowRight className="h-4 w-4" />
-                      </>
-                    )}
-                  </button>
+            {hasChosenSubject && topicSelectionEnabled && builderStage === "topics" ? (
+              <section aria-labelledby="topics-heading">
+                <h2 ref={stageHeadingRef} tabIndex={-1} id="topics-heading" className="text-[1.3rem] font-semibold tracking-[-0.04em] text-text outline-none">Choose focus topics</h2>
+                <p className="mt-1 text-[0.75rem] leading-5 text-text-muted">Select the topics to include.</p>
+                <div className="relative mt-5">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" aria-hidden="true" />
+                  <input type="search" value={topicSearch} onChange={(event) => setTopicSearch(event.target.value)} placeholder="Search topics" aria-label="Search topics" className="h-12 w-full border border-text/15 bg-bg-elevated pl-10 pr-10 text-[0.8rem] text-text placeholder:text-text-subtle outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-glow)]" />
+                  {topicSearch ? <button type="button" onClick={() => setTopicSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent" aria-label="Clear topic search"><X className="h-4 w-4" /></button> : null}
                 </div>
-              </div>
-            </div>
-          </section>
-        ) : null}
+
+                {isLoadingSubjectDetail && !activeSubject?.detailLoaded ? <div className="mt-5 border border-text/10 bg-white py-14 text-center"><p className="text-[0.78rem] font-semibold text-text">Loading topic structure…</p><p className="mt-1 text-[0.7rem] text-text-muted">Preparing {activeSubject?.label} topics.</p></div> : (
+                  <>
+                    {filteredTopics.length ? <div className="mt-5 overflow-hidden border border-text/10 bg-white lg:grid lg:grid-cols-[270px_minmax(0,1fr)]" aria-label={`${activeSubject?.label ?? "Course"} topics`}>
+                      <div className="hidden max-h-[36rem] overflow-y-auto border-r border-text/10 bg-bg-soft/65 p-2 lg:block">
+                        {filteredTopics.map((topic) => {
+                          const selection = getSelectionState(topic, selectedLeafIds);
+                          const selectedCount = topic.leafTopicIds.filter((leafId) => selectedLeafIds.has(leafId)).length;
+                          return <button key={topic.id} type="button" onClick={() => setActiveTopicGroupId(topic.id)} className={`mb-1 flex w-full items-start justify-between gap-3 rounded-md px-3 py-3 text-left transition-colors ${activeTopicGroup?.id === topic.id ? "bg-white text-text shadow-[0_1px_0_rgba(13,23,52,0.05)]" : "text-text-secondary hover:bg-white/75 hover:text-text"}`}><span className="text-[0.76rem] font-semibold leading-5">{topic.label}</span><span className={`mt-0.5 shrink-0 font-mono text-[0.58rem] ${selection.checked || selection.partial ? "text-accent" : "text-text-muted"}`}>{selectedCount}/{topic.leafTopicIds.length}</span></button>;
+                        })}
+                      </div>
+                      <div className="max-h-[36rem] overflow-y-auto p-1 lg:p-3">
+                        <div className="lg:hidden">
+                          {filteredTopics.map((topic) => <TopicNode key={topic.id} node={topic} depth={0} expandedIds={expandedIds} selectedLeafIds={selectedLeafIds} onToggleExpanded={toggleExpanded} onToggleSelected={toggleSelected} />)}
+                        </div>
+                        <div className="hidden lg:block">
+                          {activeTopicGroup ? <TopicNode key={activeTopicGroup.id} node={activeTopicGroup} depth={0} expandedIds={expandedIds} selectedLeafIds={selectedLeafIds} onToggleExpanded={toggleExpanded} onToggleSelected={toggleSelected} /> : null}
+                        </div>
+                      </div>
+                    </div> : <div className="mt-5 border border-text/10 bg-white px-6 py-14 text-center"><Search className="mx-auto h-5 w-5 text-text-subtle" aria-hidden="true" /><p className="mx-auto mt-2 max-w-sm text-[0.75rem] leading-5 text-text-muted">{topicSearch ? "No topics match your search." : "No tagged topics are available for this selection yet."}</p></div>}
+                    <div className="mt-4"><TopicSelectionSummary topics={selectedTopicSummaries} onClear={() => setSelectedLeafIds(new Set())} onRemove={removeTopic} /></div>
+                    <div className="mt-5 hidden justify-end lg:flex"><button type="button" onClick={() => goToStage("paper")} disabled={!topicsReady} className="btn-press inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-accent px-6 text-[0.8rem] font-bold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40">Continue to paper setup<ArrowRight className="h-4 w-4" /></button></div>
+                  </>
+                )}
+              </section>
+            ) : null}
+
+            {builderStage === "paper" ? (
+              <section aria-labelledby="paper-brief-heading">
+                <h2 ref={stageHeadingRef} tabIndex={-1} id="paper-brief-heading" className="sr-only">Paper setup</h2>
+                {topicSelectionEnabled ? <div className="flex justify-end"><button type="button" onClick={() => goToStage("topics")} className="inline-flex shrink-0 items-center gap-1.5 px-2 py-2 text-[0.7rem] font-semibold text-text-secondary hover:text-accent"><ArrowLeft className="h-3.5 w-3.5" />Back to topics</button></div> : null}
+
+                <div className="mt-3 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-10">
+                  <div>
+                    <section className="pb-7" aria-labelledby="length-heading">
+                      <h3 id="length-heading" className="text-[1rem] font-semibold tracking-[-0.025em] text-text">Session length</h3>
+                      <p className="mt-1 text-[0.73rem] leading-5 text-text-muted">Set marks or time. The other value updates with it.</p>
+                      <div className="mt-5 grid grid-cols-3 overflow-hidden rounded-[5px] border border-text/12 bg-white" aria-label="Paper length presets">
+                        {[30, 45, 60].map((minutes) => <button key={minutes} type="button" onClick={() => updateFromTime(minutes)} disabled={!generationEnabled} aria-pressed={timeMinutes === minutes} className={`btn-press h-11 border-r border-text/12 text-[0.75rem] font-semibold last:border-r-0 disabled:opacity-40 ${timeMinutes === minutes ? "bg-bg-warm-soft text-accent" : "text-text hover:bg-bg-soft"}`}>{minutes} min</button>)}
+                      </div>
+                      <div className="mt-5 grid gap-6 sm:grid-cols-2">
+                        <label htmlFor="paper-target-marks" className="block">
+                          <span className="text-[0.68rem] font-semibold text-text-muted">Target marks</span>
+                          <span className="mt-2 flex items-center"><input id="paper-target-marks" type="number" min={MIN_MARKS} max={MAX_MARKS} step={5} value={targetMarks} onChange={(event) => updateFromMarks(Number(event.target.value) || MIN_MARKS)} disabled={!generationEnabled} className="paper-number-input h-11 w-full min-w-0 bg-transparent font-mono text-[1.3rem] font-semibold text-text outline-none" /><span className="text-[0.68rem] text-text-muted">marks</span></span>
+                        </label>
+                        <label htmlFor="paper-time-minutes" className="block">
+                          <span className="text-[0.68rem] font-semibold text-text-muted">Duration</span>
+                          <span className="mt-2 flex items-center"><input id="paper-time-minutes" type="number" min={MIN_TIME_MINUTES} max={MAX_TIME_MINUTES} step={5} value={timeMinutes} onChange={(event) => updateFromTime(Number(event.target.value) || MIN_TIME_MINUTES)} disabled={!generationEnabled} className="paper-number-input h-11 w-full min-w-0 bg-transparent font-mono text-[1.3rem] font-semibold text-text outline-none" /><span className="text-[0.68rem] text-text-muted">min</span></span>
+                        </label>
+                      </div>
+                      <input type="range" min={MIN_MARKS} max={MAX_MARKS} step={5} value={targetMarks} onChange={(event) => updateFromMarks(Number(event.target.value))} disabled={!generationEnabled} aria-label="Target marks" className="ui-range mt-6 w-full" style={{ "--range-progress": `${((targetMarks - MIN_MARKS) / (MAX_MARKS - MIN_MARKS)) * 100}%` } as CSSProperties} />
+                      <p className="mt-2 flex items-center gap-1.5 text-[0.66rem] text-text-muted"><Clock3 className="h-3.5 w-3.5 text-accent" />About {activeMinutesPerMark.toFixed(2)} minutes per mark</p>
+                    </section>
+
+                    <section className="border-t border-text/12 py-7" aria-labelledby="mix-heading">
+                      <h3 id="mix-heading" className="text-[1rem] font-semibold tracking-[-0.025em] text-text">Question mix</h3>
+                      <p className="mt-1 text-[0.73rem] leading-5 text-text-muted">Choose how the marks are distributed.</p>
+                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        {QUESTION_MIX_OPTIONS.map((option) => <button key={option.key} type="button" onClick={() => setQuestionMix(option.key)} disabled={!generationEnabled} aria-pressed={questionMix === option.key} className={`relative min-h-28 border p-4 pr-16 text-left transition-colors disabled:opacity-40 ${questionMix === option.key ? "border-accent/30 bg-bg-warm-soft text-text" : "border-text/12 bg-white text-text hover:border-text/20 hover:bg-bg-soft"}`}><span className="absolute right-2.5 top-2"><EmbossIcon icon={option.icon} color="#4747D8" surface={questionMix === option.key ? "#F2EFE8" : "#FFFFFF"} params={EMBOSS_PRESETS.control} size={46} /></span><span className="block text-[0.76rem] font-bold">{option.label}</span><span className="mt-2 block text-[0.66rem] leading-5 text-text-muted">{option.description}</span></button>)}
+                      </div>
+                    </section>
+
+                    <section className="border-t border-text/12 py-7" aria-labelledby="advanced-heading">
+                      <div className="flex items-start justify-between gap-4"><div><h3 id="advanced-heading" className="text-[1rem] font-semibold tracking-[-0.025em] text-text">Source papers</h3><p className="mt-1 text-[0.73rem] leading-5 text-text-muted">Choose which papers questions can be drawn from.</p></div><div className="flex shrink-0 gap-3 text-[0.66rem] font-semibold text-text-muted"><button type="button" onClick={() => { setPaperSourcesCustomized(true); setSelectedPaperCodes(new Set(activePaperOptions.map((paper) => paper.code))); }} className="hover:text-accent">Select all</button><button type="button" onClick={() => { setPaperSourcesCustomized(true); setSelectedPaperCodes(new Set()); }} className="hover:text-accent">Clear</button></div></div>
+                      <div className="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        {activePaperOptions.map((paper) => <label key={paper.code} className={`flex min-h-11 cursor-pointer items-center gap-2.5 border px-3 py-2 text-[0.72rem] font-medium transition-colors ${resolvedPaperCodes.has(paper.code) ? "border-text/25 bg-bg-soft text-text" : "border-text/10 bg-white text-text-muted"}`}><input type="checkbox" checked={resolvedPaperCodes.has(paper.code)} onChange={() => togglePaperCode(paper.code)} disabled={!generationEnabled} className="ui-checkbox h-[18px] w-[18px] shrink-0 disabled:opacity-40" />{paper.label}</label>)}
+                      </div>
+                      {paperSourcesCustomized ? <button type="button" onClick={() => setPaperSourcesCustomized(false)} className="mt-3 text-[0.66rem] font-semibold text-accent hover:text-accent-deep">Reset to topic-matched sources</button> : null}
+                      <div className="mt-6 border-t border-text/10 pt-5"><h4 className="text-[0.82rem] font-semibold text-text">Paper batch</h4><p className="mt-1 text-[0.68rem] text-text-muted">Generate up to three papers from the same setup.</p><div className="mt-3 grid w-full grid-cols-3 overflow-hidden rounded-md border border-text/15 bg-white">{[1, 2, 3].map((count) => <button key={count} type="button" onClick={() => setPaperCount(count)} aria-pressed={paperCount === count} className={`btn-press border-r border-text/15 px-3 py-3 text-[0.72rem] font-semibold last:border-r-0 ${paperCount === count ? "bg-accent text-white" : "text-text-muted hover:bg-bg-soft hover:text-text"}`}>{count} paper{count === 1 ? "" : "s"}</button>)}</div></div>
+                    </section>
+                  </div>
+
+                  <aside className="border-t border-text/12 pt-6 lg:sticky lg:top-24 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0" aria-labelledby="summary-heading">
+                    <div className="flex items-center gap-3"><SubjectEmboss subjectKey={selectedSubjectKey} surface="#F5F1E8" size={46} /><div><h3 id="summary-heading" className="text-[1rem] font-semibold tracking-[-0.03em] text-text">Paper brief</h3><p className="mt-0.5 text-[0.7rem] text-text-muted">{activeSubject?.label}{activeTier ? ` · ${activeTier.label}` : ""}</p></div></div>
+                    <div className="mt-5 border-y border-text/10 py-4">
+                      <p className="text-[0.64rem] font-semibold uppercase tracking-[0.08em] text-text-muted">Topics</p>
+                      {topicSelectionEnabled ? <ul className="mt-2 space-y-1.5">{selectedTopicSummaries.slice(0, 4).map((topic) => <li key={topic.id} className="text-[0.7rem] leading-4 text-text-secondary">{topic.label}</li>)}{selectedTopicSummaries.length > 4 ? <li className="text-[0.66rem] font-semibold text-accent">+{selectedTopicSummaries.length - 4} more</li> : null}</ul> : <p className="mt-2 text-[0.72rem] font-semibold text-text">All available topics</p>}
+                    </div>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-4 border-b border-text/10 py-4">
+                      <div><dt className="text-[0.64rem] text-text-muted">Marks</dt><dd className="mt-1 font-mono text-[0.9rem] font-semibold text-text">{targetMarks}</dd></div>
+                      <div><dt className="text-[0.64rem] text-text-muted">Duration</dt><dd className="mt-1 font-mono text-[0.9rem] font-semibold text-text">{timeMinutes} min</dd></div>
+                      <div><dt className="text-[0.64rem] text-text-muted">Question mix</dt><dd className="mt-1 text-[0.72rem] font-semibold text-text">{QUESTION_MIX_OPTIONS.find((option) => option.key === questionMix)?.label}</dd></div>
+                      <div><dt className="text-[0.64rem] text-text-muted">Papers</dt><dd className="mt-1 font-mono text-[0.9rem] font-semibold text-text">{paperCount}</dd></div>
+                    </dl>
+                    {!isAuthenticated ? <div className="mt-4 border border-text/10 bg-white px-3.5 py-3.5 text-[0.7rem] leading-5 text-text-secondary"><p className="font-semibold text-text">Want to keep this paper?</p><p className="mt-0.5">Sign in before generating to save and mark it later. Downloads still work without an account.</p><Link href="/auth?redirect=/paper-maker" className="mt-2 inline-block font-semibold text-accent hover:text-accent-deep">Sign in</Link></div> : null}
+                    {error ? <div className="mt-4 border border-danger/20 bg-danger-soft px-3 py-3" role="alert"><p className="text-[0.76rem] font-semibold text-danger">Something went wrong</p><p className="mt-1 text-[0.74rem] leading-5 text-danger/80">{error}</p></div> : null}
+                    <div className="mt-5 hidden gap-2.5 lg:grid">
+                      <button type="button" onClick={() => handleGenerate(false)} disabled={!canGenerate || isPending} className="btn-press inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-accent px-4 text-[0.76rem] font-bold text-white hover:bg-accent-deep disabled:opacity-40">{isPending && generationMode === "paper" ? <><span className="status-breathe h-2 w-2 rounded-full bg-white/70" />Building paper…</> : <>Generate {paperCount > 1 ? `${paperCount} papers` : "paper"}<ArrowRight className="h-4 w-4" /></>}</button>
+                      <button type="button" onClick={() => handleGenerate(true)} disabled={!canGenerate || isPending} className="btn-press relative inline-flex min-h-11 w-full items-center justify-center rounded-md border border-text/15 bg-transparent px-10 text-accent hover:border-accent/50 hover:bg-white/55 disabled:opacity-40">{isPending && generationMode === "paper-and-mark-scheme" ? <><span className="status-breathe mr-2 h-1.5 w-1.5 rounded-full bg-accent/70" /><span className="text-[0.68rem] font-bold">Building both…</span></> : <><span className="flex flex-col items-center text-center leading-none"><span className="text-[0.68rem] font-bold">{paperCount > 1 ? `Generate ${paperCount} papers` : "Generate paper"}</span><span className="mt-1 text-[0.5rem] font-medium tracking-[0.01em] text-text-muted">+ {paperCount > 1 ? "mark schemes" : "mark scheme"}</span></span><ArrowRight className="absolute right-4 h-3.5 w-3.5 text-accent/75" /></>}</button>
+                    </div>
+                  </aside>
+                </div>
+              </section>
+            ) : null}
+          </div>
+        )}
       </div>
 
-      {step === 3 ? <MobileCommandBar summary={summaryText} canGenerate={canGenerate} onGenerate={handleGenerate} isPending={isPending} /> : null}
+      {builderStage !== "subject" ? <div className="fixed inset-x-0 bottom-0 z-40 border-t border-text/10 bg-bg-elevated/95 p-3 shadow-[0_-10px_30px_rgba(38,33,24,0.1)] backdrop-blur lg:hidden">
+        {builderStage === "topics" ? <button type="button" onClick={() => goToStage("paper")} disabled={!topicsReady} className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-[0.8rem] font-bold text-white hover:bg-accent-deep disabled:opacity-40">Continue to paper setup<ArrowRight className="h-4 w-4" /></button> : <div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => handleGenerate(false)} disabled={!canGenerate || isPending} className="btn-press flex min-h-12 items-center justify-center rounded-md bg-accent px-3 text-[0.7rem] font-bold text-white disabled:opacity-40">{isPending && generationMode === "paper" ? "Building…" : paperCount > 1 ? `Generate ${paperCount} papers` : "Generate paper"}</button><button type="button" onClick={() => handleGenerate(true)} disabled={!canGenerate || isPending} className="btn-press flex min-h-11 items-center justify-center rounded-md border border-text/15 bg-transparent px-3 text-center text-accent disabled:opacity-40">{isPending && generationMode === "paper-and-mark-scheme" ? <span className="text-[0.64rem] font-bold">Building both…</span> : <span className="flex flex-col items-center leading-none"><span className="text-[0.64rem] font-bold">{paperCount > 1 ? `Generate ${paperCount} papers` : "Generate paper"}</span><span className="mt-1 text-[0.48rem] font-medium text-text-muted">+ {paperCount > 1 ? "mark schemes" : "mark scheme"}</span></span>}</button></div>}
+      </div> : null}
 
-      {result ? (
-        <SuccessModal
-          result={result}
-          subjectKey={selectedSubjectKey}
-          subjectTier={activeSubject?.tiers.length ? selectedTier : undefined}
-          subjectLabel={activeSubject?.label ?? ""}
-          tierLabel={activeTier?.label}
-          minutesPerMark={activeMinutesPerMark}
-          isAuthenticated={isAuthenticated}
-          onClose={() => setResult(null)}
-          onBuildAnother={() => {
-            setResult(null);
-            setStep(1);
-            setSelectedLeafIds(new Set());
-          }}
-        />
-      ) : null}
+      {result ? <SuccessModal result={result} subjectKey={selectedSubjectKey} subjectTier={activeSubject?.tiers.length ? selectedTier : undefined} subjectLabel={activeSubject?.label ?? ""} tierLabel={activeTier?.label} minutesPerMark={activeMinutesPerMark} isAuthenticated={isAuthenticated} onClose={() => setResult(null)} onBuildAnother={() => { setResult(null); setSelectedLeafIds(new Set()); }} /> : null}
     </div>
-  );
-}
-
-function ArrowRight({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-      <path d="M6.5 3.5L11 8l-4.5 4.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
   );
 }

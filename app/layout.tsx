@@ -20,8 +20,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Revisewiththepast — Paper Maker",
-  description: "Build custom GCSE papers from real source pages with clear subject structure and honest coverage.",
+  title: "Revise with the Past — GCSE Paper Maker",
+  description: "Build focused GCSE practice papers by course, topic, marks, and time, then review each answer in one place.",
 };
 
 export default function RootLayout({

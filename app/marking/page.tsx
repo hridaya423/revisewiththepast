@@ -1,37 +1,50 @@
-import Link from "next/link";
+import { redirect } from "next/navigation";
 
 import { fetchAuthQuery } from "@/lib/auth-server";
 import { api } from "@/convex/_generated/api";
 import { MarkingDashboard } from "@/app/_components/marking-dashboard";
-import { UserMenu } from "@/app/_components/user-menu";
+import { AppShell } from "@/app/_components/app-shell";
 
 export const dynamic = "force-dynamic";
 
 export default async function MarkingPage() {
-  const [user, submissions, savedPapers] = await Promise.all([
-    fetchAuthQuery(api.auth.getCurrentUser, {}),
+  const user = await fetchAuthQuery(api.auth.getCurrentUser, {}).catch(() => null);
+  if (!user) redirect("/auth?redirect=/marking");
+
+  const [submissionsResult, savedPapersResult] = await Promise.allSettled([
     fetchAuthQuery(api.marking.listMarkingSubmissions, {}),
     fetchAuthQuery(api.savedPapers.listSavedPapers, {}),
   ]);
+  const submissions = submissionsResult.status === "fulfilled" && Array.isArray(submissionsResult.value) ? submissionsResult.value : [];
+  const savedPapers = savedPapersResult.status === "fulfilled" && Array.isArray(savedPapersResult.value) ? savedPapersResult.value : [];
+  const initialLoadError = submissionsResult.status === "rejected" || savedPapersResult.status === "rejected"
+    ? "Some marking data could not be loaded. Try again to reconnect without losing your saved work."
+    : null;
+  const normalizedSubmissions = submissions.map((submission) => {
+    const legacy = submission as typeof submission & {
+      scoredCount?: number;
+      totalAwardedMarks?: number;
+      totalMaxMarks?: number;
+      questionCount?: number;
+    };
+    const questionProgress = Array.isArray(submission.questionProgress) ? submission.questionProgress : [];
+    return {
+      ...submission,
+      questionProgress,
+      gapTopics: Array.isArray(submission.gapTopics) ? submission.gapTopics : [],
+      savedPaperQuestionCount: submission.savedPaperQuestionCount ?? legacy.questionCount ?? questionProgress.length,
+      confirmedCount: submission.confirmedCount ?? legacy.scoredCount ?? 0,
+      aiSuggestedCount: submission.aiSuggestedCount ?? 0,
+      confirmedAwardedMarks: submission.confirmedAwardedMarks ?? legacy.totalAwardedMarks ?? 0,
+      confirmedMaxMarks: submission.confirmedMaxMarks ?? legacy.totalMaxMarks ?? 0,
+      paperMaxMarks: submission.paperMaxMarks ?? legacy.totalMaxMarks ?? 0,
+      reviewRequiredCount: submission.reviewRequiredCount ?? 0,
+    };
+  });
 
   return (
-    <div className="min-h-[100dvh] bg-[#f4f2ec]">
-      <nav className="sticky top-0 z-50 border-b border-[#1a2e1a]/[0.06] bg-white/95 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 sm:px-8 lg:px-12">
-          <div className="flex items-center gap-5">
-            <Link href="/paper-maker" className="inline-flex items-center text-[0.82rem] font-medium text-[#1a2e1a]/60 transition-colors hover:text-[#1a2e1a]">
-              &larr; Paper Maker
-            </Link>
-            <div className="h-5 w-px bg-[#1a2e1a]/12" />
-            <span className="inline-flex items-center font-serif text-[1rem] tracking-[-0.02em] text-[#1a2e1a]">Marking Studio</span>
-          </div>
-          <UserMenu />
-        </div>
-      </nav>
-
-      <main className="mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-12">
-        <MarkingDashboard initialSavedPapers={savedPapers} initialSubmissions={submissions} userName={user?.name ?? "there"} />
-      </main>
-    </div>
+    <AppShell active="mark">
+      <MarkingDashboard initialSavedPapers={savedPapers} initialSubmissions={normalizedSubmissions} userName={user.name ?? "there"} initialLoadError={initialLoadError} />
+    </AppShell>
   );
 }

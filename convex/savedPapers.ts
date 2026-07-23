@@ -1,13 +1,14 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 import { authComponent } from "./auth";
 
-async function requireOwner(ctx: any) {
+async function requireOwner(ctx: QueryCtx | MutationCtx) {
   return await authComponent.getAuthUser(ctx);
 }
 
-async function requireOwnedPaper(ctx: any, savedPaperId: any) {
+async function requireOwnedPaper(ctx: QueryCtx | MutationCtx, savedPaperId: Id<"savedPapers">) {
   const user = await authComponent.getAuthUser(ctx);
   const savedPaper = await ctx.db.get(savedPaperId);
   if (!savedPaper || savedPaper.ownerId !== String(user._id)) {
@@ -47,6 +48,8 @@ export const createSavedPaper = mutation({
       contextText: v.optional(v.union(v.string(), v.null())),
       questionType: v.optional(v.union(v.string(), v.null())),
       isChoiceQuestion: v.optional(v.boolean()),
+      canonicalLeafIds: v.optional(v.array(v.string())),
+      topicLabels: v.optional(v.array(v.string())),
     })),
   },
   handler: async (ctx, args) => {

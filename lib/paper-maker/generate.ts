@@ -37,7 +37,9 @@ import {
   overlayQuestionBankWithLocalGeometry,
 } from "@/lib/paper-maker/local-geometry";
 import { findOrphanStemFigures, type OrphanFigureIssue } from "@/lib/paper-maker/region-render";
+import type { GeneratedCoverModel } from "@/lib/paper-maker/cover";
 import { estimatePaperTimeMinutes, getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefinition, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
+import { buildGeneratedCoverModel } from "@/lib/paper-maker/cover";
 import { filterUnitsBySourcePdfRenderability, generateStrictSourcePaperPdf } from "@/lib/paper-maker/pdf";
 import { groupQuestionUnitsForSubject } from "@/lib/paper-maker/units";
 
@@ -80,6 +82,7 @@ export type GenerateCustomPaperResult = {
   targetMode: "marks" | "time";
   subject: PaperMakerSubjectDefinition;
   selectedTierHeader: SubjectTierKey | null;
+  coverPage: GeneratedCoverModel;
   figureIntegrityIssues: OrphanFigureIssue[];
 };
 
@@ -515,6 +518,14 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
 
   const selectedPapers = subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || input.paperCodes.includes(paper.code));
   const examContext = getCoverExamContext(subject, selectedPapers);
+  const coverPage = buildGeneratedCoverModel({
+    subject,
+    tierLabel: coverTierLabel,
+    selectedUnits: selection.selectedUnits,
+    selectedPapers,
+    timeMinutes,
+    examContext,
+  });
 
   const pdfBytes = await generateStrictSourcePaperPdf({
     title: config.title(resolvedTargetMarks, coverTierLabel),
@@ -525,18 +536,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     pageLayoutsBySource,
     regionMode,
     prefaceSourcePdfs: config.prefaceInserts ? await config.prefaceInserts(selection.selectedUnits) : undefined,
-    coverPage: {
-      boardLabel: subject.boardLabel,
-      subjectLabel: subject.coverTitle,
-      codeLabel: subject.codeLabel,
-      totalMarks: selection.totalMarks,
-      timeMinutes,
-      paperLabels: selectedPapers.map((paper) => paper.label),
-      tierLabel: coverTierLabel,
-      questionCount: new Set(selection.selectedUnits.map((unit) => unit.sourceQuestionKey)).size,
-      materials: examContext.materials,
-      instructions: examContext.instructions,
-    },
+    coverPage,
   });
 
   return {
@@ -549,6 +549,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     targetMode: input.targetMode,
     subject,
     selectedTierHeader: config.tier?.includeSelectedTierHeader && tier ? tier : null,
+    coverPage,
     figureIntegrityIssues,
   };
 }

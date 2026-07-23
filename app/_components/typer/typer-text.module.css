@@ -1,0 +1,42 @@
+.text {
+  --typer-accent: var(--accent);
+  white-space: nowrap;
+}
+
+.char {
+  display: inline-block;
+  color: var(--typer-accent);
+  animation: typer-settle 760ms var(--ease-out) both;
+  animation-delay: calc(var(--char-index) * 24ms + 180ms);
+}
+
+@keyframes typer-settle {
+  0% {
+    color: transparent;
+    background: transparent;
+  }
+  24% {
+    color: var(--typer-accent);
+    box-shadow: inset 0 0 0 1px var(--typer-accent);
+  }
+  48% {
+    color: white;
+    background: var(--typer-accent);
+    box-shadow: none;
+  }
+  72% {
+    color: var(--typer-accent);
+    background: color-mix(in srgb, var(--typer-accent) 12%, transparent);
+  }
+  100% {
+    color: var(--typer-accent);
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .char {
+    animation: none;
+  }
+}

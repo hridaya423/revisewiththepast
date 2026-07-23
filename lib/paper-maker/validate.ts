@@ -23,6 +23,11 @@ export type QaCheckOptions = {
   totalMarks?: number;
   selectedUnitCount?: number;
   selectedUnitMarks?: number[];
+  coverPage?: {
+    totalMarks: number;
+    timeMinutes: number;
+    questionCount: number;
+  };
 };
 
 const BLANK_PAGE_INK_THRESHOLD = 0.005;
@@ -121,6 +126,72 @@ function checkVisibleFurniture(textPages: RenderedTextPage[]): QaFinding[] {
       message: "source paper furniture is visible on generated page",
     });
   }
+  return findings;
+}
+
+function checkGeneratedCover(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+  const cover = textPages.find((page) => page.pageNumber === 1);
+  if (!cover) {
+    return [{
+      check: "cover-page",
+      severity: "error",
+      pageNumber: 1,
+      message: "generated paper is missing its cover page",
+    }];
+  }
+
+  const normalized = normalizeRenderedText(cover.text);
+  const findings: QaFinding[] = [];
+  const requiredLabels = [
+    "focused practice paper",
+    "name",
+    "school",
+    "candidate number",
+    "instructions",
+    "information",
+    "this paper covers",
+    "do not turn over until you are ready",
+  ];
+  for (const label of requiredLabels) {
+    if (normalized.includes(label)) continue;
+    findings.push({
+      check: "cover-page-content",
+      severity: "error",
+      pageNumber: 1,
+      message: `cover is missing required label "${label}"`,
+    });
+  }
+
+  const forbiddenPatterns = [
+    /\bofficial\b/i,
+    /\bverified\b/i,
+    /\bbarcode\b/i,
+    /for examiner['’]s use/i,
+    /references appear beside each question/i,
+  ];
+  for (const pattern of forbiddenPatterns) {
+    if (!pattern.test(normalized)) continue;
+    findings.push({
+      check: "cover-page-content",
+      severity: "error",
+      pageNumber: 1,
+      message: `cover contains prohibited wording matching ${pattern}`,
+    });
+  }
+
+  const expected = options?.coverPage;
+  if (expected) {
+    for (const value of [expected.totalMarks, expected.timeMinutes, expected.questionCount]) {
+      if (new RegExp(`\\b${value}\\b`).test(normalized)) continue;
+      findings.push({
+        check: "cover-page-facts",
+        severity: "error",
+        pageNumber: 1,
+        message: `cover does not show final fact value ${value}`,
+      });
+    }
+  }
+
   return findings;
 }
 
@@ -306,6 +377,7 @@ export async function runDeterministicChecks(
 ): Promise<QaFinding[]> {
   const blank = await checkBlankPages(pngPages, textPages);
   return [
+    ...checkGeneratedCover(textPages, options),
     ...blank,
     ...await checkCoverOnlyOrMissingQuestions(pngPages, textPages, options),
     ...checkPageBloat(textPages, options),

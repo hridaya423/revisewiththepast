@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { ArrowRight, Check, Loader2, Mail, User } from "lucide-react";
+import { ArrowRight, Check, Eye, EyeOff, Loader2, Mail, User } from "lucide-react";
+import { BrandMark } from "@/app/_components/brand-mark";
 
 type Mode = "sign-in" | "sign-up";
 
@@ -45,6 +48,7 @@ export function AuthForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successState, setSuccessState] = useState<"signed-in" | "signed-up" | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [nameField, setNameField] = useState<FieldState>({ value: "", error: "", touched: false });
   const [emailField, setEmailField] = useState<FieldState>({ value: "", error: "", touched: false });
@@ -53,12 +57,13 @@ export function AuthForm() {
   const nameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  const focusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (mode === "sign-up") {
-      setNameField({ value: "", error: "", touched: false });
-    }
-  }, [mode]);
+  useEffect(() => () => {
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+  }, []);
 
   const handleModeSwitch = useCallback((nextMode: Mode) => {
     setMode(nextMode);
@@ -67,7 +72,8 @@ export function AuthForm() {
     setNameField((f) => ({ ...f, error: "", touched: false }));
     setEmailField((f) => ({ ...f, error: "", touched: false }));
     setPasswordField((f) => ({ ...f, error: "", touched: false }));
-    setTimeout(() => {
+    if (focusTimerRef.current) clearTimeout(focusTimerRef.current);
+    focusTimerRef.current = setTimeout(() => {
       if (nextMode === "sign-up") nameRef.current?.focus();
       else emailRef.current?.focus();
     }, 50);
@@ -114,7 +120,7 @@ export function AuthForm() {
           setSuccessState("signed-in");
         }
 
-        setTimeout(() => {
+        redirectTimerRef.current = setTimeout(() => {
           router.push(redirectTo);
           router.refresh();
         }, 600);
@@ -130,17 +136,48 @@ export function AuthForm() {
   const isSuccess = successState !== null;
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-[#f4f2ec] px-5 py-12">
-      <div className="w-full max-w-[420px]">
-        <div className="text-center">
-          <a href="/" className="inline-block font-serif text-[1.05rem] tracking-[-0.02em] text-[#1a2e1a]">
-            Revise with the Past
-          </a>
+    <div className="min-h-[100dvh] bg-bg-workspace px-5 py-5 sm:px-8 sm:py-8 lg:flex lg:items-center lg:px-10 lg:py-6">
+      <div className="mx-auto grid w-full max-w-[1180px] overflow-hidden border border-text/20 bg-bg-soft shadow-[0_28px_80px_rgba(13,23,52,0.16)] lg:min-h-[min(760px,calc(100dvh-3rem))] lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[410px_minmax(0,1fr)]">
+        <aside className="relative hidden overflow-hidden bg-[#0B1736] text-white lg:flex lg:flex-col">
+          <div className="relative z-10 px-8 pt-8 xl:px-10 xl:pt-10">
+            <Link href="/" className="inline-flex items-center gap-3 text-[0.9rem] font-bold tracking-[-0.025em] text-white">
+              <BrandMark className="h-9 w-8 text-white" title="Revise with the Past" />
+              <span>Revise with the Past</span>
+            </Link>
+            <h2 className="mt-12 max-w-[11ch] font-serif text-[2.25rem] leading-[1.02] tracking-[-0.045em] text-white xl:text-[2.55rem]">
+              Your papers, ready when you are.
+            </h2>
+            <p className="mt-4 max-w-[32ch] text-[0.84rem] leading-6 text-white/65">
+              Return to the questions you saved and continue your revision.
+            </p>
+          </div>
+          <figure className="relative mt-10 flex flex-1 items-end justify-end pl-12 xl:pl-16">
+            <div className="relative -mb-24 -mr-10 w-[330px] rotate-[1.5deg] overflow-hidden border border-white/25 bg-white shadow-[0_20px_45px_rgba(0,0,0,0.24)] xl:w-[355px]">
+              <Image
+                src="/landing/aqa-geography-paper-page.png"
+                alt="AQA Geography exam paper page with Arctic sea ice questions"
+                width={1272}
+                height={1800}
+                sizes="(min-width: 1280px) 355px, 330px"
+                className="h-auto w-full"
+                priority
+              />
+            </div>
+          </figure>
+        </aside>
+
+        <main className="flex min-w-0 items-center justify-center px-1 py-3 sm:px-8 sm:py-10 lg:px-14 lg:py-12 xl:px-20">
+          <div className="w-full max-w-[500px]">
+        <div className="lg:hidden">
+          <Link href="/" className="inline-flex items-center gap-2.5 text-[0.9rem] font-bold tracking-[-0.025em] text-text">
+            <BrandMark className="h-9 w-8 text-accent" title="Revise with the Past" />
+            <span>Revise with the Past</span>
+          </Link>
         </div>
 
-        <div className="mt-8 rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white shadow-[0_8px_40px_rgba(26,46,26,0.06)]">
-          <div className="px-8 pt-8 pb-2">
-            <h1 className="font-serif text-[1.7rem] tracking-[-0.03em] text-[#1a2e1a]">
+        <div className="mt-12 lg:mt-0">
+          <div>
+            <h1 className="font-serif text-[2.35rem] leading-[1.04] tracking-[-0.045em] text-text sm:text-[2.75rem]">
               {isSuccess
                 ? successState === "signed-up"
                   ? "Account created"
@@ -149,36 +186,41 @@ export function AuthForm() {
                   ? "Sign in"
                   : "Create account"}
             </h1>
-            <p className="mt-2 text-[0.88rem] leading-[1.6] text-[#3d5a3f]/60">
+            <p className="mt-3 max-w-[44ch] text-[0.95rem] leading-7 text-text-muted">
               {isSuccess
                 ? successState === "signed-up"
                   ? "Your account is ready. Redirecting now..."
                   : "Redirecting to your papers..."
                 : mode === "sign-in"
-                  ? "Welcome back to your paper builder."
-                  : "Start building papers with a free account."}
+                   ? "Sign in to return to your saved papers."
+                   : "Create an account to keep your papers and answers together."}
             </p>
           </div>
 
           {isSuccess ? (
-            <div className="flex flex-col items-center gap-4 px-8 pb-10 pt-8">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-accent/10 text-accent">
-                <Check className="h-6 w-6" strokeWidth={2.5} />
+            <div className="mt-10 flex items-center gap-4 border-y border-text/15 py-6" aria-live="polite">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-success-soft text-success">
+                <Check className="h-5 w-5" strokeWidth={2.5} aria-hidden="true" />
               </div>
-              <div className="h-1 w-24 overflow-hidden rounded-full bg-[#1a2e1a]/[0.06]">
-                <div className="h-full w-1/3 animate-[indeterminate-bar_1.5s_ease-in-out_infinite] rounded-full bg-accent" />
+              <div>
+                <p className="text-[0.92rem] font-semibold text-text">Authentication complete</p>
+                <p className="mt-1 flex items-center gap-2 text-[0.8rem] text-text-muted">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                  Redirecting securely
+                </p>
               </div>
             </div>
           ) : (
             <>
-              <div className="mt-4 flex px-8">
+              <div className="mt-9 flex gap-8 border-b border-text/15" aria-label="Authentication mode">
                 <button
                   type="button"
                   onClick={() => handleModeSwitch("sign-in")}
-                  className={`flex-1 border-b-2 pb-3 text-[0.82rem] font-medium tracking-[-0.01em] transition-all ${
+                  aria-pressed={mode === "sign-in"}
+                  className={`relative -mb-px border-b-2 px-0 pb-3 text-[0.84rem] font-semibold transition-colors ${
                     mode === "sign-in"
-                      ? "border-[#1a2e1a] text-[#1a2e1a]"
-                      : "border-transparent text-[#3d5a3f]/40 hover:text-[#3d5a3f]/60"
+                      ? "border-accent text-text"
+                      : "border-transparent text-text-muted hover:text-text"
                   }`}
                 >
                   Sign in
@@ -186,26 +228,27 @@ export function AuthForm() {
                 <button
                   type="button"
                   onClick={() => handleModeSwitch("sign-up")}
-                  className={`flex-1 border-b-2 pb-3 text-[0.82rem] font-medium tracking-[-0.01em] transition-all ${
+                  aria-pressed={mode === "sign-up"}
+                  className={`relative -mb-px border-b-2 px-0 pb-3 text-[0.84rem] font-semibold transition-colors ${
                     mode === "sign-up"
-                      ? "border-[#1a2e1a] text-[#1a2e1a]"
-                      : "border-transparent text-[#3d5a3f]/40 hover:text-[#3d5a3f]/60"
+                      ? "border-accent text-text"
+                      : "border-transparent text-text-muted hover:text-text"
                   }`}
                 >
                   Create account
                 </button>
               </div>
 
-              <form onSubmit={onSubmit} className="mt-2 space-y-0 px-8 pt-5 pb-8">
+              <form onSubmit={onSubmit} className="pt-8">
                 {serverError && (
-                  <div className="mb-4 rounded-xl border border-red-200 bg-red-50/80 px-4 py-3 text-[0.82rem] leading-[1.5] text-red-800">
+                  <div className="mb-6 border-l-2 border-danger bg-danger-soft px-4 py-3 text-[0.85rem] leading-6 text-danger" role="alert">
                     {serverError}
                   </div>
                 )}
 
                 {mode === "sign-up" && (
                   <div className="mb-4">
-                    <label htmlFor="auth-name" className="mb-1.5 block text-[0.78rem] font-medium tracking-[-0.01em] text-[#1a2e1a]/75">
+                    <label htmlFor="auth-name" className="mb-1.5 block text-[0.72rem] font-semibold text-text-secondary">
                       Name
                     </label>
                     <div className="relative">
@@ -214,6 +257,8 @@ export function AuthForm() {
                         id="auth-name"
                         type="text"
                         autoComplete="name"
+                        aria-invalid={Boolean(nameField.touched && nameField.error)}
+                        aria-describedby={nameField.touched && nameField.error ? "auth-name-error" : undefined}
                         value={nameField.value}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -231,22 +276,22 @@ export function AuthForm() {
                           }));
                         }}
                         placeholder="Your name"
-                        className={`w-full rounded-xl border bg-[#faf9f6] px-4 py-3 pl-11 text-[0.88rem] text-[#1a2e1a] outline-none transition-all placeholder:text-[#3d5a3f]/30 focus:bg-white focus:shadow-[0_0_0_3px_rgba(90,138,92,0.15)] ${
+                        className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pl-11 text-[0.84rem] text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
                           nameField.touched && nameField.error
-                            ? "border-red-300 focus:border-red-300 focus:shadow-[0_0_0_3px_rgba(220,38,38,0.1)]"
-                            : "border-[#1a2e1a]/[0.08] focus:border-accent/40"
+                            ? "border-danger/40 focus:border-danger"
+                            : "border-text/10 focus:border-accent"
                         }`}
                       />
-                      <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3d5a3f]/30" strokeWidth={1.5} />
+                      <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" strokeWidth={1.5} />
                     </div>
                     {nameField.touched && nameField.error ? (
-                      <p className="mt-1.5 text-[0.72rem] text-red-600">{nameField.error}</p>
+                      <p id="auth-name-error" className="mt-1.5 text-[0.72rem] text-danger">{nameField.error}</p>
                     ) : null}
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <label htmlFor="auth-email" className="mb-1.5 block text-[0.78rem] font-medium tracking-[-0.01em] text-[#1a2e1a]/75">
+                  <label htmlFor="auth-email" className="mb-1.5 block text-[0.72rem] font-semibold text-text-secondary">
                     Email
                   </label>
                   <div className="relative">
@@ -255,6 +300,8 @@ export function AuthForm() {
                       id="auth-email"
                       type="email"
                       autoComplete="email"
+                      aria-invalid={Boolean(emailField.touched && emailField.error)}
+                      aria-describedby={emailField.touched && emailField.error ? "auth-email-error" : undefined}
                       value={emailField.value}
                       onChange={(e) => {
                         const val = e.target.value;
@@ -272,63 +319,70 @@ export function AuthForm() {
                         }));
                       }}
                       placeholder="you@example.com"
-                      className={`w-full rounded-xl border bg-[#faf9f6] px-4 py-3 pl-11 text-[0.88rem] text-[#1a2e1a] outline-none transition-all placeholder:text-[#3d5a3f]/30 focus:bg-white focus:shadow-[0_0_0_3px_rgba(90,138,92,0.15)] ${
+                      className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pl-11 text-[0.84rem] text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
                         emailField.touched && emailField.error
-                          ? "border-red-300 focus:border-red-300 focus:shadow-[0_0_0_3px_rgba(220,38,38,0.1)]"
-                          : "border-[#1a2e1a]/[0.08] focus:border-accent/40"
+                          ? "border-danger/40 focus:border-danger"
+                          : "border-text/10 focus:border-accent"
                       }`}
                     />
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3d5a3f]/30" strokeWidth={1.5} />
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" strokeWidth={1.5} />
                   </div>
                   {emailField.touched && emailField.error ? (
-                    <p className="mt-1.5 text-[0.72rem] text-red-600">{emailField.error}</p>
+                    <p id="auth-email-error" className="mt-1.5 text-[0.72rem] text-danger">{emailField.error}</p>
                   ) : null}
                 </div>
 
                 <div className="mb-1">
-                  <label htmlFor="auth-password" className="mb-1.5 block text-[0.78rem] font-medium tracking-[-0.01em] text-[#1a2e1a]/75">
+                  <label htmlFor="auth-password" className="mb-1.5 block text-[0.72rem] font-semibold text-text-secondary">
                     Password
                   </label>
-                  <input
-                    ref={passwordRef}
-                    id="auth-password"
-                    type="password"
-                    autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-                    value={passwordField.value}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setPasswordField((f) => ({
-                        value: val,
-                        error: f.touched ? validatePassword(val, mode) : "",
-                        touched: f.touched,
-                      }));
-                    }}
-                    onBlur={() => {
-                      setPasswordField((f) => ({
-                        ...f,
-                        error: validatePassword(f.value, mode),
-                        touched: true,
-                      }));
-                    }}
-                    placeholder={mode === "sign-up" ? "At least 8 characters" : "Enter your password"}
-                    className={`w-full rounded-xl border bg-[#faf9f6] px-4 py-3 text-[0.88rem] text-[#1a2e1a] outline-none transition-all placeholder:text-[#3d5a3f]/30 focus:bg-white focus:shadow-[0_0_0_3px_rgba(90,138,92,0.15)] ${
-                      passwordField.touched && passwordField.error
-                        ? "border-red-300 focus:border-red-300 focus:shadow-[0_0_0_3px_rgba(220,38,38,0.1)]"
-                        : "border-[#1a2e1a]/[0.08] focus:border-accent/40"
-                    }`}
-                  />
+                  <div className="relative">
+                    <input
+                      ref={passwordRef}
+                      id="auth-password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
+                      aria-invalid={Boolean(passwordField.touched && passwordField.error)}
+                      aria-describedby={passwordField.touched && passwordField.error ? "auth-password-error" : mode === "sign-up" ? "auth-password-help" : undefined}
+                      value={passwordField.value}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setPasswordField((f) => ({
+                          value: val,
+                          error: f.touched ? validatePassword(val, mode) : "",
+                          touched: f.touched,
+                        }));
+                      }}
+                      onBlur={() => {
+                        setPasswordField((f) => ({
+                          ...f,
+                          error: validatePassword(f.value, mode),
+                          touched: true,
+                        }));
+                      }}
+                      placeholder={mode === "sign-up" ? "At least 8 characters" : "Enter your password"}
+                      className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pr-11 text-[0.84rem] text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
+                        passwordField.touched && passwordField.error
+                          ? "border-danger/40 focus:border-danger"
+                          : "border-text/10 focus:border-accent"
+                      }`}
+                    />
+                    <button type="button" onClick={() => setShowPassword((current) => !current)} className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-text-subtle hover:bg-text/[0.05] hover:text-text" aria-label={showPassword ? "Hide password" : "Show password"}>
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                   {passwordField.touched && passwordField.error ? (
-                    <p className="mt-1.5 text-[0.72rem] text-red-600">{passwordField.error}</p>
+                    <p id="auth-password-error" className="mt-1.5 text-[0.72rem] text-danger">{passwordField.error}</p>
                   ) : null}
                   {mode === "sign-up" && !passwordField.touched && (
-                    <p className="mt-1.5 text-[0.72rem] text-[#3d5a3f]/40">8 characters minimum</p>
+                    <p id="auth-password-help" className="mt-1.5 text-[0.72rem] text-text-subtle">8 characters minimum</p>
                   )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-press group mt-5 flex w-full items-center justify-center gap-2 rounded-full bg-[#1a2e1a] px-5 py-3 text-[0.88rem] font-semibold text-white shadow-[0_6px_20px_rgba(26,46,26,0.2)] transition-all hover:bg-[#243824] hover:shadow-[0_8px_28px_rgba(26,46,26,0.28)] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="btn-press group mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-[0.7rem] bg-accent px-5 text-[0.8rem] font-bold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />
@@ -344,9 +398,9 @@ export function AuthForm() {
           )}
         </div>
 
-        <p className="mt-6 text-center text-[0.78rem] text-[#3d5a3f]/40">
-          By continuing, you agree to our terms of use.
-        </p>
+        <p className="mt-6 text-center text-[0.72rem] leading-5 text-text-subtle">Your account keeps generated papers and marking progress together.</p>
+          </div>
+        </main>
       </div>
     </div>
   );

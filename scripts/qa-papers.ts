@@ -187,6 +187,11 @@ async function runPaper(
       totalMarks: result.selection.totalMarks,
       selectedUnitCount: result.selection.selectedUnits.length,
       selectedUnitMarks: result.selection.selectedUnits.map((unit) => unit.totalMarks),
+      coverPage: {
+        totalMarks: result.coverPage.totalMarks,
+        timeMinutes: result.coverPage.timeMinutes,
+        questionCount: result.coverPage.questionCount,
+      },
     });
     for (const issue of result.figureIntegrityIssues) {
       report.findings.push({

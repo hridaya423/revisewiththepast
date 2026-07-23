@@ -1,19 +1,129 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
 import { authComponent } from "./auth";
 
-async function requireOwner(ctx: any) {
+type QuestionProgressState = "confirmed" | "current" | "review" | "ready" | "waiting" | "failed";
+
+async function requireOwner(ctx: QueryCtx | MutationCtx) {
   return await authComponent.getAuthUser(ctx);
 }
 
-async function requireOwnedSubmission(ctx: any, submissionId: any) {
+async function requireOwnedSubmission(ctx: QueryCtx | MutationCtx, submissionId: Id<"markingSubmissions">) {
   const user = await authComponent.getAuthUser(ctx);
   const submission = await ctx.db.get(submissionId);
   if (!submission || !submission.ownerId || submission.ownerId !== String(user._id)) {
     throw new Error("Unauthorized");
   }
   return { user, submission };
+}
+
+function isConfirmedScore(score: Doc<"markingScores">) {
+  return score.scoreStatus !== "ai_suggested";
+}
+
+function latestModeratedMarks(moderations: Doc<"markingModerations">[]) {
+  const byQuestion = new Map<string, Doc<"markingModerations">>();
+  for (const moderation of moderations) {
+    const current = byQuestion.get(moderation.questionKey);
+    if (!current || moderation.createdAt > current.createdAt) byQuestion.set(moderation.questionKey, moderation);
+  }
+  return byQuestion;
+}
+
+function buildQuestionProgress(
+  savedPaperQuestions: Doc<"savedPaperQuestions">[],
+  pages: Doc<"markingResponsePages">[],
+  responses: Doc<"markingResponses">[],
+  scores: Doc<"markingScores">[],
+  statuses: Doc<"markingQuestionStatuses">[],
+) {
+  const orderedKeys = new Set(savedPaperQuestions.map((question) => question.unitKey));
+  const activityRows = [
+    ...pages.sort((left, right) => (left.scriptPageNumber ?? Number.MAX_SAFE_INTEGER) - (right.scriptPageNumber ?? Number.MAX_SAFE_INTEGER) || left.createdAt - right.createdAt),
+    ...responses.sort((left, right) => left.createdAt - right.createdAt),
+    ...scores.sort((left, right) => left.createdAt - right.createdAt),
+    ...statuses.sort((left, right) => left.createdAt - right.createdAt),
+  ];
+  for (const row of activityRows) orderedKeys.add(row.questionKey);
+  const scoreByQuestion = new Map(scores.map((score) => [score.questionKey, score]));
+  const statusByQuestion = new Map(statuses.map((status) => [status.questionKey, status]));
+  const progress = Array.from(orderedKeys).map<{ key: string; label: string; state: QuestionProgressState }>((questionKey, index) => {
+    const score = scoreByQuestion.get(questionKey);
+    const status = statusByQuestion.get(questionKey)?.status;
+    let state: QuestionProgressState = "waiting";
+    if (status === "failed") state = "failed";
+    else if (score?.needsReview || status === "needs_manual_review") state = "review";
+    else if (score && isConfirmedScore(score)) state = "confirmed";
+    else if (score || status === "ai_scored" || status === "mark_scheme_ready" || status === "ocr_ready") state = "ready";
+    return {
+      key: questionKey,
+      label: String(index + 1).padStart(2, "0"),
+      state,
+    };
+  });
+  const current = progress.find((item) => item.state === "ready") ?? progress.find((item) => item.state === "waiting");
+  if (current) current.state = "current";
+  return progress;
+}
+
+function summarizeMarking(
+  savedPaper: Doc<"savedPapers"> | null,
+  savedPaperQuestions: Doc<"savedPaperQuestions">[],
+  pages: Doc<"markingResponsePages">[],
+  responses: Doc<"markingResponses">[],
+  scores: Doc<"markingScores">[],
+  moderations: Doc<"markingModerations">[],
+  statuses: Doc<"markingQuestionStatuses">[],
+) {
+  const confirmedScores = scores.filter(isConfirmedScore);
+  const suggestedScores = scores.filter((score) => !isConfirmedScore(score));
+  const moderatedMarks = latestModeratedMarks(moderations);
+  const awardedMarks = (score: Doc<"markingScores">) => moderatedMarks.get(score.questionKey)?.moderatedAwardedMarks ?? score.awardedMarks;
+  const reviewQuestionKeys = new Set([
+    ...scores.filter((score) => score.needsReview).map((score) => score.questionKey),
+    ...statuses.filter((status) => status.status === "needs_manual_review" || status.status === "failed").map((status) => status.questionKey),
+  ]);
+  const questionProgress = buildQuestionProgress(savedPaperQuestions, pages, responses, scores, statuses);
+  const questionByKey = new Map(savedPaperQuestions.map((question) => [question.unitKey, question]));
+  const missedMarksByTopic = new Map<string, number>();
+  for (const score of confirmedScores) {
+    const missedMarks = Math.max(0, score.maxMarks - awardedMarks(score));
+    if (missedMarks === 0) continue;
+    for (const label of questionByKey.get(score.questionKey)?.topicLabels ?? []) {
+      const normalizedLabel = label.trim();
+      if (normalizedLabel) missedMarksByTopic.set(normalizedLabel, (missedMarksByTopic.get(normalizedLabel) ?? 0) + missedMarks);
+    }
+  }
+  const gapTopics = Array.from(missedMarksByTopic)
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+    .map(([label, missedMarks]) => ({ label, missedMarks }));
+  const confirmedAwardedMarks = confirmedScores.reduce((sum, score) => sum + awardedMarks(score), 0);
+  const confirmedMaxMarks = confirmedScores.reduce((sum, score) => sum + score.maxMarks, 0);
+  const knownQuestionKeys = new Set(questionProgress.map((item) => item.key));
+
+  return {
+    questionCount: knownQuestionKeys.size,
+    uploadedPageCount: pages.length,
+    ocrCompletedCount: new Set(responses.map((response) => response.questionKey)).size,
+    scoredCount: confirmedScores.length,
+    confirmedCount: confirmedScores.length,
+    aiSuggestedCount: suggestedScores.length,
+    reviewRequiredCount: reviewQuestionKeys.size,
+    totalAwardedMarks: confirmedAwardedMarks,
+    totalMaxMarks: confirmedMaxMarks,
+    confirmedAwardedMarks,
+    confirmedMaxMarks,
+    paperMaxMarks: savedPaper?.totalMarks ?? Math.max(confirmedMaxMarks, scores.reduce((sum, score) => sum + score.maxMarks, 0)),
+    aiSuggestedAwardedMarks: suggestedScores.reduce((sum, score) => sum + score.awardedMarks, 0),
+    aiSuggestedMaxMarks: suggestedScores.reduce((sum, score) => sum + score.maxMarks, 0),
+    averageConfidence: scores.length > 0
+      ? scores.reduce((sum, score) => sum + score.confidence, 0) / scores.length
+      : null,
+    questionProgress,
+    gapTopics,
+  };
 }
 
 export const createMarkingSubmission = mutation({
@@ -176,6 +286,7 @@ export const upsertMarkingScore = mutation({
       .unique();
 
     if (existing) {
+      if (isConfirmedScore(existing) && args.scoreStatus === "ai_suggested") return existing._id;
       await ctx.db.patch(existing._id, {
         ...args,
         updatedAt: now,
@@ -286,11 +397,12 @@ export const getMarkingSubmissionBundle = query({
   },
   handler: async (ctx, args) => {
     const { submission } = await requireOwnedSubmission(ctx, args.submissionId);
-    const savedPaper = submission.savedPaperId ? await ctx.db.get(submission.savedPaperId) : null;
-    const savedPaperQuestions = submission.savedPaperId
+    const savedPaperId = submission.savedPaperId;
+    const savedPaper = savedPaperId ? await ctx.db.get(savedPaperId) : null;
+    const savedPaperQuestions = savedPaperId
       ? await ctx.db
         .query("savedPaperQuestions")
-        .withIndex("by_saved_paper_order", (q) => q.eq("savedPaperId", submission.savedPaperId))
+        .withIndex("by_saved_paper_order", (q) => q.eq("savedPaperId", savedPaperId))
         .collect()
       : [];
 
@@ -319,32 +431,18 @@ export const getMarkingSubmissionBundle = query({
       .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
       .collect();
 
+    const orderedSavedPaperQuestions = savedPaperQuestions.sort((a, b) => a.displayOrder - b.displayOrder);
+
     return {
       submission,
       savedPaper,
-      savedPaperQuestions: savedPaperQuestions.sort((a, b) => a.displayOrder - b.displayOrder),
+      savedPaperQuestions: orderedSavedPaperQuestions,
       pages: pages.sort((a, b) => (a.scriptPageNumber ?? 0) - (b.scriptPageNumber ?? 0) || a.createdAt - b.createdAt),
       responses,
       scores,
       moderations,
       questionStatuses,
-      insights: {
-        questionCount: new Set([
-          ...savedPaperQuestions.map((question) => question.unitKey),
-          ...pages.map((page) => page.questionKey),
-          ...responses.map((response) => response.questionKey),
-          ...scores.map((score) => score.questionKey),
-        ]).size,
-        uploadedPageCount: pages.length,
-        ocrCompletedCount: responses.length,
-        scoredCount: scores.length,
-        reviewRequiredCount: scores.filter((score) => score.needsReview).length,
-        totalAwardedMarks: scores.reduce((sum, score) => sum + score.awardedMarks, 0),
-        totalMaxMarks: scores.reduce((sum, score) => sum + score.maxMarks, 0),
-        averageConfidence: scores.length > 0
-          ? scores.reduce((sum, score) => sum + score.confidence, 0) / scores.length
-          : null,
-      },
+      insights: summarizeMarking(savedPaper, orderedSavedPaperQuestions, pages, responses, scores, moderations, questionStatuses),
     };
   },
 });
@@ -353,29 +451,34 @@ export const listMarkingSubmissions = query({
   args: {},
   handler: async (ctx) => {
     const user = await requireOwner(ctx);
-    const submissions = await ctx.db
+    const submissions = (await ctx.db
       .query("markingSubmissions")
       .withIndex("by_owner", (q) => q.eq("ownerId", String(user._id)))
-      .collect();
+      .collect())
+      .sort((left, right) => right.updatedAt - left.updatedAt)
+      .slice(0, 20);
 
     const summaries = await Promise.all(submissions.map(async (submission) => {
-      const savedPaper = submission.savedPaperId ? await ctx.db.get(submission.savedPaperId) : null;
-      const pages = await ctx.db
-        .query("markingResponsePages")
-        .withIndex("by_submission", (q) => q.eq("submissionId", submission._id))
-        .collect();
-      const scores = await ctx.db
-        .query("markingScores")
-        .withIndex("by_submission", (q) => q.eq("submissionId", submission._id))
-        .collect();
+      const savedPaperId = submission.savedPaperId;
+      const [savedPaper, pages, scores, responses, moderations, questionStatuses, savedPaperQuestions] = await Promise.all([
+        savedPaperId ? ctx.db.get(savedPaperId) : Promise.resolve(null),
+        ctx.db.query("markingResponsePages").withIndex("by_submission", (q) => q.eq("submissionId", submission._id)).collect(),
+        ctx.db.query("markingScores").withIndex("by_submission", (q) => q.eq("submissionId", submission._id)).collect(),
+        ctx.db.query("markingResponses").withIndex("by_submission", (q) => q.eq("submissionId", submission._id)).collect(),
+        ctx.db.query("markingModerations").withIndex("by_submission", (q) => q.eq("submissionId", submission._id)).collect(),
+        ctx.db.query("markingQuestionStatuses").withIndex("by_submission", (q) => q.eq("submissionId", submission._id)).collect(),
+        savedPaperId
+          ? ctx.db.query("savedPaperQuestions").withIndex("by_saved_paper_order", (q) => q.eq("savedPaperId", savedPaperId)).collect()
+          : Promise.resolve([]),
+      ]);
+      const orderedSavedPaperQuestions = savedPaperQuestions.sort((a, b) => a.displayOrder - b.displayOrder);
+      const summary = summarizeMarking(savedPaper, orderedSavedPaperQuestions, pages, responses, scores, moderations, questionStatuses);
       return {
         ...submission,
         savedPaperTitle: savedPaper?.title ?? null,
-        uploadedPageCount: pages.length,
-        scoredCount: scores.length,
-        totalAwardedMarks: scores.reduce((sum, score) => sum + score.awardedMarks, 0),
-        totalMaxMarks: scores.reduce((sum, score) => sum + score.maxMarks, 0),
-        reviewRequiredCount: scores.filter((score) => score.needsReview).length,
+        savedPaperPdfUrl: savedPaper?.pdfUrl ?? null,
+        savedPaperQuestionCount: savedPaper?.questionCount ?? summary.questionCount,
+        ...summary,
       };
     }));
 

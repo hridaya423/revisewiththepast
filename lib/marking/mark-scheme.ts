@@ -647,14 +647,16 @@ function drawMarkSchemeCoverPage(outputDoc: PDFDocument, units: MarkableUnit[], 
   const sourceCount = new Set(units.map((unit) => formatSourceLabel(unit))).size;
   const ink = rgb(0.07, 0.08, 0.1);
   const muted = rgb(0.36, 0.38, 0.42);
+  const blue = rgb(0.278, 0.278, 0.847);
 
-  page.drawText(board, { x: 56, y: 704, size: 58, font: fonts.bold, color: ink });
-  page.drawLine({ start: { x: 56, y: 672 }, end: { x: 540, y: 672 }, thickness: 1.2, color: ink });
+  page.drawRectangle({ x: 36, y: 807, width: A4_WIDTH - 72, height: 6, color: blue });
+  page.drawText(board, { x: 56, y: 704, size: 58, font: fonts.bold, color: blue });
+  page.drawLine({ start: { x: 56, y: 672 }, end: { x: 540, y: 672 }, thickness: 1.2, color: blue });
   page.drawText("GCSE", { x: 56, y: 632, size: 28, font: fonts.bold, color: ink });
   page.drawText(subject, { x: 56, y: 592, size: 28, font: fonts.bold, color: ink });
   page.drawText(paper, { x: 56, y: 552, size: 26, font: fonts.bold, color: ink });
   if (tierLabel) page.drawText(tierLabel, { x: 56, y: 522, size: 15, font: fonts.regular, color: ink });
-  page.drawLine({ start: { x: 56, y: 500 }, end: { x: 540, y: 500 }, thickness: 2.5, color: ink });
+  page.drawLine({ start: { x: 56, y: 500 }, end: { x: 540, y: 500 }, thickness: 2.5, color: blue });
   page.drawText("Mark scheme", { x: 56, y: 468, size: 18, font: fonts.bold, color: ink });
   page.drawText("Custom practice paper", { x: 56, y: 440, size: 15, font: fonts.bold, color: ink });
   page.drawLine({ start: { x: 56, y: 420 }, end: { x: 540, y: 420 }, thickness: 0.8, color: ink });

@@ -1,392 +1,239 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import {
-  Globe,
-  Briefcase,
-  BookOpen,
-  Cpu,
-  Building2,
-  FlaskConical,
-  Calculator,
-  Dna,
-  Beaker,
-  Zap,
-  ArrowRight,
-} from "lucide-react";
+import { ArrowRight, BadgeCheck, CircleCheck, FilePlus2, PencilLine, TrendingUp } from "lucide-react";
+
+import { BrandMark } from "@/app/_components/brand-mark";
+import { EmbossIcon } from "@/app/_components/emboss/emboss-icon";
+import { EMBOSS_PRESETS } from "@/app/_components/emboss/params";
+import { LandingMotion } from "@/app/_components/landing-motion";
+import { SUBJECT_COLORS, SUBJECT_ICONS } from "@/app/_components/subject-presentation";
+import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
+
+const ENABLED_SUBJECTS = PAPER_MAKER_SUBJECTS.filter((subject) => subject.generationEnabled);
+
+const SUBJECT_CARDS = Array.from(ENABLED_SUBJECTS.reduce((cards, subject) => {
+  const existing = cards.get(subject.coverTitle) ?? [];
+  existing.push(subject);
+  cards.set(subject.coverTitle, existing);
+  return cards;
+}, new Map<string, typeof ENABLED_SUBJECTS>()).entries()).map(([title, subjects]) => ({ title, subjects }));
 
 const STEPS = [
-  {
-    step: "01",
-    title: "Choose your subject",
-    desc: "Pick your course, including separate sciences, and move straight into real past-paper material.",
-  },
-  {
-    step: "02",
-    title: "Refine by topic",
-    desc: "Select the units or areas you want to focus on so your paper matches the revision session.",
-  },
-  {
-    step: "03",
-    title: "Generate your PDF",
-    desc: "Build a clean custom paper from official source pages in seconds, ready to print or save.",
-  },
-] as const;
+  { title: "Build", description: "Choose your course, topics and paper length.", icon: FilePlus2, color: "#4E7760" },
+  { title: "Complete", description: "Work through one focused paper.", icon: PencilLine, color: "#496D8C" },
+  { title: "Mark", description: "Check each answer against the marking guidance.", icon: BadgeCheck, color: "#0A6B4F" },
+  { title: "Improve", description: "Use the gaps to choose what to practise next.", icon: TrendingUp, color: "#946200" },
+];
 
-const SUBJECT_ICONS: Record<string, React.ElementType> = {
-  "aqa-geography": Globe,
-  "aqa-business": Briefcase,
-  "aqa-english-language": BookOpen,
-  "aqa-english-literature": BookOpen,
-  "edexcel-business": Building2,
-  "edexcel-combined-science": FlaskConical,
-  "edexcel-biology": Dna,
-  "edexcel-chemistry": Beaker,
-  "edexcel-physics": Zap,
-  "edexcel-mathematics-higher": Calculator,
-  "ocr-computer-science": Cpu,
-};
-
-const SUBJECTS = [
-  {
-    key: "aqa-geography",
-    board: "AQA",
-    title: "Geography",
-    desc: "Build focused practice papers from real Geography source pages across the topics you choose.",
-    featured: true,
-  },
-  {
-    key: "aqa-business",
-    board: "AQA",
-    title: "Business",
-    desc: "Generate AQA Business papers using the numbered specification structure and real source pages.",
-  },
-  {
-    key: "edexcel-combined-science",
-    board: "Edexcel",
-    title: "Combined Science",
-    desc: "Create revision papers from tagged Combined Science material with the same calm, source-first workflow.",
-  },
-  {
-    key: "edexcel-biology",
-    board: "Edexcel",
-    title: "Biology",
-    desc: "Create Edexcel Biology papers by tier and topic using real source-page questions.",
-  },
-  {
-    key: "edexcel-chemistry",
-    board: "Edexcel",
-    title: "Chemistry",
-    desc: "Create Edexcel Chemistry papers by tier and topic using real source-page questions.",
-  },
-  {
-    key: "edexcel-business",
-    board: "Edexcel",
-    title: "Business",
-    desc: "Generate Edexcel Business papers using tagged source-page questions and the topic structure.",
-  },
-  {
-    key: "aqa-english-language",
-    board: "AQA",
-    title: "English Language",
-    desc: "Generate AQA English Language papers from tagged reading and writing source-page questions.",
-  },
-  {
-    key: "aqa-english-literature",
-    board: "AQA",
-    title: "English Literature",
-    desc: "Generate AQA English Literature papers from tagged source-page questions and set-text topics.",
-  },
-  {
-    key: "edexcel-mathematics-higher",
-    board: "Edexcel",
-    title: "Maths Higher",
-    desc: "Build Higher Maths papers from real Edexcel source pages, using tagged specification topics.",
-  },
-  {
-    key: "ocr-computer-science",
-    board: "OCR",
-    title: "Computer Science",
-    desc: "Generate OCR Computer Science papers from tagged source-page questions and J277 topics.",
-  },
-] as const;
-
-function FloatingNav() {
+function MarketingNav() {
   return (
-    <nav className="fixed left-1/2 top-5 z-50 w-[calc(100%-2rem)] max-w-3xl -translate-x-1/2">
-      <div className="flex items-center justify-between rounded-full border border-[#1a2e1a]/10 bg-white/92 px-3 py-2 shadow-[0_10px_36px_rgba(26,46,26,0.12)] backdrop-blur-xl">
-        <Link href="/" className="rounded-full px-4 py-2 transition-colors hover:bg-[#1a2e1a]/[0.05]">
-          <span className="font-serif text-[0.95rem] tracking-[-0.02em] text-[#162816]">Revise with the Past</span>
+    <header className="fixed inset-x-0 top-0 z-50 h-16 border-b border-border bg-white">
+      <nav className="mx-auto flex h-full max-w-[1280px] items-center justify-between px-4 sm:px-8 lg:px-10" aria-label="Main navigation">
+        <Link href="/" className="group flex min-w-0 items-center gap-2.5 font-extrabold tracking-[-0.035em] text-text transition-colors hover:text-accent">
+          <BrandMark className="h-8 w-7 shrink-0 text-accent transition-colors group-hover:text-text" title="Revise with the Past" />
+          <span className="hidden text-[0.95rem] sm:block">Revise with the Past</span>
         </Link>
-
-        <div className="hidden items-center gap-1 md:flex">
-          {[
-            { label: "How it works", id: "how-it-works" },
-            { label: "Subjects", id: "subjects" },
-            { label: "About", id: "about" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className="rounded-full px-4 py-2 text-[0.78rem] font-medium tracking-[-0.01em] text-[#1f351f]/78 transition-colors hover:bg-[#1a2e1a]/[0.06] hover:text-[#162816]"
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="hidden items-center gap-8 md:flex">
+          <a href="#how" className="text-[0.73rem] font-bold text-text-secondary transition-colors hover:text-accent">How it works</a>
+          <a href="#subjects" className="text-[0.73rem] font-bold text-text-secondary transition-colors hover:text-accent">Subjects</a>
+          <Link href="/marking" className="text-[0.73rem] font-bold text-text-secondary transition-colors hover:text-accent">Mark a paper</Link>
         </div>
-
-        <Link
-          href="/paper-maker"
-          className="btn-press inline-flex items-center justify-center rounded-full bg-[#1a2e1a] px-5 py-2.5 text-[0.82rem] font-semibold tracking-[-0.01em] text-[#f8faf8] shadow-[0_6px_18px_rgba(26,46,26,0.18)] transition-shadow hover:shadow-[0_10px_28px_rgba(26,46,26,0.22)]"
-        >
-          <span className="text-[#f8faf8]">Start Building</span>
+        <Link href="/paper-maker" className="btn-press inline-flex h-10 items-center gap-2 rounded-[4px] bg-accent px-4 text-[0.74rem] font-extrabold text-white transition-colors hover:bg-accent-deep">
+          <span className="sm:hidden">Build</span>
+          <span className="hidden sm:inline">Build a paper</span>
+          <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
         </Link>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
 
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return <p className="text-[0.65rem] uppercase tracking-[0.28em] text-accent-warm">{children}</p>;
+function ExamPaperArtifact() {
+  return (
+    <div className="relative h-[340px] w-full sm:h-[440px] lg:h-[480px] xl:h-[520px]" role="group" aria-label="Real pages from generated GCSE practice papers">
+      <div className="absolute bottom-[5%] left-[17%] right-[17%] h-10 rounded-[50%] bg-text/[0.055] blur-2xl" aria-hidden="true" />
+
+      <figure className="absolute left-[2%] top-[19%] z-10 aspect-[0.707] w-[34%] -rotate-[4deg] overflow-hidden rounded-[3px] border border-text/12 bg-white shadow-[0_16px_38px_rgba(13,23,52,0.11)] transition-transform duration-300 ease-[var(--ease-out)] hover:-translate-x-1 sm:left-[4%] sm:w-[32%] lg:left-[1%] lg:top-[16%] lg:w-[37%] xl:left-[3%] xl:w-[34%]">
+        <Image
+          src="/landing/generated-hero/2026-07-23T14-56-50/aqa-business/paper-1/page-01.png"
+          fill
+          sizes="(max-width: 639px) 36vw, (max-width: 1023px) 34vw, 300px"
+          alt="The real generated cover page for a focused AQA GCSE Business practice paper"
+          className="object-cover object-top"
+        />
+      </figure>
+      <figure className="absolute left-1/2 top-[2%] z-30 aspect-[0.707] w-[43%] -translate-x-1/2 overflow-hidden rounded-[3px] border border-text/12 bg-white shadow-[0_22px_54px_rgba(13,23,52,0.16)] transition-transform duration-300 ease-[var(--ease-out)] hover:-translate-y-1 sm:w-[40%] lg:top-0 lg:w-[44%] xl:w-[40%]" aria-label="Geography question page">
+        <Image
+          src="/landing/aqa-geography-paper-page.png"
+          fill
+          sizes="(max-width: 639px) 42vw, (max-width: 1023px) 40vw, 350px"
+          alt="A GCSE Geography question page with Arctic sea ice questions and a data table"
+          className="object-cover object-top"
+          preload
+        />
+      </figure>
+      <figure className="absolute right-[2%] top-[19%] z-20 aspect-[0.707] w-[34%] rotate-[4deg] overflow-hidden rounded-[3px] border border-text/12 bg-white shadow-[0_16px_38px_rgba(13,23,52,0.11)] transition-transform duration-300 ease-[var(--ease-out)] hover:translate-x-1 sm:right-[4%] sm:w-[32%] lg:right-[1%] lg:top-[16%] lg:w-[37%] xl:right-[3%] xl:w-[34%]">
+        <Image
+          src="/landing/generated-science-hero/2026-07-23T09-47-05/edexcel-combined-science-higher/paper-1/page-02.png"
+          fill
+          sizes="(max-width: 639px) 36vw, (max-width: 1023px) 34vw, 300px"
+          alt="A real generated Edexcel Combined Science question page about DNA and natural selection"
+          className="object-cover object-top"
+        />
+      </figure>
+    </div>
+  );
+}
+
+function SubjectLedger() {
+  return (
+    <div className="grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      {SUBJECT_CARDS.map(({ title, subjects }) => {
+        const subjectKey = subjects[0]?.key ?? "";
+        const presentation = SUBJECT_COLORS[subjectKey] ?? { accent: "#4747D8", soft: "#F0F0FF" };
+        const Icon = SUBJECT_ICONS[subjectKey];
+
+        return (
+          <article key={title} className="flex min-h-44 flex-col justify-between rounded-lg border border-text/10 bg-bg-warm-soft p-5 transition-[transform,border-color] hover:-translate-y-0.5 hover:border-text/20">
+            <div>
+              {Icon ? <EmbossIcon icon={Icon} flag={subjectKey === "edexcel-french-reading" ? "fr" : undefined} color={presentation.accent} surface="#F2EFE8" params={EMBOSS_PRESETS.subject} size={52} /> : null}
+              <h3 className="mt-5 text-[1.05rem] font-extrabold leading-tight tracking-[-0.035em] text-text">{title}</h3>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {subjects.map((subject) => (
+                <Link key={subject.key} href={`/paper-maker?subject=${subject.key}`} className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-text/12 bg-white px-3 text-[0.65rem] font-bold text-text-secondary transition-colors hover:border-accent hover:bg-accent hover:text-white">
+                  {subject.boardLabel}
+                  {subject.tiers.length === 1 ? ` · ${subject.tiers[0]?.label}` : ""}
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  );
 }
 
 export function LandingPage() {
   return (
-    <div className="relative min-h-[100dvh] overflow-x-clip bg-[#f4f2ec]">
-      <FloatingNav />
-
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="/landing/hero-bg.jpg"
-            alt=""
-            fill
-            priority
-            className="object-cover opacity-[0.35]"
-            sizes="100vw"
-            aria-hidden="true"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#f4f2ec]/60 via-[#f4f2ec]/20 to-[#f4f2ec]" />
-        </div>
-
-        <div className="relative z-10 mx-auto flex max-w-7xl flex-col px-6 pt-40 pb-24 sm:px-8 sm:pt-48 sm:pb-32 lg:px-12 lg:pt-56">
-          <div className="max-w-3xl">
-            <p className="hero-eyebrow text-[0.68rem] uppercase tracking-[0.32em] text-accent-warm">
-              GCSE Past Paper Builder
-            </p>
-
-            <h1 className="hero-headline mt-6 font-serif text-[clamp(2.8rem,7vw,5.5rem)] leading-[1.02] tracking-[-0.04em] text-[#1a2e1a]">
-              Make past papers
-              <br />
-              on the topics you&apos;ve
-              <br />
-              actually studied.
-            </h1>
-
-            <p className="hero-sub mt-6 max-w-[52ch] text-[1.05rem] leading-[1.7] text-[#3d5a3f]/80">
-              Pick your subject, choose the exact topics you want to revise, and generate a paper from real source pages only.
-            </p>
-
-            <div className="hero-cta mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/paper-maker"
-                className="btn-press inline-flex items-center justify-center rounded-full bg-[#1a2e1a] px-7 py-3.5 text-[0.96rem] font-semibold tracking-[-0.01em] text-[#f8faf8] shadow-[0_10px_28px_rgba(22,40,22,0.18)] transition-shadow hover:shadow-[0_14px_36px_rgba(22,40,22,0.24)]"
-              >
-                <span className="text-[#f8faf8]">Build your first paper</span>
-              </Link>
-              <button
-                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="btn-press inline-flex items-center justify-center rounded-full border border-[#1a2e1a]/10 px-7 py-3.5 text-[0.96rem] font-medium tracking-[-0.01em] text-[#1a2e1a] transition-colors hover:bg-[#1a2e1a]/[0.04]"
-              >
-                See how it works
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="how-it-works" className="relative z-10 scroll-mt-32">
-        <div className="mx-auto max-w-7xl px-6 py-24 sm:px-8 lg:px-12">
-          <div className="reveal-up max-w-xl">
-            <SectionEyebrow>How it works</SectionEyebrow>
-            <h2 className="mt-3 font-serif text-[clamp(1.6rem,3vw,2.4rem)] leading-[1.1] tracking-[-0.04em] text-[#1a2e1a]">
-              Three steps to your perfect paper.
-            </h2>
-          </div>
-
-          <div className="process-rail stagger-parent mt-14 hidden md:block">
-            <div className="relative">
-              <div className="absolute top-5 left-[16.66%] right-[16.66%] h-px bg-[#1a2e1a]/10" />
-              <div className="process-line-fill absolute top-5 left-[16.66%] h-px origin-left bg-accent-warm" style={{ width: "66.68%" }} />
-
-              <div className="relative grid grid-cols-3">
-                {STEPS.map((item) => (
-                  <div key={item.step} className="stagger-child flex flex-col items-center px-6 text-center">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-[0_2px_12px_rgba(26,46,26,0.08)] ring-2 ring-accent-warm">
-                      <span className="font-serif text-[0.82rem] font-semibold text-[#1a2e1a]">{item.step}</span>
-                    </div>
-                    <h3 className="mt-5 text-[1.1rem] font-semibold tracking-[-0.02em] text-[#1a2e1a]">{item.title}</h3>
-                    <p className="mt-2 max-w-[260px] text-[0.88rem] leading-[1.6] text-[#3d5a3f]/70">{item.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="stagger-parent mt-10 flex flex-col gap-8 md:hidden">
-            {STEPS.map((item) => (
-              <div key={item.step} className="stagger-child flex gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white shadow-[0_2px_12px_rgba(26,46,26,0.08)] ring-2 ring-accent-warm">
-                    <span className="font-serif text-[0.82rem] font-semibold text-[#1a2e1a]">{item.step}</span>
-                  </div>
-                  {item.step !== "03" && <div className="mt-2 h-full w-px bg-[#1a2e1a]/10" />}
-                </div>
-                <div className="pb-2">
-                  <h3 className="text-[1.1rem] font-semibold tracking-[-0.02em] text-[#1a2e1a]">{item.title}</h3>
-                  <p className="mt-1 text-[0.88rem] leading-[1.6] text-[#3d5a3f]/70">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="about" className="relative my-4 overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="/landing/quote-bg.jpg"
-            alt=""
-            fill
-            className="object-cover"
-            sizes="(max-width: 1280px) 100vw, 1280px"
-            aria-hidden="true"
-          />
-          <div className="absolute inset-0 bg-[#1a2e1a]/85" />
-        </div>
-        <div id="quote" className="quote-inner relative px-6 py-24 sm:px-12 sm:py-32 lg:px-20 lg:py-40">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-8 h-px w-12 bg-accent-warm" />
-            <p className="font-serif text-[clamp(1.5rem,3.5vw,2.6rem)] leading-[1.2] tracking-[-0.03em] text-white">
-              Every question comes from a real past paper page.
-              <br className="hidden sm:block" />
-              No synthetic fillers. No guesswork.
-            </p>
-            <p className="mt-6 text-[0.95rem] leading-[1.7] text-white/50 max-w-lg mx-auto">
-              We use strict source-page-only mode. Every question, every mark scheme, every diagram comes directly from official exam papers.
-            </p>
-            <div className="mx-auto mt-8 h-px w-12 bg-accent-warm" />
-          </div>
-        </div>
-      </section>
-
-      <section id="subjects" className="relative z-10 scroll-mt-32">
-        <div className="mx-auto max-w-7xl px-6 py-24 sm:px-8 lg:px-12">
-          <div className="reveal-up max-w-xl">
-            <SectionEyebrow>Subjects</SectionEyebrow>
-            <h2 className="mt-3 font-serif text-[clamp(1.6rem,3vw,2.4rem)] leading-[1.1] tracking-[-0.04em] text-[#1a2e1a]">
-              Start with the subjects available now.
-            </h2>
-            <p className="mt-4 text-[0.95rem] leading-[1.7] text-[#3d5a3f]/70">
-              Clean subject entry points, real source pages, and a straightforward path into revision.
-            </p>
-          </div>
-
-          <div className="stagger-parent mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {SUBJECTS.map((subject) => {
-              const Icon = SUBJECT_ICONS[subject.key];
-              const isFeatured = "featured" in subject && subject.featured;
-
-              return (
-                <Link
-                  key={subject.key}
-                  href={`/paper-maker?subject=${encodeURIComponent(subject.key)}`}
-                  className={`stagger-child card-lift group relative flex h-full flex-col overflow-hidden rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-7 transition-all ${
-                    isFeatured ? "lg:col-span-2" : ""
-                  }`}
-                >
-                  <div className={`flex flex-1 items-start justify-between ${isFeatured ? "min-h-[160px]" : "min-h-[140px]"}`}>
-                    <div>
-                      <p className="text-[0.65rem] uppercase tracking-[0.26em] text-accent-warm">{subject.board}</p>
-                      <h3 className={`mt-2 font-serif tracking-[-0.03em] text-[#1a2e1a] ${isFeatured ? "text-[1.8rem]" : "text-[1.5rem]"}`}>
-                        {subject.title}
-                      </h3>
-                      <p className={`mt-3 max-w-sm text-[0.92rem] leading-[1.7] text-[#3d5a3f]/70 ${isFeatured ? "" : "line-clamp-2"}`}>
-                        {subject.desc}
-                      </p>
-                    </div>
-                    {Icon ? (
-                      <div className="ml-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f4f2ec] text-accent-warm transition-colors group-hover:bg-accent-warm group-hover:text-white">
-                        <Icon className="h-5 w-5" strokeWidth={1.5} />
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="mt-5 inline-flex w-fit items-center gap-1.5 rounded-full border border-[#1a2e1a]/10 px-3 py-1.5 text-[0.78rem] font-medium text-[#1a2e1a]/65 transition-all group-hover:border-accent-warm/25 group-hover:bg-[#faf8f3] group-hover:text-accent-warm">
-                    <span>Start revision</span>
-                    <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                  </div>
+    <div className="min-h-[100dvh] overflow-x-hidden bg-bg font-sans text-text">
+      <LandingMotion />
+      <MarketingNav />
+      <main>
+        <section className="bg-bg-warm px-4 pb-20 pt-[120px] sm:px-8 sm:pb-24 sm:pt-[136px] lg:px-10 lg:py-28">
+          <div className="mx-auto grid w-full max-w-[1280px] gap-14 lg:grid-cols-[minmax(420px,0.9fr)_minmax(0,1.1fr)] lg:items-center lg:gap-12 xl:grid-cols-[500px_minmax(0,1fr)] xl:gap-16">
+            <div className="mx-auto text-center lg:mx-0 lg:text-left">
+              <h1 data-hero-reveal className="mx-auto max-w-[12ch] text-[clamp(3rem,4.5vw,4.35rem)] font-extrabold leading-[0.96] tracking-[-0.058em] text-text lg:mx-0">Build a paper from what you’ve studied.</h1>
+              <p data-hero-reveal className="mx-auto mt-6 max-w-[42ch] text-[0.96rem] font-medium leading-7 text-text-muted sm:text-[1.02rem] lg:mx-0">Pick your course and topics. We’ll make a focused paper from real exam questions.</p>
+              <div data-hero-reveal className="mt-7 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
+                <Link href="/paper-maker" className="btn-press inline-flex min-h-12 min-w-44 items-center justify-center gap-3 rounded-md bg-accent px-6 text-[0.78rem] font-extrabold text-white hover:bg-accent-deep">
+                  Build a paper
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      <section className="relative z-10">
-        <div className="mx-auto max-w-7xl px-6 pb-24 sm:px-8 lg:px-12">
-          <div className="reveal-up rounded-[2rem] border border-[#1a2e1a]/[0.06] bg-[#1a2e1a] px-8 py-16 text-center sm:px-12 sm:py-20">
-            <h2 className="font-serif text-[clamp(1.5rem,3vw,2.2rem)] leading-[1.15] tracking-[-0.03em] text-white">
-              Ready to build your first paper?
-            </h2>
-            <p className="mx-auto mt-4 max-w-md text-[0.9rem] leading-[1.7] text-white/50">
-              Start with any subject, pick your topics, and generate a paper from real source pages in seconds.
-            </p>
-            <div className="mt-8">
-              <Link
-                href="/paper-maker"
-                className="btn-press inline-flex items-center justify-center rounded-full bg-white px-8 py-3.5 text-[0.92rem] font-semibold tracking-[-0.01em] text-[#1a2e1a] shadow-[0_8px_24px_rgba(0,0,0,0.15)] transition-shadow hover:shadow-[0_12px_32px_rgba(0,0,0,0.2)]"
-              >
-                Build your first paper
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+                <a href="#how" className="inline-flex min-h-12 items-center gap-2 px-3 text-[0.76rem] font-bold text-accent hover:text-accent-deep">See how it works <ArrowRight className="h-4 w-4" aria-hidden="true" /></a>
+              </div>
             </div>
+            <div data-hero-reveal><ExamPaperArtifact /></div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <footer className="border-t border-[#1a2e1a]/[0.06] bg-[#ece9e1]">
-        <div className="mx-auto max-w-7xl px-6 py-16 sm:px-8 lg:px-12">
-          <div className="flex flex-col items-center justify-between gap-8 sm:flex-row sm:items-start">
-            <div>
-              <span className="font-serif text-[0.95rem] tracking-[-0.02em] text-[#1a2e1a]">Revise with the Past</span>
-              <p className="mt-2 max-w-xs text-[0.82rem] leading-[1.6] text-[#3d5a3f]/60">
-                Real past papers, real source pages, built for the topics you actually study.
-              </p>
+        <section className="border-t border-text/[0.08] bg-bg-soft px-4 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28">
+          <div className="mx-auto grid max-w-[1220px] gap-12 lg:grid-cols-[0.72fr_1.28fr] lg:items-start lg:gap-16">
+            <div data-scroll-reveal className="lg:pt-8">
+              <h2 className="max-w-[11ch] text-[clamp(2.45rem,4.3vw,3.8rem)] font-extrabold leading-[1.01] tracking-[-0.052em]">See where each mark came from.</h2>
+              <p className="mt-6 max-w-[40ch] text-[0.88rem] leading-7 text-text-secondary">Keep the answer, marking guidance and next step together.</p>
+              <ul className="mt-8 space-y-3 text-[0.75rem] font-semibold text-text-secondary">
+                {["What worked", "What was missing", "What to practise next"].map((item) => (
+                  <li key={item} className="flex items-center gap-2.5"><CircleCheck className="h-4 w-4 shrink-0 text-accent" aria-hidden="true" />{item}</li>
+                ))}
+              </ul>
             </div>
 
-            <nav className="flex flex-col items-center gap-3 sm:items-end">
-              <Link href="/paper-maker" className="text-[0.82rem] font-medium text-[#1a2e1a]/70 transition-colors hover:text-[#1a2e1a]">
-                Build a paper
-              </Link>
-              <button
-                onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="text-[0.82rem] font-medium text-[#1a2e1a]/70 transition-colors hover:text-[#1a2e1a]"
-              >
-                How it works
-              </button>
-              <button
-                onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                className="text-[0.82rem] font-medium text-[#1a2e1a]/70 transition-colors hover:text-[#1a2e1a]"
-              >
-                About
-              </button>
-            </nav>
+            <div data-scroll-reveal className="mx-auto w-full max-w-[790px]">
+              <article className="overflow-hidden rounded-[4px] border border-text/15 bg-white text-[#17213f]" aria-label="Example marking feedback">
+                <div className="grid md:grid-cols-[minmax(0,1fr)_190px]">
+                  <div className="exam-paper p-6 sm:p-8">
+                    <header className="border-b border-text/35 pb-5">
+                      <p className="text-[0.78rem]">(c) Explain how flood defences can reduce the impact of flooding. <span className="float-right">(6)</span></p>
+                    </header>
+                    <div className="space-y-4 py-6 text-[0.82rem] italic leading-7 text-text-secondary">
+                      <p>Flood defences reduce the impact of flooding by controlling where water travels and helping to protect people and property.</p>
+                      <p>Flood walls can hold water back during periods of heavy rainfall. Embankments also raise the banks of a river so it can carry more water.</p>
+                      <p>To make the explanation complete, the answer needs a clearer link between the defence and the impact it prevents.</p>
+                    </div>
+                    <div className="border-t border-text/35 pt-3 text-right text-[0.62rem]">Total for question: 6 marks</div>
+                  </div>
+                  <aside className="border-t border-text/12 bg-bg-soft p-5 font-sans md:border-l md:border-t-0">
+                    <p className="text-[1.2rem] font-extrabold tracking-[-0.04em]"><span className="text-success">4</span> / 6</p>
+                    <div className="mt-7">
+                      <p className="font-mono text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-success">Earned marks</p>
+                      <ul className="mt-3 space-y-4 text-[0.67rem] font-semibold leading-5">
+                        {["Names flood defences", "Explains flood walls", "Explains embankments"].map((point) => (
+                          <li key={point} className="flex gap-2.5"><CircleCheck className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-hidden="true" /><span>{point}</span></li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="mt-6 border-t border-text/12 pt-5">
+                      <p className="font-mono text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-warning">Next focus</p>
+                      <p className="mt-3 text-[0.67rem] font-semibold leading-5">Link each defence to the impact it reduces.</p>
+                    </div>
+                  </aside>
+                </div>
+              </article>
+            </div>
           </div>
+        </section>
 
-          <div className="mt-10 border-t border-[#1a2e1a]/[0.06] pt-6 text-center text-[0.78rem] text-[#3d5a3f]/50 sm:text-right">
-            Built by Hridya. Real papers only.
+        <section id="how" className="scroll-mt-16 border-t border-text/[0.07] bg-bg-soft px-4 py-16 sm:px-8 sm:py-20 lg:px-10 lg:py-24">
+          <div className="mx-auto max-w-[1160px]">
+            <h2 data-scroll-reveal className="text-center text-[clamp(2rem,3.8vw,3.25rem)] font-extrabold leading-[1.04] tracking-[-0.05em]">A paper becomes a plan.</h2>
+            <ol className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+              {STEPS.map(({ title, description, icon, color }) => (
+                <li data-scroll-reveal key={title} className="flex flex-col items-center text-center">
+                  <span className="flex h-16 w-16 items-center justify-center rounded-[8px] border border-text/10 bg-white/65">
+                    <EmbossIcon icon={icon} color={color} surface="#FFFFFF" params={EMBOSS_PRESETS.process} size={52} />
+                  </span>
+                  <h3 className="mt-5 text-[1rem] font-extrabold">{title}</h3>
+                  <p className="mt-2 max-w-[27ch] text-[0.72rem] leading-5 text-text-muted">{description}</p>
+                </li>
+              ))}
+            </ol>
+            <div data-scroll-reveal className="mt-10 flex justify-center text-[0.72rem]">
+              <Link href="/paper-maker" className="inline-flex items-center gap-2 font-bold text-accent transition-colors hover:text-text">Build a paper <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></Link>
+            </div>
           </div>
+        </section>
+
+        <section id="subjects" className="scroll-mt-16 border-t border-border bg-bg-soft px-4 py-20 sm:px-8 sm:py-24 lg:px-10 lg:py-28">
+          <div className="mx-auto max-w-[1160px]">
+            <h2 className="max-w-[18ch] text-[clamp(2.3rem,4.5vw,4rem)] font-extrabold leading-[1.02] tracking-[-0.055em]">Practice what’s on your course.</h2>
+            <div className="mt-10"><SubjectLedger /></div>
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden border-t border-text/10 bg-bg-warm px-4 py-20 text-text sm:px-8 sm:py-24 lg:px-10 lg:py-28">
+          <div data-scroll-reveal className="relative mx-auto flex max-w-[1160px] flex-col items-center text-center">
+            <h2 className="max-w-[18ch] text-[clamp(2.4rem,5vw,4.3rem)] font-extrabold leading-[1.02] tracking-[-0.055em] text-text">Build your next practice paper.</h2>
+            <Link href="/paper-maker" className="btn-press mt-8 inline-flex min-h-12 min-w-52 items-center justify-center gap-3 rounded-[4px] bg-accent px-6 text-[0.78rem] font-extrabold text-white transition-colors hover:bg-accent-deep">
+              Build a paper
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-border bg-white px-4 py-9 text-text sm:px-8 lg:px-10">
+        <div className="mx-auto flex max-w-[1160px] flex-col gap-7 sm:flex-row sm:items-center sm:justify-between">
+          <Link href="/" className="flex items-center gap-2.5 font-extrabold tracking-[-0.03em] transition-colors hover:text-accent">
+            <BrandMark className="h-8 w-7 text-accent" />
+            <span className="text-[0.82rem]">Revise with the Past</span>
+          </Link>
+          <nav aria-label="Footer navigation" className="flex flex-wrap gap-6 text-[0.7rem] font-bold text-text-muted">
+            <Link href="/paper-maker" className="transition-colors hover:text-accent">Build</Link>
+            <Link href="/marking" className="transition-colors hover:text-accent">Mark</Link>
+            <Link href="/auth" className="transition-colors hover:text-accent">Sign in</Link>
+          </nav>
         </div>
       </footer>
     </div>

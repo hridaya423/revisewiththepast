@@ -83,8 +83,15 @@ export async function POST(request: NextRequest) {
     });
 
     const bundle = await getMarkingSubmissionBundleFromConvex(submissionId);
-    const hasReviewRequired = (bundle?.scores ?? []).some((score) => score.needsReview);
-    await setMarkingSubmissionStatusInConvex(submissionId, hasReviewRequired ? "review_required" : "scored");
+    const insights = bundle?.insights;
+    const nextStatus = (insights?.reviewRequiredCount ?? 0) > 0
+      ? "review_required"
+      : (insights?.questionCount ?? 0) > 0 && insights!.confirmedCount >= insights!.questionCount
+        ? "scored"
+        : (insights?.questionCount ?? 0) > 0 && insights!.ocrCompletedCount >= insights!.questionCount
+          ? "ocr_complete"
+          : "uploaded";
+    await setMarkingSubmissionStatusInConvex(submissionId, nextStatus);
 
     return Response.json({
       submissionId,

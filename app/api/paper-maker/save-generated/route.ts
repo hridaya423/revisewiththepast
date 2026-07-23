@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { fetchAuthMutation } from "@/lib/auth-server";
 import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
 import { getMarkableUnitsByUnitKeys } from "@/lib/marking/paper-maker";
+import { buildGeneratedCoverModel } from "@/lib/paper-maker/cover";
 import { getPaperMakerSubject, type PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
 import { api } from "@/convex/_generated/api";
 
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
   };
 
   const title = `${subject.label} Custom Paper`;
+  const paperOptionsByCode = new Map(subject.paperOptions.map((paper) => [paper.code, paper]));
 
   const savedPaperId = await fetchAuthMutation(api.savedPapers.createSavedPaper, {
     subjectKey,
@@ -98,20 +100,35 @@ export async function POST(request: NextRequest) {
     pdfFileSize: upload.size,
     pdfCdnUploadId: upload.id,
     pdfUrl: upload.url,
-    questions: selectedUnits.map((unit, index) => ({
-      displayOrder: index + 1,
-      unitKey: unit.unitKey,
-      sourceQuestionKey: unit.sourceQuestionKey,
-      sourceRelativePath: unit.sourceRelativePath,
-      paperCode: unit.paperCode,
-      year: unit.year ?? undefined,
-      session: unit.session ?? undefined,
-      questionNumber: unit.questionNumber,
-      questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
-      totalMarks: unit.totalMarks,
-      promptText: unit.parts.map((part) => part.promptText).join("\n\n"),
-      contextText: unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
-    })),
+    questions: selectedUnits.map((unit, index) => {
+      const canonicalLeafIds = Array.from(new Set(unit.canonicalLeafs.filter(Boolean)));
+      const selectedPaper = paperOptionsByCode.get(unit.paperCode);
+      const topicLabels = buildGeneratedCoverModel({
+        subject,
+        tierLabel: subjectTierRaw === "foundation" || subjectTierRaw === "higher" ? subjectTierRaw : null,
+        selectedUnits: [unit],
+        selectedPapers: selectedPaper ? [selectedPaper] : [],
+        timeMinutes,
+        examContext: { materials: [], instructions: [] },
+      }).topicLabels;
+
+      return {
+        displayOrder: index + 1,
+        unitKey: unit.unitKey,
+        sourceQuestionKey: unit.sourceQuestionKey,
+        sourceRelativePath: unit.sourceRelativePath,
+        paperCode: unit.paperCode,
+        year: unit.year ?? undefined,
+        session: unit.session ?? undefined,
+        questionNumber: unit.questionNumber,
+        questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
+        totalMarks: unit.totalMarks,
+        promptText: unit.parts.map((part) => part.promptText).join("\n\n"),
+        contextText: unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
+        canonicalLeafIds: canonicalLeafIds.length > 0 ? canonicalLeafIds : undefined,
+        topicLabels: topicLabels.length > 0 ? topicLabels : undefined,
+      };
+    }),
   });
 
   return Response.json({

@@ -1,10 +1,11 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, rgb, type PDFPage } from "pdf-lib";
 
 import { getPdfDocument, renderPdfPageToPng, renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
 import { compareQuestionUnitsForRendering, type BoundingBox, type QuestionUnit, type SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
+import { drawGeneratedCoverPage, type GeneratedCoverModel } from "@/lib/paper-maker/cover";
 import { readExtractedPaperJson } from "@/lib/paper-maker/extracted-store";
 import {
   buildUnitRenderPlan,
@@ -23,18 +24,7 @@ type GeneratePaperPdfInput = {
   figuresBySource?: Map<string, RegionFigure[]>;
   pageLayoutsBySource?: Map<string, RegionPageLayout[]>;
   regionMode?: boolean;
-  coverPage: {
-    boardLabel: string;
-    subjectLabel: string;
-    codeLabel: string;
-    totalMarks: number;
-    timeMinutes: number;
-    paperLabels: string[];
-    tierLabel?: string | null;
-    questionCount?: number;
-    materials?: string[];
-    instructions?: string[];
-  };
+  coverPage: GeneratedCoverModel;
 };
 
 type CropBox = {
@@ -157,305 +147,6 @@ const FULL_PAGE_ANSWER_EXTENSION_BY_MARKS = [
 ];
 
 const extractedPaperCache = new Map<string, ExtractedPaper | null>();
-
-function formatExamTime(timeMinutes: number) {
-  const hours = Math.floor(timeMinutes / 60);
-  const minutes = timeMinutes % 60;
-  if (hours === 0) return `${minutes} minutes`;
-  if (minutes === 0) return `${hours} hour${hours === 1 ? "" : "s"}`;
-  return `${hours} hour${hours === 1 ? "" : "s"} ${minutes} minutes`;
-}
-
-function roundedRectPath(width: number, height: number, radius: number) {
-  const r = Math.min(radius, width / 2, height / 2);
-  return [
-    `M ${r} 0`,
-    `H ${width - r}`,
-    `Q ${width} 0 ${width} ${r}`,
-    `V ${height - r}`,
-    `Q ${width} ${height} ${width - r} ${height}`,
-    `H ${r}`,
-    `Q 0 ${height} 0 ${height - r}`,
-    `V ${r}`,
-    `Q 0 0 ${r} 0`,
-    "Z",
-  ].join(" ");
-}
-
-async function drawExamCoverPage(
-  outputDoc: PDFDocument,
-  coverPage: GeneratePaperPdfInput["coverPage"],
-) {
-  const page = outputDoc.addPage([SOURCE_OUTPUT_PAGE_WIDTH, SOURCE_OUTPUT_PAGE_HEIGHT]);
-  const helv = await outputDoc.embedFont(StandardFonts.Helvetica);
-  const helvBold = await outputDoc.embedFont(StandardFonts.HelveticaBold);
-  const helvOblique = await outputDoc.embedFont(StandardFonts.HelveticaOblique);
-
-  const ink = rgb(0.12, 0.13, 0.16);
-  const subtle = rgb(0.44, 0.46, 0.5);
-  const hairline = rgb(0.66, 0.68, 0.72);
-  const cellBorder = rgb(0.2, 0.21, 0.24);
-  const panelFill = rgb(0.93, 0.945, 0.96);
-  const accent = rgb(0.0, 0.46, 0.42);
-  const white = rgb(1, 1, 1);
-
-  const PAGE_W = SOURCE_OUTPUT_PAGE_WIDTH;
-  const LEFT = 50;
-  const RIGHT = PAGE_W - 50;
-  const CONTENT_W = RIGHT - LEFT;
-
-  const text = (
-    value: string,
-    x: number,
-    y: number,
-    size: number,
-    opts: { font?: PDFFont; color?: ReturnType<typeof rgb> } = {},
-  ) => {
-    page.drawText(value, { x, y, size, font: opts.font ?? helv, color: opts.color ?? ink });
-  };
-
-  const badgeX = LEFT;
-  const badgeBottom = 762;
-  const badgeSize = 38;
-  const markTop = badgeBottom + badgeSize;
-  const sheet = (dx: number, dy: number) => {
-    page.drawSvgPath(roundedRectPath(26, 32, 3), {
-      x: badgeX + 2 + dx,
-      y: markTop - dy,
-      color: white,
-      borderColor: ink,
-      borderWidth: 1.4,
-    });
-  };
-  sheet(10, 0);
-  sheet(5, 4);
-  sheet(0, 8);
-  for (let i = 0; i < 3; i += 1) {
-    const ly = markTop - 8 - 12 - i * 5;
-    page.drawLine({ start: { x: badgeX + 7, y: ly }, end: { x: badgeX + 23, y: ly }, thickness: 1, color: accent });
-  }
-  const brandX = badgeX + badgeSize + 14;
-  text("Revise with the Past", brandX, badgeBottom + 22, 18, { font: helvBold });
-  text("Exam-style practice built from real past papers", brandX, badgeBottom + 7, 9.5, { color: subtle });
-
-  const chipW = 116;
-  const chipH = 22;
-  const chipX = RIGHT - chipW;
-  const chipBottom = badgeBottom + 14;
-  page.drawSvgPath(roundedRectPath(chipW, chipH, 11), {
-    x: chipX,
-    y: chipBottom + chipH,
-    borderColor: ink,
-    borderWidth: 1,
-  });
-  const chipLabel = "PRACTICE PAPER";
-  const chipLabelW = helvBold.widthOfTextAtSize(chipLabel, 9);
-  text(chipLabel, chipX + (chipW - chipLabelW) / 2, chipBottom + 7, 9, { font: helvBold });
-
-  const boxTop = 742;
-  const boxBottom = 590;
-  const boxH = boxTop - boxBottom;
-  page.drawSvgPath(roundedRectPath(CONTENT_W, boxH, 12), {
-    x: LEFT,
-    y: boxTop,
-    borderColor: cellBorder,
-    borderWidth: 1.1,
-  });
-
-  text("Please write clearly in block capitals.", LEFT + 16, boxTop - 22, 10.5);
-
-  const drawCharCells = (startX: number, topY: number, count: number, cell = 20) => {
-    for (let i = 0; i < count; i += 1) {
-      page.drawRectangle({
-        x: startX + i * cell,
-        y: topY - cell,
-        width: cell,
-        height: cell,
-        borderColor: cellBorder,
-        borderWidth: 1,
-      });
-    }
-  };
-
-  const cellsTop = boxTop - 36;
-  text("Centre number", LEFT + 16, cellsTop - 15, 10.5);
-  drawCharCells(LEFT + 110, cellsTop, 6);
-  text("Candidate number", LEFT + 270, cellsTop - 15, 10.5);
-  drawCharCells(LEFT + 388, cellsTop, 4);
-
-  const fieldRows: Array<[string, number]> = [
-    ["Surname", boxTop - 84],
-    ["Forename(s)", boxTop - 108],
-    ["Candidate signature", boxTop - 132],
-  ];
-  for (const [label, y] of fieldRows) {
-    text(label, LEFT + 16, y, 10.5);
-    page.drawLine({ start: { x: LEFT + 130, y: y - 2 }, end: { x: RIGHT - 14, y: y - 2 }, thickness: 0.8, color: hairline });
-  }
-  text("I declare this is my own work.", LEFT + 130, boxTop - 146, 9, { color: subtle });
-
-  text("GCSE", LEFT, 566, 21, { font: helv });
-  text(coverPage.subjectLabel.toUpperCase(), LEFT, 532, 30, { font: helvBold });
-  const paperDescriptor = [
-    coverPage.tierLabel ? `${coverPage.tierLabel} Tier` : null,
-    `Paper reference ${coverPage.codeLabel}`,
-  ].filter(Boolean).join("    ·    ");
-  text(paperDescriptor, LEFT, 514, 12, { color: ink });
-
-  page.drawRectangle({ x: LEFT, y: 502, width: CONTENT_W, height: 2.4, color: ink });
-
-  text("Practice paper", LEFT, 482, 13.5, { font: helvBold });
-  const timeLabel = `Time allowed: ${formatExamTime(coverPage.timeMinutes)}`;
-  const timeLabelW = helvBold.widthOfTextAtSize(timeLabel, 13.5);
-  text(timeLabel, RIGHT - timeLabelW, 482, 13.5, { font: helvBold });
-
-  const tableRight = RIGHT;
-  const tableW = 168;
-  const tableLeft = tableRight - tableW;
-  const colSplit = tableLeft + tableW * 0.56;
-  const tableTop = 458;
-  const questionCount = Math.max(1, Math.min(coverPage.questionCount ?? 5, 18));
-  const headerH = 20;
-  const subHeaderH = 18;
-  const totalRowH = 20;
-  const bottomLimit = 250;
-  const availForRows = tableTop - headerH - subHeaderH - totalRowH - bottomLimit;
-  const rowH = Math.max(12, Math.min(21, availForRows / questionCount));
-  const bodyH = subHeaderH + questionCount * rowH + totalRowH;
-  const tableBottom = tableTop - headerH - bodyH;
-
-  page.drawRectangle({ x: tableLeft, y: tableTop - headerH, width: tableW, height: headerH, color: panelFill, borderColor: cellBorder, borderWidth: 1 });
-  const exHeader = "For Examiner's Use";
-  const exHeaderW = helv.widthOfTextAtSize(exHeader, 10);
-  text(exHeader, tableLeft + (tableW - exHeaderW) / 2, tableTop - headerH + 6, 10);
-
-  page.drawRectangle({ x: tableLeft, y: tableBottom, width: tableW, height: bodyH, borderColor: cellBorder, borderWidth: 1 });
-  page.drawLine({ start: { x: colSplit, y: tableBottom }, end: { x: colSplit, y: tableTop - headerH }, thickness: 1, color: cellBorder });
-
-  const subTop = tableTop - headerH;
-  page.drawLine({ start: { x: tableLeft, y: subTop - subHeaderH }, end: { x: tableRight, y: subTop - subHeaderH }, thickness: 1, color: cellBorder });
-  const qLabel = "Question";
-  const mLabel = "Mark";
-  text(qLabel, tableLeft + (colSplit - tableLeft - helv.widthOfTextAtSize(qLabel, 9.5)) / 2, subTop - subHeaderH + 5, 9.5);
-  text(mLabel, colSplit + (tableRight - colSplit - helv.widthOfTextAtSize(mLabel, 9.5)) / 2, subTop - subHeaderH + 5, 9.5);
-
-  let rowY = subTop - subHeaderH;
-  for (let q = 1; q <= questionCount; q += 1) {
-    rowY -= rowH;
-    page.drawLine({ start: { x: tableLeft, y: rowY }, end: { x: tableRight, y: rowY }, thickness: 0.7, color: hairline });
-    const qStr = String(q);
-    const numSize = Math.min(10, rowH - 4);
-    text(qStr, tableLeft + (colSplit - tableLeft - helv.widthOfTextAtSize(qStr, numSize)) / 2, rowY + (rowH - numSize) / 2 + 1, numSize);
-  }
-  rowY -= totalRowH;
-  page.drawRectangle({ x: tableLeft, y: rowY, width: tableW, height: totalRowH, color: panelFill });
-  page.drawLine({ start: { x: colSplit, y: rowY }, end: { x: colSplit, y: rowY + totalRowH }, thickness: 1, color: cellBorder });
-  page.drawRectangle({ x: tableLeft, y: rowY, width: tableW, height: totalRowH, borderColor: cellBorder, borderWidth: 1 });
-  const totLabel = "TOTAL";
-  text(totLabel, tableLeft + (colSplit - tableLeft - helvBold.widthOfTextAtSize(totLabel, 10)) / 2, rowY + 6, 10, { font: helvBold });
-
-  const colLeftRight = tableLeft - 22;
-  const bullet = (
-    lines: string[],
-    startY: number,
-    x = LEFT,
-    rightEdge = colLeftRight,
-    size = 10,
-    gap = 14,
-  ) => {
-    let y = startY;
-    for (const line of lines) {
-      const isBullet = line.startsWith("•");
-      const indentX = isBullet ? x + 12 : x;
-      const body = isBullet ? line.slice(1).trim() : line;
-      if (isBullet) text("•", x, y, size);
-      const maxW = rightEdge - indentX;
-      const words = body.split(" ");
-      let current = "";
-      for (const word of words) {
-        const trial = current ? `${current} ${word}` : word;
-        if (helv.widthOfTextAtSize(trial, size) > maxW && current) {
-          text(current, indentX, y, size);
-          y -= gap;
-          current = word;
-        } else {
-          current = trial;
-        }
-      }
-      if (current) {
-        text(current, indentX, y, size);
-        y -= gap;
-      }
-    }
-    return y;
-  };
-
-  const materialsLines = coverPage.materials ?? [
-    "For this paper you must have:",
-    "• a black ink or black ball-point pen",
-    "• a pencil, a rubber and a ruler.",
-    "You may use a calculator.",
-  ];
-  const instructionLines = coverPage.instructions ?? [
-    "• Fill in the boxes at the top of this page.",
-    "• Answer all questions in the spaces provided.",
-    "• Do all rough work in this booklet.",
-    "• If you need extra space, use additional paper and clearly label your answers.",
-  ];
-
-  let leftY = 462;
-  text("Materials", LEFT, leftY, 12, { font: helvBold });
-  leftY -= 16;
-  leftY = bullet(materialsLines, leftY);
-
-  leftY -= 8;
-  text("Instructions", LEFT, leftY, 12, { font: helvBold });
-  leftY -= 16;
-  leftY = bullet(instructionLines, leftY);
-
-  let infoY = Math.min(leftY, tableBottom) - 14;
-  text("Information", LEFT, infoY, 12, { font: helvBold });
-  infoY -= 16;
-  const sourceList = coverPage.paperLabels.length > 0 ? coverPage.paperLabels.join(", ") : "real past-paper pages";
-  infoY = bullet([
-    "• The marks for each question are shown in brackets.",
-    `• The total number of marks available for this paper is ${coverPage.totalMarks}.`,
-    `• This booklet was assembled from real past-paper questions covering: ${sourceList}.`,
-  ], infoY, LEFT, RIGHT);
-
-  infoY -= 8;
-  text("Advice", LEFT, infoY, 12, { font: helvBold });
-  infoY -= 16;
-  bullet([
-    "• Read each question carefully before you start to answer it.",
-    "• Keep an eye on the time and try to leave enough for checking.",
-    "• Cross through any work you do not want to be marked.",
-  ], infoY, LEFT, RIGHT);
-
-  const footerRuleY = 92;
-  page.drawLine({ start: { x: LEFT, y: footerRuleY }, end: { x: RIGHT, y: footerRuleY }, thickness: 0.8, color: hairline });
-
-  const codeSeed = `${coverPage.boardLabel}${coverPage.codeLabel}` || "RWTP";
-  const barAreaWidth = 264;
-  const barBottom = 50;
-  const barHeight = 26;
-  let barX = LEFT;
-  let barStep = 0;
-  while (barX < LEFT + barAreaWidth) {
-    const cc = (codeSeed.charCodeAt(barStep % codeSeed.length) * 31 + barStep * 17) >>> 0;
-    const barW = 1 + (cc % 3) * 0.8;
-    page.drawRectangle({ x: barX, y: barBottom, width: barW, height: barHeight, color: ink });
-    const gapW = 1 + ((cc >> 2) % 3) * 0.8;
-    barX += barW + gapW;
-    barStep += 1;
-  }
-  text("Revise with the Past · Practice paper", LEFT, barBottom - 12, 8, { font: helvOblique, color: subtle });
-
-  const codeLabel = `${coverPage.boardLabel} ${coverPage.codeLabel}`.trim();
-  const codeSize = 24;
-  const codeW = helvBold.widthOfTextAtSize(codeLabel, codeSize);
-  text(codeLabel, RIGHT - codeW, barBottom + 2, codeSize, { font: helvBold });
-}
 
 function drawGeneratedAnswerSpacePage(outputDoc: PDFDocument, questionNumber: number, marks: number) {
   const page = outputDoc.addPage([SOURCE_OUTPUT_PAGE_WIDTH, SOURCE_OUTPUT_PAGE_HEIGHT]);
@@ -2685,7 +2376,7 @@ async function renderRegionUnit(
 export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, prefaceSourcePdfs = [], coverPage, figuresBySource, pageLayoutsBySource, regionMode = false }: GeneratePaperPdfInput) {
   const outputDoc = await PDFDocument.create();
   outputDoc.setTitle(title);
-  await drawExamCoverPage(outputDoc, coverPage);
+  await drawGeneratedCoverPage(outputDoc, coverPage);
 
   const orderedUnits = Array.from(
     new Map(selectedUnits.map((unit) => [unit.sourceQuestionKey, unit])).values(),

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingScoreInConvex } from "@/lib/marking/convex";
+import { getMarkingSubmissionBundleFromConvex, setMarkingSubmissionStatusInConvex, upsertMarkingQuestionStatusInConvex, upsertMarkingScoreInConvex } from "@/lib/marking/convex";
 import { autoScoreMathPaper, autoScoreMathQuestion } from "@/lib/marking/scoring";
 
 export const runtime = "nodejs";
@@ -41,7 +41,10 @@ export async function POST(request: NextRequest) {
     if (scoreWholePaper) {
       const results = await autoScoreMathPaper(bundle as never);
       for (const entry of results) {
-        if (entry.result.skipped) continue;
+        if (entry.result.skipped) {
+          await upsertMarkingQuestionStatusInConvex({ submissionId, questionKey: entry.questionKey, status: "needs_manual_review", failureReason: entry.result.rationale || "This question needs manual review." });
+          continue;
+        }
         await upsertMarkingScoreInConvex({
           submissionId,
           questionKey: entry.questionKey,
@@ -55,15 +58,27 @@ export async function POST(request: NextRequest) {
           scorerModel: process.env.OPENROUTER_MODEL ?? "google/gemini-3.1-flash-lite",
           scoreStatus: "ai_suggested",
         });
+        await upsertMarkingQuestionStatusInConvex({ submissionId, questionKey: entry.questionKey, status: entry.result.needsReview ? "needs_manual_review" : "ai_scored" });
       }
 
       const updatedBundle = await getMarkingSubmissionBundleFromConvex(submissionId);
-      const hasReviewRequired = (updatedBundle?.scores ?? []).some((score) => score.needsReview) || results.some((entry) => entry.result.skipped);
-      await setMarkingSubmissionStatusInConvex(submissionId, hasReviewRequired ? "review_required" : "scored");
+      const insights = updatedBundle?.insights;
+      const hasReviewRequired = (insights?.reviewRequiredCount ?? 0) > 0 || results.some((entry) => entry.result.skipped);
+      const nextStatus = hasReviewRequired
+        ? "review_required"
+        : (insights?.questionCount ?? 0) > 0 && insights!.ocrCompletedCount >= insights!.questionCount
+          ? "ocr_complete"
+          : "uploaded";
+      await setMarkingSubmissionStatusInConvex(submissionId, nextStatus);
       return Response.json({ results });
     }
 
     const result = await autoScoreMathQuestion(bundle as never, questionKey);
+    if (result.skipped) {
+      await upsertMarkingQuestionStatusInConvex({ submissionId, questionKey, status: "needs_manual_review", failureReason: result.rationale || "This question needs manual review." });
+      await setMarkingSubmissionStatusInConvex(submissionId, "review_required");
+      return Response.json(result);
+    }
     await upsertMarkingScoreInConvex({
       submissionId,
       questionKey,
@@ -77,10 +92,16 @@ export async function POST(request: NextRequest) {
       scorerModel: process.env.OPENROUTER_MODEL ?? "google/gemini-3.1-flash-lite",
       scoreStatus: "ai_suggested",
     });
+    await upsertMarkingQuestionStatusInConvex({ submissionId, questionKey, status: result.needsReview ? "needs_manual_review" : "ai_scored" });
 
     const updatedBundle = await getMarkingSubmissionBundleFromConvex(submissionId);
-    const hasReviewRequired = (updatedBundle?.scores ?? []).some((score) => score.needsReview);
-    await setMarkingSubmissionStatusInConvex(submissionId, hasReviewRequired ? "review_required" : "scored");
+    const insights = updatedBundle?.insights;
+    const nextStatus = (insights?.reviewRequiredCount ?? 0) > 0
+      ? "review_required"
+      : (insights?.questionCount ?? 0) > 0 && insights!.ocrCompletedCount >= insights!.questionCount
+        ? "ocr_complete"
+        : "uploaded";
+    await setMarkingSubmissionStatusInConvex(submissionId, nextStatus);
 
     return Response.json(result);
   } catch (error) {

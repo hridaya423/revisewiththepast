@@ -1,13 +1,17 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useTransition } from "react";
-import { Brain, CheckCircle2, ChevronRight, Eye, FileUp, ScanText, Sparkles, TriangleAlert, Gauge, Layers3, ShieldAlert } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import { Brain, Check, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, FileUp, Minus, Plus, RotateCcw, ScanText, Sparkles, Upload } from "lucide-react";
 import { MathRichText } from "@/app/_components/math-rich-text";
+import { OperationNotice, statusToneClass } from "@/app/_components/marking/presentation";
+import { QuestionProgressRail, type QuestionProgressState } from "@/app/_components/marking/question-progress";
 
-type Bundle = {
+export type MarkingSubmissionBundle = {
   submission: {
+    subjectKey: string;
     studentLabel?: string;
     paperCode?: string;
     status: "uploaded" | "ocr_complete" | "scored" | "review_required";
@@ -29,6 +33,8 @@ type Bundle = {
     totalMarks: number;
     promptText: string;
     contextText?: string | null;
+    canonicalLeafIds?: string[];
+    topicLabels?: string[];
   }>;
   pages: Array<{
     _id: string;
@@ -90,6 +96,20 @@ type CombinedMarkSchemeEntry = {
   };
 };
 
+type QuestionStatus = NonNullable<MarkingSubmissionBundle["questionStatuses"]>[number];
+
+type QuestionRow = {
+  questionKey: string;
+  savedQuestion: NonNullable<MarkingSubmissionBundle["savedPaperQuestions"]>[number] | null;
+  pages: MarkingSubmissionBundle["pages"];
+  response: MarkingSubmissionBundle["responses"][number] | null;
+  score: MarkingSubmissionBundle["scores"][number] | null;
+  questionStatus: QuestionStatus | null;
+  combinedMarkScheme: CombinedMarkSchemeEntry | null;
+};
+
+type FeedbackScope = "setup" | "upload" | "ocr" | "score" | "mark-scheme" | "bulk" | "whole-paper";
+
 function formatQuestionLabel(question: {
   displayOrder?: number;
   questionNumber?: string;
@@ -127,30 +147,18 @@ function parseScoreEvidence(rawJson?: string) {
   }
 }
 
-function formatStatus(status: Bundle["submission"]["status"]) {
+function formatStatus(status: MarkingSubmissionBundle["submission"]["status"]) {
   if (status === "uploaded") return "Uploaded";
   if (status === "ocr_complete") return "OCR complete";
   if (status === "review_required") return "Needs review";
   return "Scored";
 }
 
-function confidenceLabel(value: number | null) {
-  if (value === null) return "No confidence yet";
-  if (value >= 0.85) return "High confidence";
-  if (value >= 0.65) return "Moderate confidence";
-  return "Low confidence";
-}
-
-function getQuestionState(row: {
-  pages: unknown[];
-  response: unknown;
-  score: { needsReview: boolean; scoreStatus?: "ai_suggested" | "confirmed" } | null;
-  questionStatus?: { status: string; failureReason?: string } | null;
-}) {
+function getQuestionState(row: Pick<QuestionRow, "pages" | "response" | "score" | "questionStatus">) {
   if (row.questionStatus?.status === "failed") return "failed" as const;
   if (row.questionStatus?.status === "needs_manual_review") return "review" as const;
   if (row.score?.scoreStatus === "confirmed") return row.score.needsReview ? "review" as const : "scored" as const;
-  if (row.score?.scoreStatus === "ai_suggested") return row.score.needsReview ? "review" as const : "scored" as const;
+  if (row.score?.scoreStatus === "ai_suggested") return row.score.needsReview ? "review" as const : "suggested" as const;
   if (row.score?.needsReview) return "review" as const;
   if (row.score) return "scored" as const;
   if (row.response) return "ocr" as const;
@@ -158,37 +166,47 @@ function getQuestionState(row: {
   return "empty" as const;
 }
 
-function getQuestionStateLabel(state: ReturnType<typeof getQuestionState>, questionStatus?: { status: string; failureReason?: string } | null) {
-  if (state === "failed") return questionStatus?.failureReason ? "Failed" : "Failed";
+function getQuestionStateLabel(state: ReturnType<typeof getQuestionState>) {
+  if (state === "failed") return "Failed";
   if (state === "review") return "Needs review";
   if (state === "scored") return "Scored";
+  if (state === "suggested") return "AI suggestion";
   if (state === "ocr") return "OCR ready";
-  if (state === "uploaded") return "Uploaded";
+  if (state === "uploaded") return "Waiting for OCR";
   return "Waiting";
 }
 
-function getQuestionStateStyles(state: ReturnType<typeof getQuestionState>) {
-  if (state === "failed") return "border-[#b85b4f]/25 bg-[#fff3f1] text-[#8f3f37]";
-  if (state === "review") return "border-[#d9a063]/35 bg-[#fff5ea] text-[#9a5a2c]";
-  if (state === "scored") return "border-[#5a8a5c]/20 bg-[#edf7ee] text-[#3f6d44]";
-  if (state === "ocr") return "border-[#6d8aa6]/20 bg-[#eef4fb] text-[#486781]";
-  if (state === "uploaded") return "border-[#1a2e1a]/10 bg-[#f6f4ef] text-[#5f6d60]";
-  return "border-[#1a2e1a]/10 bg-white text-[#6f7d71]";
+function getQuestionStateTone(state: ReturnType<typeof getQuestionState>) {
+  if (state === "failed") return "failure" as const;
+  if (state === "review") return "review" as const;
+  if (state === "scored") return "confirmed" as const;
+  if (state === "suggested") return "active" as const;
+  if (state === "ocr") return "active" as const;
+  return "neutral" as const;
 }
 
-export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { submissionId: string; initialBundle: Bundle }) {
+function prioritizeQuestion(row: QuestionRow) {
+  const state = getQuestionState(row);
+  if (state === "review" || state === "failed") return 0;
+  if (state === "ocr") return 1;
+  if (state === "uploaded" || state === "empty") return 2;
+  return 3;
+}
+
+export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { submissionId: string; initialBundle: MarkingSubmissionBundle }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [operationFeedback, setOperationFeedback] = useState<{ scope: FeedbackScope; message: string } | null>(null);
   const [ocrLoadingKey, setOcrLoadingKey] = useState<string | null>(null);
   const [scoreLoadingKey, setScoreLoadingKey] = useState<string | null>(null);
   const [autoScoreLoadingKey, setAutoScoreLoadingKey] = useState<string | null>(null);
   const [combinedMarkScheme, setCombinedMarkScheme] = useState<{ entries: CombinedMarkSchemeEntry[]; combinedText: string; failures?: Array<{ questionKey: string; error: string }> } | null>(null);
   const [isLoadingCombinedMarkScheme, setIsLoadingCombinedMarkScheme] = useState(false);
-  const [activeMarkSchemeQuestionKey, setActiveMarkSchemeQuestionKey] = useState<string | null>(null);
+  const [selectedQuestionKey, setSelectedQuestionKey] = useState<string | null>(null);
   const [pageLabel, setPageLabel] = useState("");
+  const [pendingBulkFiles, setPendingBulkFiles] = useState<File[]>([]);
 
-  const questionRows = useMemo(() => {
+  const questionRows = useMemo<QuestionRow[]>(() => {
     const savedQuestions = initialBundle.savedPaperQuestions ?? [];
     const questionKeys = savedQuestions.length > 0
       ? savedQuestions.map((question) => question.unitKey)
@@ -197,183 +215,178 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
           ...initialBundle.responses.map((response) => response.questionKey),
           ...initialBundle.scores.map((score) => score.questionKey),
         ]));
-
+    const savedQuestionByKey = new Map(savedQuestions.map((question) => [question.unitKey, question]));
+    const pagesByKey = new Map<string, MarkingSubmissionBundle["pages"]>();
+    for (const page of initialBundle.pages) {
+      const pages = pagesByKey.get(page.questionKey) ?? [];
+      pages.push(page);
+      pagesByKey.set(page.questionKey, pages);
+    }
+    const responseByKey = new Map(initialBundle.responses.map((response) => [response.questionKey, response]));
+    const scoreByKey = new Map(initialBundle.scores.map((score) => [score.questionKey, score]));
+    const statusByKey = new Map(initialBundle.questionStatuses?.map((status) => [status.questionKey, status]) ?? []);
+    const markSchemeByKey = new Map(combinedMarkScheme?.entries.map((entry) => [entry.questionKey, entry]) ?? []);
     return questionKeys.map((questionKey) => ({
       questionKey,
-      savedQuestion: savedQuestions.find((question) => question.unitKey === questionKey) ?? null,
-      pages: initialBundle.pages.filter((page) => page.questionKey === questionKey),
-      response: initialBundle.responses.find((response) => response.questionKey === questionKey) ?? null,
-      score: initialBundle.scores.find((score) => score.questionKey === questionKey) ?? null,
-      questionStatus: initialBundle.questionStatuses?.find((entry) => entry.questionKey === questionKey) ?? null,
-      combinedMarkScheme: combinedMarkScheme?.entries.find((entry) => entry.questionKey === questionKey) ?? null,
+      savedQuestion: savedQuestionByKey.get(questionKey) ?? null,
+      pages: pagesByKey.get(questionKey) ?? [],
+      response: responseByKey.get(questionKey) ?? null,
+      score: scoreByKey.get(questionKey) ?? null,
+      questionStatus: statusByKey.get(questionKey) ?? null,
+      combinedMarkScheme: markSchemeByKey.get(questionKey) ?? null,
     }));
   }, [combinedMarkScheme?.entries, initialBundle.pages, initialBundle.questionStatuses, initialBundle.responses, initialBundle.savedPaperQuestions, initialBundle.scores]);
 
+  const activeQuestionKey = useMemo(() => {
+    if (selectedQuestionKey && questionRows.some((row) => row.questionKey === selectedQuestionKey)) return selectedQuestionKey;
+    return [...questionRows].sort((left, right) => prioritizeQuestion(left) - prioritizeQuestion(right))[0]?.questionKey ?? null;
+  }, [questionRows, selectedQuestionKey]);
+  const activeRow = questionRows.find((row) => row.questionKey === activeQuestionKey) ?? null;
+  const activeRowIndex = activeRow ? questionRows.findIndex((row) => row.questionKey === activeRow.questionKey) : -1;
+  const nextQuestion = activeRowIndex >= 0 ? questionRows[activeRowIndex + 1] ?? null : null;
+  const previousQuestion = activeRowIndex > 0 ? questionRows[activeRowIndex - 1] ?? null : null;
   const isImportedSubmission = initialBundle.submission.importSource === "imported_pdf";
   const hasImportedPages = initialBundle.pages.length > 0;
-
-  const reviewRows = useMemo(() => questionRows.filter((row) => row.score?.needsReview), [questionRows]);
+  const canAutoScoreWholePaper = questionRows.length > 0 && questionRows.every((row) => Boolean(row.response));
+  const bulkUploadTargets = useMemo(() => questionRows.filter((row) => row.pages.length === 0 && row.savedQuestion).map((row) => row.savedQuestion!), [questionRows]);
+  const reviewRows = useMemo(() => questionRows.filter((row) => {
+    const state = getQuestionState(row);
+    return state === "review" || state === "failed";
+  }), [questionRows]);
   const activeMarkSchemeEntry = useMemo(() => {
-    const fallback = questionRows.find((row) => row.combinedMarkScheme)?.questionKey ?? null;
-    const selectedKey = activeMarkSchemeQuestionKey ?? fallback;
-    return questionRows.find((row) => row.questionKey === selectedKey)?.combinedMarkScheme ?? null;
-  }, [activeMarkSchemeQuestionKey, questionRows]);
+    return questionRows.find((row) => row.questionKey === activeQuestionKey)?.combinedMarkScheme ?? null;
+  }, [activeQuestionKey, questionRows]);
+
+  const showFeedback = (scope: FeedbackScope) => operationFeedback?.scope === scope ? <OperationNotice message={operationFeedback.message} /> : null;
+  const fail = (scope: FeedbackScope, cause: unknown, fallback: string) => {
+    setOperationFeedback({ scope, message: cause instanceof Error ? cause.message : fallback });
+  };
 
   const uploadPageForQuestion = (questionKey: string, file: File | null, questionNumberOverride?: string, questionPartNumberOverride?: string | null) => {
     if (!file) return;
-    setUploadError(null);
-
+    setOperationFeedback(null);
     startTransition(async () => {
-      const formData = new FormData();
-      formData.append("submissionId", submissionId);
-      formData.append("questionKey", questionKey);
-      if (questionNumberOverride) formData.append("questionNumber", questionNumberOverride);
-      if (questionPartNumberOverride) formData.append("questionPartNumber", questionPartNumberOverride);
-      if (pageLabel.trim()) formData.append("pageLabel", pageLabel.trim());
-      formData.append("file", file);
-
-      const response = await fetch("/api/marking/uploads", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        setUploadError(await response.text() || "Could not upload response page.");
-        return;
+      try {
+        const formData = new FormData();
+        formData.append("submissionId", submissionId);
+        formData.append("questionKey", questionKey);
+        if (questionNumberOverride) formData.append("questionNumber", questionNumberOverride);
+        if (questionPartNumberOverride) formData.append("questionPartNumber", questionPartNumberOverride);
+        if (pageLabel.trim()) formData.append("pageLabel", pageLabel.trim());
+        formData.append("file", file);
+        const response = await fetch("/api/marking/uploads", { method: "POST", body: formData });
+        if (!response.ok) throw new Error(await response.text() || "Could not upload response page.");
+        setPageLabel("");
+        router.refresh();
+      } catch (cause) {
+        fail("upload", cause, "Could not upload response page.");
       }
-
-      setPageLabel("");
-      router.refresh();
     });
   };
 
-  const uploadFinishedScriptPages = (files: FileList | null) => {
+  const uploadFinishedScriptPages = (files: File[]) => {
     const savedQuestions = initialBundle.savedPaperQuestions ?? [];
-    if (!files || files.length === 0) return;
+    if (files.length === 0) return;
     if (savedQuestions.length === 0) {
-      setUploadError("This submission needs a linked saved paper before script pages can be assigned automatically.");
+      setOperationFeedback({ scope: "bulk", message: "This submission needs a linked saved paper before script pages can be assigned automatically." });
       return;
     }
-
-    const orderedFiles = Array.from(files);
-    const targetQuestions = questionRows
-      .filter((row) => row.pages.length === 0)
-      .map((row) => row.savedQuestion)
-      .filter((question): question is NonNullable<typeof question> => question !== null);
-
+    const targetQuestions = questionRows.filter((row) => row.pages.length === 0).map((row) => row.savedQuestion).filter((question): question is NonNullable<typeof question> => question !== null);
     if (targetQuestions.length === 0) {
-      setUploadError("Every generated question already has an uploaded page. Use the per-question upload buttons for extra pages.");
+      setOperationFeedback({ scope: "bulk", message: "Every generated question already has an uploaded page. Use the per-question upload control for extra pages." });
       return;
     }
-
-    if (orderedFiles.length > targetQuestions.length) {
-      setUploadError(`You selected ${orderedFiles.length} pages but only ${targetQuestions.length} questions are still missing uploads. Extra pages were not assigned automatically.`);
+    if (files.length > targetQuestions.length) {
+      setOperationFeedback({ scope: "bulk", message: `You selected ${files.length} pages but only ${targetQuestions.length} questions are still missing uploads. Extra pages were not assigned automatically.` });
     } else {
-      setUploadError(null);
+      setOperationFeedback(null);
     }
-
     startTransition(async () => {
-      for (let index = 0; index < Math.min(orderedFiles.length, targetQuestions.length); index += 1) {
-        const file = orderedFiles[index];
-        const question = targetQuestions[index];
-        const formData = new FormData();
-        formData.append("submissionId", submissionId);
-        formData.append("questionKey", question.unitKey);
-        formData.append("questionNumber", question.questionNumber);
-        if (question.questionPartNumber) formData.append("questionPartNumber", question.questionPartNumber);
-        formData.append("pageLabel", `Script page ${index + 1}`);
-        formData.append("file", file);
-
-        const response = await fetch("/api/marking/uploads", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          setUploadError(await response.text() || `Could not upload script page ${index + 1}.`);
-          return;
+      try {
+        for (let index = 0; index < Math.min(files.length, targetQuestions.length); index += 1) {
+          const file = files[index];
+          const question = targetQuestions[index];
+          const formData = new FormData();
+          formData.append("submissionId", submissionId);
+          formData.append("questionKey", question.unitKey);
+          formData.append("questionNumber", question.questionNumber);
+          if (question.questionPartNumber) formData.append("questionPartNumber", question.questionPartNumber);
+          formData.append("pageLabel", `Script page ${index + 1}`);
+          formData.append("file", file);
+          const response = await fetch("/api/marking/uploads", { method: "POST", body: formData });
+          if (!response.ok) throw new Error(await response.text() || `Could not upload script page ${index + 1}.`);
         }
+        setPageLabel("");
+        setPendingBulkFiles([]);
+        router.refresh();
+      } catch (cause) {
+        fail("bulk", cause, "Could not upload the selected answer images.");
       }
-
-      setPageLabel("");
-      router.refresh();
     });
   };
 
   const processFinishedPaperPdf = (file: File | null) => {
     if (!file) return;
-    setUploadError(null);
-
+    setOperationFeedback(null);
     startTransition(async () => {
       try {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("submissionId", submissionId);
-
-        const response = await fetch("/api/marking/import-finished-paper", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          setUploadError(await response.text() || "Could not import the finished paper PDF.");
-          return;
-        }
-
+        const response = await fetch("/api/marking/import-finished-paper", { method: "POST", body: formData });
+        if (!response.ok) throw new Error(await response.text() || "Could not import the finished paper PDF.");
         router.refresh();
-      } catch (error) {
-        setUploadError(error instanceof Error ? error.message : String(error));
+      } catch (cause) {
+        fail("setup", cause, "Could not import the finished paper PDF.");
       }
     });
   };
 
   const runOcr = async (questionKey: string) => {
     setOcrLoadingKey(questionKey);
-    const response = await fetch("/api/marking/ocr", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ submissionId, questionKey }),
-    });
-    setOcrLoadingKey(null);
-    if (!response.ok) {
-      setUploadError(await response.text() || "Could not run OCR.");
-      return;
+    setOperationFeedback(null);
+    try {
+      const response = await fetch("/api/marking/ocr", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, questionKey }) });
+      if (!response.ok) throw new Error(await response.text() || "Could not run OCR.");
+      router.refresh();
+    } catch (cause) {
+      fail("ocr", cause, "Could not run OCR.");
+    } finally {
+      setOcrLoadingKey(null);
     }
-    router.refresh();
   };
 
   const autoScore = async (questionKey: string) => {
     setAutoScoreLoadingKey(questionKey);
-    const response = await fetch("/api/marking/auto-score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ submissionId, questionKey }),
-    });
-    setAutoScoreLoadingKey(null);
-    if (!response.ok) {
-      setUploadError(await response.text() || "Could not auto-score this question.");
-      return;
+    setOperationFeedback(null);
+    try {
+      const response = await fetch("/api/marking/auto-score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, questionKey }) });
+      if (!response.ok) throw new Error(await response.text() || "Could not auto-score this question.");
+      router.refresh();
+    } catch (cause) {
+      fail("score", cause, "Could not auto-score this question.");
+    } finally {
+      setAutoScoreLoadingKey(null);
     }
-    router.refresh();
   };
 
   const autoScoreWholePaper = async () => {
     setAutoScoreLoadingKey("__whole-paper__");
-    const response = await fetch("/api/marking/auto-score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ submissionId, scoreWholePaper: true }),
-    });
-    setAutoScoreLoadingKey(null);
-    if (!response.ok) {
-      setUploadError(await response.text() || "Could not auto-score the full paper.");
-      return;
+    setOperationFeedback(null);
+    try {
+      const response = await fetch("/api/marking/auto-score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, scoreWholePaper: true }) });
+      if (!response.ok) throw new Error(await response.text() || "Could not auto-score the full paper.");
+      router.refresh();
+    } catch (cause) {
+      fail("whole-paper", cause, "Could not auto-score the full paper.");
+    } finally {
+      setAutoScoreLoadingKey(null);
     }
-    router.refresh();
   };
 
   const saveScore = async (questionKey: string, formData: FormData) => {
     setScoreLoadingKey(questionKey);
+    setOperationFeedback(null);
     const awardedMarks = Number(formData.get(`awarded-${questionKey}`) ?? 0);
     const maxMarks = Number(formData.get(`max-${questionKey}`) ?? 0);
     const rationale = String(formData.get(`rationale-${questionKey}`) ?? "").trim();
@@ -381,403 +394,246 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     const needsReview = formData.get(`review-${questionKey}`) === "on";
     const existingScore = initialBundle.scores.find((entry) => entry.questionKey === questionKey);
     const existingEvidence = parseScoreEvidence(existingScore?.evidenceJson);
-
-    const response = await fetch("/api/marking/score", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        submissionId,
-        questionKey,
-        awardedMarks,
-        maxMarks,
-        confidence,
-        needsReview,
-        rationale,
-        evidence: existingEvidence ?? { savedFrom: "marking-workspace" },
-      }),
-    });
-    setScoreLoadingKey(null);
-    if (!response.ok) {
-      setUploadError(await response.text() || "Could not save score.");
-      return;
+    try {
+      const response = await fetch("/api/marking/score", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submissionId, questionKey, awardedMarks, maxMarks, confidence, needsReview, rationale, evidence: existingEvidence ?? { savedFrom: "marking-workspace" } }),
+      });
+      if (!response.ok) throw new Error(await response.text() || "Could not save score.");
+      if (formData.get("saveAction") === "next" && nextQuestion) setSelectedQuestionKey(nextQuestion.questionKey);
+      router.refresh();
+    } catch (cause) {
+      fail("score", cause, "Could not save score.");
+    } finally {
+      setScoreLoadingKey(null);
     }
-    router.refresh();
   };
 
-  const loadCombinedMarkScheme = async () => {
+  const loadCombinedMarkScheme = useCallback(async () => {
     setIsLoadingCombinedMarkScheme(true);
-    const response = await fetch(`/api/marking/submissions/${submissionId}/mark-scheme`);
-    setIsLoadingCombinedMarkScheme(false);
-    if (!response.ok) {
-      setUploadError(await response.text() || "Could not load combined mark scheme.");
-      return;
+    setOperationFeedback(null);
+    try {
+      const response = await fetch(`/api/marking/submissions/${submissionId}/mark-scheme`);
+      if (!response.ok) throw new Error(await response.text() || "Could not load combined mark scheme.");
+      const payload = await response.json() as { entries: CombinedMarkSchemeEntry[]; combinedText: string; failures?: Array<{ questionKey: string; error: string }> };
+      setCombinedMarkScheme(payload);
+    } catch (cause) {
+      fail("mark-scheme", cause, "Could not load combined mark scheme.");
+    } finally {
+      setIsLoadingCombinedMarkScheme(false);
     }
-    const payload = await response.json() as {
-      entries: CombinedMarkSchemeEntry[];
-      combinedText: string;
-      failures?: Array<{ questionKey: string; error: string }>;
-    };
-    setCombinedMarkScheme(payload);
-    setActiveMarkSchemeQuestionKey(payload.entries[0]?.questionKey ?? null);
-  };
+  }, [submissionId]);
 
   useEffect(() => {
     if ((initialBundle.savedPaperQuestions ?? []).length === 0 || combinedMarkScheme) return;
-    void loadCombinedMarkScheme();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [submissionId, initialBundle.savedPaperQuestions?.length]);
+    const timeoutId = window.setTimeout(() => void loadCombinedMarkScheme(), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [combinedMarkScheme, initialBundle.savedPaperQuestions, loadCombinedMarkScheme]);
+
+  const activeScoreEvidence = activeRow ? parseScoreEvidence(activeRow.score?.evidenceJson) : null;
+  const activeMarkSchemePreview = activeScoreEvidence?.markScheme?.partText || activeRow?.combinedMarkScheme?.markScheme.partText || null;
+  const activeMarkSchemeUrl = activeScoreEvidence?.markScheme?.markSchemeUrl || activeRow?.combinedMarkScheme?.markScheme.markSchemeUrl;
+  const activeMarkSchemePages = activeScoreEvidence?.markScheme?.pageNumbers || activeRow?.combinedMarkScheme?.markScheme.pageNumbers;
+  const confirmedMarks = initialBundle.scores.filter((score) => score.scoreStatus === "confirmed").reduce((sum, score) => sum + score.awardedMarks, 0);
+  const paperMarks = (initialBundle.savedPaperQuestions ?? []).reduce((sum, question) => sum + question.totalMarks, 0) || initialBundle.insights.totalMaxMarks;
+  const activeTopicLabel = activeRow?.savedQuestion?.topicLabels?.[0];
+
+  const progressItems = questionRows.map((row, index) => {
+    const state = getQuestionState(row);
+    let progressState: QuestionProgressState = "waiting";
+    if (row.questionKey === activeQuestionKey) progressState = "current";
+    else if (row.score?.scoreStatus === "confirmed" && !row.score.needsReview) progressState = "confirmed";
+    else if (state === "review") progressState = "review";
+    else if (state === "failed") progressState = "failed";
+    else if (state === "ocr" || state === "scored" || state === "suggested") progressState = "ready";
+    return { key: row.questionKey, label: String(index + 1).padStart(2, "0"), state: progressState };
+  });
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[#1a2e1a]/[0.06] bg-[radial-gradient(circle_at_top_left,rgba(90,138,92,0.12),transparent_30%),linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-8 shadow-[0_10px_40px_rgba(26,46,26,0.05)] sm:p-10">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_360px] lg:items-end">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#1a2e1a]/10 bg-white/80 px-3 py-1.5 text-[0.7rem] uppercase tracking-[0.2em] text-accent-warm backdrop-blur">
-              <Layers3 className="h-3.5 w-3.5" />
-              <span>Submission workspace</span>
-            </div>
-            <h1 className="mt-5 max-w-[12ch] font-serif text-[clamp(2rem,4vw,3.2rem)] leading-[0.98] tracking-[-0.05em] text-[#1a2e1a]">Every question tied back to the real source paper.</h1>
-            <p className="mt-4 max-w-[64ch] text-[0.98rem] leading-[1.75] text-[#3d5a3f]/70">This workspace keeps the paper, uploaded student pages, OCR transcript, sliced mark scheme, auto-score, and saved review decision in one place. The goal is to make marking feel inspectable, not magical.</p>
-          </div>
+    <div className="space-y-4">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 border-b border-text/10 pb-3 text-[0.875rem] text-text-muted">
+        <Link href="/marking" className="hover:text-accent">Mark your papers</Link><span aria-hidden="true">/</span><span>{initialBundle.savedPaper?.title || initialBundle.submission.paperCode || "Saved paper"}</span><span aria-hidden="true">/</span><span className="font-semibold text-text">{activeRow ? formatQuestionLabel({ questionNumber: activeRow.savedQuestion?.questionNumber, questionPartNumber: activeRow.savedQuestion?.questionPartNumber, questionKey: activeRow.questionKey }) : "Questions"}</span>
+      </nav>
 
-          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-            <div className="rounded-[1.25rem] border border-[#1a2e1a]/[0.06] bg-white/88 p-4 shadow-[0_8px_20px_rgba(26,46,26,0.04)] backdrop-blur">
-              <div className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">Status</div>
-              <p className="mt-3 font-serif text-[1.7rem] text-[#1a2e1a]">{formatStatus(initialBundle.submission.status)}</p>
+      <header className="border-b border-text/10 pb-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="truncate text-[clamp(1.65rem,3vw,2.25rem)] font-bold leading-tight tracking-[-0.035em] text-text">{activeTopicLabel || initialBundle.savedPaper?.title || initialBundle.submission.studentLabel || "Untitled revision paper"}</h1>
+              <span className={`border px-2 py-1 text-[0.75rem] font-semibold ${statusToneClass(initialBundle.submission.status === "review_required" ? "review" : initialBundle.submission.status === "scored" ? "confirmed" : initialBundle.submission.status === "ocr_complete" ? "active" : "neutral")}`}>{formatStatus(initialBundle.submission.status)}</span>
             </div>
-            <div className="rounded-[1.25rem] border border-[#1a2e1a]/[0.06] bg-white/88 p-4 shadow-[0_8px_20px_rgba(26,46,26,0.04)] backdrop-blur">
-              <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm"><Gauge className="h-3.5 w-3.5" /><span>Confidence</span></div>
-              <p className="mt-3 font-serif text-[1.4rem] text-[#1a2e1a]">{confidenceLabel(initialBundle.insights.averageConfidence)}</p>
-              <p className="mt-1 text-[0.78rem] text-[#3d5a3f]/55">{initialBundle.insights.averageConfidence !== null ? `${Math.round(initialBundle.insights.averageConfidence * 100)}% average` : "Run scoring to populate"}</p>
-            </div>
-            <div className="rounded-[1.25rem] border border-[#1a2e1a]/[0.06] bg-white/88 p-4 shadow-[0_8px_20px_rgba(26,46,26,0.04)] backdrop-blur">
-              <div className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">Coverage</div>
-              <p className="mt-3 font-serif text-[1.7rem] text-[#1a2e1a]">{initialBundle.insights.scoredCount}/{initialBundle.insights.questionCount}</p>
-            </div>
+            <p className="mt-1 text-[0.875rem] text-text-muted">{activeRow ? `${formatQuestionLabel({ questionNumber: activeRow.savedQuestion?.questionNumber, questionPartNumber: activeRow.savedQuestion?.questionPartNumber, questionPath: activeRow.savedQuestion?.questionPath, questionKey: activeRow.questionKey })} of ${questionRows.length} · ${activeRow.savedQuestion?.totalMarks ?? activeRow.score?.maxMarks ?? 0} marks` : initialBundle.submission.paperCode || "No paper reference yet"}</p>
           </div>
+          <p className="text-[0.95rem] font-semibold tabular-nums text-text">{confirmedMarks} / {paperMarks} confirmed</p>
         </div>
-      </section>
+        {progressItems.length > 0 ? <div className="mt-4 overflow-x-auto pb-1"><QuestionProgressRail items={progressItems} activeKey={activeQuestionKey} onSelect={setSelectedQuestionKey} /></div> : null}
+      </header>
 
-      <section className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="space-y-4 xl:sticky xl:top-[92px] xl:self-start">
-          <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-            <p className="text-[0.68rem] uppercase tracking-[0.18em] text-accent-warm">Submission</p>
-            <h1 className="mt-2 font-serif text-[1.7rem] text-[#1a2e1a]">{initialBundle.submission.studentLabel || initialBundle.savedPaper?.title || "Untitled student paper"}</h1>
-            <p className="mt-2 text-[0.86rem] text-[#3d5a3f]/60">{initialBundle.savedPaper?.title || initialBundle.submission.paperCode || "No paper reference yet"} · {formatStatus(initialBundle.submission.status)}</p>
-            {initialBundle.savedPaper?.pdfUrl ? (
-              <a href={initialBundle.savedPaper.pdfUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a2e1a]/10 px-4 py-2 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-[#faf8f3]">
-                <Eye className="h-4 w-4" />
-                <span>View saved paper PDF</span>
-              </a>
-            ) : null}
+      <details className="border-b border-text/10 pb-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-1 text-[0.875rem] font-semibold text-text-secondary marker:hidden"><span className="inline-flex items-center gap-2"><FileUp className="h-4 w-4 text-accent" /> Setup and import utilities</span><span className="text-[0.8rem] font-normal text-text-muted">OCR {initialBundle.insights.ocrCompletedCount}/{initialBundle.insights.questionCount} · {reviewRows.length} review</span></summary>
+        <div className="mt-3 border-t border-text/10 pt-3">
+          <div className="flex flex-wrap gap-2">
+            {initialBundle.savedPaper?.pdfUrl ? <a href={initialBundle.savedPaper.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 border border-text/15 bg-white px-3 text-[0.875rem] font-semibold text-text-secondary hover:border-accent"><ExternalLink className="h-4 w-4" /> Source PDF</a> : null}
+            {initialBundle.savedPaperQuestions && initialBundle.savedPaperQuestions.length > 0 ? <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 border border-text/15 bg-white px-3 text-[0.875rem] font-semibold text-text-secondary hover:border-accent"><input type="file" accept="application/pdf" className="sr-only" onChange={(event) => processFinishedPaperPdf(event.target.files?.[0] ?? null)} /><Upload className="h-4 w-4" />{isPending ? (isImportedSubmission && hasImportedPages ? "Replacing PDF..." : "Processing PDF...") : isImportedSubmission && hasImportedPages ? "Replace script PDF" : "Import script PDF"}</label> : null}
+            <button type="button" onClick={autoScoreWholePaper} disabled={!canAutoScoreWholePaper || autoScoreLoadingKey === "__whole-paper__"} className="inline-flex min-h-10 items-center gap-2 bg-accent px-3 text-[0.875rem] font-semibold text-white disabled:opacity-45"><Sparkles className="h-4 w-4" />{autoScoreLoadingKey === "__whole-paper__" ? "Scoring paper..." : "Auto-score paper"}</button>
+            <button type="button" onClick={() => void loadCombinedMarkScheme()} disabled={isLoadingCombinedMarkScheme} className="inline-flex min-h-10 items-center gap-2 border border-text/15 bg-white px-3 text-[0.875rem] font-semibold text-text-secondary disabled:opacity-45"><Brain className="h-4 w-4" />{isLoadingCombinedMarkScheme ? "Loading scheme..." : combinedMarkScheme ? "Refresh scheme" : "Load mark scheme"}</button>
           </div>
+          {!canAutoScoreWholePaper ? <p className="mt-2 text-[0.8rem] text-text-muted">Whole-paper scoring unlocks when every question has an OCR transcript.</p> : null}
+          {initialBundle.savedPaperQuestions && initialBundle.savedPaperQuestions.length > 0 ? <div className="mt-4 border-t border-text/10 pt-3"><label className="inline-flex min-h-10 cursor-pointer items-center border border-dashed border-text/25 px-3 text-[0.875rem] font-semibold text-text-secondary"><input type="file" accept="image/*" multiple className="sr-only" onChange={(event) => setPendingBulkFiles(Array.from(event.target.files ?? []))} />Choose answer images in question order</label>{pendingBulkFiles.length > 0 ? <div className="mt-3 max-w-2xl border border-info/20 bg-info-soft p-3"><p className="text-[0.875rem] font-semibold text-info">{pendingBulkFiles.length} files selected for {bulkUploadTargets.length} available questions</p><div className="mt-2 divide-y divide-info/10">{pendingBulkFiles.map((file, index) => <div key={`${file.name}-${file.lastModified}`} className="flex justify-between gap-3 py-2 text-[0.8rem]"><span className="truncate">{file.name}</span><span className="shrink-0 font-semibold">{bulkUploadTargets[index] ? formatQuestionLabel({ displayOrder: bulkUploadTargets[index].displayOrder, questionNumber: bulkUploadTargets[index].questionNumber, questionPartNumber: bulkUploadTargets[index].questionPartNumber, questionPath: bulkUploadTargets[index].questionPath, questionKey: bulkUploadTargets[index].unitKey }) : "Not assigned"}</span></div>)}</div><div className="mt-3 flex gap-2"><button type="button" onClick={() => uploadFinishedScriptPages(pendingBulkFiles)} disabled={isPending || pendingBulkFiles.length > bulkUploadTargets.length} className="bg-info px-3 py-2 text-[0.875rem] font-semibold text-white disabled:opacity-45">Confirm upload</button><button type="button" onClick={() => setPendingBulkFiles([])} className="border border-info/25 bg-white px-3 py-2 text-[0.875rem] font-semibold text-info">Cancel</button></div></div> : null}</div> : null}
+          {showFeedback("setup") || showFeedback("whole-paper") || showFeedback("mark-scheme") || showFeedback("bulk") ? <div className="mt-3 space-y-2">{showFeedback("setup")}{showFeedback("whole-paper")}{showFeedback("mark-scheme")}{showFeedback("bulk")}</div> : null}
+        </div>
+      </details>
 
-          {initialBundle.savedPaperQuestions && initialBundle.savedPaperQuestions.length > 0 ? (
-            <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-accent"><FileUp className="h-4 w-4" /></div>
-                <div>
-                  <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Saved composition</p>
-                  <h2 className="font-serif text-[1.25rem] text-[#1a2e1a]">Source-linked questions</h2>
-                </div>
-              </div>
-              <p className="mt-4 text-[0.84rem] leading-[1.6] text-[#3d5a3f]/60">
-                {isImportedSubmission && hasImportedPages
-                  ? "This submission was imported from a finished script PDF. Page images, OCR, and question mapping are already attached. Use the controls below to add extra pages or re-run scoring."
-                  : "Upload the finished student script PDF to render pages, run handwriting OCR, map answers to your saved questions, and auto-score them."}
-              </p>
-              {!(isImportedSubmission && hasImportedPages) ? (
-              <label className="mt-4 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#f5f2ea] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
-                <input type="file" accept="application/pdf" className="hidden" onChange={(event) => processFinishedPaperPdf(event.target.files?.[0] ?? null)} />
-                {isPending ? "Processing finished paper PDF..." : "Upload finished paper PDF"}
-              </label>
-              ) : (
-              <label className="mt-4 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#faf8f3] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
-                <input type="file" accept="application/pdf" className="hidden" onChange={(event) => processFinishedPaperPdf(event.target.files?.[0] ?? null)} />
-                {isPending ? "Replacing script PDF..." : "Replace script PDF"}
-              </label>
-              )}
-              <button type="button" onClick={autoScoreWholePaper} disabled={autoScoreLoadingKey === "__whole-paper__"} className="btn-press mt-4 inline-flex items-center gap-2 rounded-full bg-[#1a2e1a] px-4 py-2 text-[0.8rem] font-semibold text-white disabled:opacity-60">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{autoScoreLoadingKey === "__whole-paper__" ? "Scoring whole paper..." : "Auto-score whole paper"}</span>
-              </button>
-              <label className="mt-4 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#faf8f3] px-4 py-6 text-center text-[0.84rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
-                <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => uploadFinishedScriptPages(event.target.files)} />
-                {isPending ? "Uploading script pages..." : "Upload finished script pages"}
-              </label>
-              <button type="button" onClick={loadCombinedMarkScheme} disabled={isLoadingCombinedMarkScheme} className="btn-press mt-4 inline-flex items-center gap-2 rounded-full border border-[#1a2e1a]/10 px-4 py-2 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-[#faf8f3] disabled:opacity-60">
-                <Brain className="h-4 w-4" />
-                <span>{isLoadingCombinedMarkScheme ? "Loading mark scheme..." : combinedMarkScheme ? "Reload mark scheme" : "Load combined mark scheme"}</span>
-              </button>
-              {combinedMarkScheme?.failures && combinedMarkScheme.failures.length > 0 ? (
-                <p className="mt-3 text-[0.78rem] text-[#9a5a2c]">{combinedMarkScheme.failures.length} mark scheme slice{combinedMarkScheme.failures.length === 1 ? "" : "s"} could not be loaded.</p>
-              ) : null}
-              {combinedMarkScheme ? (
-                <div className="mt-4 overflow-hidden rounded-[1rem] border border-[#1a2e1a]/[0.06] bg-[#faf8f3]">
-                  <div className="flex overflow-x-auto border-b border-[#1a2e1a]/[0.06] px-2 py-2">
-                    {combinedMarkScheme.entries.map((entry) => (
-                      <button
-                        key={entry.questionKey}
-                        type="button"
-                        onClick={() => setActiveMarkSchemeQuestionKey(entry.questionKey)}
-                        className={`shrink-0 rounded-full px-3 py-1.5 text-[0.74rem] font-medium transition-colors ${activeMarkSchemeQuestionKey === entry.questionKey || (!activeMarkSchemeQuestionKey && combinedMarkScheme.entries[0]?.questionKey === entry.questionKey) ? "bg-[#1a2e1a] text-white" : "text-[#1a2e1a]/65 hover:bg-white"}`}
-                      >
-                        {entry.label} 
-                      </button>
-                    ))}
-                  </div>
-                  <div className="max-h-[320px] overflow-y-auto p-4">
-                    {activeMarkSchemeEntry ? (
-                      <>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-medium text-[#1a2e1a]">{activeMarkSchemeEntry.label}</p>
-                          <a href={activeMarkSchemeEntry.markScheme.markSchemeUrl} target="_blank" rel="noreferrer" className="text-[0.76rem] font-medium text-[#1a2e1a]/65 underline">Open PDF</a>
-                        </div>
-                        <MathRichText text={activeMarkSchemeEntry.markScheme.partText} className="mt-3 text-[0.8rem] leading-[1.6] text-[#1a2e1a]/78" />
-                      </>
-                    ) : (
-                      <p className="text-[0.8rem] text-[#3d5a3f]/60">No mark scheme entry loaded.</p>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent/10 text-accent"><FileUp className="h-4 w-4" /></div>
-                <div>
-                  <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Unsupported path</p>
-                  <h2 className="font-serif text-[1.25rem] text-[#1a2e1a]">This submission needs a saved generated paper</h2>
-                </div>
-              </div>
-              <p className="mt-4 text-[0.84rem] leading-[1.6] text-[#3d5a3f]/60">The polished marking flow starts from a generated paper saved to your account. That is what lets the app resolve the original source paper, pull the right mark scheme, and slice the relevant question section automatically.</p>
-            </div>
-          )}
-
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-5">
-              <div className="flex items-center gap-2"><ScanText className="h-4 w-4 text-accent-warm" /><span className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">OCR complete</span></div>
-              <p className="mt-2 font-serif text-[1.65rem] text-[#1a2e1a]">{initialBundle.insights.ocrCompletedCount}</p>
-            </div>
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-5">
-              <div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-accent-warm" /><span className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Marks saved</span></div>
-              <p className="mt-2 font-serif text-[1.65rem] text-[#1a2e1a]">{initialBundle.insights.totalAwardedMarks}/{initialBundle.insights.totalMaxMarks}</p>
-            </div>
-            <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-5">
-              <div className="flex items-center gap-2"><TriangleAlert className="h-4 w-4 text-accent-warm" /><span className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Needs review</span></div>
-              <p className="mt-2 font-serif text-[1.65rem] text-[#1a2e1a]">{initialBundle.insights.reviewRequiredCount}</p>
-            </div>
-          </div>
-
-          {uploadError ? <p className="rounded-[1rem] border border-red-200 bg-red-50 px-4 py-3 text-[0.8rem] text-red-700">{uploadError}</p> : null}
-        </aside>
-
-        <div className="space-y-4">
-          {reviewRows.length > 0 ? (
-            <section className="rounded-[1.6rem] border border-[#d9a063]/20 bg-[linear-gradient(180deg,#fff8f0_0%,#ffffff_100%)] p-4 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[0.72rem] uppercase tracking-[0.16em] text-[#b17436]">Review queue</p>
-                  <h2 className="mt-1 font-serif text-[1.25rem] text-[#1a2e1a]">Questions needing human attention</h2>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full bg-[#fff2e6] px-3 py-1.5 text-[0.72rem] font-medium text-[#9a5a2c]"><ShieldAlert className="h-3.5 w-3.5" />{reviewRows.length} to review</div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {reviewRows.map((row) => (
-                  <a key={`review-${row.questionKey}`} href={`#question-${row.questionKey}`} className="inline-flex items-center gap-2 rounded-full border border-[#d9a063]/25 bg-white px-3 py-2 text-[0.78rem] font-medium text-[#9a5a2c] hover:bg-[#fff6ee]">
-                    <span>{formatQuestionLabel({ displayOrder: row.savedQuestion?.displayOrder, questionNumber: row.savedQuestion?.questionNumber, questionPartNumber: row.savedQuestion?.questionPartNumber, questionKey: row.questionKey })}</span>
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  </a>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          <section className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">Question navigation</p>
-                <p className="mt-1 text-[0.86rem] text-[#3d5a3f]/60">Jump around the paper with progress states instead of scanning the full page.</p>
-              </div>
-              {reviewRows.length > 0 ? (
-                <div className="inline-flex items-center gap-2 rounded-full bg-[#fff2e6] px-3 py-1.5 text-[0.72rem] font-medium text-[#9a5a2c]"><ShieldAlert className="h-3.5 w-3.5" />{reviewRows.length} to review</div>
-              ) : null}
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {questionRows.map((row) => {
-                const state = getQuestionState(row);
+      {questionRows.length === 0 ? <div className="border border-dashed border-text/15 px-6 py-12 text-center text-[0.8rem] text-text-muted">Upload the first response page to start reviewing this saved paper.</div> : activeRow ? (
+        <div className="grid border-y border-text/10 xl:grid-cols-[12.5rem_minmax(0,1fr)]">
+          <aside className="hidden border-r border-text/10 bg-white py-3 xl:block" aria-label="Questions">
+            <p className="px-4 pb-3 text-[0.72rem] font-bold uppercase tracking-[0.1em] text-text-muted">Questions</p>
+            <div>
+              {questionRows.map((row, index) => {
+                const questionState = getQuestionState(row);
+                const isActive = row.questionKey === activeQuestionKey;
+                const dotClass = row.score?.scoreStatus === "confirmed" && !row.score.needsReview ? "bg-success" : questionState === "review" || questionState === "failed" ? "bg-warning" : isActive ? "bg-accent" : "bg-text-subtle";
                 return (
-                  <a
-                    key={`nav-${row.questionKey}`}
-                    href={`#question-${row.questionKey}`}
-                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[0.78rem] font-medium transition-colors ${getQuestionStateStyles(state)}`}
-                  >
-                    <span>{formatQuestionLabel({ displayOrder: row.savedQuestion?.displayOrder, questionNumber: row.savedQuestion?.questionNumber, questionPartNumber: row.savedQuestion?.questionPartNumber, questionKey: row.questionKey })}</span>
-                    <span className="text-[0.68rem] uppercase tracking-[0.12em] opacity-70">{getQuestionStateLabel(state)}</span>
-                  </a>
+                  <button key={row.questionKey} type="button" onClick={() => setSelectedQuestionKey(row.questionKey)} aria-current={isActive ? "true" : undefined} className={`flex min-h-11 w-full items-center gap-3 border-r-2 px-4 text-left text-[0.8rem] transition-colors ${isActive ? "border-accent bg-accent-soft text-accent" : "border-transparent text-text-secondary hover:bg-bg-soft hover:text-text"}`}>
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotClass}`} aria-hidden="true" />
+                    <span className="w-5 font-mono tabular-nums">{String(index + 1).padStart(2, "0")}</span>
+                    <span className="truncate text-[0.72rem] font-medium">{getQuestionStateLabel(questionState)}</span>
+                  </button>
                 );
               })}
             </div>
-          </section>
-
-          {questionRows.length === 0 ? (
-            <div className="rounded-[1.6rem] border border-dashed border-[#1a2e1a]/10 bg-white px-6 py-16 text-center text-[0.92rem] text-[#3d5a3f]/58">Upload the first response page to start building this saved paper.</div>
-          ) : questionRows.map((row) => {
-            const scoreEvidence = parseScoreEvidence(row.score?.evidenceJson);
-            const markSchemePreview = scoreEvidence?.markScheme?.partText || row.combinedMarkScheme?.markScheme.partText || null;
-            const maxMarksDefault = row.score?.maxMarks ?? row.savedQuestion?.totalMarks ?? 0;
-
-            return (
-              <section id={`question-${row.questionKey}`} key={row.questionKey} className="scroll-mt-24 rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                  <div>
-                    <p className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">Question</p>
-                    <h2 className="mt-1 font-serif text-[1.35rem] text-[#1a2e1a]">{formatQuestionLabel({
-                      displayOrder: row.savedQuestion?.displayOrder,
-                      questionNumber: row.savedQuestion?.questionNumber,
-                      questionPartNumber: row.savedQuestion?.questionPartNumber,
-                      questionPath: row.savedQuestion?.questionPath,
-                      questionKey: row.questionKey,
-                    })}</h2>
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-2.5 py-1 text-[0.72rem] text-[#3d5a3f]/65">{row.savedQuestion?.paperCode ? `${row.savedQuestion.paperCode} · ${row.savedQuestion.year ?? ""} ${row.savedQuestion.session ?? ""}`.trim() : "Manual question"}</span>
-                      <span className={`rounded-full border px-2.5 py-1 text-[0.72rem] ${getQuestionStateStyles(getQuestionState(row))}`}>{getQuestionStateLabel(getQuestionState(row), row.questionStatus)}</span>
-                      <span className="rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-2.5 py-1 text-[0.72rem] text-[#3d5a3f]/65">{row.pages.length} uploaded page{row.pages.length === 1 ? "" : "s"}</span>
-                    </div>
-                    {row.questionStatus?.failureReason ? (
-                      <p className="mt-2 text-[0.78rem] text-[#9a5a2c]">{row.questionStatus.failureReason}</p>
-                    ) : null}
-                    {row.score ? (
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <div className="rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-3 py-1.5 text-[0.76rem] font-semibold text-[#1a2e1a]">
-                          {row.score.scoreStatus === "confirmed" ? "Saved" : "AI suggestion"}: {row.score.awardedMarks}/{row.score.maxMarks}
-                        </div>
-                        <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[#1a2e1a]/8">
-                          <div className={`h-full rounded-full ${row.score.confidence >= 0.85 ? "bg-[#5a8a5c]" : row.score.confidence >= 0.65 ? "bg-[#b38a43]" : "bg-[#b85b4f]"}`} style={{ width: `${Math.max(6, Math.min(100, row.score.confidence * 100))}%` }} />
-                        </div>
-                        <p className="text-[0.76rem] uppercase tracking-[0.12em] text-[#3d5a3f]/55">{Math.round(row.score.confidence * 100)}% confidence</p>
-                      </div>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {row.savedQuestion ? (
-                      <label className="btn-press inline-flex cursor-pointer items-center justify-center gap-2 rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-4 py-2.5 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-white">
-                        <input type="file" accept="image/*" className="hidden" onChange={(event) => uploadPageForQuestion(row.questionKey, event.target.files?.[0] ?? null, row.savedQuestion?.questionNumber, row.savedQuestion?.questionPartNumber ?? null)} />
-                        <FileUp className="h-4 w-4" />
-                        <span>{isPending ? "Uploading..." : "Upload page"}</span>
-                      </label>
-                    ) : null}
-                    {row.pages[0] ? (
-                      <button type="button" onClick={() => runOcr(row.questionKey)} disabled={ocrLoadingKey === row.questionKey} className="btn-press inline-flex items-center justify-center gap-2 rounded-full border border-[#1a2e1a]/10 bg-[#faf8f3] px-4 py-2.5 text-[0.8rem] font-medium text-[#1a2e1a] hover:bg-white disabled:opacity-60">
-                        <ScanText className="h-4 w-4" />
-                        <span>{ocrLoadingKey === row.questionKey ? "Running OCR..." : row.response ? "Refresh OCR" : "Run OCR"}</span>
-                      </button>
-                    ) : null}
-                    {row.savedQuestion && row.response ? (
-                      <button type="button" onClick={() => autoScore(row.questionKey)} disabled={autoScoreLoadingKey === row.questionKey} className="btn-press inline-flex items-center justify-center gap-2 rounded-full bg-[#1a2e1a] px-4 py-2.5 text-[0.8rem] font-semibold text-white disabled:opacity-60">
-                        <Sparkles className="h-4 w-4" />
-                        <span>{autoScoreLoadingKey === row.questionKey ? "Auto-scoring..." : "Auto-score"}</span>
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-
-                <div className="mt-5 grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-                  <div className="space-y-3">
-                    {row.pages.length > 0 ? row.pages.map((page) => (
-                      <div key={page._id} className="overflow-hidden rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-[#faf9f6]">
-                        <div className="relative aspect-[4/5] bg-[#f1eee6]">
-                          <Image src={page.sourceImageUrl} alt={page.fileName} fill className="object-cover" sizes="320px" unoptimized />
-                        </div>
-                        <div className="px-3 py-2 text-[0.74rem] text-[#3d5a3f]/55">{page.pageLabel || page.fileName}</div>
-                      </div>
-                    )) : (
-                      <div className="rounded-[1.2rem] border border-dashed border-[#1a2e1a]/10 bg-[#faf8f3] px-4 py-8 text-center text-[0.82rem] text-[#3d5a3f]/55">No response page uploaded for this question yet.</div>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#faf8f3_0%,#fffdf8_100%)] p-4">
-                      <div className="text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm">Source prompt</div>
-                      <MathRichText text={row.savedQuestion?.promptText || "Question source text is not linked for this row yet."} className="mt-3 text-[0.88rem] leading-[1.7] text-[#1a2e1a]/78" />
-                      {row.savedQuestion?.contextText ? <MathRichText text={row.savedQuestion.contextText} className="mt-3 text-[0.82rem] leading-[1.6] text-[#3d5a3f]/60" /> : null}
-                    </div>
-
-                    <div className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#faf8f3_0%,#fffdf8_100%)] p-4">
-                      <div className="flex items-center gap-2 text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm"><Brain className="h-4 w-4" /> OCR transcript</div>
-                      <MathRichText text={row.response?.ocrText || "Run OCR to extract the student’s answer text for this question."} className="mt-3 text-[0.88rem] leading-[1.7] text-[#1a2e1a]/78" />
-                    </div>
-
-                    <div className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#faf8f3_0%,#fffdf8_100%)] p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm">Relevant mark scheme</div>
-                        {scoreEvidence?.markScheme?.markSchemeUrl || row.combinedMarkScheme?.markScheme.markSchemeUrl ? (
-                          <a href={scoreEvidence?.markScheme?.markSchemeUrl || row.combinedMarkScheme?.markScheme.markSchemeUrl} target="_blank" rel="noreferrer" className="text-[0.76rem] font-medium text-[#1a2e1a]/65 underline">Open PDF</a>
-                        ) : null}
-                      </div>
-                      {(scoreEvidence?.markScheme?.pageNumbers || row.combinedMarkScheme?.markScheme.pageNumbers) ? (
-                        <p className="mt-2 text-[0.72rem] uppercase tracking-[0.12em] text-[#3d5a3f]/45">Pages {(scoreEvidence?.markScheme?.pageNumbers || row.combinedMarkScheme?.markScheme.pageNumbers || []).join(", ")}</p>
-                      ) : null}
-                      <MathRichText text={markSchemePreview || "Load the combined mark scheme or auto-score this question to populate the exact mark scheme slice used for grading."} className="mt-3 text-[0.84rem] leading-[1.65] text-[#1a2e1a]/78" />
-                    </div>
-
-                    <form key={`${row.questionKey}-${row.score?.updatedAt ?? "empty"}`} action={(formData) => saveScore(row.questionKey, formData)} className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-[0_6px_18px_rgba(26,46,26,0.03)]">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm">Score decision</p>
-                          <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/58">Adjust the score manually or keep the model’s result and rationale.</p>
-                        </div>
-                        {row.score?.scoreStatus === "confirmed" ? <div className="rounded-full bg-[#f4f7f1] px-3 py-1.5 text-[0.76rem] font-medium text-[#3f6d44]">Saved</div> : row.score?.scoreStatus === "ai_suggested" ? <div className="rounded-full bg-[#eef4fb] px-3 py-1.5 text-[0.76rem] font-medium text-[#486781]">AI suggestion</div> : null}
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        <input name={`awarded-${row.questionKey}`} defaultValue={row.score?.awardedMarks ?? ""} placeholder="Awarded" type="number" min={0} className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
-                        <input name={`max-${row.questionKey}`} defaultValue={row.score?.maxMarks ?? row.savedQuestion?.totalMarks ?? ""} placeholder="Max" type="number" min={0} className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
-                        <input name={`confidence-${row.questionKey}`} defaultValue={row.score?.confidence ?? ""} placeholder="Confidence" type="number" min={0} max={1} step="0.05" className="rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] outline-none focus:border-accent/35" />
-                      </div>
-                      <textarea name={`rationale-${row.questionKey}`} defaultValue={row.score?.rationale ?? ""} placeholder="Why this mark was awarded or why it needs review. LaTeX supported, e.g. $x^2 + 3x$." className="mt-3 min-h-[110px] w-full rounded-xl border border-[#1a2e1a]/[0.08] bg-[#faf9f6] px-4 py-3 text-[0.88rem] leading-[1.6] outline-none focus:border-accent/35" />
-                      <label className="mt-3 flex items-center gap-2 text-[0.82rem] text-[#1a2e1a]/70">
-                        <input type="checkbox" name={`review-${row.questionKey}`} defaultChecked={row.score?.needsReview === true} />
-                        Flag for review
-                      </label>
-                      <button type="submit" disabled={scoreLoadingKey === row.questionKey} className="btn-press mt-4 inline-flex items-center gap-2 rounded-full bg-[#1a2e1a] px-4 py-2.5 text-[0.82rem] font-semibold text-white disabled:opacity-60">
-                        <CheckCircle2 className="h-4 w-4" />
-                        <span>{scoreLoadingKey === row.questionKey ? "Saving..." : "Save score"}</span>
-                      </button>
-                    </form>
-
-                    {scoreEvidence?.markBreakdown && scoreEvidence.markBreakdown.length > 0 ? (
-                      <div className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-[0_6px_18px_rgba(26,46,26,0.03)]">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm">Auto-score breakdown</p>
-                            <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/58">A clearer view of what the model believed it awarded or withheld.</p>
-                          </div>
-                        </div>
-                        <div className="mt-3 space-y-2">
-                          {scoreEvidence.markBreakdown.map((entry, index) => (
-                            <div key={`${row.questionKey}-${index}`} className="rounded-xl bg-[#faf8f3] px-3 py-3 text-[0.82rem] text-[#1a2e1a]/78">
-                              <p className="font-medium text-[#1a2e1a]">{entry.criterion} · <span className={entry.awarded ? "text-[#3f6d44]" : "text-[#9a5a2c]"}>{entry.awarded ? "awarded" : "not awarded"}</span></p>
-                              <MathRichText text={entry.evidence ?? ""} className="mt-1 text-[#3d5a3f]/60" />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-
-                    {row.score?.rationale ? (
-                      <div className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-white p-4 shadow-[0_6px_18px_rgba(26,46,26,0.03)]">
-                        <div className="text-[0.76rem] uppercase tracking-[0.14em] text-accent-warm">Saved rationale</div>
-                        <MathRichText text={row.score.rationale} className="mt-3 text-[0.84rem] leading-[1.65] text-[#1a2e1a]/78" />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </section>
-            );
-          })}
+          </aside>
+          <div className="min-w-0 py-3 xl:pl-4">
+            <ActiveQuestionPanel
+              key={`${activeRow.questionKey}-${activeRow.score?.updatedAt ?? "empty"}`}
+              row={activeRow}
+              nextQuestion={nextQuestion}
+              previousQuestion={previousQuestion}
+              isPending={isPending}
+              pageLabel={pageLabel}
+              setPageLabel={setPageLabel}
+              uploadPageForQuestion={uploadPageForQuestion}
+              runOcr={runOcr}
+              ocrLoadingKey={ocrLoadingKey}
+              autoScore={autoScore}
+              autoScoreLoadingKey={autoScoreLoadingKey}
+              scoreLoadingKey={scoreLoadingKey}
+              saveScore={saveScore}
+              activeMarkSchemeEntry={activeMarkSchemeEntry}
+              activeMarkSchemePreview={activeMarkSchemePreview}
+              activeMarkSchemeUrl={activeMarkSchemeUrl}
+              activeMarkSchemePages={activeMarkSchemePages}
+              activeTopicLabel={activeTopicLabel}
+              activeTopicIds={activeRow.savedQuestion?.canonicalLeafIds ?? []}
+              subjectKey={initialBundle.submission.subjectKey}
+              setSelectedQuestionKey={setSelectedQuestionKey}
+              showFeedback={showFeedback}
+            />
+          </div>
         </div>
-      </section>
+      ) : null}
     </div>
+  );
+}
+
+function ActiveQuestionPanel({
+  row,
+  nextQuestion,
+  previousQuestion,
+  isPending,
+  pageLabel,
+  setPageLabel,
+  uploadPageForQuestion,
+  runOcr,
+  ocrLoadingKey,
+  autoScore,
+  autoScoreLoadingKey,
+  scoreLoadingKey,
+  saveScore,
+  activeMarkSchemeEntry,
+  activeMarkSchemePreview,
+  activeMarkSchemeUrl,
+  activeMarkSchemePages,
+  activeTopicLabel,
+  activeTopicIds,
+  subjectKey,
+  setSelectedQuestionKey,
+  showFeedback,
+}: {
+  row: QuestionRow;
+  nextQuestion: QuestionRow | null;
+  previousQuestion: QuestionRow | null;
+  isPending: boolean;
+  pageLabel: string;
+  setPageLabel: (value: string) => void;
+  uploadPageForQuestion: (questionKey: string, file: File | null, questionNumberOverride?: string, questionPartNumberOverride?: string | null) => void;
+  runOcr: (questionKey: string) => Promise<void>;
+  ocrLoadingKey: string | null;
+  autoScore: (questionKey: string) => Promise<void>;
+  autoScoreLoadingKey: string | null;
+  scoreLoadingKey: string | null;
+  saveScore: (questionKey: string, formData: FormData) => Promise<void>;
+  activeMarkSchemeEntry: CombinedMarkSchemeEntry | null;
+  activeMarkSchemePreview: string | null;
+  activeMarkSchemeUrl: string | undefined;
+  activeMarkSchemePages: number[] | undefined;
+  activeTopicLabel?: string;
+  activeTopicIds: string[];
+  subjectKey: string;
+  setSelectedQuestionKey: (questionKey: string) => void;
+  showFeedback: (scope: FeedbackScope) => React.ReactNode;
+}) {
+  const state = getQuestionState(row);
+  const scoreEvidence = parseScoreEvidence(row.score?.evidenceJson);
+  const initialMaximum = row.score?.maxMarks ?? row.savedQuestion?.totalMarks ?? 0;
+  const [maximum, setMaximum] = useState(initialMaximum);
+  const [awarded, setAwarded] = useState(Math.min(row.score?.awardedMarks ?? 0, initialMaximum));
+  const missingEvidence = scoreEvidence?.markBreakdown?.filter((entry) => !entry.awarded && (entry.criterion || entry.evidence)) ?? [];
+  const updateMaximum = (value: number) => {
+    const nextMaximum = Math.max(0, value);
+    setMaximum(nextMaximum);
+    setAwarded((current) => Math.min(current, nextMaximum));
+  };
+  return (
+    <section aria-labelledby="active-question-title">
+      <h2 id="active-question-title" className="sr-only">{formatQuestionLabel({ displayOrder: row.savedQuestion?.displayOrder, questionNumber: row.savedQuestion?.questionNumber, questionPartNumber: row.savedQuestion?.questionPartNumber, questionPath: row.savedQuestion?.questionPath, questionKey: row.questionKey })}</h2>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="flex flex-wrap items-center gap-2"><span className={`border px-2 py-1 text-[0.75rem] font-semibold ${statusToneClass(getQuestionStateTone(state))}`}>{getQuestionStateLabel(state)}</span>{row.questionStatus?.failureReason ? <p className="text-[0.875rem] text-danger">{row.questionStatus.failureReason}</p> : null}</div><div className="flex flex-wrap gap-2">{row.savedQuestion ? <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 border border-text/15 bg-white px-3 text-[0.875rem] font-semibold text-text-secondary"><input type="file" accept="image/*" className="sr-only" onChange={(event) => uploadPageForQuestion(row.questionKey, event.target.files?.[0] ?? null, row.savedQuestion?.questionNumber, row.savedQuestion?.questionPartNumber ?? null)} /><FileUp className="h-4 w-4" />{isPending ? "Uploading..." : "Upload page"}</label> : null}{row.pages[0] ? <button type="button" onClick={() => void runOcr(row.questionKey)} disabled={ocrLoadingKey === row.questionKey} className="inline-flex min-h-10 items-center gap-2 border border-text/15 bg-white px-3 text-[0.875rem] font-semibold text-accent disabled:opacity-45"><RotateCcw className="h-4 w-4" />{ocrLoadingKey === row.questionKey ? "Running OCR..." : row.response ? "Refresh OCR" : "Run OCR"}</button> : null}{row.savedQuestion && row.response ? <button type="button" onClick={() => void autoScore(row.questionKey)} disabled={autoScoreLoadingKey === row.questionKey} className="inline-flex min-h-10 items-center gap-2 bg-accent px-3 text-[0.875rem] font-semibold text-white disabled:opacity-45"><Sparkles className="h-4 w-4" />{autoScoreLoadingKey === row.questionKey ? "Scoring..." : "Auto-score"}</button> : null}</div></div>
+      {showFeedback("upload") || showFeedback("ocr") || showFeedback("score") ? <div className="mt-3 space-y-2">{showFeedback("upload")}{showFeedback("ocr")}{showFeedback("score")}</div> : null}
+
+      <div className="mt-3 grid border border-text/15 bg-bg-elevated xl:grid-cols-[minmax(0,52fr)_minmax(18rem,28fr)_minmax(17rem,20fr)]">
+        <section aria-labelledby="response-heading" className="min-w-0 border-b border-text/15 xl:border-b-0 xl:border-r">
+          <div className="flex min-h-14 items-center justify-between border-b border-text/10 px-4"><h3 id="response-heading" className="text-[1.05rem] font-bold text-text">Your response</h3><span className="text-[0.8rem] text-text-muted">{row.pages.length} page{row.pages.length === 1 ? "" : "s"}</span></div>
+          <div className="max-h-[52vh] overflow-y-auto p-4">
+            {row.pages.length > 0 ? <div className="space-y-4">{row.pages.map((page) => <figure key={page._id} className="border border-text/10 bg-bg-soft"><div className="relative min-h-[18rem] h-[42vh] max-h-[32rem] bg-[#f1eee6] p-2"><Image src={page.sourceImageUrl} alt={page.fileName} fill className="object-contain p-2" sizes="(max-width: 1280px) 100vw, 52vw" unoptimized /></div><figcaption className="flex items-center justify-between gap-3 border-t border-text/10 px-3 py-2 text-[0.8rem] text-text-muted"><span className="truncate">{page.pageLabel || page.fileName}</span><a href={page.sourceImageUrl} target="_blank" rel="noreferrer" className="inline-flex shrink-0 items-center gap-1 font-semibold text-accent">Open full size <ExternalLink className="h-3.5 w-3.5" /></a></figcaption></figure>)}</div> : <div className="flex min-h-48 items-center justify-center border border-dashed border-text/20 bg-bg-soft px-5 text-center text-[0.9rem] text-text-muted">No response page uploaded for this question.</div>}
+            <details className="mt-3"><summary className="cursor-pointer text-[0.8rem] font-semibold text-text-muted">Set label for the next upload</summary><label className="mt-2 flex items-center gap-2 text-[0.8rem] font-semibold text-text-secondary">Page label<input value={pageLabel} onChange={(event) => setPageLabel(event.target.value)} placeholder="Optional" className="min-w-0 flex-1 border border-text/15 bg-white px-3 py-2 text-[0.875rem] font-normal text-text outline-none focus:border-accent" /></label></details>
+          </div>
+          <div className="border-t border-text/10 px-4 py-4"><p className="text-[0.8rem] font-bold uppercase tracking-[0.08em] text-text-muted">Question</p><MathRichText text={row.savedQuestion?.promptText || "Question source text is not linked for this row yet."} className="mt-2 text-[0.95rem] leading-6 text-text-secondary" />{row.savedQuestion?.contextText ? <MathRichText text={row.savedQuestion.contextText} className="mt-2 text-[0.875rem] leading-6 text-text-muted" /> : null}</div>
+          <div className="border-t border-text/10 px-4 py-4"><p className="flex items-center gap-2 text-[0.8rem] font-bold uppercase tracking-[0.08em] text-info"><ScanText className="h-4 w-4" /> OCR transcript</p><MathRichText text={row.response?.ocrText || "Run OCR to extract the student answer text."} className="mt-2 whitespace-pre-line text-[0.95rem] leading-7 text-text-secondary" /></div>
+        </section>
+
+        <section aria-labelledby="scheme-heading" className="min-w-0 border-b border-text/15 xl:border-b-0 xl:border-r">
+          <div className="flex min-h-14 items-center justify-between border-b border-text/10 px-4"><h3 id="scheme-heading" className="text-[1.05rem] font-bold text-text">Official mark scheme</h3>{activeMarkSchemeUrl ? <a href={activeMarkSchemeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[0.8rem] font-semibold text-accent">Open PDF <ExternalLink className="h-3.5 w-3.5" /></a> : null}</div>
+          <div className="max-h-[calc(100vh-19rem)] overflow-y-auto p-4"><div className="border-l-2 border-success/35 bg-success-soft/35 px-4 py-3">{activeMarkSchemeEntry ? <p className="mb-2 text-[0.8rem] font-semibold text-success">{activeMarkSchemeEntry.label}{activeMarkSchemePages ? ` · pages ${activeMarkSchemePages.join(", ")}` : ""}</p> : null}<MathRichText text={activeMarkSchemePreview || "Load the mark scheme or auto-score this question to see the exact scheme slice."} className="text-[0.95rem] leading-6 text-text-secondary" /></div>
+          {scoreEvidence?.markBreakdown && scoreEvidence.markBreakdown.length > 0 ? <div className="mt-4 border-t border-text/15 pt-4"><h4 className="text-[0.95rem] font-bold text-text">What the answer earned</h4><div className="mt-3 space-y-3">{scoreEvidence.markBreakdown.map((entry, index) => <div key={`${row.questionKey}-${index}`} className="grid grid-cols-[1.25rem_1fr] gap-2 text-[0.875rem] leading-5"><span className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full ${entry.awarded ? "bg-success text-white" : "bg-warning text-white"}`}>{entry.awarded ? <Check className="h-3.5 w-3.5" /> : <Minus className="h-3.5 w-3.5" />}</span><div><p className="font-semibold text-text">{entry.criterion || (entry.awarded ? "Mark awarded" : "Mark missing")}</p>{entry.evidence ? <MathRichText text={entry.evidence} className="mt-0.5 text-text-muted" /> : null}</div></div>)}</div></div> : <p className="mt-4 border-t border-text/15 pt-4 text-[0.875rem] leading-6 text-text-muted">Auto-score to compare the response against each marking point.</p>}</div>
+        </section>
+
+        <aside aria-labelledby="score-heading" className="min-w-0 bg-bg-elevated">
+          <form action={(formData) => void saveScore(row.questionKey, formData)} className="sticky top-3 p-4">
+            <div className="flex items-start justify-between gap-2"><div><h3 id="score-heading" className="text-[1.05rem] font-bold text-text">Confirm the score</h3><p className="mt-1 text-[0.8rem] text-text-muted">Review and save this decision.</p></div>{row.score ? <span className={`border px-2 py-1 text-[0.72rem] font-semibold ${row.score.scoreStatus === "confirmed" ? statusToneClass("confirmed") : statusToneClass("active")}`}>{row.score.scoreStatus === "confirmed" ? "Saved" : "AI suggestion"}</span> : null}</div>
+            <div className="mt-8 flex items-center justify-center gap-3"><button type="button" onClick={() => setAwarded((current) => Math.max(0, current - 1))} disabled={awarded <= 0} aria-label="Decrease awarded marks" className="flex h-12 w-12 items-center justify-center border border-text/25 bg-white text-text disabled:opacity-35"><Minus className="h-5 w-5" /></button><label className="sr-only" htmlFor={`awarded-${row.questionKey}`}>Awarded marks</label><input id={`awarded-${row.questionKey}`} name={`awarded-${row.questionKey}`} value={awarded} onChange={(event) => setAwarded(Math.min(maximum, Math.max(0, Number(event.target.value))))} type="number" min={0} max={maximum} className="w-16 bg-transparent text-center font-mono text-[3.5rem] font-bold leading-none text-text outline-none" /><span className="text-[1.75rem] text-text-muted">/</span><label className="sr-only" htmlFor={`max-${row.questionKey}`}>Maximum marks</label><input id={`max-${row.questionKey}`} name={`max-${row.questionKey}`} value={maximum} onChange={(event) => updateMaximum(Number(event.target.value))} type="number" min={0} className="w-12 bg-transparent text-center font-mono text-[1.75rem] text-text-muted outline-none" /><button type="button" onClick={() => setAwarded((current) => Math.min(maximum, current + 1))} disabled={awarded >= maximum} aria-label="Increase awarded marks" className="flex h-12 w-12 items-center justify-center border border-text/25 bg-white text-text disabled:opacity-35"><Plus className="h-5 w-5" /></button></div>
+            <label className="mt-6 block text-[0.875rem] font-semibold text-text-secondary">Confidence<input name={`confidence-${row.questionKey}`} defaultValue={row.score?.confidence ?? 0.5} type="number" min={0} max={1} step="0.05" className="mt-1.5 w-full border border-text/15 bg-bg-soft px-3 py-2.5 font-mono text-[0.875rem] text-text outline-none focus:border-accent" /></label>
+            <label className="mt-4 block text-[0.875rem] font-semibold text-text-secondary">Rationale<textarea name={`rationale-${row.questionKey}`} defaultValue={row.score?.rationale ?? ""} placeholder="Explain what earned the mark or needs checking." className="mt-1.5 min-h-28 w-full resize-y border border-text/15 bg-bg-soft px-3 py-2.5 text-[0.9rem] leading-6 text-text outline-none focus:border-accent" /></label>
+            <label className="mt-4 flex min-h-11 items-center gap-3 text-[0.875rem] font-semibold text-text-secondary"><input type="checkbox" name={`review-${row.questionKey}`} defaultChecked={row.score?.needsReview === true} className="ui-checkbox shrink-0" />Needs another look</label>
+            <button type="submit" disabled={scoreLoadingKey === row.questionKey} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 bg-accent px-4 text-[0.95rem] font-bold text-white hover:bg-accent-deep disabled:opacity-60"><CheckCircle2 className="h-5 w-5" />{scoreLoadingKey === row.questionKey ? "Saving..." : `Confirm ${awarded} mark${awarded === 1 ? "" : "s"}`}</button>
+            {nextQuestion ? <button type="submit" name="saveAction" value="next" disabled={scoreLoadingKey === row.questionKey} className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-1 text-[0.9rem] font-semibold text-accent disabled:opacity-60">Save and next question <ChevronRight className="h-4 w-4" /></button> : null}
+          </form>
+        </aside>
+      </div>
+
+      {missingEvidence.length > 0 ? <section className="grid gap-3 border-x border-b border-success/20 bg-success-soft/35 px-5 py-4 sm:grid-cols-[1fr_auto] sm:items-center" aria-labelledby="practice-heading"><div><h3 id="practice-heading" className="text-[0.95rem] font-bold text-text">Turn the missing point into practice</h3><p className="mt-1 text-[0.875rem] text-text-muted">{activeTopicLabel ? `${activeTopicLabel}: ` : ""}{missingEvidence[0].criterion || "Review the missing marking point in your next paper."}</p></div><Link href={`/paper-maker?subject=${encodeURIComponent(subjectKey)}${activeTopicIds.length ? `&topics=${encodeURIComponent(activeTopicIds.join(","))}` : ""}`} className="inline-flex min-h-11 items-center justify-center bg-accent-warm px-4 text-[0.8rem] font-bold text-text hover:bg-accent-warm-deep hover:text-white">Build a focused paper</Link></section> : null}
+
+      <nav className="flex items-center justify-between gap-3 border-t border-text/10 pt-4" aria-label="Question navigation"><button type="button" onClick={() => previousQuestion && setSelectedQuestionKey(previousQuestion.questionKey)} disabled={!previousQuestion} className="inline-flex min-h-11 items-center gap-2 border border-text/15 bg-white px-3 text-[0.875rem] font-semibold text-text-secondary disabled:opacity-40"><ChevronLeft className="h-4 w-4" /> Previous</button><span className="hidden text-[0.8rem] text-text-muted sm:inline">{row.savedQuestion?.paperCode || "Manual question"}</span><button type="button" onClick={() => nextQuestion && setSelectedQuestionKey(nextQuestion.questionKey)} disabled={!nextQuestion} className="inline-flex min-h-11 items-center gap-2 bg-accent px-3 text-[0.875rem] font-semibold text-white disabled:opacity-40">Next <ChevronRight className="h-4 w-4" /></button></nav>
+    </section>
   );
 }

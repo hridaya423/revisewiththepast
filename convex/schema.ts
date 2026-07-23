@@ -434,6 +434,8 @@ export default defineSchema({
     contextText: v.optional(v.union(v.string(), v.null())),
     questionType: v.optional(v.union(v.string(), v.null())),
     isChoiceQuestion: v.optional(v.boolean()),
+    canonicalLeafIds: v.optional(v.array(v.string())),
+    topicLabels: v.optional(v.array(v.string())),
     createdAt: v.number(),
   })
     .index("by_saved_paper", ["savedPaperId"])

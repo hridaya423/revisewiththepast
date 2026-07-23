@@ -1,259 +1,257 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
-import { ArrowRight, Clock3, FolderOpen, ShieldCheck, Sparkles } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { ArrowRight, ArrowUpRight, Check, ChevronRight, FileText, Loader2, Plus, Upload } from "lucide-react";
+
+import { OperationNotice } from "@/app/_components/marking/presentation";
+import { QuestionProgressRail, type QuestionProgressItem } from "@/app/_components/marking/question-progress";
 
 type SubmissionSummary = {
   _id: string;
   subjectKey: string;
+  subjectSlug: string;
+  boardCode: string;
   savedPaperId?: string;
   savedPaperTitle?: string | null;
+  savedPaperPdfUrl?: string | null;
+  savedPaperQuestionCount: number;
   studentLabel?: string;
   paperCode?: string;
-  tier?: "none" | "foundation" | "higher";
   status: "uploaded" | "ocr_complete" | "scored" | "review_required";
   updatedAt: number;
   uploadedPageCount: number;
-  scoredCount: number;
-  totalAwardedMarks: number;
-  totalMaxMarks: number;
+  confirmedCount: number;
+  aiSuggestedCount: number;
+  confirmedAwardedMarks: number;
+  confirmedMaxMarks: number;
+  paperMaxMarks: number;
   reviewRequiredCount: number;
+  questionProgress: QuestionProgressItem[];
+  gapTopics: Array<{ label: string; missedMarks: number }>;
 };
 
 type SavedPaperSummary = {
   _id: string;
   title: string;
   pdfUrl: string;
-  pdfFileName: string;
   questionCount: number;
   totalMarks: number;
   timeMinutes: number;
   updatedAt: number;
 };
 
-function formatStatus(status: SubmissionSummary["status"]) {
-  if (status === "uploaded") return "Uploaded";
-  if (status === "ocr_complete") return "OCR complete";
-  if (status === "review_required") return "Needs review";
-  return "Scored";
-}
-
 function formatDate(timestamp: number) {
-  return new Date(timestamp).toLocaleDateString(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  const date = new Date(timestamp);
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "Recently";
 }
 
-export function MarkingDashboard({
-  initialSavedPapers,
-  initialSubmissions,
-  userName,
-}: {
-  initialSavedPapers: SavedPaperSummary[];
-  initialSubmissions: SubmissionSummary[];
-  userName: string;
-}) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+function paperStatus(attempt?: SubmissionSummary) {
+  if (!attempt) return { label: "Not started", dot: "bg-text-subtle" };
+  if (attempt.reviewRequiredCount > 0 || attempt.status === "review_required") return { label: "Needs review", dot: "bg-warning" };
+  if (attempt.confirmedCount >= attempt.savedPaperQuestionCount && attempt.savedPaperQuestionCount > 0) return { label: "Marked", dot: "bg-success" };
+  return { label: "In progress", dot: "bg-accent-warm-deep" };
+}
 
-  const importFinishedPdf = (file: File | null) => {
+function currentQuestionLabel(submission: SubmissionSummary) {
+  return submission.questionProgress?.find((item) => item.state === "current")?.label;
+}
+
+function PaperThumbnail({ submission }: { submission: SubmissionSummary }) {
+  return (
+    <a
+      href={submission.savedPaperPdfUrl ?? undefined}
+      target={submission.savedPaperPdfUrl ? "_blank" : undefined}
+      rel="noreferrer"
+      className="group relative block min-h-64 overflow-hidden rounded-sm border border-text/15 bg-white shadow-[0_12px_30px_var(--shadow-lg)]"
+      aria-label={submission.savedPaperPdfUrl ? "Open saved paper PDF" : "Paper preview"}
+    >
+      {submission.savedPaperPdfUrl ? (
+        <iframe
+          src={`${submission.savedPaperPdfUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0`}
+          title="Saved paper preview"
+          loading="lazy"
+          tabIndex={-1}
+          className="pointer-events-none absolute inset-0 h-full w-full bg-white"
+        />
+      ) : (
+        <div className="absolute inset-0 p-8">
+          <div className="flex justify-between border-b border-text/25 pb-3 font-serif text-[0.6rem] text-text"><span>{(submission.subjectSlug || "GCSE").toUpperCase()}</span><span>{submission.paperCode ?? "REVISION PAPER"}</span></div>
+          <div className="mt-7 space-y-5">
+            {["w-11/12", "w-4/5", "w-full", "w-3/4"].map((width, index) => <div key={width} className="flex gap-4"><span className="font-serif text-xs">{index + 1}</span><div className="flex-1 space-y-2"><div className={`h-px bg-text/30 ${width}`} /><div className="h-px w-full bg-text/15" /><div className="h-px w-5/6 bg-text/15" /></div></div>)}
+          </div>
+        </div>
+      )}
+      <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-sm border border-success/20 bg-success-soft/90 px-2 py-1 text-[0.58rem] font-bold text-success backdrop-blur-sm"><Check className="h-3 w-3" /> Paper ready</span>
+    </a>
+  );
+}
+
+export function MarkingDashboard({ initialSavedPapers, initialSubmissions, userName, initialLoadError = null }: { initialSavedPapers: SavedPaperSummary[]; initialSubmissions: SubmissionSummary[]; userName: string; initialLoadError?: string | null }) {
+  const router = useRouter();
+  const [importState, setImportState] = useState<"idle" | "processing">("idle");
+  const [startingPaperIds, setStartingPaperIds] = useState<Set<string>>(() => new Set());
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(initialLoadError);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const sortedSubmissions = useMemo(() => [...initialSubmissions].sort((left, right) => right.updatedAt - left.updatedAt), [initialSubmissions]);
+  const featuredSubmission = sortedSubmissions[0] ?? null;
+  const submissionsBySavedPaperId = useMemo(() => {
+    const grouped = new Map<string, SubmissionSummary[]>();
+    for (const submission of sortedSubmissions) {
+      if (!submission.savedPaperId) continue;
+      grouped.set(submission.savedPaperId, [...(grouped.get(submission.savedPaperId) ?? []), submission]);
+    }
+    return grouped;
+  }, [sortedSubmissions]);
+  const gapTopics = useMemo(() => {
+    const missedByLabel = new Map<string, number>();
+    for (const submission of sortedSubmissions) {
+      for (const topic of submission.gapTopics ?? []) missedByLabel.set(topic.label, (missedByLabel.get(topic.label) ?? 0) + topic.missedMarks);
+    }
+    return Array.from(missedByLabel).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])).map(([label, missedMarks]) => ({ label, missedMarks }));
+  }, [sortedSubmissions]);
+
+  const importFinishedPdf = async (file: File | null) => {
     if (!file) return;
-    setError(null);
-    startTransition(async () => {
+    setImportError(null);
+    setImportState("processing");
+    try {
       const formData = new FormData();
       formData.append("file", file);
-
-      const response = await fetch("/api/marking/import-finished-paper", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        setError(await response.text() || "Could not import the finished paper PDF.");
-        return;
-      }
-
+      const response = await fetch("/api/marking/import-finished-paper", { method: "POST", body: formData });
+      if (!response.ok) throw new Error(await response.text() || "Could not import the finished paper PDF.");
       const payload = await response.json() as { submissionId: string };
       router.push(`/marking/${payload.submissionId}`);
       router.refresh();
-    });
-  };
-
-  const submissionsBySavedPaperId = useMemo(() => {
-    const grouped = new Map<string, SubmissionSummary[]>();
-    for (const submission of initialSubmissions) {
-      if (!submission.savedPaperId) continue;
-      const existing = grouped.get(submission.savedPaperId) ?? [];
-      existing.push(submission);
-      grouped.set(submission.savedPaperId, existing);
+    } catch (cause) {
+      setImportError(cause instanceof Error ? cause.message : "Could not import the finished paper PDF.");
+    } finally {
+      setImportState("idle");
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
-    return grouped;
-  }, [initialSubmissions]);
-
-  const linkedSubmissions = useMemo(
-    () => initialSubmissions.filter((submission) => Boolean(submission.savedPaperId)),
-    [initialSubmissions],
-  );
-
-  const legacySubmissions = useMemo(
-    () => initialSubmissions.filter((submission) => !submission.savedPaperId),
-    [initialSubmissions],
-  );
-
-  const stats = useMemo(() => {
-    return {
-      savedPapers: initialSavedPapers.length,
-      readyToMark: initialSavedPapers.filter((paper) => !(submissionsBySavedPaperId.get(paper._id)?.length)).length,
-      activeSubmissions: linkedSubmissions.length,
-      needsReview: initialSubmissions.filter((item) => item.reviewRequiredCount > 0 || item.status === "review_required").length,
-    };
-  }, [initialSavedPapers, initialSubmissions, linkedSubmissions.length, submissionsBySavedPaperId]);
-
-  const startMarkingFromSavedPaper = (savedPaperId: string) => {
-    setError(null);
-    startTransition(async () => {
-      router.push(`/marking/start/${savedPaperId}`);
-      router.refresh();
-    });
   };
+
+  const openSavedPaper = async (savedPaperId: string, createNew = false) => {
+    const latestAttempt = submissionsBySavedPaperId.get(savedPaperId)?.[0];
+    if (latestAttempt && !createNew) {
+      router.push(`/marking/${latestAttempt._id}`);
+      return;
+    }
+    setActionError(null);
+    setStartingPaperIds((current) => new Set(current).add(savedPaperId));
+    try {
+      const response = await fetch("/api/marking/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ savedPaperId }) });
+      if (!response.ok) throw new Error(await response.text() || "Could not start marking this paper.");
+      const payload = await response.json() as { submissionId: string };
+      router.push(`/marking/${payload.submissionId}`);
+    } catch (cause) {
+      setActionError(cause instanceof Error ? cause.message : "Could not start marking this paper.");
+    } finally {
+      setStartingPaperIds((current) => {
+        const next = new Set(current);
+        next.delete(savedPaperId);
+        return next;
+      });
+    }
+  };
+
+  const triggerImport = () => fileInputRef.current?.click();
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[#1a2e1a]/[0.06] bg-[radial-gradient(circle_at_top_left,rgba(90,138,92,0.12),transparent_34%),linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-8 shadow-[0_10px_40px_rgba(26,46,26,0.05)] sm:p-10">
-        <div className="absolute inset-y-0 right-0 hidden w-[32%] border-l border-[#1a2e1a]/[0.04] bg-[linear-gradient(180deg,rgba(26,46,26,0.02),rgba(26,46,26,0.00))] lg:block" />
-        <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_360px] lg:items-end">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#1a2e1a]/10 bg-white/80 px-3 py-1.5 text-[0.7rem] uppercase tracking-[0.2em] text-accent-warm backdrop-blur">
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Marking Studio</span>
-            </div>
-            <h1 className="mt-5 max-w-[10ch] font-serif text-[clamp(2.3rem,5vw,3.7rem)] leading-[0.98] tracking-[-0.055em] text-[#1a2e1a]">From saved paper to marking workflow.</h1>
-            <p className="mt-4 max-w-[60ch] text-[1rem] leading-[1.75] text-[#3d5a3f]/70">{userName}, the right path here is simple: build papers while signed in, let them save automatically, then start marking directly from those saved papers so every question stays tied back to the original source paper and mark scheme.</p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            <div className="rounded-[1.25rem] border border-[#1a2e1a]/[0.06] bg-white/88 p-4 shadow-[0_8px_20px_rgba(26,46,26,0.04)] backdrop-blur">
-              <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm"><FolderOpen className="h-3.5 w-3.5" /><span>Saved papers</span></div>
-              <p className="mt-3 font-serif text-[2rem] text-[#1a2e1a]">{stats.savedPapers}</p>
-              <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/55">Papers generated while signed in and ready to be turned into marking submissions.</p>
-            </div>
-            <div className="rounded-[1.25rem] border border-[#1a2e1a]/[0.06] bg-white/88 p-4 shadow-[0_8px_20px_rgba(26,46,26,0.04)] backdrop-blur">
-              <div className="flex items-center gap-2 text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm"><ShieldCheck className="h-3.5 w-3.5" /><span>Needs review</span></div>
-              <p className="mt-3 font-serif text-[2rem] text-[#1a2e1a]">{stats.needsReview}</p>
-              <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/55">Questions the model flagged as uncertain or that were manually held back for review.</p>
-            </div>
-          </div>
+    <div className="space-y-8 pb-8">
+      <input ref={fileInputRef} type="file" accept="application/pdf" className="sr-only" disabled={importState === "processing"} onChange={(event) => void importFinishedPdf(event.target.files?.[0] ?? null)} />
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-[clamp(2rem,5vw,3.35rem)] font-extrabold leading-none tracking-[-0.055em] text-text">Mark your papers</h1>
+          <p className="mt-3 text-[0.88rem] text-text-secondary">Keep every response, mark-scheme point and next step together, {userName}.</p>
         </div>
-      </section>
+        <button type="button" onClick={triggerImport} disabled={importState === "processing"} className="btn-press inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-sm border border-accent bg-bg-elevated px-5 text-[0.76rem] font-bold text-accent hover:bg-accent-soft disabled:opacity-55">
+          {importState === "processing" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+          {importState === "processing" ? "Reading paper" : "Import a finished paper"}
+        </button>
+      </header>
 
-      <section className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-5">
-            <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Saved papers</p>
-            <p className="mt-2 font-serif text-[2rem] text-[#1a2e1a]">{stats.savedPapers}</p> 
-          </div>
-          <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-5">
-            <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Ready to mark</p>
-            <p className="mt-2 font-serif text-[2rem] text-[#1a2e1a]">{stats.readyToMark}</p>
-          </div>
-          <div className="rounded-[1.3rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#ffffff_0%,#fbfaf7_100%)] p-5">
-            <p className="text-[0.72rem] uppercase tracking-[0.14em] text-accent-warm">Active submissions</p>
-            <p className="mt-2 font-serif text-[2rem] text-[#1a2e1a]">{stats.activeSubmissions}</p>
-          </div>
-        </div>
+      {actionError ? <OperationNotice message={actionError} /> : null}
+      {importError ? <OperationNotice message={importError} /> : null}
+      {loadError ? <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"><OperationNotice message={loadError} /><button type="button" onClick={() => { setLoadError(null); router.refresh(); }} className="btn-press min-h-10 shrink-0 border border-danger/25 bg-white px-4 text-[0.72rem] font-bold text-danger hover:bg-danger-soft">Try loading again</button></div> : null}
 
-        <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-          <div>
-            <p className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">Fastest route</p>
-            <h2 className="mt-1 font-serif text-[1.35rem] text-[#1a2e1a]">Upload a finished paper PDF directly</h2>
-            <p className="mt-2 max-w-[60ch] text-[0.88rem] leading-[1.65] text-[#3d5a3f]/60">If you already finished a generated paper before saving it or before you had an account, upload the finished PDF here. The app will try to reconstruct the question set, extract the answers, and create a markable submission automatically.</p>
-          </div>
-          <label className="mt-5 flex cursor-pointer items-center justify-center rounded-[1rem] border border-dashed border-[#1a2e1a]/15 bg-[#f5f2ea] px-4 py-7 text-center text-[0.86rem] text-[#3d5a3f]/60 hover:border-accent/35 hover:bg-white">
-            <input type="file" accept="application/pdf" className="hidden" onChange={(event) => importFinishedPdf(event.target.files?.[0] ?? null)} />
-            {isPending ? "Importing finished paper PDF..." : "Upload finished paper PDF"}
-          </label>
-          {error ? <p className="mt-4 text-[0.8rem] text-red-700">{error}</p> : null}
-        </div>
-
-        <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">Saved papers</p>
-              <h2 className="mt-1 font-serif text-[1.35rem] text-[#1a2e1a]">Start marking from generated papers</h2>
-              <p className="mt-2 max-w-[60ch] text-[0.88rem] leading-[1.65] text-[#3d5a3f]/60">This is the preferred flow. It means the marking system already knows exactly which source paper each question came from, which is what allows proper mark scheme lookup and slicing.</p>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {initialSavedPapers.length === 0 ? (
-              <div className="rounded-[1.3rem] border border-dashed border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-10 text-center">
-                <p className="text-[0.9rem] text-[#3d5a3f]/60">No saved papers yet. Generate a paper while signed in and it will appear here automatically.</p>
-                <button type="button" onClick={() => router.push("/paper-maker")} className="btn-press mt-4 inline-flex items-center gap-2 rounded-full bg-[#1a2e1a] px-4 py-2 text-[0.8rem] font-semibold text-white">
-                  <span>Go to paper builder</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : initialSavedPapers.map((savedPaper) => {
-              const linkedSubmissions = submissionsBySavedPaperId.get(savedPaper._id) ?? [];
-
-              return (
-                <div key={savedPaper._id} className="rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#faf9f6_0%,#ffffff_100%)] px-4 py-4 shadow-[0_6px_18px_rgba(26,46,26,0.03)]">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-[#1a2e1a]">{savedPaper.title}</p>
-                      <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/55">{savedPaper.questionCount} questions · {savedPaper.totalMarks} marks · {savedPaper.timeMinutes} minutes · updated {formatDate(savedPaper.updatedAt)}</p>
-                      {linkedSubmissions.length > 0 ? (
-                        <p className="mt-1 text-[0.78rem] text-[#3d5a3f]/45">{linkedSubmissions.length} linked submission{linkedSubmissions.length === 1 ? "" : "s"}</p>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <a href={savedPaper.pdfUrl} target="_blank" rel="noreferrer" className="btn-press rounded-full border border-[#1a2e1a]/10 px-3 py-2 text-[0.78rem] font-medium text-[#1a2e1a] hover:bg-white">View PDF</a>
-                      <button type="button" onClick={() => startMarkingFromSavedPaper(savedPaper._id)} disabled={isPending} className="btn-press inline-flex items-center gap-2 rounded-full bg-[#1a2e1a] px-4 py-2 text-[0.78rem] font-semibold text-white disabled:opacity-60">
-                        <span>{linkedSubmissions.length > 0 ? "Mark another attempt" : "Mark this paper"}</span>
-                        <ArrowRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="rounded-[1.6rem] border border-[#1a2e1a]/[0.06] bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[0.72rem] uppercase tracking-[0.16em] text-accent-warm">In progress</p>
-              <h2 className="mt-1 font-serif text-[1.35rem] text-[#1a2e1a]">Continue marking</h2>
-            </div>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {linkedSubmissions.length === 0 ? (
-              <div className="rounded-[1.3rem] border border-dashed border-[#1a2e1a]/10 bg-[#faf8f3] px-5 py-10 text-center text-[0.9rem] text-[#3d5a3f]/60">No active submissions yet. Start from one of your saved generated papers above.</div>
-            ) : linkedSubmissions.map((submission) => (
-              <button key={submission._id} type="button" onClick={() => router.push(`/marking/${submission._id}`)} className="card-lift flex w-full items-center justify-between gap-4 rounded-[1.2rem] border border-[#1a2e1a]/[0.06] bg-[linear-gradient(180deg,#faf9f6_0%,#ffffff_100%)] px-4 py-4 text-left shadow-[0_6px_18px_rgba(26,46,26,0.03)] hover:bg-white">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium text-[#1a2e1a]">{submission.studentLabel || "Untitled student paper"}</p>
-                    <span className={`rounded-full px-2.5 py-1 text-[0.68rem] uppercase tracking-[0.12em] ${submission.status === "review_required" ? "bg-[#fff1e8] text-[#9a5a2c]" : submission.status === "scored" ? "bg-[#edf7ee] text-[#3f6d44]" : "bg-white text-accent-warm"}`}>{formatStatus(submission.status)}</span>
-                  </div>
-                  <p className="mt-1 text-[0.8rem] text-[#3d5a3f]/55">{submission.savedPaperTitle || submission.paperCode || "No paper reference"} · {submission.scoredCount} scored · {submission.uploadedPageCount} uploads · {submission.totalAwardedMarks}/{submission.totalMaxMarks || 0} marks</p>
-                </div>
-                <div className="flex items-center gap-2 text-[0.75rem] text-[#3d5a3f]/45">
-                  <Clock3 className="h-3.5 w-3.5" />
-                  <span>{formatDate(submission.updatedAt)}</span>
-                </div>
+      {featuredSubmission ? (
+        <section className="grid gap-0 overflow-hidden rounded-sm border border-text/15 bg-bg-soft lg:grid-cols-12" aria-labelledby="continue-marking-title">
+          <div className="flex min-w-0 flex-col p-6 sm:p-8 lg:col-span-8 lg:p-9">
+            <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.18em] text-accent">Continue marking</p>
+            <h2 id="continue-marking-title" className="mt-2 text-[clamp(1.25rem,3vw,1.8rem)] font-extrabold tracking-[-0.035em] text-text">{featuredSubmission.savedPaperTitle || featuredSubmission.studentLabel || `${(featuredSubmission.boardCode || "GCSE").toUpperCase()} ${featuredSubmission.subjectSlug || "paper"}`}</h2>
+            <p className="mt-2 font-mono text-[0.72rem] text-text-muted">{featuredSubmission.savedPaperQuestionCount || featuredSubmission.questionProgress.length} questions <span className="px-2 text-text-subtle">·</span> {featuredSubmission.paperMaxMarks} marks <span className="px-2 text-text-subtle">·</span> updated {formatDate(featuredSubmission.updatedAt)}</p>
+            {featuredSubmission.questionProgress.length > 0 ? <div className="mt-8 overflow-x-auto pb-2"><QuestionProgressRail items={featuredSubmission.questionProgress} /></div> : null}
+            <div className="mt-auto pt-7">
+              <p className="text-[clamp(1.65rem,4vw,2.45rem)] font-extrabold tracking-[-0.04em] text-text"><span className="tabular-nums">{featuredSubmission.confirmedAwardedMarks} / {featuredSubmission.paperMaxMarks}</span> <span className="text-[0.55em] tracking-[-0.02em]">marks confirmed</span></p>
+              <div className="mt-3 h-px max-w-xl overflow-hidden bg-text/25"><div className="h-full bg-accent-warm-deep" style={{ width: `${featuredSubmission.paperMaxMarks > 0 ? Math.min(100, (featuredSubmission.confirmedMaxMarks / featuredSubmission.paperMaxMarks) * 100) : 0}%` }} /></div>
+              <button type="button" onClick={() => router.push(`/marking/${featuredSubmission._id}`)} className="btn-press mt-7 inline-flex min-h-12 items-center justify-center gap-8 rounded-sm bg-accent px-6 text-[0.78rem] font-bold text-white shadow-[0_8px_20px_var(--accent-glow)] hover:bg-accent-deep">
+                {currentQuestionLabel(featuredSubmission) ? `Continue with question ${currentQuestionLabel(featuredSubmission)}` : featuredSubmission.reviewRequiredCount > 0 ? "Review this paper" : "Open marked paper"}
+                <ArrowRight className="h-4 w-4" />
               </button>
-            ))}
+              {featuredSubmission.aiSuggestedCount > 0 ? <p className="mt-3 text-[0.68rem] text-text-muted">{featuredSubmission.aiSuggestedCount} AI suggestion{featuredSubmission.aiSuggestedCount === 1 ? "" : "s"} waiting for confirmation</p> : null}
+            </div>
           </div>
-        </div>
+          <div className="border-t border-text/10 bg-bg-warm p-5 lg:col-span-4 lg:border-l lg:border-t-0 lg:p-7"><PaperThumbnail submission={featuredSubmission} /></div>
+        </section>
+      ) : (
+        <section className="rounded-sm border border-dashed border-text/20 bg-bg-soft px-6 py-12 text-center">
+          <FileText className="mx-auto h-7 w-7 text-accent" />
+          <h2 className="mt-4 text-lg font-bold text-text">Your marking desk is ready</h2>
+          <p className="mt-2 text-sm text-text-muted">Start from a saved paper below or import one you have already completed.</p>
+        </section>
+      )}
 
-      </section>
+      <div className="grid gap-8 lg:grid-cols-12">
+        <section className="min-w-0 lg:col-span-9" aria-labelledby="saved-papers-title">
+          <div className="flex items-end justify-between border-b border-text/20 pb-3">
+            <div><h2 id="saved-papers-title" className="text-[1.35rem] font-extrabold tracking-[-0.035em] text-text">Your saved papers</h2><p className="mt-1 text-[0.72rem] text-text-muted">Resume the latest attempt or explicitly begin another.</p></div>
+            <span className="font-mono text-[0.66rem] text-text-subtle">{initialSavedPapers.length} total</span>
+          </div>
+          {initialSavedPapers.length === 0 ? (
+            <div className="border-b border-text/15 py-10 text-center"><p className="text-sm text-text-muted">Generated papers will appear here.</p><button type="button" onClick={() => router.push("/paper-maker")} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-accent">Build a paper <ArrowRight className="h-4 w-4" /></button></div>
+          ) : (
+            <div className="divide-y divide-text/15 border-b border-text/20">
+              {initialSavedPapers.map((paper) => {
+                const attempts = submissionsBySavedPaperId.get(paper._id) ?? [];
+                const latestAttempt = attempts[0];
+                const status = paperStatus(latestAttempt);
+                const isStarting = startingPaperIds.has(paper._id);
+                return (
+                  <article key={paper._id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1.6fr)_0.7fr_0.7fr_auto] sm:items-center sm:gap-5">
+                    <div className="flex min-w-0 items-center gap-3"><Check className={`h-5 w-5 shrink-0 ${latestAttempt ? "text-accent-warm-deep" : "text-accent"}`} /><div className="min-w-0"><h3 className="truncate text-[0.8rem] font-bold text-text">{paper.title}</h3><p className="mt-1 font-mono text-[0.62rem] text-text-subtle sm:hidden">{formatDate(paper.updatedAt)} · {paper.questionCount} / {paper.totalMarks}</p></div></div>
+                    <p className="hidden font-mono text-[0.64rem] text-text-muted sm:block">{formatDate(paper.updatedAt)}</p>
+                    <div className="hidden items-center gap-2 text-[0.66rem] text-text-muted sm:flex"><span className={`h-2 w-2 rounded-full ${status.dot}`} />{status.label}</div>
+                    <div className="flex items-center justify-end gap-2">
+                      <a href={paper.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-1 px-2 text-[0.68rem] font-semibold text-text-muted hover:text-accent" aria-label={`Open ${paper.title} PDF`}>PDF <ArrowUpRight className="h-3.5 w-3.5" /></a>
+                      <button type="button" disabled={isStarting} onClick={() => void openSavedPaper(paper._id)} className="btn-press inline-flex h-9 min-w-24 items-center justify-center gap-2 rounded-sm border border-accent px-3 text-[0.68rem] font-bold text-accent hover:bg-accent-soft disabled:opacity-55">{isStarting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : latestAttempt ? "Resume" : "Start marking"}<ChevronRight className="h-3.5 w-3.5" /></button>
+                      {latestAttempt ? <button type="button" disabled={isStarting} onClick={() => void openSavedPaper(paper._id, true)} className="btn-press inline-flex h-9 w-9 items-center justify-center rounded-sm text-text-subtle hover:bg-bg-warm hover:text-accent disabled:opacity-55" aria-label={`Start a new attempt for ${paper.title}`}><Plus className="h-4 w-4" /></button> : null}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+
+          <section className="mt-6 flex flex-col gap-4 rounded-sm border border-text/15 bg-bg-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="secondary-import-title">
+            <div><p className="font-mono text-[0.58rem] font-bold uppercase tracking-[0.16em] text-accent">Other ways to start</p><h2 id="secondary-import-title" className="mt-1 text-base font-bold text-text">Already completed a paper?</h2><p className="mt-1 text-[0.7rem] text-text-muted">Import the PDF to add marks and feedback.</p></div>
+            <button type="button" onClick={triggerImport} disabled={importState === "processing"} className="btn-press inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-sm border border-accent px-5 text-[0.7rem] font-bold text-accent hover:bg-accent-soft disabled:opacity-55"><Upload className="h-4 w-4" /> Import PDF</button>
+          </section>
+        </section>
+
+        <aside className="self-start rounded-sm border border-text/15 bg-bg-soft p-5 lg:col-span-3" aria-labelledby="focused-practice-title">
+          <p className="font-mono text-[0.6rem] font-bold uppercase tracking-[0.17em] text-accent">Focused practice</p>
+          {gapTopics.length > 0 ? (
+            <><h2 id="focused-practice-title" className="mt-3 text-lg font-extrabold tracking-[-0.03em] text-text">{gapTopics.length} gap{gapTopics.length === 1 ? "" : "s"} ready to practise</h2><ul className="mt-3 divide-y divide-text/15">{gapTopics.slice(0, 5).map((topic) => <li key={topic.label} className="flex items-center justify-between gap-3 py-3 text-[0.72rem] text-text-secondary"><span>{topic.label}</span><span className="shrink-0 font-mono text-[0.58rem] text-text-subtle">−{topic.missedMarks}</span></li>)}</ul></>
+          ) : (
+            <><h2 id="focused-practice-title" className="mt-3 text-lg font-extrabold tracking-[-0.03em] text-text">No confirmed gaps yet</h2><p className="mt-2 text-[0.72rem] leading-5 text-text-muted">Confirmed marks with topic data will shape your next focused paper.</p></>
+          )}
+          <button type="button" onClick={() => router.push("/paper-maker")} className="mt-4 inline-flex items-center gap-2 text-[0.72rem] font-bold text-accent-warm-deep hover:text-success">Build a focused paper <ArrowRight className="h-4 w-4" /></button>
+        </aside>
+      </div>
     </div>
   );
 }
