@@ -166,6 +166,7 @@ async function getInsertAssetUrls(
       if (splitPages.length > 0) {
         if (supportLabels.size > 0) {
           for (const splitPage of splitPages) {
+            if (/please turn the page over to see the sources/i.test(splitPage.ocrText ?? "")) continue;
             const pageLabels = new Set((splitPage.detectedSupportLabels ?? []).map((label) => label.toLowerCase()));
             if (Array.from(supportLabels).some((label) => pageLabels.has(label))) {
               urls.add(splitPage.cdnUrl);

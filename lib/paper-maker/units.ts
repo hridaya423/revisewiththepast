@@ -39,6 +39,7 @@ export function groupQuestionUnitsForSubject(subjectKey: PaperMakerSubjectKey, q
     "edexcel-physics",
     "ocr-computer-science",
     "edexcel-mathematics-higher",
+    "edexcel-french-reading",
   ].includes(subjectKey)) {
     return groupQuestionUnitsBySourceQuestion(units);
   }

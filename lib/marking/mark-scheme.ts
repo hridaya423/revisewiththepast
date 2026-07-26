@@ -545,7 +545,10 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
       let srcDoc = srcDocCache.get(markSchemeAsset.relativePath);
       if (!srcDocCache.has(markSchemeAsset.relativePath)) {
         const bytes = await loadMarkSchemeBytes(markSchemeAsset.relativePath, markSchemeAsset.cdnUrl);
-        srcDoc = await PDFDocument.load(bytes.slice(), { ignoreEncryption: true }).catch(() => null);
+        srcDoc = await PDFDocument.load(bytes.slice(), {
+          ignoreEncryption: true,
+          throwOnInvalidObject: unit.boardCode === "aqa",
+        }).catch(() => null);
         srcDocCache.set(markSchemeAsset.relativePath, srcDoc);
       }
 

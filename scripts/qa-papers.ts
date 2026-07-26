@@ -22,6 +22,7 @@ type CliOptions = {
   mix: QuestionMixProfile;
   out: string;
   renderScale: number;
+  topic: string | null;
 };
 
 type QaCheckFinding = {
@@ -73,6 +74,7 @@ function parseCliOptions(argv: string[]): CliOptions {
     mix: "balanced",
     out: "qa-reports",
     renderScale: 2,
+    topic: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -95,6 +97,7 @@ function parseCliOptions(argv: string[]): CliOptions {
     }
     else if (arg === "--out") options.out = next();
     else if (arg === "--scale") options.renderScale = Math.max(1, Math.min(4, Number.parseFloat(next()) || 2));
+    else if (arg === "--topic") options.topic = next();
     else throw new Error(`Unknown argument: ${arg}`);
   }
 
@@ -159,8 +162,8 @@ async function runPaper(
     const result = await generateCustomPaper({
       subjectKey: config.subjectKey,
       subjectTier: config.subjectTier ?? undefined,
-      selectedTopicNodeIds: [],
-      selectAllTopics: true,
+      selectedTopicNodeIds: options.topic ? [options.topic] : [],
+      selectAllTopics: !options.topic,
       targetMarks: options.marks,
       questionMix: options.mix,
       targetMode: "marks",

@@ -30,7 +30,7 @@ export type QaCheckOptions = {
   };
 };
 
-const BLANK_PAGE_INK_THRESHOLD = 0.005;
+const BLANK_PAGE_INK_THRESHOLD = 0.003;
 const BLANK_PAGE_TEXT_THRESHOLD = 25;
 const CONTENT_PAGE_START = 2;
 
@@ -59,17 +59,12 @@ function meaningfulTextLength(pageText: string): number {
     .replace(/\s+/g, "").length;
 }
 
-async function checkBlankPages(
-  pngPages: RenderedPngPage[],
-  textPages: RenderedTextPage[],
-): Promise<QaFinding[]> {
-  const textByPage = new Map(textPages.map((page) => [page.pageNumber, page.text]));
+async function checkBlankPages(pngPages: RenderedPngPage[]): Promise<QaFinding[]> {
   const findings: QaFinding[] = [];
   for (const page of pngPages) {
     if (page.pageNumber < CONTENT_PAGE_START) continue;
     const coverage = await computeInkCoverage(page.png);
     if (coverage >= BLANK_PAGE_INK_THRESHOLD) continue;
-    if (meaningfulTextLength(textByPage.get(page.pageNumber) ?? "") >= BLANK_PAGE_TEXT_THRESHOLD) continue;
     findings.push({
       check: "blank-page",
       severity: "error",
@@ -107,18 +102,62 @@ function checkRepeatedFurniture(textPages: RenderedTextPage[]): QaFinding[] {
   return findings;
 }
 
-function checkVisibleFurniture(textPages: RenderedTextPage[]): QaFinding[] {
+async function computeOuterGutterInkProfile(png: Buffer) {
+  const image = await loadImage(png);
+  const scale = Math.min(1, 500 / Math.max(image.width, image.height));
+  const width = Math.max(1, Math.round(image.width * scale));
+  const height = Math.max(1, Math.round(image.height * scale));
+  const canvas = createCanvas(width, height);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(image, 0, 0, width, height);
+  const { data } = ctx.getImageData(0, 0, width, height);
+  const gutterWidth = Math.max(1, Math.round(width * 0.1));
+  let ink = 0;
+  let activeColumns = 0;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < gutterWidth; x += 1) {
+      const leftIndex = (y * width + x) * 4;
+      const rightIndex = (y * width + (width - x - 1)) * 4;
+      if (data[leftIndex] < 235 || data[leftIndex + 1] < 235 || data[leftIndex + 2] < 235) ink += 1;
+      if (data[rightIndex] < 235 || data[rightIndex + 1] < 235 || data[rightIndex + 2] < 235) ink += 1;
+    }
+  }
+  for (let x = 0; x < gutterWidth; x += 1) {
+    let columnInk = 0;
+    for (let y = 0; y < height; y += 1) {
+      const leftIndex = (y * width + x) * 4;
+      const rightIndex = (y * width + (width - x - 1)) * 4;
+      if (data[leftIndex] < 235 || data[leftIndex + 1] < 235 || data[leftIndex + 2] < 235) columnInk += 1;
+      if (data[rightIndex] < 235 || data[rightIndex + 1] < 235 || data[rightIndex + 2] < 235) columnInk += 1;
+    }
+    if (columnInk >= height * 0.08) activeColumns += 1;
+  }
+  return {
+    coverage: ink / (gutterWidth * height * 2),
+    activeColumnRatio: activeColumns / gutterWidth,
+  };
+}
+
+async function checkVisibleFurniture(pngPages: RenderedPngPage[], textPages: RenderedTextPage[], subjectKey?: string): Promise<QaFinding[]> {
   const findings: QaFinding[] = [];
   const badPatterns = [
     /\bturn over\b/i,
     /\bdo not write (?:in|outside)/i,
-    /\bend of sources\b/i,
     /\bmark your new answer with a cross\b/i,
   ];
+  const includesLegitimateEnglishSourceFooter = subjectKey === "aqa-english-language";
+  const pngByPage = new Map(pngPages.map((page) => [page.pageNumber, page.png]));
   for (const page of textPages) {
     if (page.pageNumber < CONTENT_PAGE_START) continue;
     const normalized = page.text.replace(/\s+/g, " ");
-    if (!badPatterns.some((pattern) => pattern.test(normalized))) continue;
+    const hasFurniture = badPatterns.some((pattern) => pattern.test(normalized))
+      || !includesLegitimateEnglishSourceFooter && /\bend of sources\b/i.test(normalized);
+    if (!hasFurniture) continue;
+    const png = pngByPage.get(page.pageNumber);
+    if (png) {
+      const profile = await computeOuterGutterInkProfile(png);
+      if (profile.coverage < 0.004 || profile.activeColumnRatio < 0.1) continue;
+    }
     findings.push({
       check: "visible-source-furniture",
       severity: "warning",
@@ -324,6 +363,26 @@ function checkGenericExtraAnswerPages(textPages: RenderedTextPage[]): QaFinding[
   return findings;
 }
 
+function checkSuspiciousAqaCompoundMarkers(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+  if (!options?.subjectKey?.startsWith("aqa-") || !options.selectedUnitCount) return [];
+  const findings: QaFinding[] = [];
+  const markerPattern = /(?:^|\s)(\d\s*\d)\s*\.\s*(\d+)(?=\s|$)/g;
+  for (const page of textPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+    for (const match of page.text.matchAll(markerPattern)) {
+      const questionNumber = Number(match[1].replace(/\s+/g, ""));
+      if (questionNumber > 0 && questionNumber <= options.selectedUnitCount) continue;
+      findings.push({
+        check: "suspicious-aqa-compound-marker",
+        severity: "error",
+        pageNumber: page.pageNumber,
+        message: `AQA compound marker ${match[1]}.${match[2]} is outside the generated question range 01-${String(options.selectedUnitCount).padStart(2, "0")}.`,
+      });
+    }
+  }
+  return findings;
+}
+
 function normalizeRenderedText(text: string) {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -375,7 +434,7 @@ export async function runDeterministicChecks(
   textPages: RenderedTextPage[],
   options?: QaCheckOptions,
 ): Promise<QaFinding[]> {
-  const blank = await checkBlankPages(pngPages, textPages);
+  const blank = await checkBlankPages(pngPages);
   return [
     ...checkGeneratedCover(textPages, options),
     ...blank,
@@ -383,9 +442,10 @@ export async function runDeterministicChecks(
     ...checkPageBloat(textPages, options),
     ...checkCopyrightPlaceholders(textPages),
     ...checkGenericExtraAnswerPages(textPages),
+    ...checkSuspiciousAqaCompoundMarkers(textPages, options),
     ...checkResourcePagesWithoutQuestions(textPages),
     ...checkBusinessMissingReferences(textPages, options),
-    ...checkVisibleFurniture(textPages),
+    ...await checkVisibleFurniture(pngPages, textPages, options?.subjectKey),
     ...checkQuestionMix(options),
     ...checkRepeatedFurniture(textPages),
   ];

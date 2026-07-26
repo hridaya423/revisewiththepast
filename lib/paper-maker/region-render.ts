@@ -88,18 +88,20 @@ function cropBoxForSpan(
 ): RegionCropBox {
   const isWideSciencePage = isScienceUnit(unit) && layout.pageWidth > 620;
   const trimGutter = shouldTrimExamGutter(unit);
-  const left = isWideSciencePage
+  const left = unit.boardCode === "aqa"
+    ? Math.max(0, layout.contentX0 - 2)
+    : isWideSciencePage
     ? Math.max(0, layout.contentX0 - CONTENT_X_PADDING)
     : trimGutter
       ? Math.max(0, layout.contentX0 - CONTENT_X_PADDING)
     : Math.max(0, layout.contentX0 - CONTENT_X_PADDING);
-  const right = isWideSciencePage
-    ? Math.min(layout.contentX1, layout.pageWidth - 32)
-    : trimGutter
-      ? Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING)
-    : unit.boardCode === "aqa"
-      ? Math.min(layout.pageWidth, layout.pageWidth - 8)
-      : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
+   const right = isWideSciencePage
+     ? Math.min(layout.contentX1, layout.pageWidth - 32)
+     : trimGutter
+       ? Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING)
+     : unit.boardCode === "aqa"
+       ? Math.min(layout.pageWidth, layout.contentX1 + 2)
+       : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
 
   return {
     left,
@@ -152,6 +154,8 @@ export function buildUnitRenderPlan(
     (span) => !unreferencedFigures.some((figure) => figureCoverageOfSpan(figure, span) > ORPHAN_FIGURE_SPAN_COVERAGE),
   ).filter(
     (span) => !isScienceUnit(unit) || referenced.size === 0 || questionPages.has(span.pageNumber) || referencedFigurePages.has(span.pageNumber),
+  ).filter(
+    (span) => unit.subjectSlug !== "geography" || referenced.size === 0 || questionPages.has(span.pageNumber) || referencedFigurePages.has(span.pageNumber),
   );
   const allRenderedSpans = [...questionSpans, ...stemSpans];
 
