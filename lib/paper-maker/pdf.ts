@@ -609,8 +609,8 @@ function drawQuestionNumberReplacement(
        const markerMatch = markerLine.text.trim().match(/^((?:\d\s*)+)\.\s*((?:\d\s*)+)/);
        const markerText = markerMatch?.[0] ?? "";
        const suffix = markerMatch?.[2].replace(/\s+/g, "").replace(/^0+/, "") || "0";
-       const markerDigitCount = markerText.match(/\d/g)?.length ?? 0;
-       const markerWidth = markerDigitCount >= 4 ? 82 : 56;
+        const markerCharacterCount = markerText.replace(/\s+/g, "").length;
+        const markerWidth = Math.max(56, markerCharacterCount * 8 + 10);
        const markerRight = getAqaCompoundMarkerMaskRight(unit, sourcePageNumber, sourceCropBox, markerLine, markerLine.bbox.x0 + markerWidth);
        const markerBox = toOutput({
         left: markerLine.bbox.x0 - 6,
