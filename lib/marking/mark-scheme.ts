@@ -242,11 +242,13 @@ function narrowFallbackMarkSchemePages(unit: MarkableUnit, pages: CachedPdfPage[
 }
 
 function aqaPartPattern(questionNumber: string, partNumber: string) {
-  return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*${partNumber}\\b`, "i");
+  const escapedPart = partNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*${escapedPart}\\b(?=\\s+[A-Z0-9‘’“”'"([{•]|\\s*$)`);
 }
 
 function aqaOtherPartPattern(questionNumber: string, partNumber: string) {
-  return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*(?!${partNumber}\\b)\\d{1,2}\\b`, "i");
+  const escapedPart = partNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*(?!${escapedPart}\\b)\\d{1,2}\\b(?=\\s+[A-Z0-9‘’“”'"([{•]|\\s*$)`);
 }
 
 function aqaDifferentQuestionStart(text: string, questionNumber: string) {
@@ -307,13 +309,13 @@ function narrowAqaNumberedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage
 
 function trimPageToQuestionRange(page: CachedPdfPage, questionNumber: string) {
   const targetStart = new RegExp(`\\b${questionNumber}\\s*\\(`, "i");
-  const otherStart = new RegExp(`\\b(?!${questionNumber}\\b)\\d{1,2}\\s*\\(`, "i");
+  const otherStart = new RegExp(`^(?!${questionNumber}\\b)\\d{1,2}\\s*\\(`, "i");
   const startIndex = page.lines.findIndex((line) => targetStart.test(line.fullText));
   if (startIndex < 0) return page;
 
   let endIndex = page.lines.length;
   for (let index = startIndex + 1; index < page.lines.length; index += 1) {
-    if (otherStart.test(page.lines[index].fullText)) {
+    if (otherStart.test(page.lines[index].leftText.trim())) {
       endIndex = index;
       break;
     }
@@ -331,7 +333,7 @@ function trimPageToQuestionRange(page: CachedPdfPage, questionNumber: string) {
 }
 
 function trimMixedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage[]) {
-  if (unit.subjectSlug === "english-language" || unit.subjectSlug === "english-literature") return pages;
+  if (unit.subjectSlug === "english-language" || unit.subjectSlug === "english-literature" || unit.subjectSlug === "mathematics") return pages;
   const targetQuestionNumber = normalizeQuestionNumber(unit.questionNumber);
   return pages.map((page) => trimPageToQuestionRange(page, targetQuestionNumber));
 }
@@ -344,7 +346,7 @@ function narrowInlineQuestionTextPages(unit: MarkableUnit, pages: CachedPdfPage[
     : new RegExp(`\\b${questionNumber}\\b`, "i");
   const nextQuestion = String(Number(questionNumber) + 1);
   const nextPattern = unit.subjectSlug === "mathematics"
-    ? new RegExp(`\\b${nextQuestion}\\s+`, "i")
+    ? new RegExp(`\\b${nextQuestion}\\s*\\([a-z]\\)`, "i")
     : new RegExp(`\\b${nextQuestion}\\b`, "i");
   const startIndex = pages.findIndex((page) => startPattern.test(page.text));
   if (startIndex < 0) return [];
@@ -403,6 +405,10 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
 
   const pages = await loadMarkSchemeTextPages(markSchemeAsset.relativePath, markSchemeAsset.cdnUrl);
   const targetQuestionNumber = normalizeQuestionNumber(unit.questionNumber);
+  if (unit.boardCode === "aqa" && (unit.subjectSlug === "business" || unit.subjectSlug === "geography")) {
+    const narrowedPages = narrowFallbackMarkSchemePages(unit, pages);
+    if (narrowedPages.length > 0) return { markSchemeAsset, collectedPages: trimMixedQuestionPages(unit, narrowedPages) };
+  }
   const collectedPages: CachedPdfPage[] = [];
   let collecting = false;
 
@@ -433,7 +439,7 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
     if (narrowedPages.length > 0) return { markSchemeAsset, collectedPages: trimMixedQuestionPages(unit, narrowedPages) };
     const inlinePages = narrowInlineQuestionTextPages(unit, pages);
     if (inlinePages.length > 0) return { markSchemeAsset, collectedPages: inlinePages };
-    return { markSchemeAsset, collectedPages: pages };
+    throw new Error(`Could not isolate mark scheme pages for question ${targetQuestionNumber}`);
   }
 
   if (collectedPages.length === 0) {
@@ -479,6 +485,11 @@ type StructuredMarkSchemeEntry = {
   answerText: string | null;
   levels: LevelDescriptor[];
   indicativeContent: string;
+};
+
+type RenderedMarkSchemePage = CachedPdfPage & {
+  unit?: MarkableUnit;
+  totalRow?: boolean;
 };
 
 const A4_WIDTH = 595.28;
@@ -555,12 +566,8 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
       let drewLabel = false;
       let copiedPages = 0;
       let fallbackSegmentIndex = 0;
-      const renderedPages = unit.subjectSlug === "french" && collectedPages.length > 0
-        ? [{ ...collectedPages[0], pageNumber: 0, text: collectedPages.map((page) => page.text).join("\n"), lines: [] }]
-        : unit.boardCode === "aqa" && unit.subjectSlug === "business" && collectedPages.length > 0
-        ? [{ ...collectedPages[0], pageNumber: 0, text: collectedPages.map((page) => page.text).join("\n"), lines: [] }]
-        : unit.boardCode === "aqa" && unit.subjectSlug === "geography"
-          ? collectedPages.reduce<CachedPdfPage[]>((pages, page) => {
+      const groupedPages = unit.boardCode === "aqa" && unit.subjectSlug === "geography"
+        ? collectedPages.reduce<CachedPdfPage[]>((pages, page) => {
           const previous = pages.at(-1);
           if (page.pageNumber < 1 && previous && previous.pageNumber < 1) {
             previous.text = `${previous.text}\n${page.text}`;
@@ -569,15 +576,27 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
           }
           return pages;
         }, [])
-          : collectedPages;
+        : collectedPages;
+      const splitPages = splitMarkSchemePagesByParts(unit, groupedPages);
+      const isMultipartUnit = unit.parts.length > 1
+        && unit.parts.every((part) => part.questionPartNumber && normalizeQuestionNumber(part.questionNumber) === normalizeQuestionNumber(unit.questionNumber));
+      if (isMultipartUnit && !splitPages) {
+        throw new Error(`Could not split mark scheme guidance for multipart question ${unit.questionNumber}.`);
+      }
+      const renderedPages: RenderedMarkSchemePage[] = splitPages
+        ?? (unit.subjectSlug === "french" && groupedPages.length > 0
+          ? [{ ...groupedPages[0], pageNumber: 0, text: groupedPages.map((page) => page.text).join("\n"), lines: [] }]
+          : groupedPages);
       for (const page of renderedPages) {
-        if (page.pageNumber > 0 && normalizeInlineText(page.text).length < 120 && !pageHasQuestionStart(page, normalizeQuestionNumber(unit.questionNumber))) continue;
-        if (page.pageNumber < 1 || unit.subjectSlug === "mathematics" || unit.subjectSlug === "business" || unit.subjectSlug === "computer-science" || unit.subjectSlug === "french") {
+        const rowUnit = page.unit ?? unit;
+        if (page.pageNumber > 0 && normalizeInlineText(page.text).length < 120 && !pageHasQuestionStart(page, normalizeQuestionNumber(rowUnit.questionNumber))) continue;
+        if (page.pageNumber < 1 || rowUnit.subjectSlug === "mathematics" || rowUnit.subjectSlug === "business" || rowUnit.subjectSlug === "computer-science" || rowUnit.subjectSlug === "french") {
           tableLayout = drawMarkSchemeTableRow(outputDoc, tableLayout, {
-            unit,
+            unit: rowUnit,
             order,
             text: page.text,
-            continuation: fallbackSegmentIndex > 0,
+            continuation: page.unit ? false : fallbackSegmentIndex > 0,
+            totalRow: page.totalRow,
           }, fonts);
           fallbackSegmentIndex += 1;
           copiedPages += 1;
@@ -585,11 +604,11 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
           continue;
         }
 
-        let added: import("pdf-lib").PDFPage;
+        let addedPages: import("pdf-lib").PDFPage[];
         tableLayout = null;
         if (srcDoc) try {
           const [copied] = await outputDoc.copyPages(srcDoc, [page.pageNumber - 1]);
-          added = outputDoc.addPage(copied);
+          addedPages = [outputDoc.addPage(copied)];
         } catch {
           try {
             let pdfJsDoc = pdfJsDocCache.get(markSchemeAsset.relativePath);
@@ -600,18 +619,21 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
             }
             const png = await renderPdfPageToPng(pdfJsDoc, page.pageNumber, 2);
             const image = await outputDoc.embedPng(png);
-            added = outputDoc.addPage([image.width / 2, image.height / 2]);
+            const added = outputDoc.addPage([image.width / 2, image.height / 2]);
             added.drawImage(image, { x: 0, y: 0, width: image.width / 2, height: image.height / 2 });
+            addedPages = [added];
           } catch {
-            added = drawTextFallbackPage(outputDoc, page.text, noteFont);
+            addedPages = drawTextFallbackPages(outputDoc, page.text, noteFont);
           }
         } else {
-          added = drawTextFallbackPage(outputDoc, page.text, noteFont);
+          addedPages = drawTextFallbackPages(outputDoc, page.text, noteFont);
         }
-        copiedPages += 1;
-        if (!drewLabel) {
-          drawLabelBand(added, label, labelFont);
-          drewLabel = true;
+        copiedPages += addedPages.length;
+        for (const added of addedPages) {
+          if (!drewLabel) {
+            drawLabelBand(added, label, labelFont);
+            drewLabel = true;
+          }
         }
       }
 
@@ -626,6 +648,7 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
         label,
         error: message,
       });
+      tableLayout = null;
       drawPlaceholderPage(outputDoc, `${label}\n${message}`, noteFont);
     }
   }
@@ -699,6 +722,8 @@ function cleanFallbackGuidance(text: string, unit: MarkableUnit) {
   let guidance = safePdfText(text)
     .replace(/\bPMT\b/g, " ")
     .replace(/\bMARK SCHEME\s*-\s*GCSE\s+[^\n]+?\s*-\s*(?:JUNE|NOVEMBER)\s+\d{4}\b/gi, " ")
+    .replace(/\bQuestion\s+Answer(?:\s+Additional\s+guidance)?\s+Mark\s+number\b/gi, " ")
+    .replace(/\bAO(\d)\s+([a-z])\b/gi, "AO$1$2")
     .replace(/\s+/g, " ")
     .trim();
   const question = normalizeQuestionNumber(unit.questionNumber);
@@ -718,7 +743,7 @@ function cleanFallbackGuidance(text: string, unit: MarkableUnit) {
     const index = guidance.toLowerCase().indexOf(prompt.toLowerCase().slice(0, 50));
     if (index >= 0) guidance = guidance.slice(index + prompt.length).trim();
   }
-  return guidance.replace(/\bAO(\d)\b/g, "AO$1").replace(/\s+([.,;:])/g, "$1").trim() || safePdfText(text);
+  return guidance.replace(/\bAO(\d)([a-z]?)\b/gi, "AO$1$2").replace(/\s+([.,;:])/g, "$1").trim() || safePdfText(text);
 }
 
 function cleanQuestionPrompt(unit: MarkableUnit) {
@@ -740,6 +765,104 @@ function cleanQuestionPrompt(unit: MarkableUnit) {
   return prompt || raw;
 }
 
+function partMarkerPattern(unit: MarkableUnit, partNumber: string) {
+  const question = normalizeQuestionNumber(unit.questionNumber);
+  const escapedPart = partNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (/^\d+$/.test(partNumber)) {
+    return new RegExp(`\\b0?${question}\\s*(?:\\.|\\s)\\s*${escapedPart}\\b`, "i");
+  }
+  const nestedPart = `\\s*\\([a-z]\\)\\s*\\(\\s*${escapedPart}\\s*\\)(?:\\s*\\*)?(?=\\s|$)`;
+  const spacedNestedPart = `\\s+[a-z]\\s+(?:\\(?${escapedPart}\\)?)(?=\\s|$)`;
+  const directPart = `(?:\\.|\\s+)\\s*${escapedPart}\\b|\\s*\\(\\s*${escapedPart}\\s*\\)(?:\\s*\\([ivx]+\\))?(?:\\s*\\*)?(?=\\s|$)`;
+  return new RegExp(`\\b(?:Question\\s+)?0?${question}(?:${nestedPart}|${spacedNestedPart}|${directPart})`, "i");
+}
+
+function barePartMarkerPattern(partNumber: string) {
+  const escapedPart = partNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\(\\s*${escapedPart}\\s*\\)(?:\\s*\\([ivx]+\\))?(?:\\s*\\*)?(?=\\s|$)`, "i");
+}
+
+function partPathMarkerPattern(unit: MarkableUnit, partPath: string[]) {
+  const question = normalizeQuestionNumber(unit.questionNumber);
+  const pathPattern = partPath.map((token) => {
+    const escapedToken = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return `(?:\\(\\s*${escapedToken}\\s*\\)|\\s+${escapedToken}\\b)`;
+  }).join("\\s*");
+  return new RegExp(`\\b(?:Question\\s+)?0?${question}${pathPattern}(?:\\s*\\*)?(?=\\s|$|[A-Z0-9‘’“”'([{•])`, "i");
+}
+
+function splitMarkSchemePagesByParts(unit: MarkableUnit, pages: CachedPdfPage[]): RenderedMarkSchemePage[] | null {
+  if (unit.parts.length < 2 || unit.parts.some((part) => !part.questionPartNumber || !part.marks)) return null;
+  if (unit.parts.reduce((sum, part) => sum + (part.marks ?? 0), 0) !== unit.totalMarks) return null;
+  const orderedParts = [...unit.parts].sort((left, right) => {
+    if (left.pageNumber !== right.pageNumber) return left.pageNumber - right.pageNumber;
+    const leftPart = left.questionPartNumber?.trim().toLowerCase() ?? "";
+    const rightPart = right.questionPartNumber?.trim().toLowerCase() ?? "";
+    if (/^[ivx]+$/.test(leftPart) && /^[ivx]+$/.test(rightPart)) {
+      const romanValue = (value: string) => value === "i" ? 1 : value === "ii" ? 2 : value === "iii" ? 3 : value === "iv" ? 4 : value === "v" ? 5 : 99;
+      if (romanValue(leftPart) !== romanValue(rightPart)) return romanValue(leftPart) - romanValue(rightPart);
+    }
+    const leftTop = left.bbox?.y1 ?? left.bbox?.y0 ?? 0;
+    const rightTop = right.bbox?.y1 ?? right.bbox?.y0 ?? 0;
+    if (leftTop !== rightTop) return rightTop - leftTop;
+    return left.partKey.localeCompare(right.partKey);
+  });
+  const text = normalizeMarkSchemeText(pages.map((page) => page.text).join(" "));
+  const starts: Array<{ index: number; part: MarkableUnit["parts"][number] }> = [];
+  let searchFrom = 0;
+  for (const part of orderedParts) {
+    const partNumber = part.questionPartNumber?.trim();
+    if (!partNumber) return null;
+    const remainingText = text.slice(searchFrom);
+    const promptPrefix = normalizeInlineText(part.promptText).match(new RegExp(`^${normalizeQuestionNumber(unit.questionNumber)}\\s*((?:\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)\\s*)+)`, "i"));
+    const partPath = promptPrefix?.[1]
+      ? Array.from(promptPrefix[1].matchAll(/\(\s*([a-z]|[ivx]{1,4})\s*\)/gi)).map((match) => match[1].toLowerCase())
+      : [];
+    const match = (partPath.length > 1 ? remainingText.match(partPathMarkerPattern(unit, partPath)) : null)
+      ?? remainingText.match(partMarkerPattern(unit, partNumber))
+      ?? (/^\d+$/.test(partNumber) ? null : remainingText.match(barePartMarkerPattern(partNumber)));
+    if (!match || match.index === undefined) {
+      return null;
+    }
+    const index = searchFrom + match.index;
+    starts.push({ index, part });
+    searchFrom = index + Math.max(1, match[0].length);
+  }
+  if (starts.length !== orderedParts.length || starts.length < 2) return null;
+
+  const partPages = starts.map((start, index) => {
+    const end = starts[index + 1]?.index ?? text.length;
+    const partUnit = {
+      ...unit,
+      unitKey: `${unit.unitKey}::${start.part.partKey}`,
+      parts: [start.part],
+      totalMarks: start.part.marks ?? 0,
+    } satisfies MarkableUnit;
+    return {
+      pageNumber: 0,
+      text: text.slice(start.index, end).trim(),
+      lines: [],
+      unit: partUnit,
+    } satisfies RenderedMarkSchemePage;
+  });
+  const totalUnit = {
+    ...unit,
+    unitKey: `${unit.unitKey}::total`,
+    parts: [],
+    pages: [],
+  } satisfies MarkableUnit;
+  return [
+    ...partPages,
+    {
+      pageNumber: 0,
+      text: `Total for Question ${normalizeQuestionNumber(unit.questionNumber)} is ${unit.totalMarks} marks`,
+      lines: [],
+      unit: totalUnit,
+      totalRow: true,
+    },
+  ];
+}
+
 function parseAnswer(text: string) {
   const answer = text.match(/\b([A-D])\s*:\s*([^.;]+?)(?=\s+No credit|\s+AO\d|\s+\d+\s*mark|$)/i);
   if (!answer) return { answerLetter: null, answerText: null };
@@ -749,12 +872,22 @@ function parseAnswer(text: string) {
 function parseLevelDescriptors(text: string) {
   const normalized = text.replace(/\s+/g, " ").trim();
   const levels: LevelDescriptor[] = [];
-  const pattern = /(?:Level\s+Marks\s+Description\s+)?(\d)\s*\(([^)]+)\)\s+(\d+\s*[-–]\s*\d+)\s+(.+?)(?=\s+\d\s*\([^)]+\)\s+\d+\s*[-–]\s*\d+|\s+0\s+No relevant content|\s+Indicative content\b|$)/gi;
-  for (const match of normalized.matchAll(pattern)) {
+  const parenthesizedPattern = /(?:Level\s+Mark(?:s)?\s+(?:Description|Descriptor)\s+)?(\d)\s*\(([^)]+)\)\s+(\d+\s*[-–]\s*\d+)\s+(.+?)(?=\s+Level\s+\d\s*\([^)]+\)\s+\d+\s*[-–]\s*\d+|\s+\d\s*\([^)]+\)\s+\d+\s*[-–]\s*\d+|\s+0\s+No relevant content|\s+Indicative content\b|\s+Pearson\s+Education\s+Limited\b|$)/gi;
+  for (const match of normalized.matchAll(parenthesizedPattern)) {
     levels.push({
       level: `${match[1]} (${match[2]})`,
       marks: match[3].replace(/[–]/g, "-"),
       description: match[4].trim(),
+    });
+  }
+  if (levels.length > 0) return levels;
+
+  const plainPattern = /(?:^|\s)(\d)\s+(\d+(?:\s*[-–]\s*\d+)?)\s+(.+?)(?=\s+Level\s+\d\s+\d+(?:\s*[-–]\s*\d+)?\s+|\s+\d\s+\d+(?:\s*[-–]\s*\d+)?\s+|\s+(?:Indicative content|Answers?\s+may\s+include|Question\s+Answer|Total\s+for|Pearson\s+Education\s+Limited)\b|$)/gi;
+  for (const match of normalized.matchAll(plainPattern)) {
+    levels.push({
+      level: match[1],
+      marks: match[2].replace(/[–]/g, "-").replace(/\s+/g, ""),
+      description: match[3].trim(),
     });
   }
   return levels;
@@ -802,7 +935,7 @@ function stripPromptAndStructure(text: string, entry: { prompt: string; levels: 
     if (answerIndex >= 0) guidance = guidance.slice(answerIndex).trim();
   }
   if (entry.levels.length > 0) {
-    guidance = guidance.replace(/Level\s+Marks\s+Description.+?(?=Indicative content|$)/i, "").trim();
+    guidance = guidance.replace(/Level\s+Mark(?:s)?\s+(?:Description|Descriptor).+?(?=Indicative content|Answers?\s+may\s+include|Question\s+Answer|Total\s+for|$)/i, "").trim();
   }
   if (entry.indicativeContent) guidance = guidance.replace(/Indicative content.+$/i, "").trim();
   return guidance.replace(/\s+/g, " ").trim();
@@ -824,8 +957,28 @@ function rowQuestionLabel(order: number) {
   return String(order).padStart(2, "0");
 }
 
-function rowPartLabel(unit: MarkableUnit) {
-  return unit.parts.map((part) => part.questionPartNumber).filter(Boolean).join(", ") || "-";
+function rowPartLabel(unit: MarkableUnit, totalRow = false) {
+  if (totalRow) return "Total";
+  const labels = unit.parts.map((part) => part.questionPartNumber?.trim()).filter((part): part is string => Boolean(part));
+  if (labels.length === 0) return "-";
+  const numericLabels = labels.map((label) => Number.parseInt(label, 10));
+  if (numericLabels.every((value, index) => Number.isInteger(value) && String(value) === labels[index])) {
+    const ranges: string[] = [];
+    let start = numericLabels[0];
+    let end = start;
+    for (const value of numericLabels.slice(1)) {
+      if (value === end + 1) {
+        end = value;
+        continue;
+      }
+      ranges.push(start === end ? String(start) : `${start}-${end}`);
+      start = value;
+      end = value;
+    }
+    ranges.push(start === end ? String(start) : `${start}-${end}`);
+    return ranges.join(", ");
+  }
+  return labels.join(", ");
 }
 
 function drawTableHeader(page: PDFPage, fonts: MarkSchemeFonts) {
@@ -862,9 +1015,32 @@ function drawWrappedLines(page: PDFPage, lines: string[], x: number, y: number, 
   return currentY;
 }
 
+function drawAoAwareWrappedLines(page: PDFPage, lines: string[], x: number, y: number, size: number, fonts: MarkSchemeFonts, maxWidth: number, lineHeight: number) {
+  let currentY = y;
+  for (const line of lines) {
+    const match = line.match(/^(AO\d[a-z]?)(.*)$/i);
+    if (!match) {
+      page.drawText(line, { x, y: currentY, size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+      currentY -= lineHeight;
+      continue;
+    }
+    const label = match[1].toUpperCase();
+    const labelWidth = fonts.bold.widthOfTextAtSize(label, size) + 4;
+    const remainder = match[2].trimStart();
+    const remainderLines = remainder ? wrapText(remainder, fonts.regular, size, maxWidth - labelWidth) : [];
+    page.drawText(label, { x, y: currentY, size, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
+    if (remainderLines[0]) page.drawText(remainderLines[0], { x: x + labelWidth, y: currentY, size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+    for (let index = 1; index < remainderLines.length; index += 1) {
+      page.drawText(remainderLines[index], { x: x + labelWidth, y: currentY - index * lineHeight, size, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+    }
+    currentY -= Math.max(1, remainderLines.length) * lineHeight;
+  }
+  return currentY;
+}
+
 function aoDescriptionChunks(text: string) {
   return text
-    .replace(/\s+(AO\d\b)/g, "\n$1")
+    .replace(/\s+(AO\d[a-z]?\b)/gi, "\n$1")
     .split("\n")
     .map((chunk) => chunk.trim())
     .filter(Boolean);
@@ -872,7 +1048,7 @@ function aoDescriptionChunks(text: string) {
 
 function aoDescriptionHeight(text: string, fonts: MarkSchemeFonts, size: number, width: number, lineHeight: number) {
   return aoDescriptionChunks(text).reduce((sum, chunk) => {
-    const match = chunk.match(/^(AO\d)\s+(.+)$/i);
+    const match = chunk.match(/^(AO\d[a-z]?)\s+(.+)$/i);
     if (!match) return sum + wrapText(chunk, fonts.regular, size, width).length * lineHeight;
     const labelWidth = fonts.bold.widthOfTextAtSize(match[1], size) + 4;
     return sum + Math.max(1, wrapText(match[2], fonts.regular, size, width - labelWidth).length) * lineHeight;
@@ -1044,44 +1220,73 @@ function extractMathAnswerText(text: string) {
   return match?.[1]?.trim() ?? "";
 }
 
-function drawMathMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean }, fonts: MarkSchemeFonts) {
+function drawMathMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean; totalRow?: boolean }, fonts: MarkSchemeFonts) {
   const left = 34;
   const width = LANDSCAPE_WIDTH - 68;
   const cols = [60, 90, 56, 350, width - 60 - 90 - 56 - 350];
   const entry = buildStructuredEntry(row.unit, row.text, row.continuation);
-  const answerLines = wrapText(extractMathAnswerText(row.text), fonts.regular, 8.4, cols[1] - 12).slice(0, 5);
+  const answerLines = wrapText(extractMathAnswerText(row.text), fonts.regular, 8.4, cols[1] - 12);
   const allSchemeLines = guidanceDisplayLines(entry.guidance || row.text, fonts, 8.1, cols[3] - 12);
   const guidanceKeywords = /^(Just|Must|May|Accept|Allow|Ignore|Award|Any correct|Do not|Condone|If|Where|Correct answer|Alternative)/i;
-  const schemeOnlyLines = allSchemeLines.filter((line) => !guidanceKeywords.test(line.replace(/^•\s*/, ""))).slice(0, 13);
-  const guidanceOnlyLines = allSchemeLines.filter((line) => guidanceKeywords.test(line.replace(/^•\s*/, ""))).slice(0, 12);
-  const markCodes = Array.from(new Set((entry.guidance || row.text).match(/\b[MABCP]\d\b/g) ?? [])).slice(0, 6);
-  const promptLines = wrapText(entry.prompt, fonts.bold, 8.3, cols[3] - 12).slice(0, 3);
-  const schemeLines = [...promptLines, ...schemeOnlyLines].slice(0, 16);
-  const guidanceLines = (entry.indicativeContent ? wrapText(entry.indicativeContent, fonts.regular, 8, cols[4] - 12) : guidanceOnlyLines).slice(0, 12);
-  const rowHeight = Math.max(68, 22 + Math.max(schemeLines.length, guidanceLines.length, markCodes.length, answerLines.length) * 10);
+  const schemeOnlyLines = allSchemeLines.filter((line) => !guidanceKeywords.test(line.replace(/^•\s*/, "")));
+  const guidanceOnlyLines = allSchemeLines.filter((line) => guidanceKeywords.test(line.replace(/^•\s*/, "")));
+  const markCodes = Array.from(new Set((entry.guidance || row.text).match(/\b[MABCP]\d\b/g) ?? []));
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.3, cols[3] - 12);
+  const schemeLines = [...promptLines, ...schemeOnlyLines];
+  const guidanceLines = entry.indicativeContent
+    ? wrapText(entry.indicativeContent, fonts.regular, 8, cols[4] - 12)
+    : guidanceOnlyLines;
   let current = layout ?? newMathTablePage(outputDoc, row.unit, fonts, 1);
-  if (current.y - rowHeight < 44) current = newMathTablePage(outputDoc, row.unit, fonts, current.pageNumber + 1);
+  let remainingAnswer = answerLines;
+  let remainingMarkCodes = markCodes.length > 0 ? markCodes : [String(row.unit.totalMarks)];
+  let remainingScheme = schemeLines;
+  let remainingGuidance = guidanceLines;
+  let continuation = row.continuation ?? false;
 
-  const y = current.y - rowHeight;
-  current.page.drawRectangle({ x: left, y, width, height: rowHeight, borderColor: rgb(0.05, 0.05, 0.05), borderWidth: 0.7 });
-  let x = left;
-  for (const col of cols.slice(0, -1)) {
-    x += col;
-    current.page.drawLine({ start: { x, y }, end: { x, y: y + rowHeight }, thickness: 0.6, color: rgb(0.05, 0.05, 0.05) });
-  }
+  do {
+    const maxRowLines = Math.max(1, Math.floor((current.y - 44 - 22) / 13));
+    const lineCount = Math.min(
+      maxRowLines,
+      Math.max(1, remainingAnswer.length, remainingMarkCodes.length, remainingScheme.length, remainingGuidance.length),
+    );
+    const rowAnswer = remainingAnswer.slice(0, lineCount);
+    const rowMarkCodes = remainingMarkCodes.slice(0, lineCount);
+    const rowScheme = remainingScheme.slice(0, lineCount);
+    const rowGuidance = remainingGuidance.slice(0, lineCount);
+    const rowHeight = Math.max(68, 22 + Math.max(rowAnswer.length * 11, rowMarkCodes.length * 13, rowScheme.length * 10, rowGuidance.length * 10));
+    if (current.y - rowHeight < 44 && current.y !== LANDSCAPE_HEIGHT - 86) {
+      current = newMathTablePage(outputDoc, row.unit, fonts, current.pageNumber + 1);
+      continue;
+    }
 
-  current.page.drawText(row.continuation ? "" : rowQuestionLabel(row.order), { x: left + 14, y: y + rowHeight - 18, size: 10, font: fonts.regular });
-  drawWrappedLines(current.page, answerLines, left + cols[0] + 8, y + rowHeight - 18, 8.4, fonts.regular, 11);
-  drawWrappedLines(current.page, markCodes.length > 0 ? markCodes : [String(row.unit.totalMarks)], left + cols[0] + cols[1] + 16, y + rowHeight - 18, 9.5, fonts.bold, 13);
+    const y = current.y - rowHeight;
+    current.page.drawRectangle({ x: left, y, width, height: rowHeight, borderColor: rgb(0.05, 0.05, 0.05), borderWidth: 0.7 });
+    let x = left;
+    for (const col of cols.slice(0, -1)) {
+      x += col;
+      current.page.drawLine({ start: { x, y }, end: { x, y: y + rowHeight }, thickness: 0.6, color: rgb(0.05, 0.05, 0.05) });
+    }
 
-  let schemeY = y + rowHeight - 18;
-  const schemeX = left + cols[0] + cols[1] + cols[2] + 8;
-  schemeY = drawWrappedLines(current.page, promptLines, schemeX, schemeY, 8.3, fonts.bold, 10);
-  if (promptLines.length > 0 && schemeOnlyLines.length > 0) schemeY -= 4;
-  drawWrappedLines(current.page, schemeOnlyLines, schemeX, schemeY, 8.1, fonts.regular, 10);
-  drawWrappedLines(current.page, guidanceLines, left + cols[0] + cols[1] + cols[2] + cols[3] + 8, y + rowHeight - 18, 8, fonts.regular, 10);
+    current.page.drawText(continuation ? "" : rowQuestionLabel(row.order), { x: left + 14, y: y + rowHeight - 18, size: 10, font: fonts.regular });
+    drawWrappedLines(current.page, rowAnswer, left + cols[0] + 8, y + rowHeight - 18, 8.4, fonts.regular, 11);
+    drawWrappedLines(current.page, rowMarkCodes, left + cols[0] + cols[1] + 16, y + rowHeight - 18, 9.5, fonts.bold, 13);
 
-  current.y = y - 10;
+    let schemeY = y + rowHeight - 18;
+    const schemeX = left + cols[0] + cols[1] + cols[2] + 8;
+    schemeY = drawWrappedLines(current.page, rowScheme, schemeX, schemeY, 8.3, fonts.bold, 10);
+    drawAoAwareWrappedLines(current.page, rowGuidance, left + cols[0] + cols[1] + cols[2] + cols[3] + 8, y + rowHeight - 18, 8, fonts, cols[4] - 12, 10);
+
+    remainingAnswer = remainingAnswer.slice(rowAnswer.length);
+    remainingMarkCodes = remainingMarkCodes.slice(rowMarkCodes.length);
+    remainingScheme = remainingScheme.slice(rowScheme.length);
+    remainingGuidance = remainingGuidance.slice(rowGuidance.length);
+    current.y = y - 10;
+    continuation = true;
+    if (remainingAnswer.length > 0 || remainingMarkCodes.length > 0 || remainingScheme.length > 0 || remainingGuidance.length > 0) {
+      current = newMathTablePage(outputDoc, row.unit, fonts, current.pageNumber + 1);
+    }
+  } while (remainingAnswer.length > 0 || remainingMarkCodes.length > 0 || remainingScheme.length > 0 || remainingGuidance.length > 0);
+
   return current;
 }
 
@@ -1120,33 +1325,51 @@ function splitOcrAnswerGuidance(lines: string[]) {
   return { answerLines, guidanceLines };
 }
 
-function drawOcrMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean }, fonts: MarkSchemeFonts) {
+function drawOcrMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean; totalRow?: boolean }, fonts: MarkSchemeFonts) {
   const left = 34;
   const width = LANDSCAPE_WIDTH - 68;
   const cols = [92, 414, 48, width - 92 - 414 - 48];
   const entry = buildStructuredEntry(row.unit, row.text, row.continuation);
   const allLines = guidanceDisplayLines(entry.guidance || row.text, fonts, 8, cols[1] - 12);
   const split = splitOcrAnswerGuidance(allLines);
-  const promptLines = wrapText(entry.prompt, fonts.bold, 8.2, cols[1] - 12).slice(0, 3);
-  const answerLines = [...promptLines, ...split.answerLines].slice(0, 16);
-  const guidanceLines = split.guidanceLines.slice(0, 14);
-  const rowHeight = Math.max(56, 22 + Math.max(answerLines.length, guidanceLines.length) * 10);
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.2, cols[1] - 12);
+  let remainingAnswer = [...promptLines, ...split.answerLines];
+  let remainingGuidance = split.guidanceLines;
   let current = layout ?? newOcrTablePage(outputDoc, row.unit, fonts, 1);
-  if (current.y - rowHeight < 44) current = newOcrTablePage(outputDoc, row.unit, fonts, current.pageNumber + 1);
+  let continuation = row.continuation ?? false;
 
-  const y = current.y - rowHeight;
-  current.page.drawRectangle({ x: left, y, width, height: rowHeight, borderColor: rgb(0.02, 0.02, 0.02), borderWidth: 0.7 });
-  let x = left;
-  for (const col of cols.slice(0, -1)) {
-    x += col;
-    current.page.drawLine({ start: { x, y }, end: { x, y: y + rowHeight }, thickness: 0.6, color: rgb(0.02, 0.02, 0.02) });
-  }
-  current.page.drawText(row.continuation ? "" : String(row.order), { x: left + 10, y: y + rowHeight - 18, size: 9.5, font: fonts.bold });
-  current.page.drawText(row.continuation ? "cont." : rowPartLabel(row.unit), { x: left + 48, y: y + rowHeight - 18, size: 9.5, font: fonts.bold });
-  current.page.drawText(String(row.unit.totalMarks), { x: left + cols[0] + cols[1] + 16, y: y + rowHeight - 18, size: 9.5, font: fonts.bold });
-  drawWrappedLines(current.page, answerLines, left + cols[0] + 8, y + rowHeight - 18, 8, fonts.regular, 10);
-  drawWrappedLines(current.page, guidanceLines, left + cols[0] + cols[1] + cols[2] + 8, y + rowHeight - 18, 8, fonts.regular, 10);
-  current.y = y - 10;
+  do {
+    const maxRowLines = Math.max(1, Math.floor((current.y - 44 - 22) / 10));
+    const lineCount = Math.min(maxRowLines, Math.max(1, remainingAnswer.length, remainingGuidance.length));
+    const rowAnswer = remainingAnswer.slice(0, lineCount);
+    const rowGuidance = remainingGuidance.slice(0, lineCount);
+    const rowHeight = Math.max(56, 22 + Math.max(rowAnswer.length, rowGuidance.length) * 10);
+    if (current.y - rowHeight < 44 && current.y !== LANDSCAPE_HEIGHT - 86) {
+      current = newOcrTablePage(outputDoc, row.unit, fonts, current.pageNumber + 1);
+      continue;
+    }
+
+    const y = current.y - rowHeight;
+    current.page.drawRectangle({ x: left, y, width, height: rowHeight, borderColor: rgb(0.02, 0.02, 0.02), borderWidth: 0.7 });
+    let x = left;
+    for (const col of cols.slice(0, -1)) {
+      x += col;
+      current.page.drawLine({ start: { x, y }, end: { x, y: y + rowHeight }, thickness: 0.6, color: rgb(0.02, 0.02, 0.02) });
+    }
+    current.page.drawText(continuation ? "" : String(row.order), { x: left + 10, y: y + rowHeight - 18, size: 9.5, font: fonts.bold });
+    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit, row.totalRow), { x: left + 48, y: y + rowHeight - 18, size: 9.5, font: fonts.bold });
+    current.page.drawText(String(row.unit.totalMarks), { x: left + cols[0] + cols[1] + 16, y: y + rowHeight - 18, size: 9.5, font: fonts.bold });
+    drawWrappedLines(current.page, rowAnswer, left + cols[0] + 8, y + rowHeight - 18, 8, fonts.regular, 10);
+    drawAoAwareWrappedLines(current.page, rowGuidance, left + cols[0] + cols[1] + cols[2] + 8, y + rowHeight - 18, 8, fonts, cols[3] - 12, 10);
+    remainingAnswer = remainingAnswer.slice(rowAnswer.length);
+    remainingGuidance = remainingGuidance.slice(rowGuidance.length);
+    current.y = y - 10;
+    continuation = true;
+    if (remainingAnswer.length > 0 || remainingGuidance.length > 0) {
+      current = newOcrTablePage(outputDoc, row.unit, fonts, current.pageNumber + 1);
+    }
+  } while (remainingAnswer.length > 0 || remainingGuidance.length > 0);
+
   return current;
 }
 
@@ -1178,12 +1401,12 @@ function splitBulletItem(item: BulletLine, maxHeight: number, fonts: MarkSchemeF
   return chunks;
 }
 
-function drawAqaGeographyMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string }, fonts: MarkSchemeFonts) {
+function drawAqaGeographyMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; totalRow?: boolean }, fonts: MarkSchemeFonts) {
   const entry = buildStructuredEntry(row.unit, row.text);
   const contentW = MS_GUIDANCE_W - 18;
-  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW).slice(0, 4);
-  const levelItems = entry.levels.length > 0 ? levelGuidanceItems(entry.guidance).slice(0, 3) : [];
-  const guidanceLines = entry.levels.length > 0 ? [] : guidanceDisplayLines(entry.guidance, fonts, 8, contentW).slice(0, 18);
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW);
+  const levelItems = entry.levels.length > 0 ? levelGuidanceItems(entry.guidance) : [];
+  const guidanceLines = entry.levels.length > 0 ? [] : guidanceDisplayLines(entry.guidance, fonts, 8, contentW);
   const answerHeight = entry.answerLetter && entry.answerText ? 24 : 0;
   const levelsHeight = levelTableHeight(entry.levels, fonts, contentW);
   const levelItemsHeight = levelItems.length > 0 ? bulletItemsHeight(levelItems, fonts, 7.8, contentW, 9) + 8 : 0;
@@ -1233,7 +1456,7 @@ function drawAqaGeographyMarkSchemeTableRow(outputDoc: PDFDocument, layout: Tabl
     current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y }, end: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
     current.page.drawLine({ start: { x: MS_RIGHT - MS_MARKS_W, y }, end: { x: MS_RIGHT - MS_MARKS_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
     current.page.drawText(continuation ? "" : rowQuestionLabel(row.order), { x: MS_LEFT + 8, y: y + rowHeight - 18, size: 12, font: fonts.regular });
-    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
+    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit, row.totalRow), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
     current.page.drawText(String(row.unit.totalMarks), { x: MS_RIGHT - MS_MARKS_W + 20, y: y + rowHeight - 18, size: 12, font: fonts.regular });
 
     let textY = y + rowHeight - 18;
@@ -1245,7 +1468,7 @@ function drawAqaGeographyMarkSchemeTableRow(outputDoc: PDFDocument, layout: Tabl
       textY -= 18;
     }
     if (!continuation && entry.levels.length > 0) textY = drawLevelTable(current.page, entry.levels, textX, textY - 8, contentW, fonts) - 12;
-    if (rowGuidanceLines.length > 0) textY = drawWrappedLines(current.page, rowGuidanceLines, textX, textY - 4, 8, fonts.regular, 10);
+    if (rowGuidanceLines.length > 0) textY = drawAoAwareWrappedLines(current.page, rowGuidanceLines, textX, textY - 4, 8, fonts, contentW, 10);
     if (rowLevelItems.length > 0) textY = drawBulletItems(current.page, rowLevelItems, textX, textY - 8, 7.8, fonts, contentW, 9);
     if (rowItems.length > 0) {
       current.page.drawText("Indicative content", { x: textX, y: textY - 8, size: 8, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
@@ -1263,10 +1486,10 @@ function drawAqaGeographyMarkSchemeTableRow(outputDoc: PDFDocument, layout: Tabl
   return current;
 }
 
-function drawAqaBusinessMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string }, fonts: MarkSchemeFonts) {
+function drawAqaBusinessMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; totalRow?: boolean }, fonts: MarkSchemeFonts) {
   const entry = buildStructuredEntry(row.unit, row.text);
   const contentW = MS_GUIDANCE_W - 18;
-  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW).slice(0, 4);
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW);
   const guidanceLines = guidanceDisplayLines(entry.guidance || row.text, fonts, 8, contentW);
   const answerHeight = entry.answerLetter && entry.answerText ? 24 : 0;
   let remainingLines = guidanceLines;
@@ -1294,7 +1517,7 @@ function drawAqaBusinessMarkSchemeTableRow(outputDoc: PDFDocument, layout: Table
     current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y }, end: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
     current.page.drawLine({ start: { x: MS_RIGHT - MS_MARKS_W, y }, end: { x: MS_RIGHT - MS_MARKS_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
     current.page.drawText(continuation ? "" : rowQuestionLabel(row.order), { x: MS_LEFT + 8, y: y + rowHeight - 18, size: 12, font: fonts.regular });
-    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
+    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit, row.totalRow), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
     current.page.drawText(String(row.unit.totalMarks), { x: MS_RIGHT - MS_MARKS_W + 20, y: y + rowHeight - 18, size: 12, font: fonts.regular });
 
     let textY = y + rowHeight - 18;
@@ -1305,7 +1528,7 @@ function drawAqaBusinessMarkSchemeTableRow(outputDoc: PDFDocument, layout: Table
       current.page.drawText(entry.answerText, { x: textX + 24, y: textY, size: 9.4, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
       textY -= 18;
     }
-    drawWrappedLines(current.page, rowLines, textX, textY - 4, 8, fonts.regular, 10);
+    drawAoAwareWrappedLines(current.page, rowLines, textX, textY - 4, 8, fonts, contentW, 10);
 
     remainingLines = remainingLines.slice(rowLines.length);
     current.y = y - 12;
@@ -1318,7 +1541,7 @@ function drawAqaBusinessMarkSchemeTableRow(outputDoc: PDFDocument, layout: Table
   return current;
 }
 
-function drawMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean }, fonts: MarkSchemeFonts) {
+function drawMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; continuation?: boolean; totalRow?: boolean }, fonts: MarkSchemeFonts) {
   if (row.unit.subjectSlug === "mathematics") return drawMathMarkSchemeTableRow(outputDoc, layout, row, fonts);
   if (row.unit.subjectSlug === "computer-science") return drawOcrMarkSchemeTableRow(outputDoc, layout, row, fonts);
   if (row.unit.boardCode === "aqa" && row.unit.subjectSlug === "geography" && extractIndicativeContent(cleanFallbackGuidance(row.text, row.unit))) {
@@ -1330,56 +1553,113 @@ function drawMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | nu
   const entry = buildStructuredEntry(row.unit, row.text, row.continuation);
   if (row.continuation && row.unit.boardCode === "aqa" && row.unit.subjectSlug === "geography" && !entry.guidance && !entry.indicativeContent && entry.levels.length === 0) return layout;
   const contentW = MS_GUIDANCE_W - 18;
-  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW).slice(0, 4);
-  const levelItems = entry.levels.length > 0 ? levelGuidanceItems(entry.guidance).slice(0, 3) : [];
-  const guidanceLines = entry.levels.length > 0 ? [] : guidanceDisplayLines(entry.guidance, fonts, 8, contentW).slice(0, 18);
+  const promptLines = wrapText(entry.prompt, fonts.bold, 8.8, contentW);
+  const levelItems = entry.levels.length > 0 ? levelGuidanceItems(entry.guidance) : [];
+  const guidanceLines = entry.levels.length > 0 ? [] : guidanceDisplayLines(entry.guidance, fonts, 8, contentW);
   const answerHeight = entry.answerLetter && entry.answerText ? 24 : 0;
   const levelsHeight = levelTableHeight(entry.levels, fonts, contentW);
-  const levelItemsHeight = levelItems.length > 0 ? bulletItemsHeight(levelItems, fonts, 7.8, contentW, 9) + 8 : 0;
-  const indicativeItems = indicativeContentItems(entry.indicativeContent).slice(0, 14);
-  const indicativeHeight = indicativeItems.length > 0 ? 14 + bulletItemsHeight(indicativeItems, fonts, 7.8, contentW, 9) : 0;
-  const rowHeight = Math.max(58, 36 + promptLines.length * 11 + answerHeight + guidanceLines.length * 11 + levelsHeight + levelItemsHeight + indicativeHeight + (entry.levels.length > 0 ? 34 : 12));
+  let remainingGuidance = guidanceLines;
+  let remainingLevelItems = levelItems;
+  let remainingIndicativeItems = indicativeContentItems(entry.indicativeContent);
   let current = layout ?? newTablePage(outputDoc, fonts, 1);
-  if (current.y - rowHeight < MS_BOTTOM) current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+  let continuation = row.continuation ?? false;
+  let hasDrawnRow = false;
 
-  const y = current.y - rowHeight;
-  current.page.drawRectangle({ x: MS_LEFT, y, width: MS_RIGHT - MS_LEFT, height: rowHeight, borderColor: rgb(0.05, 0.05, 0.05), borderWidth: 0.7 });
-  current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W, y }, end: { x: MS_LEFT + MS_QUESTION_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
-  current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y }, end: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
-  current.page.drawLine({ start: { x: MS_RIGHT - MS_MARKS_W, y }, end: { x: MS_RIGHT - MS_MARKS_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
-  current.page.drawText(row.continuation ? "" : rowQuestionLabel(row.order), { x: MS_LEFT + 8, y: y + rowHeight - 18, size: 12, font: fonts.regular });
-  current.page.drawText(row.continuation ? "cont." : rowPartLabel(row.unit), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
-  current.page.drawText(String(row.unit.totalMarks), { x: MS_RIGHT - MS_MARKS_W + 20, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+  do {
+    const rowPromptLines = continuation ? [] : promptLines;
+    const rowAnswerHeight = continuation ? 0 : answerHeight;
+    const rowLevelsHeight = continuation ? 0 : levelsHeight;
+    const fixedHeight = 36
+      + rowPromptLines.length * 11
+      + rowAnswerHeight
+      + rowLevelsHeight
+      + (entry.levels.length > 0 ? 34 : 12);
+    if (current.y !== MS_TOP - 22 && current.y - MS_BOTTOM < fixedHeight + 10) {
+      current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+      continue;
+    }
 
-  let textY = y + rowHeight - 18;
-  const textX = MS_LEFT + MS_QUESTION_W + MS_PART_W + 8;
-  textY = drawWrappedLines(current.page, promptLines, textX, textY, 8.8, fonts.bold, 11);
-  if (entry.answerLetter && entry.answerText) {
-    textY -= 8;
-    current.page.drawText(`${entry.answerLetter}.`, { x: textX, y: textY, size: 9.4, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
-    current.page.drawText(entry.answerText, { x: textX + 24, y: textY, size: 9.4, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
-    textY -= 18;
-  }
-  if (entry.levels.length > 0) {
-    textY -= 8;
-    textY = drawLevelTable(current.page, entry.levels, textX, textY, contentW, fonts) - 12;
-  }
-  if (guidanceLines.length > 0) {
-    if (promptLines.length > 0 || entry.answerLetter || entry.levels.length > 0) textY -= 4;
-    textY = drawWrappedLines(current.page, guidanceLines, textX, textY, 8, fonts.regular, 10);
-  }
-  if (levelItems.length > 0) {
-    textY -= 8;
-    textY = drawBulletItems(current.page, levelItems, textX, textY, 7.8, fonts, contentW, 9);
-  }
-  if (indicativeItems.length > 0) {
-    textY -= 8;
-    current.page.drawText("Indicative content", { x: textX, y: textY, size: 8, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
-    textY -= 11;
-    drawBulletItems(current.page, indicativeItems, textX, textY, 7.8, fonts, contentW, 9);
-  }
+    const availableHeight = Math.max(0, current.y - MS_BOTTOM - fixedHeight);
+    const guidanceCount = Math.min(remainingGuidance.length, Math.floor(availableHeight / 10));
+    const rowGuidanceLines = remainingGuidance.slice(0, guidanceCount);
+    let usedHeight = rowGuidanceLines.length * 10;
 
-  current.y = y - 12;
+    const levelItemCapacity = Math.max(0, availableHeight - usedHeight);
+    if (remainingLevelItems.length > 0) {
+      const firstItemHeight = bulletItemsHeight([remainingLevelItems[0]], fonts, 7.8, contentW, 9);
+      if (levelItemCapacity >= 9 && levelItemCapacity < firstItemHeight) {
+        remainingLevelItems = [...splitBulletItem(remainingLevelItems[0], levelItemCapacity, fonts, 7.8, contentW, 9), ...remainingLevelItems.slice(1)];
+        continue;
+      }
+    }
+    const levelItemCount = bulletItemsThatFit(remainingLevelItems, levelItemCapacity, fonts, 7.8, contentW, 9);
+    const rowLevelItems = remainingLevelItems.slice(0, levelItemCount);
+    const levelItemsHeight = rowLevelItems.length > 0 ? bulletItemsHeight(rowLevelItems, fonts, 7.8, contentW, 9) : 0;
+    usedHeight += levelItemsHeight;
+
+    let indicativeItemCount = 0;
+    const indicatorCapacity = Math.max(0, availableHeight - usedHeight - (remainingIndicativeItems.length > 0 ? 25 : 0));
+    if (remainingIndicativeItems.length > 0) {
+      const firstItemHeight = bulletItemsHeight([remainingIndicativeItems[0]], fonts, 7.8, contentW, 9);
+      if (indicatorCapacity >= 9 && indicatorCapacity < firstItemHeight) {
+        remainingIndicativeItems = [...splitBulletItem(remainingIndicativeItems[0], indicatorCapacity, fonts, 7.8, contentW, 9), ...remainingIndicativeItems.slice(1)];
+        continue;
+      }
+      indicativeItemCount = bulletItemsThatFit(remainingIndicativeItems, indicatorCapacity, fonts, 7.8, contentW, 9);
+    }
+    const rowIndicativeItems = remainingIndicativeItems.slice(0, indicativeItemCount);
+    const indicativeHeight = rowIndicativeItems.length > 0
+      ? 25 + bulletItemsHeight(rowIndicativeItems, fonts, 7.8, contentW, 9)
+      : 0;
+    const rowHeight = Math.max(58, fixedHeight + usedHeight + indicativeHeight);
+    const y = current.y - rowHeight;
+    current.page.drawRectangle({ x: MS_LEFT, y, width: MS_RIGHT - MS_LEFT, height: rowHeight, borderColor: rgb(0.05, 0.05, 0.05), borderWidth: 0.7 });
+    current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W, y }, end: { x: MS_LEFT + MS_QUESTION_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawLine({ start: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y }, end: { x: MS_LEFT + MS_QUESTION_W + MS_PART_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawLine({ start: { x: MS_RIGHT - MS_MARKS_W, y }, end: { x: MS_RIGHT - MS_MARKS_W, y: y + rowHeight }, thickness: 0.5, color: rgb(0.05, 0.05, 0.05) });
+    current.page.drawText(continuation ? "" : rowQuestionLabel(row.order), { x: MS_LEFT + 8, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+    current.page.drawText(continuation ? "cont." : rowPartLabel(row.unit, row.totalRow), { x: MS_LEFT + MS_QUESTION_W + 8, y: y + rowHeight - 18, size: 10, font: fonts.regular });
+    current.page.drawText(String(row.unit.totalMarks), { x: MS_RIGHT - MS_MARKS_W + 20, y: y + rowHeight - 18, size: 12, font: fonts.regular });
+
+    let textY = y + rowHeight - 18;
+    const textX = MS_LEFT + MS_QUESTION_W + MS_PART_W + 8;
+    textY = drawWrappedLines(current.page, rowPromptLines, textX, textY, 8.8, fonts.bold, 11);
+    if (!continuation && entry.answerLetter && entry.answerText) {
+      textY -= 8;
+      current.page.drawText(`${entry.answerLetter}.`, { x: textX, y: textY, size: 9.4, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
+      current.page.drawText(entry.answerText, { x: textX + 24, y: textY, size: 9.4, font: fonts.regular, color: rgb(0.05, 0.05, 0.05) });
+      textY -= 18;
+    }
+    if (!continuation && entry.levels.length > 0) {
+      textY -= 8;
+      textY = drawLevelTable(current.page, entry.levels, textX, textY, contentW, fonts) - 12;
+    }
+    if (rowGuidanceLines.length > 0) {
+      if (rowPromptLines.length > 0 || entry.answerLetter || entry.levels.length > 0) textY -= 4;
+      textY = drawAoAwareWrappedLines(current.page, rowGuidanceLines, textX, textY, 8, fonts, contentW, 10);
+    }
+    if (rowLevelItems.length > 0) {
+      textY -= 8;
+      textY = drawBulletItems(current.page, rowLevelItems, textX, textY, 7.8, fonts, contentW, 9);
+    }
+    if (rowIndicativeItems.length > 0) {
+      textY -= 8;
+      current.page.drawText("Indicative content", { x: textX, y: textY, size: 8, font: fonts.bold, color: rgb(0.05, 0.05, 0.05) });
+      textY -= 11;
+      drawBulletItems(current.page, rowIndicativeItems, textX, textY, 7.8, fonts, contentW, 9);
+    }
+
+    remainingGuidance = remainingGuidance.slice(rowGuidanceLines.length);
+    remainingLevelItems = remainingLevelItems.slice(rowLevelItems.length);
+    remainingIndicativeItems = remainingIndicativeItems.slice(rowIndicativeItems.length);
+    current.y = y - 12;
+    hasDrawnRow = true;
+    continuation = true;
+    if (remainingGuidance.length > 0 || remainingLevelItems.length > 0 || remainingIndicativeItems.length > 0) {
+      current = newTablePage(outputDoc, fonts, current.pageNumber + 1);
+    }
+  } while (!hasDrawnRow || remainingGuidance.length > 0 || remainingLevelItems.length > 0 || remainingIndicativeItems.length > 0);
+
   return current;
 }
 
@@ -1426,17 +1706,8 @@ function drawPlaceholderPage(outputDoc: PDFDocument, message: string, font: impo
   });
 }
 
-function drawTextFallbackPage(outputDoc: PDFDocument, text: string, font: import("pdf-lib").PDFFont) {
-  const page = outputDoc.addPage([595.28, 841.89]);
+function drawTextFallbackPages(outputDoc: PDFDocument, text: string, font: import("pdf-lib").PDFFont) {
   const sanitized = text.replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ").replace(/\s+/g, " ").trim();
-  page.drawRectangle({ x: 36, y: 36, width: 523.28, height: 769.89, borderColor: rgb(0.88, 0.88, 0.88), borderWidth: 1 });
-  page.drawText("Selected mark scheme excerpt", {
-    x: 56,
-    y: 792,
-    size: 14,
-    font,
-    color: rgb(0.1, 0.1, 0.1),
-  });
   const words = sanitized.split(" ");
   const lines: string[] = [];
   let line = "";
@@ -1451,11 +1722,24 @@ function drawTextFallbackPage(outputDoc: PDFDocument, text: string, font: import
   }
   if (line) lines.push(line);
 
-  let y = 762;
-  for (const renderedLine of lines.slice(0, 46)) {
-    page.drawText(renderedLine, { x: 56, y, size: 8.5, font, color: rgb(0.12, 0.12, 0.12), maxWidth: 480, lineHeight: 10 });
-    y -= 13;
+  const pages: import("pdf-lib").PDFPage[] = [];
+  for (let offset = 0; offset < Math.max(1, lines.length); offset += 46) {
+    const page = outputDoc.addPage([595.28, 841.89]);
+    page.drawRectangle({ x: 36, y: 36, width: 523.28, height: 769.89, borderColor: rgb(0.88, 0.88, 0.88), borderWidth: 1 });
+    page.drawText("Selected mark scheme excerpt", {
+      x: 56,
+      y: 792,
+      size: 14,
+      font,
+      color: rgb(0.1, 0.1, 0.1),
+    });
+    let y = 762;
+    for (const renderedLine of lines.slice(offset, offset + 46)) {
+      page.drawText(renderedLine, { x: 56, y, size: 8.5, font, color: rgb(0.12, 0.12, 0.12), maxWidth: 480, lineHeight: 10 });
+      y -= 13;
+    }
+    page.drawText("Auto-cropped from the selected question pages.", { x: 56, y: 48, size: 7, font, color: rgb(0.45, 0.45, 0.45) });
+    pages.push(page);
   }
-  page.drawText("Auto-cropped from the selected question pages.", { x: 56, y: 48, size: 7, font, color: rgb(0.45, 0.45, 0.45) });
-  return page;
+  return pages;
 }

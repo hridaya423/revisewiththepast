@@ -42,4 +42,5 @@ next-env.d.ts
 data/*
 !data/extracted-lite/
 qa-reports/
+/qa-*/
 /DESIGN.md

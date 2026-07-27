@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { PDFDocument, rgb, StandardFonts, type PDFPage, type PDFFont } from "pdf-lib";
 
 import { getPdfDocument, renderPdfPageToPng, renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
-import { compareQuestionUnitsForRendering, type BoundingBox, type QuestionUnit, type SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
+import { type BoundingBox, type QuestionUnit, type SourcePageAsset } from "@/lib/paper-maker/aqa-geography";
 import { drawGeneratedCoverPage, type GeneratedCoverModel } from "@/lib/paper-maker/cover";
 import { readExtractedPaperJson } from "@/lib/paper-maker/extracted-store";
 import {
@@ -2857,10 +2857,11 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
   await drawGeneratedCoverPage(outputDoc, coverPage);
 
   const orderedUnits = Array.from(
-    new Map(selectedUnits.map((unit) => [unit.sourceQuestionKey, unit])).values(),
-  ).sort(compareQuestionUnitsForRendering);
-  const generatedQuestionNumberByUnitKey = new Map<string, number>();
-
+    new Map(selectedUnits.map((unit) => [unit.unitKey, unit])).values(),
+  );
+  if (orderedUnits.length !== selectedUnits.length) {
+    throw new Error("Paper generation received duplicate selected units.");
+  }
   const sourcePdfCache = new Map<string, Uint8Array>();
   const sourceDocCache = new Map<string, PDFDocument>();
   const prependedInsertBySource = new Set<string>();
@@ -2886,8 +2887,8 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
     return cached;
   };
 
-  const regionUnits: QuestionUnit[] = [];
-  const legacyUnits: QuestionUnit[] = [];
+  let regionUnits: QuestionUnit[] = [];
+  let legacyUnits: QuestionUnit[] = [];
   for (const unit of orderedUnits) {
     const layoutMap = getLayoutMap(unit.sourceRelativePath);
     const regionPlan = regionMode && (unit.boardCode !== "edexcel" || unit.subjectSlug === "french") && !isMathematicsUnit(unit) && isUnitRegionRenderable(unit, layoutMap)
@@ -2899,15 +2900,21 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
       legacyUnits.push(unit);
     }
   }
+  if (regionUnits.length > 0 && legacyUnits.length > 0) {
+    regionUnits = [];
+    legacyUnits = [...orderedUnits];
+  }
   const skippedUnitKeys: string[] = [];
   const renderedUnitKeys = new Set<string>();
-  let nextQuestionNumber = 1;
+  const generatedQuestionNumberByUnitKey = new Map(
+    orderedUnits.map((unit, index) => [unit.unitKey, index + 1]),
+  );
   const regionFlow: RegionRenderFlow = { page: null, cursorY: 0 };
 
   if (regionUnits.length > 0) {
     for (const unit of regionUnits) {
       try {
-        const questionNumber = nextQuestionNumber;
+        const questionNumber = generatedQuestionNumberByUnitKey.get(unit.unitKey) ?? 1;
         const rendered = await renderRegionUnit(
           unit,
           outputDoc,
@@ -2920,8 +2927,6 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
           questionNumber,
         );
         if (rendered) {
-          generatedQuestionNumberByUnitKey.set(unit.unitKey, questionNumber);
-          nextQuestionNumber += 1;
           if (isEnglishLiteratureUnit(unit)) {
             drawGeneratedAnswerSpacePage(outputDoc, questionNumber, unit.totalMarks);
             regionFlow.page = null;
@@ -2929,7 +2934,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
           }
           renderedUnitKeys.add(unit.unitKey);
         } else {
-          legacyUnits.push(unit);
+          skippedUnitKeys.push(unit.unitKey);
         }
       } catch (error) {
         skippedUnitKeys.push(unit.unitKey);
@@ -2938,18 +2943,17 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
     }
   }
 
-  legacyUnits.forEach((unit) => {
-    generatedQuestionNumberByUnitKey.set(unit.unitKey, nextQuestionNumber);
-    nextQuestionNumber += 1;
-  });
-
   const unitStartPages = buildUnitStartPageMap(allUnits);
   const renderPageNumbersByUnit = new Map(
     legacyUnits.map((unit) => [unit.unitKey, determineRenderPageNumbers(unit, unitStartPages)]),
   );
   const selectedPageOccupancy = buildRenderPageOccupancyMap(legacyUnits, renderPageNumbersByUnit);
-  const shortUnits = legacyUnits.filter(shouldAttemptCompactLayout);
-  const standardUnits = legacyUnits.filter((unit) => !shouldAttemptCompactLayout(unit));
+  const hasMixedLegacyLayouts = legacyUnits.some(shouldAttemptCompactLayout)
+    && legacyUnits.some((unit) => !shouldAttemptCompactLayout(unit));
+  const shortUnits = hasMixedLegacyLayouts ? [] : legacyUnits.filter(shouldAttemptCompactLayout);
+  const standardUnits = hasMixedLegacyLayouts
+    ? [...legacyUnits]
+    : legacyUnits.filter((unit) => !shouldAttemptCompactLayout(unit));
   let currentPage: import("pdf-lib").PDFPage | null = null;
   let cursorTop = 0;
 
