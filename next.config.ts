@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    lockDistDir: false,
+  },
   serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingIncludes: {
     "/api/paper-maker/generate": ["./data/extracted-lite/**/paper.json.gz"],
