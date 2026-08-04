@@ -1,5 +1,5 @@
-import { GCSE_SUBJECTS } from "./gcseCatalog";
-import type { PaperDefinition, SubjectBoardConfig } from "../lib/gcse/types";
+import { GCSE_SUBJECTS } from "../shared/domain/exam-catalog";
+import type { PaperDefinition, SubjectBoardConfig } from "../shared/domain/exam";
 
 export type SeedSubjectRow = {
   slug: string;

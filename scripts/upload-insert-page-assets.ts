@@ -8,6 +8,7 @@ import { ConvexHttpClient } from "convex/browser";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 import { api } from "../convex/_generated/api";
+import { getFirstEnvironment, getOptionalEnvironment } from "./runtime";
 
 type ManifestRecord = {
   sourceRelativePath: string;
@@ -26,10 +27,10 @@ type Manifest = {
   records: ManifestRecord[];
 };
 
-const TARGET_BOARD_CODE = process.env.TARGET_BOARD_CODE;
-const TARGET_SUBJECT_SLUG = process.env.TARGET_SUBJECT_SLUG;
-const HACKCLUB_CDN_API_KEY = process.env.HACKCLUB_CDN_API_KEY;
-const CONVEX_URL = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
+const TARGET_BOARD_CODE = getOptionalEnvironment("TARGET_BOARD_CODE");
+const TARGET_SUBJECT_SLUG = getOptionalEnvironment("TARGET_SUBJECT_SLUG");
+const HACKCLUB_CDN_API_KEY = getOptionalEnvironment("HACKCLUB_CDN_API_KEY");
+const CONVEX_URL = getFirstEnvironment("CONVEX_URL", "NEXT_PUBLIC_CONVEX_URL");
 const MANIFEST_PATH = resolve(process.cwd(), "data/insert-page-cdn-manifest.json");
 const TEMP_DIR = "/var/folders/w9/p_fpb3_x05n45_bt9_3wp5hw0000gn/T/opencode/insert-page-split";
 

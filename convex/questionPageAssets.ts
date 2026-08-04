@@ -24,7 +24,7 @@ export const upsertQuestionPageAsset = mutationGeneric({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("questionPageAssets", existing._id, {
         ...args,
         updatedAt: now,
       });
@@ -59,7 +59,7 @@ export const deleteQuestionPageAssetsNotInBoardSubject = mutationGeneric({
       );
 
       if (shouldDelete) {
-        await ctx.db.delete(asset._id);
+        await ctx.db.delete("questionPageAssets", asset._id);
         deleted += 1;
       }
     }

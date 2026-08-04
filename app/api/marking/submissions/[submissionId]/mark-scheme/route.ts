@@ -1,6 +1,5 @@
-import { buildCombinedMarkScheme } from "@/lib/marking/scoring";
-import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { getMarkingSubmissionBundleFromConvex } from "@/lib/marking/convex";
+import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
+import { getCombinedMarkScheme } from "@/features/papers/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,9 +20,8 @@ export async function GET(request: Request, context: RouteContext) {
   if (!submissionId) return badRequest("submissionId is required.");
 
   try {
-    const bundle = await getMarkingSubmissionBundleFromConvex(submissionId);
-    if (!bundle) return badRequest("Submission not found.", 404);
-    const combined = await buildCombinedMarkScheme(bundle as never);
+    const combined = await getCombinedMarkScheme(submissionId);
+    if (!combined) return badRequest("Submission not found.", 404);
     return Response.json(combined);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) return unauthorizedResponse();

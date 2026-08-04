@@ -22,7 +22,9 @@ async function main() {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    const text = content.items.map((item: any) => item.str).join(' ');
+     const text = content.items
+       .map((item) => ("str" in item && typeof item.str === "string" ? item.str : ""))
+       .join(" ");
     fullText += `--- PAGE ${i} ---\n${text}\n\n`;
   }
   writeFileSync(outPath, fullText);

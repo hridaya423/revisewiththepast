@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import assert from "node:assert/strict";
 
-import { extractPdfPageTexts, getPdfDocument } from "@/lib/marking/pdfjs-server";
+import { extractPdfPageTexts, getPdfDocument } from "@/features/papers/infrastructure/pdfjs-server";
 
 type PaperRunReport = {
   configKey: string;

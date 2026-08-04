@@ -5,14 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type CSSProperties } from "react";
 import { AlignLeft, ArrowLeft, ArrowRight, Check, Clock3, List, Scale, Search, X, type LucideIcon } from "lucide-react";
 
-import type { QuestionMixProfile, TopicTreeNodeWithCounts } from "@/lib/paper-maker/aqa-geography";
-import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
-import {
-  estimatePaperTimeMinutes,
-  estimateTargetMarksFromTimeMinutes,
-  type PaperBuildTargetMode,
-  type PaperMakerSubjectKey,
-} from "@/lib/paper-maker/subjects";
+import type { QuestionMixProfile } from "@/shared/domain/paper";
+import type { TopicTreeNodeWithCounts } from "@/shared/domain/topic";
+import type { PaperBuildTargetMode, SubjectTierKey } from "@/shared/domain/subject";
+import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
+import { clampMarks, clampTimeMinutes, createMarkingSubmission, downloadMarkSchemePdfs, estimatePaperTimeMinutes, estimateTargetMarksFromTimeMinutes, MAX_MARKS, MAX_TIME_MINUTES, MIN_MARKS, MIN_TIME_MINUTES, recommendedPaperCodes, requestPaperGeneration, requestSavedPaper, requestSubjectDetail, resolveMinutesPerMark, resolveSubjectTopics, SuccessModal } from "@/features/papers/client";
+import type { GenerationResult } from "@/features/papers/client";
 import { useAuth } from "@/app/_components/auth-provider";
 import { EmbossIcon } from "@/app/_components/emboss/emboss-icon";
 import { EMBOSS_PRESETS } from "@/app/_components/emboss/params";
@@ -58,112 +56,12 @@ function SubjectEmboss({ subjectKey, surface, size = 52 }: { subjectKey: string;
   return <EmbossIcon icon={Icon} flag={subjectKey === "edexcel-french-reading" ? "fr" : undefined} color={presentation.accent} surface={surface} params={EMBOSS_PRESETS.subject} size={size} />;
 }
 
-type GenerationResult = {
-  paperCount: number;
-  questionCount: number;
-  totalMarks: number;
-  coveredTopics: number;
-  timeMinutes: number;
-  savedPaperIds: string[];
-  markSchemeUnitKeys: string[][];
-  saveWarning?: string | null;
-  markSchemeGenerated?: boolean;
-  markSchemeWarning?: string | null;
-};
-
-async function downloadMarkSchemePdfs({ unitKeysByPaper, subjectKey, subjectTier }: { unitKeysByPaper: string[][]; subjectKey: string; subjectTier?: string }) {
-  if (!unitKeysByPaper.some((keys) => keys.length > 0)) return { generated: false, warning: "No mark-scheme source data was returned for this paper." };
-  let warning: string | null = null;
-  let generated = false;
-
-  for (let index = 0; index < unitKeysByPaper.length; index += 1) {
-    const unitKeys = unitKeysByPaper[index];
-    if (unitKeys.length === 0) continue;
-    try {
-      const response = await fetch("/api/paper-maker/generate-mark-scheme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subjectKey, subjectTier, selectedUnitKeys: unitKeys }),
-      });
-      if (!response.ok) throw new Error(await response.text() || "Failed to generate mark scheme.");
-      const failureCount = Number(response.headers.get("X-Mark-Scheme-Failures") ?? 0);
-      if (failureCount > 0) warning = `${failureCount} mark scheme section${failureCount === 1 ? "" : "s"} could not be assembled. The PDF includes placeholder pages with details.`;
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = unitKeysByPaper.filter((keys) => keys.length > 0).length === 1 ? `${subjectKey}-mark-scheme.pdf` : `${subjectKey}-mark-scheme-${index + 1}.pdf`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(url);
-      generated = true;
-    } catch (cause) {
-      warning = cause instanceof Error ? cause.message : "The paper downloaded, but its mark scheme could not be generated.";
-    }
-  }
-
-  return { generated, warning };
-}
 
 const QUESTION_MIX_OPTIONS: { key: QuestionMixProfile; label: string; description: string; icon: LucideIcon }[] = [
   { key: "balanced", label: "Balanced", description: "A mix of short and extended questions.", icon: Scale },
   { key: "short-form", label: "Short form", description: "More 1–4 mark questions.", icon: List },
   { key: "long-form", label: "Long form", description: "More extended-response questions.", icon: AlignLeft },
 ];
-
-const MIN_MARKS = 10;
-const MAX_MARKS = 120;
-const MIN_TIME_MINUTES = 15;
-const MAX_TIME_MINUTES = 300;
-
-function clampMarks(value: number) {
-  return Math.max(MIN_MARKS, Math.min(MAX_MARKS, Math.round(value)));
-}
-
-function clampTimeMinutes(value: number) {
-  return Math.max(MIN_TIME_MINUTES, Math.min(MAX_TIME_MINUTES, Math.round(value / 5) * 5 || MIN_TIME_MINUTES));
-}
-
-export function recommendedPaperCodes(subjectKey: PaperMakerSubjectKey, selectedLeafIds: Set<string>, defaults: string[]) {
-  if (selectedLeafIds.size === 0) return defaults;
-  const ids = Array.from(selectedLeafIds).join(" ").toLowerCase();
-  const selected = new Set<string>();
-
-  if (subjectKey === "edexcel-combined-science") {
-    if (ids.includes("biology")) ["biology-1", "biology-2"].forEach((code) => selected.add(code));
-    if (ids.includes("chemistry")) ["chemistry-1", "chemistry-2"].forEach((code) => selected.add(code));
-    if (ids.includes("physics")) ["physics-1", "physics-2"].forEach((code) => selected.add(code));
-  }
-
-  if (subjectKey === "aqa-english-language" || subjectKey === "aqa-english-literature") {
-    if (ids.includes("paper-1")) selected.add("paper-1");
-    if (ids.includes("paper-2")) selected.add("paper-2");
-  }
-
-  if (subjectKey === "aqa-geography") {
-    if (["natural-hazards", "living-world", "physical-landscapes"].some((id) => ids.includes(id))) selected.add("paper-1");
-    if (["urban-issues", "changing-economic-world", "resource-management"].some((id) => ids.includes(id))) selected.add("paper-2");
-    if (["issue-evaluation", "fieldwork"].some((id) => ids.includes(id))) selected.add("paper-3");
-  }
-
-  return selected.size > 0 ? defaults.filter((code) => selected.has(code)) : defaults;
-}
-
-function resolveMinutesPerMark(benchmarkMinutesPerMark: number | null | undefined, recommendedMinutesPerMark: number | undefined) {
-  const fallback = recommendedMinutesPerMark && Number.isFinite(recommendedMinutesPerMark) && recommendedMinutesPerMark > 0
-    ? recommendedMinutesPerMark
-    : 1;
-  if (!benchmarkMinutesPerMark || !Number.isFinite(benchmarkMinutesPerMark)) return fallback;
-  if (benchmarkMinutesPerMark < 0.5 || benchmarkMinutesPerMark > 3) return fallback;
-  return benchmarkMinutesPerMark;
-}
-
-function resolveSubjectTopics(subject: WorkspaceSubjectOption | undefined, tierKey: SubjectTierKey) {
-  if (!subject) return [];
-  if (subject.tiers.length > 0) return subject.topicsByTier?.[tierKey] ?? [];
-  return subject.topics;
-}
 
 type BuilderStage = "subject" | "topics" | "paper";
 
@@ -221,138 +119,6 @@ function TopicSelectionSummary({
           Clear
         </button>
       ) : null}
-    </div>
-  );
-}
-
-function SuccessModal({
-  result,
-  subjectKey,
-  subjectTier,
-  subjectLabel,
-  tierLabel,
-  minutesPerMark,
-  isAuthenticated,
-  onClose,
-  onBuildAnother,
-}: {
-  result: GenerationResult;
-  subjectKey: string;
-  subjectTier?: string;
-  subjectLabel: string;
-  tierLabel?: string;
-  minutesPerMark: number;
-  isAuthenticated: boolean;
-  onClose: () => void;
-  onBuildAnother: () => void;
-}) {
-  const router = useRouter();
-  const modalRef = useRef<HTMLDivElement>(null);
-  const titleId = "paper-ready-title";
-  const [markSchemeState, setMarkSchemeState] = useState<{ status: "idle" | "loading" | "error" | "warning"; message?: string }>({ status: "idle" });
-  const [markingState, setMarkingState] = useState<{ status: "idle" | "loading" | "error"; message?: string }>({ status: "idle" });
-  const hasUnitKeys = result.markSchemeUnitKeys.some((keys) => keys.length > 0);
-
-  const openMarkingStudio = async () => {
-    if (!isAuthenticated) {
-      router.push("/auth?redirect=/marking");
-      return;
-    }
-    if (result.savedPaperIds.length !== 1) {
-      router.push("/marking");
-      return;
-    }
-    setMarkingState({ status: "loading" });
-    try {
-      const response = await fetch("/api/marking/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ savedPaperId: result.savedPaperIds[0] }),
-      });
-      if (!response.ok) throw new Error(await response.text() || "Could not start marking this paper.");
-      const payload = await response.json() as { submissionId: string };
-      router.push(`/marking/${payload.submissionId}`);
-    } catch (cause) {
-      setMarkingState({ status: "error", message: cause instanceof Error ? cause.message : "Could not start marking this paper." });
-    }
-  };
-
-  const generateMarkScheme = async () => {
-    if (!hasUnitKeys) {
-      setMarkSchemeState({ status: "error", message: "Mark scheme is only available for a freshly generated paper." });
-      return;
-    }
-    setMarkSchemeState({ status: "loading" });
-    const outcome = await downloadMarkSchemePdfs({ unitKeysByPaper: result.markSchemeUnitKeys, subjectKey, subjectTier });
-    if (!outcome.generated) setMarkSchemeState({ status: "error", message: outcome.warning ?? "Could not generate the mark scheme." });
-    else setMarkSchemeState(outcome.warning ? { status: "warning", message: outcome.warning } : { status: "idle" });
-  };
-
-  useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    modalRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key !== "Tab" || !modalRef.current) return;
-      const focusable = Array.from(modalRef.current.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])"));
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-      previousFocus?.focus();
-    };
-  }, [onClose]);
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-text/30 p-4 backdrop-blur-[3px]" onClick={onClose}>
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="max-h-[calc(100dvh-2rem)] w-full max-w-[520px] overflow-y-auto border border-text/15 bg-bg-workspace shadow-[0_24px_70px_rgba(13,23,52,0.2)] outline-none" onClick={(event) => event.stopPropagation()}>
-        <div className="p-6 sm:p-8">
-          <div className="flex items-start justify-between gap-5">
-            <div>
-              <h3 id={titleId} className="text-[1.7rem] font-semibold tracking-[-0.05em] text-text">Paper ready.</h3>
-              <p className="mt-1.5 max-w-[42ch] text-[0.78rem] leading-5 text-text-muted">Your custom {result.paperCount === 1 ? "paper has" : `${result.paperCount} papers have`} been generated and downloaded.</p>
-            </div>
-            <button type="button" onClick={onClose} className="btn-press -mr-2 -mt-2 flex h-9 w-9 shrink-0 items-center justify-center text-text-muted hover:bg-white/70 hover:text-text" aria-label="Close"><X className="h-4 w-4" /></button>
-          </div>
-
-          <section className="mt-6 border-y border-text/12 py-5" aria-label="Generated paper summary">
-            <p className="text-[0.65rem] font-bold tracking-[-0.01em] text-accent">{subjectLabel}{tierLabel ? ` · ${tierLabel}` : ""}</p>
-            <dl className="mt-4 grid grid-cols-3 divide-x divide-text/10">
-              <div className="pr-4"><dt className="text-[0.6rem] text-text-muted">Papers</dt><dd className="mt-1 font-mono text-[1.05rem] font-semibold tabular-nums text-text">{result.paperCount}</dd></div>
-              <div className="px-4"><dt className="text-[0.6rem] text-text-muted">Marks</dt><dd className="mt-1 font-mono text-[1.05rem] font-semibold tabular-nums text-text">{result.totalMarks}</dd></div>
-              <div className="pl-4"><dt className="text-[0.6rem] text-text-muted">Duration</dt><dd className="mt-1 font-mono text-[1.05rem] font-semibold tabular-nums text-text">{result.timeMinutes} min</dd></div>
-            </dl>
-            <p className="mt-4 text-[0.6rem] text-text-muted">About {minutesPerMark.toFixed(2)} minutes per mark</p>
-          </section>
-
-          <div className="mt-5 space-y-3">
-            {result.markSchemeGenerated ? <div className="flex items-center gap-2 border-l-2 border-success bg-success-soft/70 px-3 py-2.5 text-[0.7rem] font-semibold text-success"><Check className="h-3.5 w-3.5 shrink-0" />{result.paperCount > 1 ? "Papers and mark schemes downloaded" : "Paper and mark scheme downloaded"}</div> : <button type="button" onClick={generateMarkScheme} disabled={!hasUnitKeys || markSchemeState.status === "loading"} className="btn-press inline-flex min-h-10 w-full items-center justify-center border border-text/12 bg-white/55 px-4 text-[0.7rem] font-semibold text-text-secondary hover:border-accent/50 hover:text-accent disabled:opacity-50">{markSchemeState.status === "loading" ? "Building mark scheme…" : result.paperCount > 1 ? `Generate ${result.paperCount} mark schemes` : "Generate mark scheme"}</button>}
-            {markSchemeState.status === "error" ? <p className="text-[0.7rem] text-danger">{markSchemeState.message}</p> : null}
-            {markSchemeState.status === "warning" ? <p className="text-[0.7rem] text-warning">{markSchemeState.message}</p> : null}
-            {result.markSchemeWarning ? <p className="text-[0.7rem] text-warning">{result.markSchemeWarning}</p> : null}
-            {result.saveWarning ? <p className="border-l-2 border-warning bg-warning-soft px-3 py-2.5 text-[0.7rem] leading-5 text-text-secondary">{result.saveWarning}</p> : null}
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {result.saveWarning && isAuthenticated ? null : <button type="button" onClick={openMarkingStudio} disabled={markingState.status === "loading"} className="btn-press inline-flex min-h-11 items-center justify-center border border-text/15 bg-white px-4 text-[0.7rem] font-semibold text-text hover:border-accent hover:text-accent disabled:opacity-50">{markingState.status === "loading" ? "Opening studio…" : "Open marking studio"}</button>}
-              <button type="button" onClick={onClose} className={`btn-press inline-flex min-h-11 items-center justify-center gap-2 bg-accent px-4 text-[0.7rem] font-bold text-white hover:bg-accent-deep ${result.saveWarning && isAuthenticated ? "sm:col-span-2" : ""}`}>Back to builder<ArrowRight className="h-3.5 w-3.5" /></button>
-            </div>
-            {markingState.status === "error" ? <p className="text-[0.7rem] text-danger">{markingState.message}</p> : null}
-            <button type="button" onClick={onBuildAnother} className="btn-press mx-auto block px-4 py-2 text-[0.68rem] font-semibold text-text-muted hover:text-accent">Build another paper</button>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
@@ -443,17 +209,7 @@ export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initial
     setLoadingSubjectKey(key);
     setSubjectDetailError(null);
     try {
-      const response = await fetch(`/api/paper-maker/subject-detail?subjectKey=${encodeURIComponent(key)}`, { signal: controller.signal });
-      if (!response.ok) throw new Error(await response.text());
-      const detail = await response.json() as {
-        key: PaperMakerSubjectKey;
-        taggedQuestionUnits: number;
-        benchmarkMinutesPerMark: number | null;
-        topics: TopicTreeNodeWithCounts[];
-        topicsByTier?: Partial<Record<SubjectTierKey, TopicTreeNodeWithCounts[]>>;
-        tiers: { key: SubjectTierKey; label: string; taggedQuestionUnits: number }[];
-        detailLoaded: boolean;
-      };
+      const detail = await requestSubjectDetail(key, controller.signal);
       setSubjectOptionsState((current) => current.map((subject) => subject.key === detail.key ? { ...subject, taggedQuestionUnits: detail.taggedQuestionUnits, benchmarkMinutesPerMark: detail.benchmarkMinutesPerMark, topics: detail.topics, topicsByTier: detail.topicsByTier, tiers: detail.tiers, detailLoaded: detail.detailLoaded } : subject));
       const detailTier = detail.tiers.some((tier) => tier.key === selectedTier) ? selectedTier : detail.tiers[0]?.key ?? "foundation";
       const detailTopics = detail.tiers.length > 0 ? detail.topicsByTier?.[detailTier] ?? [] : detail.topics;
@@ -583,10 +339,7 @@ export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initial
         let lastTimeMinutes = timeMinutes;
 
         for (let paperIndex = 0; paperIndex < paperCount; paperIndex += 1) {
-          const response = await fetch("/api/paper-maker/generate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          const generated = await requestPaperGeneration({
               subjectKey: selectedSubjectKey,
               subjectTier: activeSubject?.tiers.length ? selectedTier : undefined,
               selectedTopicNodeIds,
@@ -600,26 +353,18 @@ export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initial
               priorSelectedUnitMarks,
               priorPaperCount: paperIndex,
               priorCoveredLeafTopicIds,
-            }),
           });
-          if (!response.ok) throw new Error((await response.text()) || "Failed to generate paper.");
 
-          const blob = await response.blob();
-          lastQuestionCount = Number(response.headers.get("X-Question-Count") ?? 0);
-          lastTotalMarks = Number(response.headers.get("X-Total-Marks") ?? 0);
-          lastCoveredTopics = Number(response.headers.get("X-Covered-Topics") ?? 0);
-          lastTimeMinutes = Number(response.headers.get("X-Time-Minutes") ?? timeMinutes);
-          const encodedKeys = response.headers.get("X-Selected-Source-Question-Keys");
-          if (encodedKeys) decodeURIComponent(encodedKeys).split("\n").filter(Boolean).forEach((key) => excludedSourceQuestionKeys.add(key));
-          const encodedMarks = response.headers.get("X-Selected-Unit-Marks");
-          if (encodedMarks) decodeURIComponent(encodedMarks).split("\n").filter(Boolean).forEach((value) => {
-            const parsed = Number(value);
-            if (Number.isFinite(parsed)) priorSelectedUnitMarks.push(parsed);
-          });
-          const encodedCoveredLeafs = response.headers.get("X-Covered-Leaf-Topic-Ids");
-          if (encodedCoveredLeafs) decodeURIComponent(encodedCoveredLeafs).split("\n").filter(Boolean).forEach((leafId) => priorCoveredLeafTopicIds.push(leafId));
-          const encodedUnitKeys = response.headers.get("X-Selected-Unit-Keys");
-          if (encodedUnitKeys) markSchemeUnitKeys.push(decodeURIComponent(encodedUnitKeys).split("\n").filter(Boolean));
+          const blob = generated.blob;
+          lastQuestionCount = generated.questionCount;
+          lastTotalMarks = generated.totalMarks;
+          lastCoveredTopics = generated.coveredTopics;
+          lastTimeMinutes = generated.timeMinutes;
+          generated.selectedSourceQuestionKeys.forEach((key) => excludedSourceQuestionKeys.add(key));
+          priorSelectedUnitMarks.push(...generated.selectedUnitMarks);
+          priorCoveredLeafTopicIds.push(...generated.coveredLeafTopicIds);
+          const encodedUnitKeys = generated.selectedUnitKeys.length > 0 ? generated.selectedUnitKeys.join("\n") : null;
+          if (encodedUnitKeys) markSchemeUnitKeys.push(generated.selectedUnitKeys);
 
           const url = URL.createObjectURL(blob);
           const anchor = document.createElement("a");
@@ -638,12 +383,12 @@ export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initial
             saveFormData.append("timeMinutes", String(lastTimeMinutes));
             saveFormData.append("selectedUnitKeys", decodeURIComponent(encodedUnitKeys));
             saveFormData.append("file", new File([blob], anchor.download, { type: "application/pdf" }));
-            const saveResponse = await fetch("/api/paper-maker/save-generated", { method: "POST", body: saveFormData });
-            if (saveResponse.ok) {
-              const payload = await saveResponse.json() as { savedPaperId?: string };
+            try {
+              const payload = await requestSavedPaper(saveFormData);
               if (payload.savedPaperId) savedPaperIds.push(payload.savedPaperId);
+            } catch (cause) {
+              if (!saveWarning) saveWarning = cause instanceof Error ? cause.message : "The paper downloaded, but saving it failed.";
             }
-            if (!saveResponse.ok && !saveWarning) saveWarning = await saveResponse.text() || "The paper downloaded, but saving it failed.";
           }
 
           URL.revokeObjectURL(url);
@@ -859,7 +604,18 @@ export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initial
         {builderStage === "topics" ? <button type="button" onClick={() => goToStage("paper")} disabled={!topicsReady} className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-[0.8rem] font-bold text-white hover:bg-accent-deep disabled:opacity-40">Continue to paper setup<ArrowRight className="h-4 w-4" /></button> : <div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => handleGenerate(false)} disabled={!canGenerate || isPending} className="btn-press flex min-h-12 items-center justify-center rounded-md bg-accent px-3 text-[0.7rem] font-bold text-white disabled:opacity-40">{isPending && generationMode === "paper" ? "Building…" : paperCount > 1 ? `Generate ${paperCount} papers` : "Generate paper"}</button><button type="button" onClick={() => handleGenerate(true)} disabled={!canGenerate || isPending} className="btn-press flex min-h-11 items-center justify-center rounded-md border border-text/15 bg-transparent px-3 text-center text-accent disabled:opacity-40">{isPending && generationMode === "paper-and-mark-scheme" ? <span className="text-[0.64rem] font-bold">Building both…</span> : <span className="flex flex-col items-center leading-none"><span className="text-[0.64rem] font-bold">{paperCount > 1 ? `Generate ${paperCount} papers` : "Generate paper"}</span><span className="mt-1 text-[0.48rem] font-medium text-text-muted">+ {paperCount > 1 ? "mark schemes" : "mark scheme"}</span></span>}</button></div>}
       </div> : null}
 
-      {result ? <SuccessModal result={result} subjectKey={selectedSubjectKey} subjectTier={activeSubject?.tiers.length ? selectedTier : undefined} subjectLabel={activeSubject?.label ?? ""} tierLabel={activeTier?.label} minutesPerMark={activeMinutesPerMark} isAuthenticated={isAuthenticated} onClose={() => setResult(null)} onBuildAnother={() => { setResult(null); setSelectedLeafIds(new Set()); }} /> : null}
+      {result ? <SuccessModal result={result} subjectKey={selectedSubjectKey} subjectTier={activeSubject?.tiers.length ? selectedTier : undefined} subjectLabel={activeSubject?.label ?? ""} tierLabel={activeTier?.label} minutesPerMark={activeMinutesPerMark} isAuthenticated={isAuthenticated} onOpenMarking={async () => {
+        if (!isAuthenticated) {
+          router.push("/auth?redirect=/marking");
+          return;
+        }
+        if (result.savedPaperIds.length !== 1) {
+          router.push("/marking");
+          return;
+        }
+        const payload = await createMarkingSubmission({ savedPaperId: result.savedPaperIds[0] });
+        router.push(`/marking/${payload.submissionId}`);
+      }} onClose={() => setResult(null)} onBuildAnother={() => { setResult(null); setSelectedLeafIds(new Set()); }} /> : null}
     </div>
   );
 }

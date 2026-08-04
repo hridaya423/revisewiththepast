@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-import type { TopicTreeNodeWithCounts } from "@/lib/paper-maker/aqa-geography";
+import type { TopicTreeNodeWithCounts } from "@/shared/domain/topic";
 
 export type SelectedTopicSummary = {
   id: string;

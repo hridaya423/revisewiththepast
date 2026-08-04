@@ -10,10 +10,12 @@
 
 import type * as auth from "../auth.js";
 import type * as catalogSeedPlan from "../catalogSeedPlan.js";
-import type * as gcseCatalog from "../gcseCatalog.js";
 import type * as http from "../http.js";
 import type * as insertPageAssets from "../insertPageAssets.js";
 import type * as marking from "../marking.js";
+import type * as markingImportAssets from "../markingImportAssets.js";
+import type * as model_auth from "../model/auth.js";
+import type * as model_markingSummary from "../model/markingSummary.js";
 import type * as paperAssets from "../paperAssets.js";
 import type * as paperRegions from "../paperRegions.js";
 import type * as questionPageAssets from "../questionPageAssets.js";
@@ -29,10 +31,12 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   catalogSeedPlan: typeof catalogSeedPlan;
-  gcseCatalog: typeof gcseCatalog;
   http: typeof http;
   insertPageAssets: typeof insertPageAssets;
   marking: typeof marking;
+  markingImportAssets: typeof markingImportAssets;
+  "model/auth": typeof model_auth;
+  "model/markingSummary": typeof model_markingSummary;
   paperAssets: typeof paperAssets;
   paperRegions: typeof paperRegions;
   questionPageAssets: typeof questionPageAssets;

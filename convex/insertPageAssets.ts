@@ -25,7 +25,7 @@ export const upsertInsertPageAsset = mutationGeneric({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("insertPageAssets", existing._id, {
         ...args,
         updatedAt: now,
       });

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 
-import { extractAnswerRegionText } from "@/lib/marking/answer-extraction";
-import { detectPageQuestionNumber } from "@/lib/marking/mark-scheme";
-import { isPartStartLineForPath } from "@/lib/marking/question-path";
-import { normalizeScoreModelResult } from "@/lib/marking/scoring";
+import { extractAnswerRegionText } from "@/features/papers/marking/domain/answer-extraction";
+import { detectPageQuestionNumber } from "@/features/papers/marking/infrastructure/mark-scheme/mark-scheme";
+import { isPartStartLineForPath } from "@/features/papers/marking/domain/question-path";
+import { normalizeScoreModelResult } from "@/features/papers/marking/infrastructure/scoring/scoring";
 
 const invalid = normalizeScoreModelResult({ awardedMarks: "two", confidence: "high" }, 4);
 assert.equal(invalid.awardedMarks, 0);
@@ -14,7 +14,7 @@ const malformedBreakdown = normalizeScoreModelResult({
   awardedMarks: 1,
   confidence: 0.8,
   needsReview: false,
-  markBreakdown: "n/a" as unknown as [],
+  markBreakdown: "n/a",
 }, 4);
 assert.deepEqual(malformedBreakdown.markBreakdown, []);
 

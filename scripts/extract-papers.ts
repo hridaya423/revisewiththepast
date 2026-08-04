@@ -13,7 +13,7 @@ process.on("unhandledRejection", (reason) => {
   process.exit(1);
 });
 
-import { extractReferencedSupportLabels, isFooterFurnitureLine, isHeaderFurnitureLine, matchSupportCaption } from "@/lib/paper-maker/page-text";
+import { extractReferencedSupportLabels, isFooterFurnitureLine, isHeaderFurnitureLine, matchSupportCaption } from "@/features/papers/builder/domain/page-text";
 
 type BoundingBox = { x0: number; y0: number; x1: number; y1: number };
 type TextLine = { text: string; bbox: BoundingBox; y: number };
@@ -627,7 +627,6 @@ function extractTopLevelQuestionStart(
   subjectSlug: string,
   boardCode: string,
   sectionCode: string | null,
-  pageText: string,
 ) {
   const normalized = normalizeText(text);
   const isEdexcelMaths = boardCode === "edexcel" && subjectSlug === "mathematics";
@@ -640,7 +639,7 @@ function extractTopLevelQuestionStart(
       : normalized.match(/^(\d{1,2})\s+(?=[A-Z])/);
   if (!match) return null;
   if (line.bbox.x0 > 90) return null;
-  if (subjectSlug === "english-literature" && !canRelaxEnglishLiteratureTopGuard(boardCode, sectionCode, pageText) && line.bbox.y0 < 650) return null;
+  if (subjectSlug === "english-literature" && !canRelaxEnglishLiteratureTopGuard(boardCode, sectionCode) && line.bbox.y0 < 650) return null;
 
   const candidate = Number(match[1]);
   if (Number.isNaN(candidate)) return null;
@@ -663,7 +662,6 @@ function extractStandaloneQuestionNumber(
   subjectSlug: string,
   boardCode: string,
   sectionCode: string | null,
-  pageText: string,
 ) {
   const normalized = normalizeText(text);
   if (isBookletMarkerLine(normalized)) return null;
@@ -673,7 +671,7 @@ function extractStandaloneQuestionNumber(
     : normalized.match(/^(\d{1,2})$/)?.[1] ?? null;
   if (!normalizedQuestionNumber) return null;
   if (line.bbox.x0 > 90 || line.bbox.y0 < 120) return null;
-  if (subjectSlug === "english-literature" && !canRelaxEnglishLiteratureTopGuard(boardCode, sectionCode, pageText) && line.bbox.y0 < 650) return null;
+  if (subjectSlug === "english-literature" && !canRelaxEnglishLiteratureTopGuard(boardCode, sectionCode) && line.bbox.y0 < 650) return null;
 
   const candidate = Number(normalizedQuestionNumber);
   if (Number.isNaN(candidate)) return null;
@@ -886,7 +884,7 @@ function buildChoiceScopeKey(
   return `${section}:${groupType}`;
 }
 
-function canRelaxEnglishLiteratureTopGuard(boardCode: string, sectionCode: string | null, pageText: string) {
+function canRelaxEnglishLiteratureTopGuard(boardCode: string, sectionCode: string | null) {
   return boardCode === "edexcel" && sectionCode === "B";
 }
 
@@ -1973,7 +1971,6 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
         subjectSlug,
         boardCode,
         currentSectionCode,
-        pageText,
       );
       if (standaloneQuestionNumber) {
         const standaloneContextLines = pendingContextLines;
@@ -2165,7 +2162,6 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
         subjectSlug,
         boardCode,
         currentSectionCode,
-        pageText,
       );
       if (topLevelQuestionStart) {
         const topLevelStartContextLines = pendingContextLines;

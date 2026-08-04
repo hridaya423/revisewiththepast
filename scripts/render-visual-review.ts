@@ -5,7 +5,8 @@ import { dirname, resolve } from "node:path";
 
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 
-import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
+import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
+import { getNumberEnvironment } from "./runtime";
 
 type PaperReport = {
   configKey: string;
@@ -19,7 +20,8 @@ type QaReport = {
 const PAGE_WIDTH = 360;
 const GAP = 16;
 const LABEL_HEIGHT = 28;
-const MARKSCHEME_PAGE_COUNT = Number(process.env.MARKSCHEME_PAGE_COUNT ?? 4);
+
+const MARKSCHEME_PAGE_COUNT = getNumberEnvironment("MARKSCHEME_PAGE_COUNT", 4, { min: 1 });
 
 function usage(): never {
   console.error("Usage: tsx scripts/render-visual-review.ts <report.json> [...report.json]");

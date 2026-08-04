@@ -6,6 +6,7 @@ import { ArrowRight, ArrowUpRight, Check, ChevronRight, FileText, Loader2, Plus,
 
 import { OperationNotice } from "@/app/_components/marking/presentation";
 import { QuestionProgressRail, type QuestionProgressItem } from "@/app/_components/marking/question-progress";
+import { createMarkingSubmission, importFinishedPaper } from "@/features/papers/client";
 
 type SubmissionSummary = {
   _id: string;
@@ -121,9 +122,7 @@ export function MarkingDashboard({ initialSavedPapers, initialSubmissions, userN
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const response = await fetch("/api/marking/import-finished-paper", { method: "POST", body: formData });
-      if (!response.ok) throw new Error(await response.text() || "Could not import the finished paper PDF.");
-      const payload = await response.json() as { submissionId: string };
+      const payload = await importFinishedPaper(formData);
       router.push(`/marking/${payload.submissionId}`);
       router.refresh();
     } catch (cause) {
@@ -143,9 +142,7 @@ export function MarkingDashboard({ initialSavedPapers, initialSubmissions, userN
     setActionError(null);
     setStartingPaperIds((current) => new Set(current).add(savedPaperId));
     try {
-      const response = await fetch("/api/marking/submissions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ savedPaperId }) });
-      if (!response.ok) throw new Error(await response.text() || "Could not start marking this paper.");
-      const payload = await response.json() as { submissionId: string };
+      const payload = await createMarkingSubmission({ savedPaperId });
       router.push(`/marking/${payload.submissionId}`);
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : "Could not start marking this paper.");

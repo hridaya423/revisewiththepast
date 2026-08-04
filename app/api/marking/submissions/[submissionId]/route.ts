@@ -1,5 +1,5 @@
-import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { getMarkingSubmissionBundleFromConvex } from "@/lib/marking/convex";
+import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
+import { getSubmission } from "@/features/papers/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,7 +26,7 @@ export async function GET(_request: Request, context: RouteContext) {
   if (!submissionId) return badRequest("submissionId is required.");
 
   try {
-    const bundle = await getMarkingSubmissionBundleFromConvex(submissionId);
+    const bundle = await getSubmission(submissionId);
     if (!bundle) return badRequest("Submission not found.", 404);
     return Response.json(bundle);
   } catch (error) {

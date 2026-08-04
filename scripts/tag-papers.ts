@@ -3,6 +3,7 @@ import { basename, resolve } from "node:path";
 import { OpenRouter } from "@openrouter/sdk";
 import { ConvexHttpClient } from "convex/browser";
 import { config as loadEnv } from "dotenv";
+import { getBooleanEnvironment, getFirstEnvironment, getNumberEnvironment, getOptionalEnvironment } from "./runtime";
 
 loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: true });
 loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
@@ -211,22 +212,23 @@ function deriveSpecReferences(canonicalLeaf: string, paperCode: string, sectionC
   return refs;
 }
 
-const API_KEY = process.env.HACKCLUB_AI_API_KEY ?? process.env.OPENROUTER_API_KEY;
-const SERVER_URL = process.env.HACKCLUB_AI_API_KEY ? "https://ai.hackclub.com/proxy/v1" : undefined;
-const MODEL = process.env.OPENROUTER_MODEL ?? "google/gemini-3-flash-preview";
+const HACKCLUB_AI_API_KEY = getOptionalEnvironment("HACKCLUB_AI_API_KEY");
+const API_KEY = HACKCLUB_AI_API_KEY ?? getOptionalEnvironment("OPENROUTER_API_KEY");
+const SERVER_URL = HACKCLUB_AI_API_KEY ? "https://ai.hackclub.com/proxy/v1" : undefined;
+const MODEL = getOptionalEnvironment("OPENROUTER_MODEL") ?? "google/gemini-3-flash-preview";
 const IS_DEEPSEEK_MODEL = MODEL.toLowerCase().includes("deepseek");
-const PAPER_CONCURRENCY = Number(process.env.PAPER_CONCURRENCY ?? "20");
+const PAPER_CONCURRENCY = getNumberEnvironment("PAPER_CONCURRENCY", 20, { min: 1 });
 const DEFAULT_INPUT_DIR = resolve(process.cwd(), "data/extracted");
 const DEFAULT_CONFIG_DIR = resolve(process.cwd(), "config");
-const CONVEX_URL = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
-const WRITE_TO_CONVEX_BY_DEFAULT = (process.env.WRITE_TO_CONVEX ?? "1") !== "0";
-const AI_RETRIES = Math.max(1, Number(process.env.AI_RETRIES ?? "4"));
-const AI_RETRY_BASE_MS = Math.max(100, Number(process.env.AI_RETRY_BASE_MS ?? "1500"));
-const AI_PER_MINUTE_LIMIT = Math.max(1, Number(process.env.AI_PER_MINUTE_LIMIT ?? "20"));
-const AI_DAILY_CALL_LIMIT = Math.max(1, Number(process.env.AI_DAILY_CALL_LIMIT ?? "1000"));
-const AI_BATCH_MAX_PAPERS = Math.max(1, Math.min(3, Number(process.env.AI_BATCH_MAX_PAPERS ?? "3")));
-const AI_PAPER_CHUNK_SIZE = Math.max(1, Number(process.env.AI_PAPER_CHUNK_SIZE ?? "12"));
-const AI_MAX_OUTPUT_TOKENS = Math.max(1000, Number(process.env.AI_MAX_OUTPUT_TOKENS ?? "12000"));
+const CONVEX_URL = getFirstEnvironment("CONVEX_URL", "NEXT_PUBLIC_CONVEX_URL");
+const WRITE_TO_CONVEX_BY_DEFAULT = getBooleanEnvironment("WRITE_TO_CONVEX", true);
+const AI_RETRIES = getNumberEnvironment("AI_RETRIES", 4, { min: 1 });
+const AI_RETRY_BASE_MS = getNumberEnvironment("AI_RETRY_BASE_MS", 1500, { min: 100 });
+const AI_PER_MINUTE_LIMIT = getNumberEnvironment("AI_PER_MINUTE_LIMIT", 20, { min: 1 });
+const AI_DAILY_CALL_LIMIT = getNumberEnvironment("AI_DAILY_CALL_LIMIT", 1000, { min: 1 });
+const AI_BATCH_MAX_PAPERS = getNumberEnvironment("AI_BATCH_MAX_PAPERS", 3, { min: 1, max: 3 });
+const AI_PAPER_CHUNK_SIZE = getNumberEnvironment("AI_PAPER_CHUNK_SIZE", 12, { min: 1 });
+const AI_MAX_OUTPUT_TOKENS = getNumberEnvironment("AI_MAX_OUTPUT_TOKENS", 12000, { min: 1000 });
 const RATE_STATE_PATH = resolve(process.cwd(), "data", ".tag-papers-rate-state.json");
 const DEBUG_RESPONSE_DIR = resolve(process.cwd(), "data", "tagger-debug");
 const PAPER_PRIORITY_ORDER = [
@@ -595,7 +597,6 @@ function assertFacetArray(
   fieldName: string,
   values: unknown,
   allowedValues: string[],
-  contextLabel: string,
 ) {
   const rawValues = coerceArrayField(values);
   if (allowedValues.length === 0) {
@@ -642,7 +643,6 @@ function assertOptionalFacet(
   fieldName: string,
   value: string | null,
   allowedValues: string[],
-  contextLabel: string,
 ) {
   if (value === null) return null;
   if (allowedValues.length === 0) return normalizeFacetValue(value);
@@ -682,7 +682,7 @@ function buildPaperPrompts(
   specCode: string,
   controlledVocabs: ControlledVocabularies,
 ) {
-  const vocabContext = buildVocabularyContext(controlledVocabs, extracted.subject_slug);
+  const vocabContext = buildVocabularyContext(controlledVocabs);
   const userPayload = getPaperPromptPayload(extracted, taxonomy, normalizedPaperCode, specCode);
   const outputSkeleton = "{\"question_parts\":[{\"question_id\":\"\",\"canonical_leaf\":\"\",\"knowledge_points\":[],\"skills_tested\":[],\"bloom_level\":\"\",\"difficulty\":\"\",\"question_type\":\"\",\"key_terms\":[],\"spec_references\":[],\"confidence\":0,\"evidence_snippet\":\"\",\"setText\":null,\"cluster\":null,\"namedPoem\":[],\"characters\":[],\"themes\":[],\"taskMode\":null,\"domain\":null,\"subtopic\":null,\"representation\":null,\"subskill\":[],\"errorTrap\":[],\"unit\":null,\"caseStudy\":[],\"resourceTrack\":null,\"process\":[]}]}";
 
@@ -736,7 +736,7 @@ function buildPaperPrompts(
   };
 }
 
-function buildVocabularyContext(vocabs: ControlledVocabularies, subjectSlug: string): string | null {
+function buildVocabularyContext(vocabs: ControlledVocabularies): string | null {
   const parts: string[] = [];
 
   if (vocabs.characters) {
@@ -799,7 +799,7 @@ function buildVocabularyContext(vocabs: ControlledVocabularies, subjectSlug: str
 function buildBatchPaperPrompts(
   papers: Array<{ extracted: ExtractedPaper; taxonomy: Taxonomy; normalizedPaperCode: string; controlledVocabs: ControlledVocabularies }>,
 ) {
-  const vocabContext = papers.length > 0 ? buildVocabularyContext(papers[0].controlledVocabs, papers[0].extracted.subject_slug) : null;
+  const vocabContext = papers.length > 0 ? buildVocabularyContext(papers[0].controlledVocabs) : null;
   const userPayload = {
     papers: papers.map(({ extracted, taxonomy, normalizedPaperCode }) => {
       const currentSpecCode = taxonomy.metadata.specCode ?? "";
@@ -955,58 +955,50 @@ function buildContextualFacetValues(
       "setText",
       derivedSetText,
       Array.from(new Set([...Object.keys(controlledVocabs.characters ?? {}), ...Object.keys(controlledVocabs.themes ?? {})])),
-      sourcePart.question_id,
     )
     : derivedSetText;
   const cluster = controlledVocabs.poems
-    ? assertOptionalFacet("cluster", derivedCluster, Object.keys(controlledVocabs.poems), sourcePart.question_id)
+    ? assertOptionalFacet("cluster", derivedCluster, Object.keys(controlledVocabs.poems))
     : derivedCluster;
   const unit = derivedUnit;
   const resourceTrack = controlledVocabs.resourceTracks
-    ? assertOptionalFacet("resourceTrack", derivedResourceTrack, Object.values(controlledVocabs.resourceTracks).flat(), sourcePart.question_id)
+    ? assertOptionalFacet("resourceTrack", derivedResourceTrack, Object.values(controlledVocabs.resourceTracks).flat())
     : derivedResourceTrack;
 
   const characters = assertFacetArray(
     "characters",
     result.characters,
     findVocabularyValues(controlledVocabs.characters, setText) ?? Object.values(controlledVocabs.characters ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
   const themes = assertFacetArray(
     "themes",
     result.themes,
     findVocabularyValues(controlledVocabs.themes, setText) ?? Object.values(controlledVocabs.themes ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
   const namedPoem = assertFacetArray(
     "namedPoem",
     result.namedPoem,
     findVocabularyValues(controlledVocabs.poems, cluster) ?? Object.values(controlledVocabs.poems ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
   const subskill = assertFacetArray(
     "subskill",
     result.subskill,
     findVocabularyValues(controlledVocabs.subskills, subtopic) ?? findVocabularyValues(controlledVocabs.subskills, representation) ?? Object.values(controlledVocabs.subskills ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
   const errorTrap = assertFacetArray(
     "errorTrap",
     result.errorTrap,
     findVocabularyValues(controlledVocabs.errorTraps, subtopic) ?? findVocabularyValues(controlledVocabs.errorTraps, representation) ?? Object.values(controlledVocabs.errorTraps ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
   const caseStudy = assertFacetArray(
     "caseStudy",
     result.caseStudy,
     findVocabularyValues(controlledVocabs.caseStudies, unit) ?? findVocabularyValues(controlledVocabs.caseStudies, resourceTrack) ?? Object.values(controlledVocabs.caseStudies ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
   const process = assertFacetArray(
     "process",
     result.process,
     findVocabularyValues(controlledVocabs.processes, unit) ?? findVocabularyValues(controlledVocabs.processes, resourceTrack) ?? Object.values(controlledVocabs.processes ?? {}).flat().map(normalizeFacetValue),
-    sourcePart.question_id,
   );
 
   return {

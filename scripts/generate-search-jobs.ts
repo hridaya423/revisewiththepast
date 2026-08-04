@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { GCSE_BOARDS, GCSE_SUBJECTS } from "../convex/gcseCatalog";
+import { GCSE_BOARDS, GCSE_SUBJECTS } from "../shared/domain/exam-catalog";
+import { getOptionalEnvironment } from "./runtime";
 
 type SearchJob = {
   subjectSlug: string;
@@ -11,7 +12,7 @@ type SearchJob = {
   source: "pmt" | "revisionworld";
 };
 
-const TARGET_SOURCE = process.env.TARGET_SOURCE as "pmt" | "revisionworld" | undefined;
+const TARGET_SOURCE = getOptionalEnvironment("TARGET_SOURCE") as "pmt" | "revisionworld" | undefined;
 
 const SUBJECT_SOURCE: Partial<Record<string, "pmt" | "revisionworld">> = {
   biology: "revisionworld",

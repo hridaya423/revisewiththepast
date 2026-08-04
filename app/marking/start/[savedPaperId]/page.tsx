@@ -3,6 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createMarkingSubmission } from "@/features/papers/client";
 
 export default function StartMarkingPage({ params }: { params: Promise<{ savedPaperId: string }> }) {
   const { savedPaperId } = use(params);
@@ -15,13 +16,7 @@ export default function StartMarkingPage({ params }: { params: Promise<{ savedPa
     hasStarted.current = true;
     const startMarking = async () => {
       try {
-        const response = await fetch("/api/marking/submissions", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ savedPaperId }),
-        });
-        if (!response.ok) throw new Error(await response.text() || "Could not start marking this paper.");
-        const payload = await response.json() as { submissionId: string };
+        const payload = await createMarkingSubmission({ savedPaperId });
         router.replace(`/marking/${payload.submissionId}`);
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : "Could not start marking this paper.");

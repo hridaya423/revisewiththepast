@@ -1,4 +1,4 @@
-import { SUBJECT_SOURCE_REGISTRY } from "@/lib/ingestion/sourceRegistry";
+import { SUBJECT_SOURCE_REGISTRY } from "@/features/ingestion";
 
 export async function GET() {
   const byBoard = SUBJECT_SOURCE_REGISTRY.reduce<Record<string, number>>((acc, row) => {

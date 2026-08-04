@@ -1,6 +1,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
-import { GCSE_SUBJECTS } from "../convex/gcseCatalog";
+import { GCSE_SUBJECTS } from "../shared/domain/exam-catalog";
 
 type Tier = "none" | "foundation" | "higher";
 type Session = "june" | "november" | "january" | "unknown";

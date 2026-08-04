@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
 
-import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { importFinishedPaper } from "@/lib/marking/import-pipeline";
+import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
+import { importFinishedPaper } from "@/features/papers/server";
+import { normalizeApplicationError } from "@/shared/application/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,8 +38,8 @@ export async function POST(request: NextRequest) {
     });
     return Response.json(result);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    const status = message.includes("blank question paper") ? 422 : 500;
-    return badRequest(`Failed to import finished paper: ${message}`, status);
+    const normalized = normalizeApplicationError(error, "Failed to import finished paper.");
+    if (normalized.status === 403) return unauthorizedResponse();
+    return badRequest(normalized.message, normalized.status);
   }
 }

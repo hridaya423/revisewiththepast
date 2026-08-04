@@ -30,7 +30,7 @@ export const upsertPaperAsset = mutationGeneric({
       .unique();
 
     if (existing) {
-      await ctx.db.patch(existing._id, {
+      await ctx.db.patch("paperAssets", existing._id, {
         ...args,
         updatedAt: now,
       });

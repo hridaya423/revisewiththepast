@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 
-import { MarkingSubmissionWorkspace, type MarkingSubmissionBundle } from "@/app/_components/marking-submission-workspace";
+import { MarkingSubmissionWorkspace } from "@/app/_components/marking-submission-workspace";
 import { AppShell } from "@/app/_components/app-shell";
-import { getMarkingSubmissionBundleFromConvex } from "@/lib/marking/convex";
+import { getSubmission } from "@/features/papers/server";
 
 export const dynamic = "force-dynamic";
 
@@ -12,12 +12,12 @@ type RouteContext = {
 
 export default async function MarkingSubmissionPage({ params }: RouteContext) {
   const { submissionId } = await params;
-  const bundle = await getMarkingSubmissionBundleFromConvex(submissionId).catch(() => null);
+  const bundle = await getSubmission(submissionId).catch(() => null);
   if (!bundle) notFound();
 
   return (
     <AppShell active="mark" wide>
-      <MarkingSubmissionWorkspace submissionId={submissionId} initialBundle={bundle as MarkingSubmissionBundle} />
+      <MarkingSubmissionWorkspace submissionId={submissionId} initialBundle={bundle} />
     </AppShell>
   );
 }

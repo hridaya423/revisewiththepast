@@ -6,13 +6,13 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: true });
 loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
 
-import { generateCustomPaper, PaperGenerationError } from "@/lib/paper-maker/generate";
-import type { QuestionMixProfile } from "@/lib/paper-maker/aqa-geography";
-import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
-import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
-import { renderPdfToPngBuffers } from "@/lib/marking/pdfjs-server";
-import { assembleMarkSchemePdf } from "@/lib/marking/mark-scheme";
-import { runDeterministicChecks } from "@/lib/paper-maker/validate";
+import { generateCustomPaper, PaperGenerationError } from "@/features/papers/builder/infrastructure/generation/generate";
+import type { QuestionMixProfile } from "@/shared/domain/paper";
+import { PAPER_MAKER_SUBJECTS } from "@/shared/domain/subject-catalog";
+import type { SubjectTierKey } from "@/shared/domain/subject";
+import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
+import { assembleMarkSchemePdf } from "@/features/papers/marking/infrastructure/mark-scheme/mark-scheme";
+import { runDeterministicChecks } from "@/features/papers/builder/infrastructure/qa/validate";
 
 type CliOptions = {
   subject: string;

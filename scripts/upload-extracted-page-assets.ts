@@ -1,9 +1,10 @@
 import "dotenv/config";
 
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
+import { getFirstEnvironment, getNumberEnvironment, getOptionalEnvironment, readJsonFile, retryWithBackoff, writeJsonFile } from "./runtime";
 
 type ExtractedAsset = {
   asset_id: string;
@@ -45,18 +46,14 @@ type Manifest = {
 
 const EXTRACTED_DIR = resolve(process.cwd(), "data/extracted");
 const MANIFEST_PATH = resolve(process.cwd(), "data/question-page-cdn-manifest.json");
-const TARGET_BOARD_CODE = process.env.TARGET_BOARD_CODE;
-const TARGET_SUBJECT_SLUG = process.env.TARGET_SUBJECT_SLUG;
-const MAX_FILES = Number(process.env.MAX_FILES ?? String(Number.MAX_SAFE_INTEGER));
-const UPLOAD_CONCURRENCY = Number(process.env.UPLOAD_CONCURRENCY ?? "20");
-const UPLOAD_RETRIES = Number(process.env.UPLOAD_RETRIES ?? "3");
-const RETRY_DELAY_MS = Number(process.env.RETRY_DELAY_MS ?? "1500");
-const HACKCLUB_CDN_API_KEY = process.env.HACKCLUB_CDN_API_KEY;
-const CONVEX_URL = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
-
-function sleep(ms: number) {
-  return new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
-}
+const TARGET_BOARD_CODE = getOptionalEnvironment("TARGET_BOARD_CODE");
+const TARGET_SUBJECT_SLUG = getOptionalEnvironment("TARGET_SUBJECT_SLUG");
+const MAX_FILES = getNumberEnvironment("MAX_FILES", Number.MAX_SAFE_INTEGER, { min: 1 });
+const UPLOAD_CONCURRENCY = getNumberEnvironment("UPLOAD_CONCURRENCY", 20, { min: 1 });
+const UPLOAD_RETRIES = getNumberEnvironment("UPLOAD_RETRIES", 3, { min: 1 });
+const RETRY_DELAY_MS = getNumberEnvironment("RETRY_DELAY_MS", 1500, { min: 0 });
+const HACKCLUB_CDN_API_KEY = getOptionalEnvironment("HACKCLUB_CDN_API_KEY");
+const CONVEX_URL = getFirstEnvironment("CONVEX_URL", "NEXT_PUBLIC_CONVEX_URL");
 
 function deriveSourceRelativePath(sourceFile: string) {
   const normalized = sourceFile.replaceAll("\\", "/");
@@ -107,16 +104,12 @@ function scanExtractedPageAssets() {
 }
 
 function loadManifest(): Manifest {
-  if (!existsSync(MANIFEST_PATH)) {
-    return { generatedAt: new Date().toISOString(), records: [] };
-  }
-  return JSON.parse(readFileSync(MANIFEST_PATH, "utf8")) as Manifest;
+  return readJsonFile<Manifest>(MANIFEST_PATH, { generatedAt: new Date().toISOString(), records: [] });
 }
 
 function persistManifest(manifest: Manifest) {
   manifest.generatedAt = new Date().toISOString();
-  mkdirSync(resolve(process.cwd(), "data"), { recursive: true });
-  writeFileSync(MANIFEST_PATH, JSON.stringify(manifest, null, 2));
+  writeJsonFile(MANIFEST_PATH, manifest);
 }
 
 async function uploadFile(record: PageAssetRecord): Promise<ManifestRecord> {
@@ -127,9 +120,7 @@ async function uploadFile(record: PageAssetRecord): Promise<ManifestRecord> {
   const blob = new Blob([fileBuffer], { type: "application/pdf" });
   formData.append("file", blob, record.fileName);
 
-  let lastError: Error | null = null;
-  for (let attempt = 1; attempt <= UPLOAD_RETRIES; attempt += 1) {
-    try {
+  return retryWithBackoff(async () => {
       const response = await fetch("https://cdn.hackclub.com/api/v4/upload", {
         method: "POST",
         headers: { Authorization: `Bearer ${HACKCLUB_CDN_API_KEY}` },
@@ -156,15 +147,7 @@ async function uploadFile(record: PageAssetRecord): Promise<ManifestRecord> {
         contentType: payload.content_type,
         uploadedAt: payload.created_at,
       };
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-      if (attempt < UPLOAD_RETRIES) {
-        await sleep(RETRY_DELAY_MS * attempt);
-      }
-    }
-  }
-
-  throw lastError ?? new Error("Upload failed");
+    }, { retries: UPLOAD_RETRIES, baseDelayMs: RETRY_DELAY_MS });
 }
 
 async function upsertConvexMetadata(client: ConvexHttpClient, record: ManifestRecord) {

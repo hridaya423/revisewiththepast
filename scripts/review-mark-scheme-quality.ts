@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import type { SubjectTierKey } from "@/lib/paper-maker/combined-science";
-import type { PaperMakerSubjectKey } from "@/lib/paper-maker/subjects";
-import { getMarkableUnitsByUnitKeys } from "@/lib/marking/paper-maker";
+import type { SubjectTierKey } from "@/shared/domain/subject";
+import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
+import { getMarkableUnitsByUnitKeys } from "@/features/papers/infrastructure/paper-maker";
 import {
   detectPageQuestionNumber,
   loadMarkSchemeTextPages,
   locateMarkSchemePagesForUnit,
   normalizeQuestionNumber,
-} from "@/lib/marking/mark-scheme";
+} from "@/features/papers/marking/infrastructure/mark-scheme/mark-scheme";
 
 type PaperRunReport = {
   configKey: string;

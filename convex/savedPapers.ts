@@ -2,15 +2,11 @@ import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/s
 import type { Id } from "./_generated/dataModel";
 import { v } from "convex/values";
 
-import { authComponent } from "./auth";
-
-async function requireOwner(ctx: QueryCtx | MutationCtx) {
-  return await authComponent.getAuthUser(ctx);
-}
+import { requireAuthenticatedUser } from "./model/auth";
 
 async function requireOwnedPaper(ctx: QueryCtx | MutationCtx, savedPaperId: Id<"savedPapers">) {
-  const user = await authComponent.getAuthUser(ctx);
-  const savedPaper = await ctx.db.get(savedPaperId);
+  const user = await requireAuthenticatedUser(ctx);
+  const savedPaper = await ctx.db.get("savedPapers", savedPaperId);
   if (!savedPaper || savedPaper.ownerId !== String(user._id)) {
     throw new Error("Unauthorized");
   }
@@ -19,6 +15,7 @@ async function requireOwnedPaper(ctx: QueryCtx | MutationCtx, savedPaperId: Id<"
 
 export const createSavedPaper = mutation({
   args: {
+    importKey: v.optional(v.string()),
     subjectKey: v.string(),
     boardCode: v.string(),
     subjectSlug: v.string(),
@@ -53,10 +50,18 @@ export const createSavedPaper = mutation({
     })),
   },
   handler: async (ctx, args) => {
-    const user = await requireOwner(ctx);
+    const user = await requireAuthenticatedUser(ctx);
+    if (args.importKey) {
+      const existing = await ctx.db
+        .query("savedPapers")
+        .withIndex("by_owner_import_key", (q) => q.eq("ownerId", String(user._id)).eq("importKey", args.importKey))
+        .unique();
+      if (existing) return existing._id;
+    }
     const now = Date.now();
     const savedPaperId = await ctx.db.insert("savedPapers", {
       ownerId: String(user._id),
+      importKey: args.importKey,
       subjectKey: args.subjectKey,
       boardCode: args.boardCode,
       subjectSlug: args.subjectSlug,
@@ -90,13 +95,24 @@ export const createSavedPaper = mutation({
 export const listSavedPapers = query({
   args: {},
   handler: async (ctx) => {
-    const user = await requireOwner(ctx);
+    const user = await requireAuthenticatedUser(ctx);
     const savedPapers = await ctx.db
       .query("savedPapers")
       .withIndex("by_owner", (q) => q.eq("ownerId", String(user._id)))
       .collect();
 
     return savedPapers.sort((a, b) => b.updatedAt - a.updatedAt);
+  },
+});
+
+export const getSavedPaperByImportKey = query({
+  args: { importKey: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireAuthenticatedUser(ctx);
+    return await ctx.db
+      .query("savedPapers")
+      .withIndex("by_owner_import_key", (q) => q.eq("ownerId", String(user._id)).eq("importKey", args.importKey))
+      .unique();
   },
 });
 

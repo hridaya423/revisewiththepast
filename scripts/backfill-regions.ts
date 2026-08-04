@@ -8,8 +8,9 @@ loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
+import { getFirstEnvironment } from "./runtime";
 
-const CONVEX_URL = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
+const CONVEX_URL = getFirstEnvironment("CONVEX_URL", "NEXT_PUBLIC_CONVEX_URL");
 
 type ExtractedSpan = { page_number: number; y_top: number; y_bottom: number };
 type ExtractedFigure = { label: string; page_number: number; y_top: number; y_bottom: number };
@@ -89,7 +90,7 @@ async function main() {
   const options = parseArgs();
   const client = new ConvexHttpClient(CONVEX_URL);
 
-  let files = findPaperJsonFiles(options.dir);
+  const files = findPaperJsonFiles(options.dir);
   files.sort();
 
   const selected: Array<{ file: string; paper: ExtractedPaper; sourceRelativePath: string }> = [];

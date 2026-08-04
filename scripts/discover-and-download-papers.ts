@@ -3,7 +3,8 @@ import { createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, wr
 import { relative, resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 import * as cheerio from "cheerio";
-import { GCSE_SUBJECTS } from "@/convex/gcseCatalog";
+import { GCSE_SUBJECTS } from "@/shared/domain/exam-catalog";
+import { getBooleanEnvironment, getNumberEnvironment, getOptionalEnvironment } from "./runtime";
 
 type Tier = "none" | "foundation" | "higher";
 type Session = "june" | "november" | "january";
@@ -71,16 +72,16 @@ const INPUT_PATH = resolve(process.cwd(), "data/search-jobs.json");
 const OUTPUT_DIR = resolve(process.cwd(), "data/downloads");
 const OUTPUT_RECORDS_PATH = resolve(process.cwd(), "data/discovered-pdfs.json");
 const PROGRESS_PATH = resolve(process.cwd(), "data/discovery-progress.json");
-const MAX_JOBS = Number(process.env.MAX_JOBS ?? String(Number.MAX_SAFE_INTEGER));
-const REQUEST_DELAY_MS = Number(process.env.REQUEST_DELAY_MS ?? "400");
-const START_YEAR = Number(process.env.START_YEAR ?? "2018");
-const END_YEAR = Number(process.env.END_YEAR ?? "2024");
-const TARGET_BOARD_CODE = process.env.TARGET_BOARD_CODE;
-const TARGET_SUBJECT_SLUG = process.env.TARGET_SUBJECT_SLUG;
-const TARGET_TIER = process.env.TARGET_TIER as Tier | undefined;
-const TARGET_PAPER_CODE = process.env.TARGET_PAPER_CODE;
-const TARGET_SOURCE = process.env.TARGET_SOURCE as "pmt" | "revisionworld" | undefined;
-const RESET_MATCHING_STATE = process.env.RESET_MATCHING_STATE === "1";
+const MAX_JOBS = getNumberEnvironment("MAX_JOBS", Number.MAX_SAFE_INTEGER, { min: 1 });
+const REQUEST_DELAY_MS = getNumberEnvironment("REQUEST_DELAY_MS", 400, { min: 0 });
+const START_YEAR = getNumberEnvironment("START_YEAR", 2018);
+const END_YEAR = getNumberEnvironment("END_YEAR", 2024);
+const TARGET_BOARD_CODE = getOptionalEnvironment("TARGET_BOARD_CODE");
+const TARGET_SUBJECT_SLUG = getOptionalEnvironment("TARGET_SUBJECT_SLUG");
+const TARGET_TIER = getOptionalEnvironment("TARGET_TIER") as Tier | undefined;
+const TARGET_PAPER_CODE = getOptionalEnvironment("TARGET_PAPER_CODE");
+const TARGET_SOURCE = getOptionalEnvironment("TARGET_SOURCE") as "pmt" | "revisionworld" | undefined;
+const RESET_MATCHING_STATE = getBooleanEnvironment("RESET_MATCHING_STATE", false);
 
 const PMT_SUBJECT_PATHS: Partial<Record<string, string>> = {
   biology: "gcse-biology",

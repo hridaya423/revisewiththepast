@@ -1,12 +1,11 @@
 import { NextRequest } from "next/server";
 
-import { requireAuthToken, unauthorizedResponse } from "@/lib/auth";
-import { addMarkingResponsePageInConvex } from "@/lib/marking/convex";
+import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
+import { uploadResponsePage } from "@/features/papers/server";
+import { normalizeApplicationError } from "@/shared/application/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-const HACKCLUB_UPLOAD_URL = "https://cdn.hackclub.com/api/v4/upload";
 
 function badRequest(message: string, status = 400) {
   return new Response(message, { status });
@@ -15,9 +14,6 @@ function badRequest(message: string, status = 400) {
 export async function POST(request: NextRequest) {
   const authToken = await requireAuthToken(request.headers).catch(() => null);
   if (!authToken) return unauthorizedResponse();
-
-  const apiKey = process.env.HACKCLUB_CDN_API_KEY;
-  if (!apiKey) return badRequest("Missing HACKCLUB_CDN_API_KEY", 500);
 
   let formData: FormData;
   try {
@@ -38,50 +34,18 @@ export async function POST(request: NextRequest) {
   if (!(file instanceof File)) return badRequest("file is required.");
   if (!file.type.startsWith("image/")) return badRequest("Only image uploads are supported right now.");
 
-  const uploadFormData = new FormData();
-  uploadFormData.append("file", file, file.name);
-
-  const uploadResponse = await fetch(HACKCLUB_UPLOAD_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: uploadFormData,
-  });
-
-  if (!uploadResponse.ok) {
-    return badRequest(`Hack Club CDN upload failed (${uploadResponse.status}): ${await uploadResponse.text()}`, 500);
-  }
-
-  const upload = await uploadResponse.json() as {
-    id: string;
-    url: string;
-    size: number;
-    content_type: string;
-    created_at: string;
-  };
-
   try {
-    const pageId = await addMarkingResponsePageInConvex({
+    return Response.json(await uploadResponsePage({
       submissionId,
       questionKey,
       questionNumber,
       questionPartNumber,
       pageLabel,
-      fileName: file.name,
-      contentType: upload.content_type,
-      fileSize: upload.size,
-      cdnUploadId: upload.id,
-      sourceImageUrl: upload.url,
-      uploadedAt: Date.parse(upload.created_at) || Date.now(),
-    });
-
-    return Response.json({
-      pageId,
-      imageUrl: upload.url,
-    });
+      file,
+    }));
   } catch (error) {
-    if (error instanceof Error && error.message.includes("Unauthorized")) return unauthorizedResponse();
-    return badRequest(`Failed to save upload metadata: ${error instanceof Error ? error.message : String(error)}`, 500);
+    const normalized = normalizeApplicationError(error, "Failed to save upload metadata.");
+    if (normalized.status === 403) return unauthorizedResponse();
+    return badRequest(normalized.message, normalized.status);
   }
 }

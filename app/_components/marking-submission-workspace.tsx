@@ -8,6 +8,7 @@ import { Brain, Check, CheckCircle2, ChevronLeft, ChevronRight, ExternalLink, Fi
 import { MathRichText } from "@/app/_components/math-rich-text";
 import { OperationNotice, statusToneClass } from "@/app/_components/marking/presentation";
 import { QuestionProgressRail, type QuestionProgressState } from "@/app/_components/marking/question-progress";
+import { autoScoreQuestion as requestAutoScoreQuestion, autoScoreWholePaper as requestAutoScoreWholePaper, formatQuestionLabel, formatStatus, getQuestionState, getQuestionStateLabel, getQuestionStateTone, importFinishedPaper as requestImportFinishedPaper, loadCombinedMarkScheme as requestCombinedMarkScheme, parseScoreEvidence, prioritizeQuestion, runOcr as requestOcr, saveScore as requestSaveScore, uploadResponsePage as requestUploadResponsePage } from "@/features/papers/client";
 
 export type MarkingSubmissionBundle = {
   submission: {
@@ -110,89 +111,6 @@ type QuestionRow = {
 
 type FeedbackScope = "setup" | "upload" | "ocr" | "score" | "mark-scheme" | "bulk" | "whole-paper";
 
-function formatQuestionLabel(question: {
-  displayOrder?: number;
-  questionNumber?: string;
-  questionPartNumber?: string | null;
-  questionPath?: string[];
-  questionKey: string;
-}) {
-  const number = question.questionNumber ? `Question ${question.questionNumber}` : question.questionKey;
-  const pathSuffix = question.questionPath && question.questionPath.length > 0
-    ? ` (${question.questionPath.join(")(")})`
-    : question.questionPartNumber
-      ? ` (${question.questionPartNumber})`
-      : "";
-  return question.displayOrder ? `${question.displayOrder}. ${number}${pathSuffix}` : `${number}${pathSuffix}`;
-}
-
-function parseScoreEvidence(rawJson?: string) {
-  if (!rawJson) return null;
-  try {
-    return JSON.parse(rawJson) as {
-      markScheme?: {
-        partText?: string;
-        questionText?: string;
-        pageNumbers?: number[];
-        markSchemeUrl?: string;
-      };
-      markBreakdown?: Array<{
-        criterion?: string;
-        awarded?: boolean;
-        evidence?: string;
-      }>;
-    };
-  } catch {
-    return null;
-  }
-}
-
-function formatStatus(status: MarkingSubmissionBundle["submission"]["status"]) {
-  if (status === "uploaded") return "Uploaded";
-  if (status === "ocr_complete") return "OCR complete";
-  if (status === "review_required") return "Needs review";
-  return "Scored";
-}
-
-function getQuestionState(row: Pick<QuestionRow, "pages" | "response" | "score" | "questionStatus">) {
-  if (row.questionStatus?.status === "failed") return "failed" as const;
-  if (row.questionStatus?.status === "needs_manual_review") return "review" as const;
-  if (row.score?.scoreStatus === "confirmed") return row.score.needsReview ? "review" as const : "scored" as const;
-  if (row.score?.scoreStatus === "ai_suggested") return row.score.needsReview ? "review" as const : "suggested" as const;
-  if (row.score?.needsReview) return "review" as const;
-  if (row.score) return "scored" as const;
-  if (row.response) return "ocr" as const;
-  if (row.pages.length > 0) return "uploaded" as const;
-  return "empty" as const;
-}
-
-function getQuestionStateLabel(state: ReturnType<typeof getQuestionState>) {
-  if (state === "failed") return "Failed";
-  if (state === "review") return "Needs review";
-  if (state === "scored") return "Scored";
-  if (state === "suggested") return "AI suggestion";
-  if (state === "ocr") return "OCR ready";
-  if (state === "uploaded") return "Waiting for OCR";
-  return "Waiting";
-}
-
-function getQuestionStateTone(state: ReturnType<typeof getQuestionState>) {
-  if (state === "failed") return "failure" as const;
-  if (state === "review") return "review" as const;
-  if (state === "scored") return "confirmed" as const;
-  if (state === "suggested") return "active" as const;
-  if (state === "ocr") return "active" as const;
-  return "neutral" as const;
-}
-
-function prioritizeQuestion(row: QuestionRow) {
-  const state = getQuestionState(row);
-  if (state === "review" || state === "failed") return 0;
-  if (state === "ocr") return 1;
-  if (state === "uploaded" || state === "empty") return 2;
-  return 3;
-}
-
 export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { submissionId: string; initialBundle: MarkingSubmissionBundle }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -274,8 +192,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
         if (questionPartNumberOverride) formData.append("questionPartNumber", questionPartNumberOverride);
         if (pageLabel.trim()) formData.append("pageLabel", pageLabel.trim());
         formData.append("file", file);
-        const response = await fetch("/api/marking/uploads", { method: "POST", body: formData });
-        if (!response.ok) throw new Error(await response.text() || "Could not upload response page.");
+         await requestUploadResponsePage(formData);
         setPageLabel("");
         router.refresh();
       } catch (cause) {
@@ -313,8 +230,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
           if (question.questionPartNumber) formData.append("questionPartNumber", question.questionPartNumber);
           formData.append("pageLabel", `Script page ${index + 1}`);
           formData.append("file", file);
-          const response = await fetch("/api/marking/uploads", { method: "POST", body: formData });
-          if (!response.ok) throw new Error(await response.text() || `Could not upload script page ${index + 1}.`);
+           await requestUploadResponsePage(formData);
         }
         setPageLabel("");
         setPendingBulkFiles([]);
@@ -333,8 +249,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
         const formData = new FormData();
         formData.append("file", file);
         formData.append("submissionId", submissionId);
-        const response = await fetch("/api/marking/import-finished-paper", { method: "POST", body: formData });
-        if (!response.ok) throw new Error(await response.text() || "Could not import the finished paper PDF.");
+         await requestImportFinishedPaper(formData);
         router.refresh();
       } catch (cause) {
         fail("setup", cause, "Could not import the finished paper PDF.");
@@ -346,8 +261,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     setOcrLoadingKey(questionKey);
     setOperationFeedback(null);
     try {
-      const response = await fetch("/api/marking/ocr", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, questionKey }) });
-      if (!response.ok) throw new Error(await response.text() || "Could not run OCR.");
+      await requestOcr({ submissionId, questionKey });
       router.refresh();
     } catch (cause) {
       fail("ocr", cause, "Could not run OCR.");
@@ -360,8 +274,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     setAutoScoreLoadingKey(questionKey);
     setOperationFeedback(null);
     try {
-      const response = await fetch("/api/marking/auto-score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, questionKey }) });
-      if (!response.ok) throw new Error(await response.text() || "Could not auto-score this question.");
+      await requestAutoScoreQuestion({ submissionId, questionKey });
       router.refresh();
     } catch (cause) {
       fail("score", cause, "Could not auto-score this question.");
@@ -374,8 +287,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     setAutoScoreLoadingKey("__whole-paper__");
     setOperationFeedback(null);
     try {
-      const response = await fetch("/api/marking/auto-score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, scoreWholePaper: true }) });
-      if (!response.ok) throw new Error(await response.text() || "Could not auto-score the full paper.");
+      await requestAutoScoreWholePaper(submissionId);
       router.refresh();
     } catch (cause) {
       fail("whole-paper", cause, "Could not auto-score the full paper.");
@@ -395,12 +307,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     const existingScore = initialBundle.scores.find((entry) => entry.questionKey === questionKey);
     const existingEvidence = parseScoreEvidence(existingScore?.evidenceJson);
     try {
-      const response = await fetch("/api/marking/score", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ submissionId, questionKey, awardedMarks, maxMarks, confidence, needsReview, rationale, evidence: existingEvidence ?? { savedFrom: "marking-workspace" } }),
-      });
-      if (!response.ok) throw new Error(await response.text() || "Could not save score.");
+      await requestSaveScore({ submissionId, questionKey, awardedMarks, maxMarks, confidence, needsReview, rationale, evidence: existingEvidence ?? { savedFrom: "marking-workspace" } });
       if (formData.get("saveAction") === "next" && nextQuestion) setSelectedQuestionKey(nextQuestion.questionKey);
       router.refresh();
     } catch (cause) {
@@ -414,9 +321,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     setIsLoadingCombinedMarkScheme(true);
     setOperationFeedback(null);
     try {
-      const response = await fetch(`/api/marking/submissions/${submissionId}/mark-scheme`);
-      if (!response.ok) throw new Error(await response.text() || "Could not load combined mark scheme.");
-      const payload = await response.json() as { entries: CombinedMarkSchemeEntry[]; combinedText: string; failures?: Array<{ questionKey: string; error: string }> };
+      const payload = await requestCombinedMarkScheme(submissionId);
       setCombinedMarkScheme(payload);
     } catch (cause) {
       fail("mark-scheme", cause, "Could not load combined mark scheme.");

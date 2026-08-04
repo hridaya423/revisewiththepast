@@ -1,4 +1,4 @@
-import { GCSE_BOARDS, GCSE_SUBJECTS } from "@/convex/gcseCatalog";
+import { GCSE_BOARDS, GCSE_SUBJECTS } from "@/shared/domain/exam-catalog";
 
 export async function GET() {
   return Response.json({

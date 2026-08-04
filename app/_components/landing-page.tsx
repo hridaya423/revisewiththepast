@@ -7,7 +7,7 @@ import { EmbossIcon } from "@/app/_components/emboss/emboss-icon";
 import { EMBOSS_PRESETS } from "@/app/_components/emboss/params";
 import { LandingMotion } from "@/app/_components/landing-motion";
 import { SUBJECT_COLORS, SUBJECT_ICONS } from "@/app/_components/subject-presentation";
-import { PAPER_MAKER_SUBJECTS } from "@/lib/paper-maker/subjects";
+import { PAPER_MAKER_SUBJECTS } from "@/features/papers/server";
 
 const ENABLED_SUBJECTS = PAPER_MAKER_SUBJECTS.filter((subject) => subject.generationEnabled);
 

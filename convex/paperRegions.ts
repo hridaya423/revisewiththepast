@@ -1,5 +1,6 @@
 import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 
 const spanValidator = v.object({
   pageNumber: v.number(),
@@ -42,7 +43,7 @@ export const backfillPaperRegions = mutationGeneric({
       .query("taggedPapers")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
       .collect();
-    const partRowByQuestionId = new Map<string, { _id: unknown }>();
+    const partRowByQuestionId = new Map<string, { _id: Id<"taggedQuestionParts"> }>();
     for (const paper of papers) {
       const rows = await ctx.db
         .query("taggedQuestionParts")
@@ -74,7 +75,7 @@ export const backfillPaperRegions = mutationGeneric({
       .query("paperFigures")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
       .collect();
-    for (const figure of existingFigures) await ctx.db.delete(figure._id);
+    for (const figure of existingFigures) await ctx.db.delete("paperFigures", figure._id);
     for (const figure of args.figures) {
       await ctx.db.insert("paperFigures", {
         sourceRelativePath: args.sourceRelativePath,
@@ -92,7 +93,7 @@ export const backfillPaperRegions = mutationGeneric({
       .query("paperPageLayouts")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
       .collect();
-    for (const layout of existingLayouts) await ctx.db.delete(layout._id);
+    for (const layout of existingLayouts) await ctx.db.delete("paperPageLayouts", layout._id);
     for (const layout of args.pageLayouts) {
       await ctx.db.insert("paperPageLayouts", {
         sourceRelativePath: args.sourceRelativePath,
@@ -113,7 +114,7 @@ export const backfillPaperRegions = mutationGeneric({
     for (const part of args.parts) {
       const row = partRowByQuestionId.get(part.questionId);
       if (!row) continue;
-      await ctx.db.patch(row._id as never, {
+      await ctx.db.patch("taggedQuestionParts", row._id, {
         regionSpans: part.regionSpans,
         stemSpans: part.stemSpans,
         referencedFigures: part.referencedFigures,

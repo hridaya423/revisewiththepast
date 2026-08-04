@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { isAuthenticatedRequest } from "@/lib/auth";
+import { isAuthenticatedRequest } from "@/shared/infrastructure/auth/tokens";
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

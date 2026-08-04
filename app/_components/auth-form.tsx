@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/shared/infrastructure/auth/client";
 import { ArrowRight, Check, Eye, EyeOff, Loader2, Mail, User } from "lucide-react";
 import { BrandMark } from "@/app/_components/brand-mark";
 

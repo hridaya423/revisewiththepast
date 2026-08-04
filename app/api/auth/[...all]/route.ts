@@ -1,4 +1,4 @@
-import { handler } from "@/lib/auth-server";
+import { handler } from "@/shared/infrastructure/auth/convex";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

@@ -271,6 +271,7 @@ export default defineSchema({
 
   markingSubmissions: defineTable({
     ownerId: v.optional(v.string()),
+    idempotencyKey: v.optional(v.string()),
     savedPaperId: v.optional(v.id("savedPapers")),
     boardCode: v.string(),
     subjectSlug: v.string(),
@@ -304,6 +305,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_owner", ["ownerId"])
+    .index("by_owner_idempotency_key", ["ownerId", "idempotencyKey"])
     .index("by_board_subject", ["boardCode", "subjectSlug"])
     .index("by_subject_key", ["subjectKey"])
     .index("by_saved_paper", ["savedPaperId"]),
@@ -327,6 +329,7 @@ export default defineSchema({
 
   markingResponsePages: defineTable({
     submissionId: v.id("markingSubmissions"),
+    uploadKey: v.optional(v.string()),
     questionKey: v.string(),
     questionNumber: v.optional(v.string()),
     questionPartNumber: v.optional(v.string()),
@@ -342,7 +345,21 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index("by_submission", ["submissionId"])
+    .index("by_submission_upload_key", ["submissionId", "uploadKey"])
     .index("by_submission_question", ["submissionId", "questionKey"]),
+
+  markingImportAssets: defineTable({
+    ownerId: v.string(),
+    importKey: v.string(),
+    pageNumber: v.number(),
+    fileName: v.string(),
+    fileSize: v.number(),
+    cdnUploadId: v.string(),
+    sourceImageUrl: v.string(),
+    ocrText: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_owner_import_page", ["ownerId", "importKey", "pageNumber"]),
 
   markingQuestionStatuses: defineTable({
     submissionId: v.id("markingSubmissions"),
@@ -397,6 +414,7 @@ export default defineSchema({
 
   savedPapers: defineTable({
     ownerId: v.string(),
+    importKey: v.optional(v.string()),
     subjectKey: v.string(),
     boardCode: v.string(),
     subjectSlug: v.string(),
@@ -415,6 +433,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_owner", ["ownerId"])
+    .index("by_owner_import_key", ["ownerId", "importKey"])
     .index("by_subject", ["subjectKey"]),
 
   savedPaperQuestions: defineTable({

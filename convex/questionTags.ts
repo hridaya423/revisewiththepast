@@ -1,5 +1,6 @@
-import { mutationGeneric, queryGeneric } from "convex/server";
+import { mutationGeneric, queryGeneric, type GenericMutationCtx } from "convex/server";
 import { v } from "convex/values";
+import type { DataModel } from "./_generated/dataModel";
 
 function compareTaggedPaperPriority(
   left: {
@@ -25,11 +26,17 @@ function inferTierFromSourceRelativePath(sourceRelativePath: string | undefined)
   return "none" as const;
 }
 
-async function invalidateSubjectDetailSnapshot(ctx: { db: { query: Function; delete: Function } }, boardCode: string, subjectSlug: string) {
+type SnapshotMutationContext = Pick<GenericMutationCtx<DataModel>, "db">;
+
+async function invalidateSubjectDetailSnapshot(
+  ctx: SnapshotMutationContext,
+  boardCode: string,
+  subjectSlug: string,
+) {
   const existing = await ctx.db
     .query("subjectDetailSnapshots")
-    .withIndex("by_board_subject", (q: any) => q.eq("boardCode", boardCode))
-    .filter((q: any) => q.eq(q.field("subjectSlug"), subjectSlug))
+    .withIndex("by_board_subject", (q) => q.eq("boardCode", boardCode))
+    .filter((q) => q.eq(q.field("subjectSlug"), subjectSlug))
     .collect();
 
   for (const snapshot of existing) {
@@ -141,7 +148,7 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    await invalidateSubjectDetailSnapshot(ctx, args.boardCode, args.subjectSlug);
+    await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const existingByIdentity = await ctx.db
       .query("taggedPapers")
       .withIndex("by_paper_identity", (q) => q.eq("boardCode", args.boardCode))
@@ -254,7 +261,7 @@ export const upsertTaggedPaperWithQuestionsBySourcePath = mutationGeneric({
   },
   handler: async (ctx, args) => {
     const now = Date.now();
-    await invalidateSubjectDetailSnapshot(ctx, args.boardCode, args.subjectSlug);
+    await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const existing = await ctx.db
       .query("taggedPapers")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
@@ -427,7 +434,7 @@ export const deleteTaggedByBoardSubjects = mutationGeneric({
     let deletedQuestionParts = 0;
 
     for (const subjectSlug of args.subjectSlugs) {
-      await invalidateSubjectDetailSnapshot(ctx, args.boardCode, subjectSlug);
+      await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, subjectSlug);
       const papers = await ctx.db
           .query("taggedPapers")
           .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
@@ -466,7 +473,7 @@ export const deleteTaggedByBoardSubjectTier = mutationGeneric({
     tier: v.union(v.literal("foundation"), v.literal("higher"), v.literal("none")),
   },
   handler: async (ctx, args) => {
-    await invalidateSubjectDetailSnapshot(ctx, args.boardCode, args.subjectSlug);
+    await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const papers = await ctx.db
       .query("taggedPapers")
       .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
