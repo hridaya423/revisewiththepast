@@ -31,7 +31,8 @@ import { getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefini
 import { estimatePaperTimeMinutes } from "../../domain/rules";
 import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
 import { buildGeneratedCoverModel } from "../pdf/cover";
-import { filterUnitsBySourcePdfRenderability, generateStrictSourcePaperPdf } from "../pdf/pdf";
+import { generateStrictSourcePaperPdf, SourceUnitRenderError } from "../pdf/pdf";
+import { assertGeneratedPaperQuality } from "../qa/validate";
 import {
   getInsertPageAssetsBySourceRelativePaths,
   getPaperAssetsByBoardSubjectFromConvex,
@@ -456,90 +457,117 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     });
     const contextGate = filterUnitsByDanglingContext(gate.kept, { pageLayoutsBySource });
     selectableUnits = contextGate.kept;
-    const eligibleUnits = selectableUnits.filter((unit) => {
-      if (input.paperCodes.length > 0 && !input.paperCodes.includes(unit.paperCode)) return false;
-      if (input.excludeSourceQuestionKeys.includes(unit.sourceQuestionKey)) return false;
-      return unit.canonicalLeafs.some((leafId) => selectedLeafTopicIds.includes(leafId));
-    });
-    const eligibleSourcePaths = Array.from(new Set(eligibleUnits.map((unit) => unit.sourceRelativePath)));
-    pageAssetsBySource = await getQuestionPageAssetsBySourceRelativePaths(eligibleSourcePaths);
-    const sourceGate = await filterUnitsBySourcePdfRenderability(eligibleUnits, {
-      pageAssetsBySource,
-      figuresBySource,
-      pageLayoutsBySource,
-      regionMode,
-    });
-    if (sourceGate.excluded.length > 0) {
-      const renderableUnitKeys = new Set(sourceGate.kept.map((unit) => unit.unitKey));
-      selectableUnits = selectableUnits.filter((unit) => !eligibleUnits.includes(unit) || renderableUnitKeys.has(unit.unitKey));
-    }
-  }
-
-  const selection = selectQuestionUnits({
-    units: selectableUnits,
-    selectedLeafTopicIds,
-    targetMarks: resolvedTargetMarks,
-    questionMix: input.questionMix,
-    paperCodes: input.paperCodes,
-    maxQuestions: input.maxQuestions,
-    tolerance: 7,
-    excludedSourceQuestionKeys: input.excludeSourceQuestionKeys,
-    remainingPaperCount: input.remainingPaperCount,
-    priorSelectedUnitMarks: input.priorSelectedUnitMarks,
-    priorPaperCount: input.priorPaperCount,
-    priorCoveredLeafTopicIds: input.priorCoveredLeafTopicIds,
-    rng: typeof input.seed === "number" ? createSeededRng(input.seed) : undefined,
-  });
-
-  if (selection.selectedUnits.length === 0) {
-    throw new PaperGenerationError(config.messages.noSelection(tier));
-  }
-
-  if (subject.key === "aqa-business" || subject.key === "edexcel-business") sortBusinessSelectedUnitsForRendering(selection.selectedUnits);
-  else sortQuestionUnitsForRendering(selection.selectedUnits);
-
-  const selectedSourcePaths = selection.selectedUnits.map((unit) => unit.sourceRelativePath);
-  pageAssetsBySource ??= await getQuestionPageAssetsBySourceRelativePaths(selectedSourcePaths);
-
-  const figureIntegrityIssues: OrphanFigureIssue[] = [];
-  if (figuresBySource && pageLayoutsBySource) {
-    for (const unit of selection.selectedUnits) {
-      const figures = figuresBySource.get(unit.sourceRelativePath) ?? [];
-      if (figures.length === 0) continue;
-      const layoutByPage = new Map(
-        (pageLayoutsBySource.get(unit.sourceRelativePath) ?? []).map((layout) => [layout.pageNumber, layout]),
-      );
-      figureIntegrityIssues.push(...findOrphanStemFigures(unit, layoutByPage, figures));
-    }
   }
 
   const coverTierLabel = config.tier && tier ? config.tier.coverTierLabel(tier) : null;
-  const timeMinutes = input.targetMode === "time"
-    ? (input.requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
-    : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
-
   const selectedPapers = subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || input.paperCodes.includes(paper.code));
   const examContext = getCoverExamContext(subject, selectedPapers);
-  const coverPage = buildGeneratedCoverModel({
-    subject,
-    tierLabel: coverTierLabel,
-    selectedUnits: selection.selectedUnits,
-    selectedPapers,
-    timeMinutes,
-    examContext,
-  });
+  const renderExclusions = new Set(input.excludeSourceQuestionKeys);
+  let selection: ReturnType<typeof selectQuestionUnits> | null = null;
+  let pdfBytes: Uint8Array | null = null;
+  let coverPage: GeneratedCoverModel | null = null;
+  let timeMinutes = 0;
+  let figureIntegrityIssues: OrphanFigureIssue[] = [];
 
-  const pdfBytes = await generateStrictSourcePaperPdf({
-    title: config.title(resolvedTargetMarks, coverTierLabel),
-    selectedUnits: selection.selectedUnits,
-    allUnits,
-    pageAssetsBySource,
-    figuresBySource,
-    pageLayoutsBySource,
-    regionMode,
-    prefaceSourcePdfs: config.prefaceInserts ? await config.prefaceInserts(selection.selectedUnits) : undefined,
-    coverPage,
-  });
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    selection = selectQuestionUnits({
+      units: selectableUnits,
+      selectedLeafTopicIds,
+      targetMarks: resolvedTargetMarks,
+      questionMix: input.questionMix,
+      paperCodes: input.paperCodes,
+      maxQuestions: input.maxQuestions,
+      tolerance: 7,
+      excludedSourceQuestionKeys: Array.from(renderExclusions),
+      remainingPaperCount: input.remainingPaperCount,
+      priorSelectedUnitMarks: input.priorSelectedUnitMarks,
+      priorPaperCount: input.priorPaperCount,
+      priorCoveredLeafTopicIds: input.priorCoveredLeafTopicIds,
+      rng: typeof input.seed === "number" ? createSeededRng(input.seed) : undefined,
+    });
+
+    if (selection.selectedUnits.length === 0) {
+      throw new PaperGenerationError(config.messages.noSelection(tier));
+    }
+
+    if (subject.key === "aqa-business" || subject.key === "edexcel-business") sortBusinessSelectedUnitsForRendering(selection.selectedUnits);
+    else sortQuestionUnitsForRendering(selection.selectedUnits);
+
+    const selectedSourcePaths = Array.from(new Set(selection.selectedUnits.map((unit) => unit.sourceRelativePath)));
+    const selectedPageAssets = await getQuestionPageAssetsBySourceRelativePaths(selectedSourcePaths);
+    pageAssetsBySource ??= new Map();
+    for (const [sourcePath, assets] of selectedPageAssets) pageAssetsBySource.set(sourcePath, assets);
+
+    figureIntegrityIssues = [];
+    if (figuresBySource && pageLayoutsBySource) {
+      for (const unit of selection.selectedUnits) {
+        const figures = figuresBySource.get(unit.sourceRelativePath) ?? [];
+        if (figures.length === 0) continue;
+        const layoutByPage = new Map(
+          (pageLayoutsBySource.get(unit.sourceRelativePath) ?? []).map((layout) => [layout.pageNumber, layout]),
+        );
+        figureIntegrityIssues.push(...findOrphanStemFigures(unit, layoutByPage, figures));
+      }
+    }
+
+    timeMinutes = input.targetMode === "time"
+      ? (input.requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
+      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
+    coverPage = buildGeneratedCoverModel({
+      subject,
+      tierLabel: coverTierLabel,
+      selectedUnits: selection.selectedUnits,
+      selectedPapers,
+      timeMinutes,
+      examContext,
+    });
+
+    try {
+      pdfBytes = await generateStrictSourcePaperPdf({
+        title: config.title(resolvedTargetMarks, coverTierLabel),
+        selectedUnits: selection.selectedUnits,
+        allUnits,
+        pageAssetsBySource,
+        figuresBySource,
+        pageLayoutsBySource,
+        regionMode,
+        prefaceSourcePdfs: config.prefaceInserts ? await config.prefaceInserts(selection.selectedUnits) : undefined,
+        coverPage,
+      });
+    } catch (error) {
+      if (error instanceof SourceUnitRenderError && attempt < 2) {
+        for (const unitKey of error.unitKeys) renderExclusions.add(unitKey);
+        continue;
+      }
+      if (error instanceof SourceUnitRenderError) {
+        throw new PaperGenerationError("The selected topics do not have enough renderable source questions. Try different topics or papers.", 422);
+      }
+      throw error;
+    }
+
+    if (subject.subjectSlug === "mathematics") {
+      try {
+        await assertGeneratedPaperQuality(pdfBytes, {
+          subjectKey: subject.key,
+          totalMarks: selection.totalMarks,
+          selectedUnitCount: selection.selectedUnits.length,
+          selectedUnitMarks: selection.selectedUnits.map((unit) => unit.totalMarks),
+          coverPage: {
+            totalMarks: coverPage.totalMarks,
+            timeMinutes,
+            questionCount: coverPage.questionCount,
+          },
+        });
+      } catch (error) {
+        throw new PaperGenerationError(error instanceof Error ? error.message : String(error), 422);
+      }
+    }
+    break;
+  }
+
+  if (!selection || !pdfBytes || !coverPage) {
+    throw new PaperGenerationError("The selected topics do not have enough renderable source questions. Try different topics or papers.", 422);
+  }
 
   return {
     pdfBytes,

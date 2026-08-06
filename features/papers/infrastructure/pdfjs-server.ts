@@ -44,8 +44,10 @@ export async function loadPdfJsForNode() {
 
 export async function getPdfDocument(data: Uint8Array) {
   const pdfjs = await loadPdfJsForNode();
+  const ownedData = new Uint8Array(data.byteLength);
+  ownedData.set(data);
   return pdfjs.getDocument({
-    data,
+    data: ownedData,
     disableWorker: true,
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
     wasmUrl: WASM_URL,

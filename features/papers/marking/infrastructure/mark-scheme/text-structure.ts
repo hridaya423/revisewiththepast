@@ -19,14 +19,61 @@ export type CachedPdfPage = {
   pageNumber: number;
   text: string;
   lines: StructuredPdfLine[];
+  pageWidth?: number;
+  pageHeight?: number;
 };
 
 export function normalizeInlineText(text: string) {
   return text.replace(/\s+/g, " ").trim();
 }
 
-export function buildStructuredLines(pageNumber: number, items: PositionedPdfItem[]) {
+type ColumnBoundaries = {
+  answer: number;
+  mark: number;
+  scheme: number;
+  guidance: number;
+};
+
+function inferColumnBoundaries(items: PositionedPdfItem[], pageWidth?: number): ColumnBoundaries {
+  if (!pageWidth) {
+    return { answer: 120, mark: 210, scheme: 250, guidance: 560 };
+  }
+
+  const scale = pageWidth / 841.89;
+  const defaults = {
+    answer: 72 * scale,
+    mark: 166 * scale,
+    scheme: 224 * scale,
+    guidance: 590 * scale,
+  };
+
+  const headerStarts = new Map<string, number>();
+  for (const item of items) {
+    const text = item.text.trim().toLowerCase().replace(/\s+/g, " ");
+    if (text === "answer" || text === "mark" || text === "marks" || text === "guidance") {
+      if (!headerStarts.has(text)) headerStarts.set(text, item.x);
+    }
+  }
+
+  const answerStart = headerStarts.get("answer");
+  const markStart = headerStarts.get("mark") ?? headerStarts.get("marks");
+  const guidanceStart = headerStarts.get("guidance");
+  if (answerStart !== undefined && markStart !== undefined && guidanceStart !== undefined
+    && answerStart < markStart && markStart < guidanceStart) {
+    return {
+      answer: Math.max(1, answerStart - 10 * scale),
+      mark: Math.max(answerStart + 1, markStart - 10 * scale),
+      scheme: Math.max(markStart + 1, defaults.scheme),
+      guidance: Math.max(markStart + 1, guidanceStart - 10 * scale),
+    };
+  }
+
+  return defaults;
+}
+
+export function buildStructuredLines(pageNumber: number, items: PositionedPdfItem[], pageWidth?: number) {
   const grouped = new Map<number, PositionedPdfItem[]>();
+  const boundaries = inferColumnBoundaries(items, pageWidth);
 
   for (const item of items) {
     const bucket = Math.round(item.y / 3) * 3;
@@ -42,11 +89,11 @@ export function buildStructuredLines(pageNumber: number, items: PositionedPdfIte
         .filter((item) => item.text.trim().length > 0)
         .sort((a, b) => a.x - b.x);
 
-      const leftText = normalizeInlineText(sortedItems.filter((item) => item.x < 120).map((item) => item.text).join(" "));
-      const answerText = normalizeInlineText(sortedItems.filter((item) => item.x >= 120 && item.x < 210).map((item) => item.text).join(" "));
-      const markText = normalizeInlineText(sortedItems.filter((item) => item.x >= 210 && item.x < 250).map((item) => item.text).join(" "));
-      const schemeText = normalizeInlineText(sortedItems.filter((item) => item.x >= 250 && item.x < 560).map((item) => item.text).join(" "));
-      const guidanceText = normalizeInlineText(sortedItems.filter((item) => item.x >= 560).map((item) => item.text).join(" "));
+      const leftText = normalizeInlineText(sortedItems.filter((item) => item.x < boundaries.answer).map((item) => item.text).join(" "));
+      const answerText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.answer && item.x < boundaries.mark).map((item) => item.text).join(" "));
+      const markText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.mark && item.x < boundaries.scheme).map((item) => item.text).join(" "));
+      const schemeText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.scheme && item.x < boundaries.guidance).map((item) => item.text).join(" "));
+      const guidanceText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.guidance).map((item) => item.text).join(" "));
       const fullText = normalizeInlineText([leftText, answerText, markText, schemeText, guidanceText].filter(Boolean).join(" "));
 
       return {

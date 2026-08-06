@@ -5,6 +5,7 @@ import {
   isFooterFurnitureLine,
   isHeaderFurnitureLine,
 } from "../../domain/page-text";
+import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
 
 export type QaSeverity = "error" | "warning";
 
@@ -34,7 +35,11 @@ const BLANK_PAGE_INK_THRESHOLD = 0.003;
 const BLANK_PAGE_TEXT_THRESHOLD = 25;
 const CONTENT_PAGE_START = 2;
 
-export async function computeInkCoverage(png: Buffer): Promise<number> {
+type InkStats = {
+  coverage: number;
+};
+
+async function computeInkStats(png: Buffer): Promise<InkStats> {
   const image = await loadImage(png);
   const scale = Math.min(1, 500 / Math.max(image.width, image.height));
   const width = Math.max(1, Math.round(image.width * scale));
@@ -44,10 +49,21 @@ export async function computeInkCoverage(png: Buffer): Promise<number> {
   ctx.drawImage(image, 0, 0, width, height);
   const { data } = ctx.getImageData(0, 0, width, height);
   let ink = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    if (data[i] < 245 || data[i + 1] < 245 || data[i + 2] < 245) ink += 1;
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4;
+      if (data[i] >= 245 && data[i + 1] >= 245 && data[i + 2] >= 245) continue;
+      ink += 1;
+    }
   }
-  return ink / (width * height);
+
+  return {
+    coverage: ink / (width * height),
+  };
+}
+
+export async function computeInkCoverage(png: Buffer): Promise<number> {
+  return (await computeInkStats(png)).coverage;
 }
 
 function meaningfulTextLength(pageText: string): number {
@@ -59,17 +75,17 @@ function meaningfulTextLength(pageText: string): number {
     .replace(/\s+/g, "").length;
 }
 
-async function checkBlankPages(pngPages: RenderedPngPage[]): Promise<QaFinding[]> {
+export async function checkBlankPages(pngPages: RenderedPngPage[]): Promise<QaFinding[]> {
   const findings: QaFinding[] = [];
   for (const page of pngPages) {
     if (page.pageNumber < CONTENT_PAGE_START) continue;
-    const coverage = await computeInkCoverage(page.png);
-    if (coverage >= BLANK_PAGE_INK_THRESHOLD) continue;
+    const stats = await computeInkStats(page.png);
+    if (stats.coverage >= BLANK_PAGE_INK_THRESHOLD) continue;
     findings.push({
       check: "blank-page",
       severity: "error",
       pageNumber: page.pageNumber,
-      message: `page is ${(coverage * 100).toFixed(1)}% inked with no question text — near-blank`,
+      message: `page is ${(stats.coverage * 100).toFixed(1)}% inked with no meaningful question content — near-blank`,
     });
   }
   return findings;
@@ -255,6 +271,50 @@ function checkQuestionMix(options?: QaCheckOptions): QaFinding[] {
       message: `paper is dominated by extended questions: ${high}/${marks.length}`,
     });
   }
+  return findings;
+}
+
+export function checkRenderedQuestionTotals(textPages: RenderedTextPage[], options?: QaCheckOptions): QaFinding[] {
+  if (!options?.subjectKey?.includes("mathematics") || !options.selectedUnitMarks?.length) return [];
+
+  const totals = new Map<number, { marks: Set<number>; count: number }>();
+  const pattern = /Total\s+for\s+Question\s+(\d+)\s+is\s+(\d+)\s+marks?/gi;
+  for (const page of textPages) {
+    for (const match of page.text.matchAll(pattern)) {
+      const questionNumber = Number(match[1]);
+      const marks = Number(match[2]);
+      const entry = totals.get(questionNumber) ?? { marks: new Set<number>(), count: 0 };
+      entry.marks.add(marks);
+      entry.count += 1;
+      totals.set(questionNumber, entry);
+    }
+  }
+
+  const findings: QaFinding[] = [];
+  options.selectedUnitMarks.forEach((expected, index) => {
+    const questionNumber = index + 1;
+    const actual = totals.get(questionNumber);
+    if (actual?.count === 1 && actual.marks.has(expected)) return;
+    findings.push({
+      check: "question-total-mismatch",
+      severity: "error",
+      message: actual === undefined
+        ? `generated maths question ${questionNumber} has no rendered total; expected ${expected} marks`
+        : actual.count > 1
+          ? `generated maths question ${questionNumber} renders ${actual.count} totals; expected exactly one total of ${expected} marks`
+          : `generated maths question ${questionNumber} renders ${Array.from(actual.marks).join(", ")} marks but its validated parts total ${expected}`,
+    });
+  });
+
+  for (const [questionNumber, actual] of totals) {
+    if (questionNumber >= 1 && questionNumber <= options.selectedUnitMarks.length) continue;
+    findings.push({
+      check: "question-total-mismatch",
+      severity: "error",
+      message: `generated maths paper contains an unexpected total for Question ${questionNumber} (${actual.count} occurrence${actual.count === 1 ? "" : "s"})`,
+    });
+  }
+
   return findings;
 }
 
@@ -445,8 +505,23 @@ export async function runDeterministicChecks(
     ...checkSuspiciousAqaCompoundMarkers(textPages, options),
     ...checkResourcePagesWithoutQuestions(textPages),
     ...checkBusinessMissingReferences(textPages, options),
+    ...checkRenderedQuestionTotals(textPages, options),
     ...await checkVisibleFurniture(pngPages, textPages, options?.subjectKey),
     ...checkQuestionMix(options),
     ...checkRepeatedFurniture(textPages),
   ];
+}
+
+export async function assertGeneratedPaperQuality(
+  pdfBytes: Uint8Array,
+  options: QaCheckOptions,
+) {
+  const rendered = await renderPdfToPngBuffers(pdfBytes, 0.75);
+  const findings = await runDeterministicChecks(rendered.pages, rendered.textPages, options);
+  const errors = findings.filter((finding) => finding.severity === "error");
+  if (errors.length === 0) return;
+
+  throw new Error(
+    `Generated paper failed preflight: ${errors.map((finding) => finding.message).join("; ")}`,
+  );
 }

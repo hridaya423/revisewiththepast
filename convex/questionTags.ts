@@ -48,11 +48,14 @@ const taggedQuestionPartValidator = v.object({
   questionId: v.string(),
   questionNumber: v.string(),
   questionPartNumber: v.union(v.string(), v.null()),
+  questionPath: v.optional(v.array(v.string())),
   sectionCode: v.union(v.string(), v.null()),
   sectionName: v.union(v.string(), v.null()),
   pageNumber: v.number(),
   pageNumbers: v.array(v.number()),
   marks: v.union(v.number(), v.null()),
+  sourceTotalMarks: v.optional(v.union(v.number(), v.null())),
+  marksValidated: v.optional(v.union(v.literal("validated"), v.literal("mismatch"), v.literal("unknown"))),
   commandWord: v.union(v.string(), v.null()),
   canonicalLeaf: v.string(),
   knowledgePoints: v.array(v.string()),
@@ -659,11 +662,14 @@ export const getPaperMakerQuestionBank = queryGeneric({
       year: number | null;
       session: string | null;
       questionId: string;
-      questionNumber: string;
-      questionPartNumber: string | null;
+       questionNumber: string;
+       questionPartNumber: string | null;
+       questionPath?: string[];
       sectionCode: string | null;
       sectionName: string | null;
-      marks: number | null;
+       marks: number | null;
+       sourceTotalMarks?: number | null;
+       marksValidated?: "validated" | "mismatch" | "unknown";
       canonicalLeaf: string;
       promptText: string;
       contextText: string | null;
@@ -726,9 +732,12 @@ export const getPaperMakerQuestionBank = queryGeneric({
           questionId: part.questionId,
           questionNumber: part.questionNumber,
           questionPartNumber: part.questionPartNumber,
+          questionPath: part.questionPath ?? [],
           sectionCode: part.sectionCode,
           sectionName: part.sectionName,
           marks: part.marks,
+          sourceTotalMarks: part.sourceTotalMarks ?? null,
+          marksValidated: part.marksValidated ?? "unknown",
           canonicalLeaf: part.canonicalLeaf,
           promptText: part.promptText,
           contextText: part.contextText,

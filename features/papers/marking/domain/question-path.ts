@@ -1,8 +1,11 @@
-const ROMAN_PART_PATTERN = /^(i{1,3}|iv|v|vi{0,3}|ix|x)$/i;
-const LETTER_PART_PATTERN = /^[a-z]$/i;
+import {
+  compareQuestionPaths,
+  normalizeQuestionPathToken,
+  parseQuestionPathFromPrompt as parseSharedQuestionPathFromPrompt,
+} from "@/shared/domain/question-path";
 
 export function normalizePartToken(token: string) {
-  return token.trim().toLowerCase();
+  return normalizeQuestionPathToken(token);
 }
 
 export function parseQuestionPathFromPrompt(
@@ -10,31 +13,7 @@ export function parseQuestionPathFromPrompt(
   questionNumber: string,
   questionPartNumber: string | null,
 ): string[] {
-  const trimmed = promptText.trim();
-  const escapedQuestionNumber = questionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const prefixMatch = trimmed.match(
-    new RegExp(`^\\s*${escapedQuestionNumber}\\s*((?:\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)\\s*)+)`, "i"),
-  );
-
-  if (prefixMatch?.[1]) {
-    const parts = Array.from(prefixMatch[1].matchAll(/\(\s*([a-z]|[ivx]{1,4})\s*\)/gi))
-      .map((match) => normalizePartToken(match[1]));
-    if (parts.length > 0) return parts;
-  }
-
-  if (questionPartNumber) {
-    const standaloneMatch = trimmed.match(/^\(\s*([a-z]|[ivx]{1,4})\s*\)/i);
-    if (standaloneMatch) {
-      const token = normalizePartToken(standaloneMatch[1]);
-      if (ROMAN_PART_PATTERN.test(token)) {
-        return [token];
-      }
-      return [token];
-    }
-    return [normalizePartToken(questionPartNumber)];
-  }
-
-  return [];
+  return parseSharedQuestionPathFromPrompt(promptText, questionNumber, questionPartNumber);
 }
 
 export function formatQuestionPathLabel(questionNumber: string, questionPath: string[]) {
@@ -43,24 +22,7 @@ export function formatQuestionPathLabel(questionNumber: string, questionPath: st
 }
 
 export function compareQuestionPath(left: string[], right: string[]) {
-  const maxLength = Math.max(left.length, right.length);
-  for (let index = 0; index < maxLength; index += 1) {
-    const leftToken = left[index];
-    const rightToken = right[index];
-    if (leftToken === undefined) return -1;
-    if (rightToken === undefined) return 1;
-    if (leftToken === rightToken) continue;
-
-    const leftIsRoman = ROMAN_PART_PATTERN.test(leftToken);
-    const rightIsRoman = ROMAN_PART_PATTERN.test(rightToken);
-    const leftIsLetter = LETTER_PART_PATTERN.test(leftToken);
-    const rightIsLetter = LETTER_PART_PATTERN.test(rightToken);
-
-    if (leftIsLetter && rightIsRoman) return -1;
-    if (leftIsRoman && rightIsLetter) return 1;
-    return leftToken.localeCompare(rightToken, undefined, { numeric: true });
-  }
-  return 0;
+  return compareQuestionPaths(left, right);
 }
 
 export function compareExamQuestionOrder(

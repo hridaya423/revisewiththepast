@@ -30,6 +30,25 @@ describe("mark-scheme text structure", () => {
     })).toBe("12");
   });
 
+  it("uses source page geometry for landscape mark-scheme columns", () => {
+    expect(buildStructuredLines(2, [
+      { text: "Question", x: 20, y: 100 },
+      { text: "answer", x: 80, y: 100 },
+      { text: "2", x: 170, y: 100 },
+      { text: "scheme", x: 230, y: 100 },
+      { text: "guidance", x: 600, y: 100 },
+    ], 841.89)).toEqual([{
+      pageNumber: 2,
+      y: 99,
+      leftText: "Question",
+      answerText: "answer",
+      markText: "2",
+      schemeText: "scheme",
+      guidanceText: "guidance",
+      fullText: "Question answer 2 scheme guidance",
+    }]);
+  });
+
   it("normalizes numeric question tokens without changing non-numeric labels", () => {
     expect(normalizeQuestionNumber("007")).toBe("7");
     expect(normalizeQuestionNumber("A")).toBe("A");

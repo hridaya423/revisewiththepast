@@ -56,12 +56,15 @@ type ExtractedQuestionPart = {
   page_numbers: number[];
   question_number: string;
   question_part_number: string | null;
+  question_path: string[];
   section_code: string | null;
   section_name: string | null;
   paper_code: string;
   paper_name: string;
   context_text: string | null;
   marks: number | null;
+  source_total_marks: number | null;
+  marks_validated: "validated" | "mismatch" | "unknown";
   command_word: string | null;
   prompt_text: string;
   normalized_text: string;
@@ -101,6 +104,7 @@ type ActiveQuestionPart = {
   page_numbers: Set<number>;
   question_number: string;
   question_part_number: string | null;
+  question_path: string[];
   section_code: string | null;
   section_name: string | null;
   paper_code: string;
@@ -162,7 +166,7 @@ const COMMAND_WORDS = [
   "justify", "calculate", "outline", "discuss", "name",
 ];
 
-const PARSER_VERSION = "generic-v0.2-regions";
+const PARSER_VERSION = "generic-v0.4-maths-boundaries";
 
 const AQA_FILLER = [
   /^pmt$/i, /^ib\/g\//i, /^\*\d+\*$/, /^\d+$/, /^turn over\b/i,
@@ -251,7 +255,7 @@ const BOARD_CONFIGS: Record<string, BoardConfig> = {
   },
   edexcel: {
     name: "Edexcel",
-    subquestionRe: /^(\d{1,2})\s*\(((?:[a-z]|[ivx]{2,4}))\)/i,
+    subquestionRe: /^(\d{1,2})\s*\*?\s*\(((?:[a-z]|[ivx]{2,4}))\)/i,
     topLevelQuestionRe: /^question\s+(\d{1,2})\b/i,
     marksRe: /\((\d{1,2})\)/gi,
     hasMarksRe: /\(\d{1,2}\)/,
@@ -402,12 +406,15 @@ function finalizeQuestionPart(
     page_numbers: pageNumbers,
     question_number: active.question_number,
     question_part_number: active.question_part_number,
+    question_path: active.question_path,
     section_code: active.section_code,
     section_name: active.section_name,
     paper_code: active.paper_code,
     paper_name: active.paper_name,
     context_text: contextOnly,
     marks: extractMarks(rawCombinedText, active.question_part_number, config),
+    source_total_marks: null,
+    marks_validated: "unknown",
     command_word: extractCommandWord(combinedText),
     prompt_text: combinedText,
     normalized_text: cleanedNormalizedText(combinedText),
@@ -685,7 +692,7 @@ function extractStandaloneQuestionNumber(
 
 function extractMarks(text: string, questionPartNumber: string | null, config: BoardConfig) {
   const normalized = normalizeText(text);
-  const totalQuestionMatch = normalized.match(/\(total for question \d+ (?:is|=) (\d{1,2}) marks?\)/i);
+  const totalQuestionMatch = normalized.match(/\(?\s*total for question\s+(?:\d\s*){1,3}(?:\s*[a-z])?\s*(?:is|=)\s*(\d{1,3})\s+marks?\s*\)?/i);
   const matches = Array.from(normalized.matchAll(config.marksRe));
   if (matches.length === 0) {
     const romanMcItems = normalized.match(/\([ivx]{1,4}\)/gi) ?? [];
@@ -715,9 +722,21 @@ function hasMarks(text: string, config: BoardConfig) {
   return config.hasMarksRe.test(text);
 }
 
-function isTotalForQuestionLine(text: string, questionNumber: string) {
+function normalizeQuestionNumberForMarks(value: string) {
+  const parsed = Number.parseInt(value.replace(/\s+/g, ""), 10);
+  return Number.isFinite(parsed) ? String(parsed) : value.trim();
+}
+
+function parseSourceQuestionTotal(text: string) {
   const normalized = normalizeText(text);
-  return new RegExp(`^\\(total for question ${questionNumber} (is|=) \\d{1,2} marks?\\)$`, "i").test(normalized);
+  const match = normalized.match(
+    /^\(?\s*total\s+for\s+question\s+((?:\d\s*){1,3})(?:\s*[a-z])?\s*(?:is|=)\s*(\d{1,3})\s+marks?\s*\)?$/i,
+  );
+  if (!match) return null;
+  return {
+    questionNumber: normalizeQuestionNumberForMarks(match[1]),
+    marks: Number(match[2]),
+  };
 }
 
 function isTotalForPaperLine(text: string) {
@@ -741,6 +760,61 @@ function normalizeLanguageReadingMarks(questionParts: ExtractedQuestionPart[], p
     const sum = parts.reduce((total, part) => total + (part.marks ?? 0), 0);
     if (parts.length === expectedMarks && sum !== expectedMarks) {
       for (const part of parts) part.marks = 1;
+    }
+  }
+}
+
+function extractSourceQuestionTotals(pages: ExtractedPage[]) {
+  const totals = new Map<string, Set<number>>();
+  for (const page of pages) {
+    for (const line of page.text_lines) {
+      const total = parseSourceQuestionTotal(line.text);
+      if (!total) continue;
+      const values = totals.get(total.questionNumber) ?? new Set<number>();
+      values.add(total.marks);
+      totals.set(total.questionNumber, values);
+    }
+  }
+  return totals;
+}
+
+function reconcileQuestionMarks(questionParts: ExtractedQuestionPart[], pages: ExtractedPage[]) {
+  const totals = extractSourceQuestionTotals(pages);
+  const partsByQuestion = new Map<string, ExtractedQuestionPart[]>();
+  for (const part of questionParts) {
+    const key = normalizeQuestionNumberForMarks(part.question_number);
+    const parts = partsByQuestion.get(key) ?? [];
+    parts.push(part);
+    partsByQuestion.set(key, parts);
+  }
+
+  for (const [questionNumber, parts] of partsByQuestion) {
+    const expectedValues = totals.get(questionNumber);
+    if (!expectedValues || expectedValues.size !== 1) {
+      const reason = expectedValues && expectedValues.size > 1
+        ? `Source totals disagree (${Array.from(expectedValues).sort((a, b) => a - b).join(", ")}).`
+        : "No source total was detected.";
+      for (const part of parts) part.marks_validated = "unknown";
+      if (expectedValues && expectedValues.size > 1) {
+        for (const part of parts) {
+          part.marks_validated = "mismatch";
+          part.parser_notes.push(reason);
+        }
+      }
+      continue;
+    }
+
+    const expected = Array.from(expectedValues)[0];
+
+    const complete = parts.every((part) => Number.isInteger(part.marks) && (part.marks ?? 0) >= 0);
+    const sum = parts.reduce((total, part) => total + (part.marks ?? 0), 0);
+    const validated = complete && sum === expected;
+    for (const part of parts) {
+      part.source_total_marks = expected;
+      part.marks_validated = validated ? "validated" : "mismatch";
+      if (!validated) {
+        part.parser_notes.push(`Source total is ${expected}, extracted parts sum to ${sum}.`);
+      }
     }
   }
 }
@@ -1825,12 +1899,13 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
       continue;
     }
 
-    const startActiveQuestion = (questionNumber: string, questionPartNumber: string | null, promptLine: TextLine, contextTexts: string[], choiceMeta?: { groupId: string; groupType: "either_or" | "text_choice" | "cluster_choice" | "question_choice"; optionLabel: string | null; sharedStem: string | null }, anchorContextLines: PageAnchoredLine[] = []) => {
+    const startActiveQuestion = (questionNumber: string, questionPartNumber: string | null, promptLine: TextLine, contextTexts: string[], choiceMeta?: { groupId: string; groupType: "either_or" | "text_choice" | "cluster_choice" | "question_choice"; optionLabel: string | null; sharedStem: string | null }, anchorContextLines: PageAnchoredLine[] = [], questionPath: string[] = []) => {
       active = {
         page_number: pageNumber,
         page_numbers: new Set([pageNumber]),
         question_number: questionNumber,
         question_part_number: questionPartNumber,
+        question_path: questionPath,
         section_code: currentSectionCode,
         section_name: currentSectionName,
         paper_code: paperCode,
@@ -2038,12 +2113,15 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
           currentStemTransient = false;
           currentStemParentLetter = activePart.question_part_number;
           if (activePart.question_part_number === null) questionBaseStem = currentStem;
-          startActiveQuestion(
-            subquestion.questionNumber,
-            subquestion.partNumber,
-            line,
-            stemText ? [stemText] : [],
-          );
+            startActiveQuestion(
+              subquestion.questionNumber,
+              subquestion.partNumber,
+              line,
+              stemText ? [stemText] : [],
+              undefined,
+              [],
+              [...activePart.question_path, subquestion.partNumber],
+            );
         } else {
           const subquestionContextLines = pendingContextLines;
           if (activePart !== null) {
@@ -2078,7 +2156,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
             if (subjectSlug === "english-literature") sectionStems.push(currentStem);
           }
 
-          startActiveQuestion(currentQuestionNumber, subquestion.partNumber, line, contextTexts, undefined, subquestionContextLines);
+          startActiveQuestion(currentQuestionNumber, subquestion.partNumber, line, contextTexts, undefined, subquestionContextLines, [subquestion.partNumber]);
         }
 
         pendingContext = [];
@@ -2114,6 +2192,9 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
             continuationSubquestion,
             line,
             stemText ? [stemText] : [],
+            undefined,
+            [],
+            [...activePart.question_path, continuationSubquestion],
           );
         } else {
           const subquestionContextLines = pendingContextLines;
@@ -2121,6 +2202,10 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
             pushFinalizedPart(active, claimRegionStart(subquestionContextLines, line));
           }
 
+          const continuationPath = currentStemParentLetter !== null
+            && /^[ivx]+$/i.test(continuationSubquestion)
+            ? [currentStemParentLetter, continuationSubquestion]
+            : [continuationSubquestion];
           if (currentStemParentLetter !== null && /^[a-z]$/i.test(continuationSubquestion)) {
             currentStem = null;
             currentStemTransient = false;
@@ -2147,7 +2232,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
           }
 
           const contextTexts = pendingContext.length > 0 ? pendingContext : [];
-          startActiveQuestion(currentQuestionNumber, continuationSubquestion, line, contextTexts, undefined, subquestionContextLines);
+          startActiveQuestion(currentQuestionNumber, continuationSubquestion, line, contextTexts, undefined, subquestionContextLines, continuationPath);
         }
 
         pendingContext = [];
@@ -2183,10 +2268,13 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
       if (active) {
         const activePart = active as ActiveQuestionPart;
 
-        if (isTotalForQuestionLine(rawText, activePart.question_number)) {
-          activePart.promptLines.push(line);
-          activePart.page_numbers.add(pageNumber);
-          activePart.assetIds.add(pageAssetId);
+        const sourceTotal = parseSourceQuestionTotal(rawText);
+        if (sourceTotal) {
+          if (sourceTotal.questionNumber === normalizeQuestionNumberForMarks(activePart.question_number)) {
+            activePart.promptLines.push(line);
+            activePart.page_numbers.add(pageNumber);
+            activePart.assetIds.add(pageAssetId);
+          }
           pushFinalizedPart(activePart, { page_number: pageNumber, y: line.bbox.y0 - 2 });
           active = null;
           pendingContext = [];
@@ -2275,6 +2363,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
   if (boardCode === "edexcel" && (subjectSlug === "french" || subjectSlug === "spanish") && /reading|1fr0-3|1sp0-3/i.test(basename(pdfPath))) {
     normalizeLanguageReadingMarks(questionParts, pages);
   }
+  reconcileQuestionMarks(questionParts, pages);
 
   return {
     source_file: pdfPath,

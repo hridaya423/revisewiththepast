@@ -14,12 +14,15 @@ type ExtractedQuestionPart = {
   page_numbers: number[];
   question_number: string;
   question_part_number: string | null;
+  question_path?: string[];
   section_code: string | null;
   section_name: string | null;
   paper_code: string;
   paper_name: string;
   context_text: string | null;
   marks: number | null;
+  source_total_marks?: number | null;
+  marks_validated?: "validated" | "mismatch" | "unknown";
   command_word: string | null;
   prompt_text: string;
   normalized_text: string;
@@ -1267,11 +1270,14 @@ async function upsertTaggedPaperToConvex(
       questionId: sourcePart.question_id,
       questionNumber: sourcePart.question_number,
       questionPartNumber: sourcePart.question_part_number,
+      questionPath: sourcePart.question_path ?? [],
       sectionCode: sourcePart.section_code,
       sectionName: sourcePart.section_name,
       pageNumber: sourcePart.page_number,
       pageNumbers: sourcePart.page_numbers,
       marks: sourcePart.marks,
+      sourceTotalMarks: sourcePart.source_total_marks ?? null,
+      marksValidated: sourcePart.marks_validated ?? "unknown",
       commandWord: sourcePart.command_word,
       canonicalLeaf: taggedPart.canonical_leaf,
       knowledgePoints: taggedPart.knowledge_points,

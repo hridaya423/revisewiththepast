@@ -31,8 +31,11 @@ export type RegionFigure = {
   yBottom: number;
 };
 
-const CONTENT_X_PADDING = 16;
 const CONTIGUOUS_MERGE_GAP = 40;
+
+function isScienceUnit(unit: QuestionUnit) {
+  return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
+}
 
 function spanKey(pageNumber: number, yTop: number, yBottom: number) {
   return `${pageNumber}:${Math.round(yTop)}:${Math.round(yBottom)}`;
@@ -74,35 +77,12 @@ function figureCoverageOfSpan(
   return overlap > 0 ? overlap / spanHeight : 0;
 }
 
-function isScienceUnit(unit: QuestionUnit) {
-  return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
-}
-
-function shouldTrimExamGutter(unit: QuestionUnit) {
-  return unit.boardCode === "edexcel" || unit.boardCode === "ocr";
-}
-
 function cropBoxForSpan(
   span: { yTop: number; yBottom: number },
   layout: RegionPageLayout,
-  unit: QuestionUnit,
 ): RegionCropBox {
-  const isWideSciencePage = isScienceUnit(unit) && layout.pageWidth > 620;
-  const trimGutter = shouldTrimExamGutter(unit);
-  const left = unit.boardCode === "aqa"
-    ? Math.max(0, layout.contentX0 - 2)
-    : isWideSciencePage
-    ? Math.max(0, layout.contentX0 - CONTENT_X_PADDING)
-    : trimGutter
-      ? Math.max(0, layout.contentX0 - CONTENT_X_PADDING)
-    : Math.max(0, layout.contentX0 - CONTENT_X_PADDING);
-   const right = isWideSciencePage
-     ? Math.min(layout.contentX1, layout.pageWidth - 32)
-     : trimGutter
-       ? Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING)
-     : unit.boardCode === "aqa"
-       ? Math.min(layout.pageWidth, layout.contentX1 + 2)
-       : Math.min(layout.pageWidth, layout.contentX1 + CONTENT_X_PADDING);
+  const left = 0;
+  const right = layout.pageWidth;
 
   return {
     left,
@@ -211,7 +191,7 @@ export function buildUnitRenderPlan(
   for (const entry of merged) {
     const layout = layoutByPage.get(entry.pageNumber);
     if (!layout) continue;
-    const cropBox = cropBoxForSpan({ yTop: entry.top, yBottom: entry.bottom }, layout, unit);
+    const cropBox = cropBoxForSpan({ yTop: entry.top, yBottom: entry.bottom }, layout);
     if (cropBox.top - cropBox.bottom < 8) continue;
     crops.push({
       unitKey: unit.unitKey,

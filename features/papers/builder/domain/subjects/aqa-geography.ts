@@ -9,6 +9,7 @@ export type {
 } from "@/shared/domain/paper";
 export type { TopicTreeNode, TopicTreeNodeWithCounts } from "@/shared/domain/topic";
 import type { BoundingBox, QuestionBankPart, QuestionMixProfile, QuestionUnit, TopicTreeNode, TopicTreeNodeWithCounts } from "@/shared/domain/paper";
+import { compareQuestionPaths, parseQuestionPathFromPrompt } from "@/shared/domain/question-path";
 
 type SelectQuestionUnitsInput = {
   units: QuestionUnit[];
@@ -216,6 +217,8 @@ export function compareQuestionUnitsForRendering(a: QuestionUnit, b: QuestionUni
   const bPage = b.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
   if (aPage !== bPage) return aPage - bPage;
   if (a.questionNumber !== b.questionNumber) return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
+  const pathCompare = compareQuestionPaths(a.questionPath ?? [], b.questionPath ?? []);
+  if (pathCompare !== 0) return pathCompare;
   return a.unitKey.localeCompare(b.unitKey, undefined, { numeric: true });
 }
 
@@ -225,6 +228,7 @@ export function sortQuestionUnitsForRendering(units: QuestionUnit[]) {
 
 function buildStableSourceQuestionKey(part: QuestionBankPart) {
   return [
+    part.sourceRelativePath,
     part.boardCode,
     part.subjectSlug,
     part.paperCode,
@@ -247,6 +251,20 @@ function isLikelyBrokenMathematicsUnit(unit: QuestionUnit) {
   return unit.totalMarks > 6 && part.promptText.trim().length < 80;
 }
 
+function partQuestionPath(part: QuestionBankPart) {
+  return part.questionPath && part.questionPath.length > 0
+    ? part.questionPath
+    : parseQuestionPathFromPrompt(part.promptText, part.questionNumber, part.questionPartNumber);
+}
+
+function isMarkSafe(part: QuestionBankPart) {
+  return part.marksValidated !== "mismatch";
+}
+
+function isSelectableMathsUnit(unit: QuestionUnit) {
+  return unit.subjectSlug !== "mathematics" || unit.marksValidated === "validated";
+}
+
 const TOPIC_INDEX = buildTopicIndex(AQA_GEOGRAPHY_TOPIC_TREE);
 
 export function expandTopicSelection(selectedNodeIds: string[]) {
@@ -259,6 +277,7 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
 
   for (const part of questionParts) {
     if ((part.marks ?? 0) <= 0) continue;
+    if (!isMarkSafe(part)) continue;
     if (hasQuestionNumberMismatch(part)) continue;
 
     const relatedParts = relatedPartsByGroupUnitKey.get(part.unitKey) ?? [];
@@ -281,6 +300,9 @@ export function groupQuestionPartsIntoUnits(questionParts: QuestionBankPart[]): 
       sectionCode: part.sectionCode,
       sectionName: part.sectionName,
       totalMarks: 0,
+      questionPath: partQuestionPath(part),
+      sourceTotalMarks: part.sourceTotalMarks ?? null,
+      marksValidated: part.marksValidated ?? "unknown",
       canonicalLeafs: [],
       parts: [],
       pages: [],
@@ -372,15 +394,28 @@ export function groupQuestionUnitsBySourceQuestion(units: QuestionUnit[]): Quest
 
   const grouped: QuestionUnit[] = [];
   for (const [sourceQuestionKey, rawParts] of groupedParts.entries()) {
+    if (rawParts.some((part) => !isMarkSafe(part))) continue;
     const parts = [...rawParts].sort((left, right) => {
       if (left.pageNumber !== right.pageNumber) return left.pageNumber - right.pageNumber;
-      if ((left.questionPartNumber ?? "") !== (right.questionPartNumber ?? "")) {
-        return (left.questionPartNumber ?? "").localeCompare(right.questionPartNumber ?? "", undefined, { numeric: true });
-      }
+      const pathCompare = compareQuestionPaths(partQuestionPath(left), partQuestionPath(right));
+      if (pathCompare !== 0) return pathCompare;
       return left.questionId.localeCompare(right.questionId, undefined, { numeric: true });
     });
     const first = parts[0];
     if (!first) continue;
+
+    const partSum = parts.reduce((sum, part) => sum + (part.marks ?? 0), 0);
+    const sourceTotals = Array.from(new Set(
+      parts
+        .map((part) => part.sourceTotalMarks)
+        .filter((value): value is number => typeof value === "number"),
+    ));
+    const sourceTotalMarks = sourceTotals.length === 1 ? sourceTotals[0] : null;
+    const marksValidated = sourceTotals.length > 1
+      ? "mismatch"
+      : sourceTotalMarks === null
+        ? "unknown"
+        : sourceTotalMarks === partSum ? "validated" : "mismatch";
 
     const pageMap = new Map<number, QuestionBankPart[]>();
     for (const part of parts) {
@@ -404,9 +439,12 @@ export function groupQuestionUnitsBySourceQuestion(units: QuestionUnit[]): Quest
       year: first.year,
       session: first.session,
       questionNumber: first.questionNumber,
+      questionPath: partQuestionPath(first),
       sectionCode: first.sectionCode,
       sectionName: first.sectionName,
-      totalMarks: parts.reduce((sum, part) => sum + (part.marks ?? 0), 0),
+      totalMarks: marksValidated === "validated" && sourceTotalMarks !== null ? sourceTotalMarks : partSum,
+      sourceTotalMarks,
+      marksValidated,
       canonicalLeafs: Array.from(new Set(parts.map((part) => part.canonicalLeaf))),
       parts,
       pages: Array.from(pageMap.entries())
@@ -437,6 +475,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
   const excludedSourceQuestionKeySet = new Set(excludedSourceQuestionKeys);
   const candidates = units.filter((unit) => {
     if (!unit.questionPaperCdnUrl) return false;
+    if (unit.marksValidated === "mismatch") return false;
+    if (!isSelectableMathsUnit(unit)) return false;
     if (isLikelyBrokenMathematicsUnit(unit)) return false;
     if (allowedPaperCodes && !allowedPaperCodes.has(unit.paperCode)) return false;
     if (excludedSourceQuestionKeySet.has(unit.sourceQuestionKey) || excludedSourceQuestionKeySet.has(unit.unitKey)) return false;

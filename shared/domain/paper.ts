@@ -52,9 +52,12 @@ export type QuestionBankPart = {
   questionId: string;
   questionNumber: string;
   questionPartNumber: string | null;
+  questionPath?: string[];
   sectionCode: string | null;
   sectionName: string | null;
   marks: number | null;
+  sourceTotalMarks?: number | null;
+  marksValidated?: "validated" | "mismatch" | "unknown";
   canonicalLeaf: string;
   promptText: string;
   contextText: string | null;
@@ -93,9 +96,12 @@ export type QuestionUnit = {
   year: number | null;
   session: string | null;
   questionNumber: string;
+  questionPath?: string[];
   sectionCode: string | null;
   sectionName: string | null;
   totalMarks: number;
+  sourceTotalMarks?: number | null;
+  marksValidated?: "validated" | "mismatch" | "unknown";
   canonicalLeafs: TopicId[];
   parts: QuestionBankPart[];
   pages: QuestionUnitPage[];
