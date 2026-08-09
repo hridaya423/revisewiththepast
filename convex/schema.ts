@@ -463,6 +463,29 @@ export default defineSchema({
     .index("by_saved_paper", ["savedPaperId"])
     .index("by_saved_paper_order", ["savedPaperId", "displayOrder"]),
 
+  mcpArtifacts: defineTable({
+    bundleId: v.string(),
+    kind: v.union(v.literal("paper"), v.literal("mark-scheme")),
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    contentType: v.string(),
+    fileSize: v.number(),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_bundle_kind", ["bundleId", "kind"])
+    .index("by_storage_id", ["storageId"])
+    .index("by_expires_at", ["expiresAt"]),
+
+  mcpRateLimits: defineTable({
+    scope: v.string(),
+    windowStart: v.number(),
+    count: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_scope_window", ["scope", "windowStart"])
+    .index("by_window_start", ["windowStart"]),
+
   papers: defineTable({
     subjectId: v.id("subjects"),
     boardId: v.id("examBoards"),

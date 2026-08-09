@@ -5,6 +5,7 @@ import {
   generatePaper,
   parseGeneratePaperRequest,
 } from "@/features/papers/server";
+import { reservePaperGeneration } from "@/features/mcp/rate-limit";
 import { ValidationError } from "@/shared/application/errors";
 
 export const runtime = "nodejs";
@@ -29,8 +30,10 @@ export async function POST(request: NextRequest) {
   const body = parsed.data;
 
   try {
+    const reservation = await reservePaperGeneration(request);
     const result = await generatePaper(body);
     const headers = buildGenerationHeaders(result, body.questionMix);
+    headers["X-RateLimit-Remaining"] = String(reservation.remainingForCaller);
 
     return new Response(Buffer.from(result.pdfBytes), { headers });
   } catch (error) {
@@ -51,6 +54,10 @@ export async function POST(request: NextRequest) {
     const status = typeof error === "object" && error !== null && "status" in error && typeof error.status === "number"
       ? error.status
       : 500;
-    return new Response(status >= 500 ? `Failed to generate paper: ${message}` : message, { status });
+    const headers: Record<string, string> = {};
+    if (typeof error === "object" && error !== null && "retryAt" in error && typeof error.retryAt === "number") {
+      headers["Retry-After"] = String(Math.max(1, Math.ceil((error.retryAt - Date.now()) / 1000)));
+    }
+    return new Response(status >= 500 ? `Failed to generate paper: ${message}` : message, { status, headers });
   }
 }

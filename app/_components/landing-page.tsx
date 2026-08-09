@@ -232,6 +232,7 @@ export function LandingPage() {
           <nav aria-label="Footer navigation" className="flex flex-wrap gap-6 text-[0.7rem] font-bold text-text-muted">
             <Link href="/paper-maker" className="transition-colors hover:text-accent">Build</Link>
             <Link href="/marking" className="transition-colors hover:text-accent">Mark</Link>
+            <Link href="/docs/mcp" className="transition-colors hover:text-accent">MCP docs</Link>
             <Link href="/auth" className="transition-colors hover:text-accent">Sign in</Link>
           </nav>
         </div>

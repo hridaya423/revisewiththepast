@@ -14,6 +14,6 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["shared/**/*.test.ts", "features/**/*.test.ts", "scripts/**/*.test.ts"],
+    include: ["app/**/*.test.ts", "shared/**/*.test.ts", "features/**/*.test.ts", "scripts/**/*.test.ts"],
   },
 });

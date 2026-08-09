@@ -10,10 +10,13 @@
 
 import type * as auth from "../auth.js";
 import type * as catalogSeedPlan from "../catalogSeedPlan.js";
+import type * as crons from "../crons.js";
 import type * as http from "../http.js";
 import type * as insertPageAssets from "../insertPageAssets.js";
 import type * as marking from "../marking.js";
 import type * as markingImportAssets from "../markingImportAssets.js";
+import type * as mcpArtifacts from "../mcpArtifacts.js";
+import type * as mcpRateLimits from "../mcpRateLimits.js";
 import type * as model_auth from "../model/auth.js";
 import type * as model_markingSummary from "../model/markingSummary.js";
 import type * as paperAssets from "../paperAssets.js";
@@ -31,10 +34,13 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   catalogSeedPlan: typeof catalogSeedPlan;
+  crons: typeof crons;
   http: typeof http;
   insertPageAssets: typeof insertPageAssets;
   marking: typeof marking;
   markingImportAssets: typeof markingImportAssets;
+  mcpArtifacts: typeof mcpArtifacts;
+  mcpRateLimits: typeof mcpRateLimits;
   "model/auth": typeof model_auth;
   "model/markingSummary": typeof model_markingSummary;
   paperAssets: typeof paperAssets;

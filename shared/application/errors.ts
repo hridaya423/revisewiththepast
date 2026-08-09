@@ -4,6 +4,7 @@ export type ErrorCode =
   | "FORBIDDEN"
   | "NOT_FOUND"
   | "CONFLICT"
+  | "RATE_LIMITED"
   | "DEPENDENCY_UNAVAILABLE"
   | "DOMAIN_ERROR"
   | "INTERNAL_ERROR";
@@ -54,6 +55,15 @@ export class NotFoundError extends ApplicationError {
 export class ConflictError extends ApplicationError {
   constructor(message: string) {
     super("CONFLICT", message, 409);
+  }
+}
+
+export class RateLimitError extends ApplicationError {
+  readonly retryAt: number;
+
+  constructor(message: string, retryAt: number) {
+    super("RATE_LIMITED", message, 429);
+    this.retryAt = retryAt;
   }
 }
 

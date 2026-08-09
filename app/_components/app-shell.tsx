@@ -4,7 +4,7 @@ import { BrandMark } from "@/app/_components/brand-mark";
 import { UserMenu } from "@/app/_components/user-menu";
 
 type AppShellProps = {
-  active: "build" | "mark";
+  active?: "build" | "mark";
   children: React.ReactNode;
   wide?: boolean;
 };
