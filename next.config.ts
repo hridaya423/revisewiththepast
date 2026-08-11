@@ -22,6 +22,7 @@ const serverTraceExcludes = [
 const nextConfig: NextConfig = {
   experimental: {
     lockDistDir: false,
+    viewTransition: true,
   },
   serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingExcludes: Object.fromEntries(

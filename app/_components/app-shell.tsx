@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { ViewTransition } from "react";
 
 import { BrandMark } from "@/app/_components/brand-mark";
+import { ShellNavLink } from "@/app/_components/shell-nav-link";
 import { UserMenu } from "@/app/_components/user-menu";
 
 type AppShellProps = {
@@ -12,7 +14,7 @@ type AppShellProps = {
 export function AppShell({ active, children, wide = false }: AppShellProps) {
   return (
     <div className="product-ui min-h-[100dvh] bg-bg-workspace">
-      <header className="sticky top-0 z-40 border-b border-text/10 bg-white/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-text/10 bg-white/95 backdrop-blur-sm" style={{ viewTransitionName: "site-header" }}>
         <div className="mx-auto flex h-14 max-w-[1440px] items-center gap-3 px-4 sm:h-16 sm:px-8 lg:px-10">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <Link href="/" className="group flex min-w-0 items-center gap-2.5 text-accent" aria-label="Revise with the Past home">
@@ -22,20 +24,8 @@ export function AppShell({ active, children, wide = false }: AppShellProps) {
           </div>
 
           <nav className="flex h-full items-center gap-8" aria-label="Product navigation">
-            <Link
-              href="/paper-maker"
-              aria-current={active === "build" ? "page" : undefined}
-              className={`btn-press inline-flex h-full items-center border-b-2 px-1 text-[0.82rem] font-semibold ${active === "build" ? "border-accent text-accent" : "border-transparent text-text hover:text-accent"}`}
-            >
-              <span>Build</span>
-            </Link>
-            <Link
-              href="/marking"
-              aria-current={active === "mark" ? "page" : undefined}
-              className={`btn-press inline-flex h-full items-center border-b-2 px-1 text-[0.82rem] font-semibold ${active === "mark" ? "border-accent text-accent" : "border-transparent text-text hover:text-accent"}`}
-            >
-              <span>Mark</span>
-            </Link>
+            <ShellNavLink href="/paper-maker" label="Build" active={active === "build"} direction="nav-back" />
+            <ShellNavLink href="/marking" label="Mark" active={active === "mark"} direction="nav-forward" />
           </nav>
 
           <div className="flex flex-1 justify-end">
@@ -44,9 +34,15 @@ export function AppShell({ active, children, wide = false }: AppShellProps) {
         </div>
       </header>
 
-      <main className={`mx-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-10 ${wide ? "max-w-[1560px]" : "max-w-[1440px]"}`}>
-        {children}
-      </main>
+      <ViewTransition
+        enter={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        exit={{ "nav-forward": "nav-forward", "nav-back": "nav-back", default: "none" }}
+        default="none"
+      >
+        <main className={`mx-auto px-4 py-6 sm:px-8 sm:py-8 lg:px-10 ${wide ? "max-w-[1560px]" : "max-w-[1440px]"}`}>
+          {children}
+        </main>
+      </ViewTransition>
     </div>
   );
 }

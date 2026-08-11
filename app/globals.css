@@ -365,6 +365,73 @@ input[type="number"]::-webkit-inner-spin-button {
   animation: slide-up-fade 520ms var(--ease-out) both;
 }
 
+.shell-nav-pending {
+  position: absolute;
+  left: 50%;
+  bottom: 0.42rem;
+  width: 0.24rem;
+  height: 0.24rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: translateX(-50%);
+}
+
+.shell-nav-pending[data-pending="true"] {
+  animation: nav-pending-in 180ms 100ms both var(--ease-out);
+}
+
+@keyframes nav-pending-in {
+  to { opacity: 0.62; }
+}
+
+::view-transition-group(site-header) {
+  z-index: 100;
+  animation: none;
+}
+
+::view-transition-old(site-header) {
+  display: none;
+}
+
+::view-transition-new(site-header),
+::view-transition-group(product-nav-indicator) {
+  animation-duration: var(--motion-control);
+  animation-timing-function: var(--ease-control);
+}
+
+::view-transition-old(.nav-forward) {
+  animation: 150ms ease-in both route-exit-forward;
+}
+
+::view-transition-new(.nav-forward) {
+  animation: 210ms 100ms var(--ease-control) both route-enter-forward;
+}
+
+::view-transition-old(.nav-back) {
+  animation: 150ms ease-in both route-exit-back;
+}
+
+::view-transition-new(.nav-back) {
+  animation: 210ms 100ms var(--ease-control) both route-enter-back;
+}
+
+@keyframes route-exit-forward {
+  to { opacity: 0; transform: translateX(-12px); }
+}
+
+@keyframes route-enter-forward {
+  from { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes route-exit-back {
+  to { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes route-enter-back {
+  from { opacity: 0; transform: translateX(-12px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -382,6 +449,12 @@ input[type="number"]::-webkit-inner-spin-button {
   }
   .btn-press:active {
     transform: none;
+  }
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
 
