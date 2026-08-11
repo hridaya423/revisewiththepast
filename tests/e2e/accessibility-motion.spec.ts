@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test.use({ reducedMotion: "reduce" });
+test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+});
 
 test("reduced motion keeps core landing and builder content available", async ({ page }) => {
   await page.goto("/");

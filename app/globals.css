@@ -32,6 +32,10 @@
   --shadow-lg: rgba(13, 23, 52, 0.13);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --motion-press: 100ms;
+  --motion-control: 200ms;
+  --motion-continuity: 360ms;
+  --ease-control: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @theme inline {
@@ -278,7 +282,7 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 .btn-press {
-  transition: transform 140ms var(--ease-out), background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+  transition: transform var(--motion-press) var(--ease-out), background-color var(--motion-control) ease, border-color var(--motion-control) ease, color var(--motion-control) ease, box-shadow var(--motion-control) ease, opacity var(--motion-control) ease;
 }
 .btn-press:active {
   transform: scale(0.97);
@@ -332,13 +336,23 @@ input[type="number"]::-webkit-inner-spin-button {
   html {
     scroll-behavior: auto;
   }
-  .status-breathe {
-    animation: none;
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
   }
+  .status-breathe,
   .skeleton {
     animation: none;
   }
   .btn-press:active {
     transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .material-surface {
+    background: var(--bg-elevated);
+    backdrop-filter: none;
   }
 }
