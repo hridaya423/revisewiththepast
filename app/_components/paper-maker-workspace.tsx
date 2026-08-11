@@ -292,6 +292,7 @@ export function PaperMakerWorkspace({ subjectOptions, initialSubjectKey, initial
     setSubjectDetailError(null);
     setResult(null);
     setBuilderStage(subject?.topicSelectionEnabled ? "topics" : "paper");
+    window.requestAnimationFrame(() => stageHeadingRef.current?.focus());
     const params = new URLSearchParams();
     params.set("subject", key);
     if (subject?.tiers.length) params.set("tier", nextTier);
