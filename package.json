@@ -23,9 +23,7 @@
     "mcp:audit-build": "tsx scripts/audit-mcp-trace.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1045.0",
     "@convex-dev/better-auth": "^0.12.2",
-    "@gsap/react": "^2.1.2",
     "@modelcontextprotocol/server": "^2.0.0",
     "@napi-rs/canvas": "^1.0.0",
     "@openrouter/sdk": "^0.12.35",
@@ -33,7 +31,6 @@
     "cheerio": "^1.2.0",
     "convex": "^1.38.0",
     "dotenv": "^17.4.2",
-    "gsap": "^3.15.0",
     "katex": "^0.17.0",
     "lucide-react": "^1.16.0",
     "motion": "^13.0.0",

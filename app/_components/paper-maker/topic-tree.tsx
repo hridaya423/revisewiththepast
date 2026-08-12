@@ -2,7 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
+import { motionTokens } from "@/app/_components/ui/motion-tokens";
 import type { TopicTreeNodeWithCounts } from "@/shared/domain/topic";
 
 export type SelectedTopicSummary = {
@@ -61,6 +63,7 @@ export function TopicNode({
   const selection = getSelectionState(node, selectedLeafIds);
   const childrenId = topicDomId(node.id);
   const checkboxRef = useRef<HTMLInputElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (checkboxRef.current) checkboxRef.current.indeterminate = selection.partial;
@@ -68,7 +71,7 @@ export function TopicNode({
 
   return (
     <div className="topic-node">
-      <div className={`relative flex min-h-11 items-center border-b border-text/[0.07] py-1.5 pl-[76px] pr-3 transition-colors hover:bg-bg-soft ${selection.checked || selection.partial ? "bg-accent-soft/55" : ""}`}>
+      <div className={`relative flex min-h-10 items-center border-b border-text/[0.07] py-1 pl-16 pr-3 transition-colors hover:bg-bg-soft ${selection.checked || selection.partial ? "bg-accent-soft/55" : ""}`}>
         {hasChildren ? (
           <button
             type="button"
@@ -92,8 +95,8 @@ export function TopicNode({
             aria-label={`${selection.checked ? "Deselect" : "Select"} ${node.label}, ${node.questionUnitCount} question${node.questionUnitCount === 1 ? "" : "s"}`}
           />
           <span className="flex min-w-0 flex-1 items-center">
-            {depth > 0 ? <span className="shrink-0" style={{ width: `${depth * 16}px` }} aria-hidden="true" /> : null}
-            <span className="min-w-0 text-[0.8rem] font-medium leading-5 text-text">{node.label}</span>
+            {depth > 0 ? <span className="shrink-0" style={{ width: `${depth * 8}px` }} aria-hidden="true" /> : null}
+            <span data-topic-label className="min-w-0 text-[0.8rem] font-medium leading-5 text-text">{node.label}</span>
           </span>
           <span className="ml-3 shrink-0 font-mono text-[0.61rem] tabular-nums text-text-muted">
             {node.questionUnitCount} question{node.questionUnitCount === 1 ? "" : "s"}
@@ -101,21 +104,30 @@ export function TopicNode({
         </label>
       </div>
 
-      {hasChildren && isExpanded ? (
-        <div id={childrenId} aria-label={`${node.label} subtopics`}>
-          {node.children?.map((child) => (
-            <TopicNode
-              key={child.id}
-              node={child}
-              depth={depth + 1}
-              expandedIds={expandedIds}
-              selectedLeafIds={selectedLeafIds}
-              onToggleExpanded={onToggleExpanded}
-              onToggleSelected={onToggleSelected}
-            />
-          ))}
-        </div>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {hasChildren && isExpanded ? (
+          <motion.div
+            id={childrenId}
+            aria-label={`${node.label} subtopics`}
+            initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+            transition={motionTokens.control}
+          >
+            {node.children?.map((child) => (
+              <TopicNode
+                key={child.id}
+                node={child}
+                depth={depth + 1}
+                expandedIds={expandedIds}
+                selectedLeafIds={selectedLeafIds}
+                onToggleExpanded={onToggleExpanded}
+                onToggleSelected={onToggleSelected}
+              />
+            ))}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
