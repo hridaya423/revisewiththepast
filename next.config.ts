@@ -3,9 +3,11 @@ import type { NextConfig } from "next";
 const paperMakerRoutes = [
   "/api/paper-maker/**",
   "/mcp",
+  "/",
+  "/paper-maker",
 ];
 
-const markingRoutes = ["/api/marking/**"];
+const markingRoutes = ["/api/marking/**", "/marking/**"];
 
 const serverTraceExcludes = [
   "./.git/**/*",
