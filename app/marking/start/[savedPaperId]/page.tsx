@@ -14,15 +14,17 @@ export default function StartMarkingPage({ params }: { params: Promise<{ savedPa
   useEffect(() => {
     if (hasStarted.current) return;
     hasStarted.current = true;
+    let ignore = false;
     const startMarking = async () => {
       try {
         const payload = await createMarkingSubmission({ savedPaperId });
-        router.replace(`/marking/${payload.submissionId}`);
+        if (!ignore) router.replace(`/marking/${payload.submissionId}`);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Could not start marking this paper.");
+        if (!ignore) setError(cause instanceof Error ? cause.message : "Could not start marking this paper.");
       }
     };
     void startMarking();
+    return () => { ignore = true; };
   }, [router, savedPaperId]);
 
   return (

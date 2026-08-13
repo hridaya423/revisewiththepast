@@ -152,20 +152,22 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
   handler: async (ctx, args) => {
     const now = Date.now();
     await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
-    const existingByIdentity = await ctx.db
-      .query("taggedPapers")
-      .withIndex("by_paper_identity", (q) => q.eq("boardCode", args.boardCode))
-      .filter((q) => q.and(
-        q.eq(q.field("subjectSlug"), args.subjectSlug),
-        q.eq(q.field("paperCode"), args.paperCode),
-        q.eq(q.field("year"), args.year),
-        q.eq(q.field("session"), args.session),
-      ))
-      .collect();
-    const existingBySourceFile = await ctx.db
-      .query("taggedPapers")
-      .withIndex("by_source_file", (q) => q.eq("sourceFile", args.sourceFile))
-      .unique();
+    const [existingByIdentity, existingBySourceFile] = await Promise.all([
+      ctx.db
+        .query("taggedPapers")
+        .withIndex("by_paper_identity", (q) => q.eq("boardCode", args.boardCode))
+        .filter((q) => q.and(
+          q.eq(q.field("subjectSlug"), args.subjectSlug),
+          q.eq(q.field("paperCode"), args.paperCode),
+          q.eq(q.field("year"), args.year),
+          q.eq(q.field("session"), args.session),
+        ))
+        .collect(),
+      ctx.db
+        .query("taggedPapers")
+        .withIndex("by_source_file", (q) => q.eq("sourceFile", args.sourceFile))
+        .unique(),
+    ]);
 
     const targetTier = inferTierFromSourceRelativePath(args.sourceRelativePath);
     const existingCandidates = Array.from(new Map(
@@ -344,9 +346,21 @@ export const getDuplicateTaggedPapers = queryGeneric({
       groups.set(key, existing);
     }
 
-    return Array.from(groups.entries())
-      .filter(([, records]) => records.length > 1)
-      .map(([key, records]) => ({
+    const duplicateGroups: Array<{
+      key: string;
+      count: number;
+      records: Array<{
+        id: string;
+        sourceFile: string;
+        sourceRelativePath: string | null;
+        questionCount: number;
+        taggedAt: number;
+        updatedAt: number;
+      }>;
+    }> = [];
+    for (const [key, records] of groups) {
+      if (records.length <= 1) continue;
+      duplicateGroups.push({
         key,
         count: records.length,
         records: [...records]
@@ -359,7 +373,9 @@ export const getDuplicateTaggedPapers = queryGeneric({
             taggedAt: paper.taggedAt,
             updatedAt: paper.updatedAt,
           })),
-      }))
+      });
+    }
+    return duplicateGroups
       .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
   },
 });
@@ -614,17 +630,18 @@ export const getPaperMakerQuestionBank = queryGeneric({
     subjectSlug: v.string(),
   },
   handler: async (ctx, args) => {
-    const taggedPapers = await ctx.db
-      .query("taggedPapers")
-      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
-      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
-      .collect();
-
-    const paperAssets = await ctx.db
-      .query("paperAssets")
-      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
-      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
-      .collect();
+    const [taggedPapers, paperAssets] = await Promise.all([
+      ctx.db
+        .query("taggedPapers")
+        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+        .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+        .collect(),
+      ctx.db
+        .query("paperAssets")
+        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+        .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+        .collect(),
+    ]);
 
     const paperAssetByRelativePath = new Map<string, { cdnUrl: string; relativePath: string; fileName: string }>();
     const paperAssetByIdentity = new Map<string, { cdnUrl: string; relativePath: string; fileName: string }>();
@@ -772,8 +789,10 @@ export const getPaperMakerQuestionBank = queryGeneric({
 export const getTaggingHealth = queryGeneric({
   args: {},
   handler: async (ctx) => {
-    const taggedPapers = await ctx.db.query("taggedPapers").collect();
-    const taggedQuestionParts = await ctx.db.query("taggedQuestionParts").collect();
+    const [taggedPapers, taggedQuestionParts] = await Promise.all([
+      ctx.db.query("taggedPapers").collect(),
+      ctx.db.query("taggedQuestionParts").collect(),
+    ]);
 
     const partCountByPaperId = new Map<string, number>();
     for (const part of taggedQuestionParts) {
@@ -781,19 +800,27 @@ export const getTaggingHealth = queryGeneric({
       partCountByPaperId.set(key, (partCountByPaperId.get(key) ?? 0) + 1);
     }
 
-    const mismatches = taggedPapers
-      .map((paper) => {
-        const actualPartCount = partCountByPaperId.get(String(paper._id)) ?? 0;
-        return {
+    const mismatches: Array<{
+      sourceFile: string;
+      boardCode: string;
+      subjectSlug: string;
+      paperCode: string;
+      expectedQuestionCount: number;
+      actualPartCount: number;
+    }> = [];
+    for (const paper of taggedPapers) {
+      const actualPartCount = partCountByPaperId.get(String(paper._id)) ?? 0;
+      if (paper.questionCount === actualPartCount) continue;
+      mismatches.push({
           sourceFile: paper.sourceFile,
           boardCode: paper.boardCode,
           subjectSlug: paper.subjectSlug,
           paperCode: paper.paperCode,
           expectedQuestionCount: paper.questionCount,
           actualPartCount,
-        };
-      })
-      .filter((row) => row.expectedQuestionCount !== row.actualPartCount)
+      });
+    }
+    mismatches
       .sort((a, b) => {
         if (a.boardCode !== b.boardCode) return a.boardCode.localeCompare(b.boardCode);
         if (a.subjectSlug !== b.subjectSlug) return a.subjectSlug.localeCompare(b.subjectSlug);
@@ -812,8 +839,10 @@ export const getTaggingHealth = queryGeneric({
 export const getPlatformOverview = queryGeneric({
   args: {},
   handler: async (ctx) => {
-    const taggedPapers = await ctx.db.query("taggedPapers").collect();
-    const taggedQuestionParts = await ctx.db.query("taggedQuestionParts").collect();
+    const [taggedPapers, taggedQuestionParts] = await Promise.all([
+      ctx.db.query("taggedPapers").collect(),
+      ctx.db.query("taggedQuestionParts").collect(),
+    ]);
 
     const paperById = new Map(taggedPapers.map((paper) => [String(paper._id), paper]));
     const byBoardSubject = new Map<string, {
@@ -943,8 +972,10 @@ export const getPlatformOverview = queryGeneric({
 export const getFrequencyDashboard = queryGeneric({
   args: {},
   handler: async (ctx) => {
-    const taggedPapers = await ctx.db.query("taggedPapers").collect();
-    const taggedQuestionParts = await ctx.db.query("taggedQuestionParts").collect();
+    const [taggedPapers, taggedQuestionParts] = await Promise.all([
+      ctx.db.query("taggedPapers").collect(),
+      ctx.db.query("taggedQuestionParts").collect(),
+    ]);
 
     const facetConfigs = [
       { key: "canonicalTopics", label: "Canonical topics", getValues: (part: typeof taggedQuestionParts[number]) => [part.canonicalLeaf] },
@@ -1114,14 +1145,20 @@ export const getFrequencyDashboard = queryGeneric({
       key: mode,
       label: mode === "opportunity" ? "Opportunity" : "Option",
       topicRows: buildFrequencyRows(records, totalPaperCount, mode, (part) => [part.canonicalLeaf]),
-      facetGroups: facetConfigs
-        .filter((config) => config.key !== "canonicalTopics")
-        .map((config) => ({
+      facetGroups: (() => {
+        const groups = [];
+        for (const config of facetConfigs) {
+          if (config.key === "canonicalTopics") continue;
+          const rows = buildFrequencyRows(records, totalPaperCount, mode, config.getValues).slice(0, 12);
+          if (rows.length === 0) continue;
+          groups.push({
           key: config.key,
           label: config.label,
-          rows: buildFrequencyRows(records, totalPaperCount, mode, config.getValues).slice(0, 12),
-        }))
-        .filter((group) => group.rows.length > 0),
+            rows,
+          });
+        }
+        return groups;
+      })(),
       breakdowns: buildBreakdowns(records, totalPaperCount, mode),
     });
 

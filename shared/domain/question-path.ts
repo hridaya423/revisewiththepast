@@ -39,11 +39,6 @@ export function parseQuestionPathFromPrompt(
   return [];
 }
 
-export function formatQuestionPath(questionNumber: string, questionPath: string[]) {
-  if (questionPath.length === 0) return questionNumber;
-  return `${questionNumber} ${questionPath.map((token) => `(${token})`).join(" ")}`;
-}
-
 export function compareQuestionPaths(left: string[], right: string[]) {
   const maxLength = Math.max(left.length, right.length);
   for (let index = 0; index < maxLength; index += 1) {

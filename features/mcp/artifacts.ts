@@ -14,7 +14,7 @@ const storageUploadResponseSchema = z.object({ storageId: z.string().min(1) });
 const PDF_SIGNATURE = new Uint8Array([37, 80, 68, 70, 45]);
 const registeredArtifactSchema = z.object({
   fileName: z.string(),
-  url: z.string().url(),
+  url: z.url(),
   fileSize: z.number().finite().int().positive(),
   contentType: z.literal("application/pdf"),
 });

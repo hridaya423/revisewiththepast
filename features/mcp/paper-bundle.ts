@@ -105,7 +105,7 @@ export async function normalizePaperBundleInput(input: GeneratePaperBundleInput)
 export async function listGenerationSubjects() {
   return {
     nextTool: "get_subject_catalog" as const,
-    subjects: PAPER_MAKER_SUBJECTS.filter((subject) => subject.generationEnabled).map((subject) => ({
+    subjects: PAPER_MAKER_SUBJECTS.flatMap((subject) => subject.generationEnabled ? [{
       key: subject.key,
       label: subject.label,
       board: subject.boardLabel,
@@ -113,7 +113,7 @@ export async function listGenerationSubjects() {
       tiers: subject.tiers,
       paperOptions: subject.paperOptions,
       defaultPaperCodes: subject.defaultPaperCodes,
-    })),
+    }] : []),
   } satisfies import("./contracts").ListSubjectsOutput;
 }
 

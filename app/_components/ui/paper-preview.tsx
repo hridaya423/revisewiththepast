@@ -15,14 +15,20 @@ type PaperPreviewProps = {
 
 export function PaperPreview({ images, selectedIndex, className = "" }: PaperPreviewProps) {
   const activeIndex = selectedIndex ?? Math.floor(images.length / 2);
+  const occurrences = new Map<string, number>();
+  const keyedImages = images.map((image) => {
+    const occurrence = occurrences.get(image.src) ?? 0;
+    occurrences.set(image.src, occurrence + 1);
+    return { image, key: `${image.src}-${occurrence}` };
+  });
 
   return (
     <div className={`relative aspect-[0.92] w-full ${className}`} role="group" aria-label="Paper preview">
-      {images.map((image, index) => {
+      {keyedImages.map(({ image, key }, index) => {
         const offset = index - activeIndex;
         return (
           <figure
-            key={`${image.src}-${index}`}
+            key={key}
             className="paper-fan-sheet paper-surface absolute left-1/2 top-1/2 aspect-[0.707] w-[57%] overflow-hidden rounded-[3px] bg-white"
             style={{
               zIndex: images.length - Math.abs(offset),

@@ -95,7 +95,7 @@ export const generatePaperBundleInputSchema = z.object({
 
 export const artifactOutputSchema = z.object({
   fileName: z.string(),
-  url: z.string().url(),
+  url: z.url(),
   size: z.number().int().positive(),
   mimeType: z.literal("application/pdf"),
 });
@@ -110,7 +110,7 @@ export const paperBundleOutputSchema = z.object({
   paper: artifactOutputSchema,
   markScheme: artifactOutputSchema.nullable(),
   warnings: z.array(z.string()),
-  expiresAt: z.string().datetime(),
+  expiresAt: z.iso.datetime(),
 });
 
 export type GeneratePaperBundleInput = z.infer<typeof generatePaperBundleInputSchema>;

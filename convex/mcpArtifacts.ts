@@ -65,17 +65,19 @@ export const register = mutation({
     }
 
     const createdAt = Date.now();
-    const artifactId = await ctx.db.insert("mcpArtifacts", {
-      bundleId: args.bundleId,
-      kind: args.kind,
-      storageId: args.storageId,
-      fileName: args.fileName,
-      contentType: args.contentType,
-      fileSize: args.fileSize,
-      createdAt,
-      expiresAt: args.expiresAt,
-    });
-    const url = await ctx.storage.getUrl(args.storageId);
+    const [url, artifactId] = await Promise.all([
+      ctx.storage.getUrl(args.storageId),
+      ctx.db.insert("mcpArtifacts", {
+        bundleId: args.bundleId,
+        kind: args.kind,
+        storageId: args.storageId,
+        fileName: args.fileName,
+        contentType: args.contentType,
+        fileSize: args.fileSize,
+        createdAt,
+        expiresAt: args.expiresAt,
+      }),
+    ]);
     if (!url) {
       await ctx.db.delete(artifactId);
       await ctx.storage.delete(args.storageId);

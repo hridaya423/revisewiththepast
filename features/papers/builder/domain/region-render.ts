@@ -130,14 +130,17 @@ export function buildUnitRenderPlan(
 
   const unreferencedFigures = figures.filter((figure) => !referenced.has(figure.label));
   const questionPages = new Set(questionSpans.map((span) => span.pageNumber));
-  const referencedFigurePages = new Set(figures.filter((figure) => referenced.has(figure.label)).map((figure) => figure.pageNumber));
-  const stemSpans = dedupeSpans(unit.parts.flatMap((part) => part.stemSpans ?? [])).filter(
-    (span) => !unreferencedFigures.some((figure) => figureCoverageOfSpan(figure, span) > ORPHAN_FIGURE_SPAN_COVERAGE),
-  ).filter(
-    (span) => !isScienceUnit(unit) || referenced.size === 0 || questionPages.has(span.pageNumber) || referencedFigurePages.has(span.pageNumber),
-  ).filter(
-    (span) => unit.subjectSlug !== "geography" || referenced.size === 0 || questionPages.has(span.pageNumber) || referencedFigurePages.has(span.pageNumber),
-  );
+  const referencedFigurePages = new Set<number>();
+  for (const figure of figures) {
+    if (referenced.has(figure.label)) referencedFigurePages.add(figure.pageNumber);
+  }
+  const stemSpans: RegionSpan[] = [];
+  for (const span of dedupeSpans(unit.parts.flatMap((part) => part.stemSpans ?? []))) {
+    if (unreferencedFigures.some((figure) => figureCoverageOfSpan(figure, span) > ORPHAN_FIGURE_SPAN_COVERAGE)) continue;
+    if (isScienceUnit(unit) && referenced.size !== 0 && !questionPages.has(span.pageNumber) && !referencedFigurePages.has(span.pageNumber)) continue;
+    if (unit.subjectSlug === "geography" && referenced.size !== 0 && !questionPages.has(span.pageNumber) && !referencedFigurePages.has(span.pageNumber)) continue;
+    stemSpans.push(span);
+  }
   const allRenderedSpans = [...questionSpans, ...stemSpans];
 
   const figureByLabel = new Map<string, RegionFigure>();

@@ -44,7 +44,7 @@ type SavedPaperSummary = {
 
 function formatDate(timestamp: number) {
   const date = new Date(timestamp);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "Recently";
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "Recently";
 }
 
 function paperStatus(attempt?: SubmissionSummary) {
@@ -71,6 +71,7 @@ function PaperThumbnail({ submission }: { submission: SubmissionSummary }) {
         <iframe
           src={`${submission.savedPaperPdfUrl}#page=1&toolbar=0&navpanes=0&scrollbar=0`}
           title="Saved paper preview"
+          sandbox=""
           loading="lazy"
           tabIndex={-1}
           className="pointer-events-none absolute inset-0 h-full w-full bg-white"
@@ -159,7 +160,8 @@ export function MarkingDashboard({ initialSavedPapers, initialSubmissions, userN
 
   return (
     <div className="space-y-8 pb-8">
-      <input ref={fileInputRef} type="file" accept="application/pdf" className="sr-only" disabled={importState === "processing"} onChange={(event) => void importFinishedPdf(event.target.files?.[0] ?? null)} />
+      <label htmlFor="finished-paper-pdf" className="sr-only">Import a finished paper PDF</label>
+      <input id="finished-paper-pdf" ref={fileInputRef} type="file" accept="application/pdf" className="sr-only" disabled={importState === "processing"} onChange={(event) => void importFinishedPdf(event.target.files?.[0] ?? null)} />
       <header className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-[clamp(2rem,5vw,3.35rem)] font-extrabold leading-none tracking-[-0.055em] text-text">Mark your papers</h1>

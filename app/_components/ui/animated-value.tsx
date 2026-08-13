@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 
 import { motionTokens } from "./motion-tokens";
 
@@ -17,7 +17,7 @@ export function AnimatedValue({ value, label, className = "" }: AnimatedValuePro
   return (
     <span className={`relative inline-grid overflow-hidden tabular-nums ${className}`}>
       <AnimatePresence initial={false} mode="popLayout">
-        <motion.span
+        <m.span
           key={String(value)}
           aria-hidden="true"
           className="col-start-1 row-start-1"
@@ -27,7 +27,7 @@ export function AnimatedValue({ value, label, className = "" }: AnimatedValuePro
           transition={motionTokens.control}
         >
           {value}
-        </motion.span>
+        </m.span>
       </AnimatePresence>
       <span className="sr-only" aria-live="polite">{spoken}</span>
     </span>

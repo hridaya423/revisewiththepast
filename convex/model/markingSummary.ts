@@ -62,10 +62,13 @@ export function summarizeMarking(
   const suggestedScores = scores.filter((score) => !isConfirmedScore(score));
   const moderatedMarks = latestModeratedMarks(moderations);
   const awardedMarks = (score: Doc<"markingScores">) => moderatedMarks.get(score.questionKey)?.moderatedAwardedMarks ?? score.awardedMarks;
-  const reviewQuestionKeys = new Set([
-    ...scores.filter((score) => score.needsReview).map((score) => score.questionKey),
-    ...statuses.filter((status) => status.status === "needs_manual_review" || status.status === "failed").map((status) => status.questionKey),
-  ]);
+  const reviewQuestionKeys = new Set<string>();
+  for (const score of scores) {
+    if (score.needsReview) reviewQuestionKeys.add(score.questionKey);
+  }
+  for (const status of statuses) {
+    if (status.status === "needs_manual_review" || status.status === "failed") reviewQuestionKeys.add(status.questionKey);
+  }
   const questionProgress = buildQuestionProgress(savedPaperQuestions, pages, responses, scores, statuses);
   const questionByKey = new Map(savedPaperQuestions.map((question) => [question.unitKey, question]));
   const missedMarksByTopic = new Map<string, number>();

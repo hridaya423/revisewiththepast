@@ -16,9 +16,8 @@ export async function getPaperMakerPageData(input: {
     taggingCounts.byBoardSubject.map((row) => [`${row.boardCode}::${row.subjectSlug}`, row]),
   );
 
-  const subjectOptions = PAPER_MAKER_SUBJECTS
-    .filter((subject) => subject.generationEnabled)
-    .map((subject) => {
+  const subjectOptions = PAPER_MAKER_SUBJECTS.flatMap((subject) => {
+    if (!subject.generationEnabled) return [];
       const counts = countsByBoardSubject.get(`${subject.boardCode}::${subject.subjectSlug}`);
       return {
         key: subject.key,

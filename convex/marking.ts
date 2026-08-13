@@ -342,30 +342,28 @@ export const getMarkingSubmissionBundle = query({
         .collect()
       : [];
 
-    const responses = await ctx.db
-      .query("markingResponses")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
-      .collect();
-
-    const pages = await ctx.db
-      .query("markingResponsePages")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
-      .collect();
-
-    const scores = await ctx.db
-      .query("markingScores")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
-      .collect();
-
-    const moderations = await ctx.db
-      .query("markingModerations")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
-      .collect();
-
-    const questionStatuses = await ctx.db
-      .query("markingQuestionStatuses")
-      .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
-      .collect();
+    const [responses, pages, scores, moderations, questionStatuses] = await Promise.all([
+      ctx.db
+        .query("markingResponses")
+        .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+        .collect(),
+      ctx.db
+        .query("markingResponsePages")
+        .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+        .collect(),
+      ctx.db
+        .query("markingScores")
+        .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+        .collect(),
+      ctx.db
+        .query("markingModerations")
+        .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+        .collect(),
+      ctx.db
+        .query("markingQuestionStatuses")
+        .withIndex("by_submission", (q) => q.eq("submissionId", args.submissionId))
+        .collect(),
+    ]);
 
     const orderedSavedPaperQuestions = savedPaperQuestions.sort((a, b) => a.displayOrder - b.displayOrder);
 

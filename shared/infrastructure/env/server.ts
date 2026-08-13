@@ -3,12 +3,12 @@ import "server-only";
 import { z } from "zod";
 
 const serverEnvironmentSchema = z.object({
-  CONVEX_URL: z.string().url().optional(),
-  NEXT_PUBLIC_CONVEX_URL: z.string().url().optional(),
-  NEXT_PUBLIC_CONVEX_SITE_URL: z.string().url().optional(),
-  SITE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_SITE_URL: z.string().url().optional(),
-  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  CONVEX_URL: z.url().optional(),
+  NEXT_PUBLIC_CONVEX_URL: z.url().optional(),
+  NEXT_PUBLIC_CONVEX_SITE_URL: z.url().optional(),
+  SITE_URL: z.url().optional(),
+  NEXT_PUBLIC_SITE_URL: z.url().optional(),
+  NEXT_PUBLIC_APP_URL: z.url().optional(),
   VERCEL_URL: z.string().trim().min(1).optional(),
   BETTER_AUTH_BASE_PATH: z.string().default("/api/auth"),
   HACKCLUB_CDN_API_KEY: z.string().optional(),

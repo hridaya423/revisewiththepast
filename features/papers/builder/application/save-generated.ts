@@ -78,7 +78,7 @@ export async function saveGeneratedPaper(input: {
         questionPartNumber: unit.parts[0]?.questionPartNumber ?? null,
         totalMarks: unit.totalMarks,
         promptText: unit.parts.map((part) => part.promptText).join("\n\n"),
-        contextText: unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null,
+        contextText: unit.parts.flatMap((part) => part.contextText ? [part.contextText] : []).join("\n\n") || null,
         canonicalLeafIds: canonicalLeafIds.length > 0 ? canonicalLeafIds : undefined,
         topicLabels: topicLabels.length > 0 ? topicLabels : undefined,
       };

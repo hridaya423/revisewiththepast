@@ -82,21 +82,37 @@ export function buildStructuredLines(pageNumber: number, items: PositionedPdfIte
     grouped.set(bucket, existing);
   }
 
-  return Array.from(grouped.entries())
-    .sort((a, b) => b[0] - a[0])
-    .map(([bucketY, bucketItems]) => {
-      const sortedItems = [...bucketItems]
-        .filter((item) => item.text.trim().length > 0)
-        .sort((a, b) => a.x - b.x);
+  const groupedEntries = Array.from(grouped.entries()).sort((a, b) => b[0] - a[0]);
+  const lines: StructuredPdfLine[] = [];
+  for (const [bucketY, bucketItems] of groupedEntries) {
+      const sortedItems = [];
+      for (const item of bucketItems) {
+        if (item.text.trim().length > 0) sortedItems.push(item);
+      }
+      sortedItems.sort((a, b) => a.x - b.x);
 
-      const leftText = normalizeInlineText(sortedItems.filter((item) => item.x < boundaries.answer).map((item) => item.text).join(" "));
-      const answerText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.answer && item.x < boundaries.mark).map((item) => item.text).join(" "));
-      const markText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.mark && item.x < boundaries.scheme).map((item) => item.text).join(" "));
-      const schemeText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.scheme && item.x < boundaries.guidance).map((item) => item.text).join(" "));
-      const guidanceText = normalizeInlineText(sortedItems.filter((item) => item.x >= boundaries.guidance).map((item) => item.text).join(" "));
+      const columns = [[], [], [], [], []] as string[][];
+      for (const item of sortedItems) {
+        const column = item.x < boundaries.answer
+          ? 0
+          : item.x < boundaries.mark
+            ? 1
+            : item.x < boundaries.scheme
+              ? 2
+              : item.x < boundaries.guidance
+                ? 3
+                : 4;
+        columns[column].push(item.text);
+      }
+      const [left, answer, mark, scheme, guidance] = columns;
+      const leftText = normalizeInlineText(left.join(" "));
+      const answerText = normalizeInlineText(answer.join(" "));
+      const markText = normalizeInlineText(mark.join(" "));
+      const schemeText = normalizeInlineText(scheme.join(" "));
+      const guidanceText = normalizeInlineText(guidance.join(" "));
       const fullText = normalizeInlineText([leftText, answerText, markText, schemeText, guidanceText].filter(Boolean).join(" "));
 
-      return {
+      if (fullText.length > 0) lines.push({
         pageNumber,
         y: bucketY,
         leftText,
@@ -105,9 +121,9 @@ export function buildStructuredLines(pageNumber: number, items: PositionedPdfIte
         schemeText,
         guidanceText,
         fullText,
-      } satisfies StructuredPdfLine;
-    })
-    .filter((line) => line.fullText.length > 0);
+      });
+  }
+  return lines;
 }
 
 export function normalizeQuestionNumber(token: string) {

@@ -1,12 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-export function getRequiredEnvironment(name: string) {
-  const value = process.env[name]?.trim();
-  if (!value) throw new Error(`Missing required environment variable: ${name}`);
-  return value;
-}
-
 export function getOptionalEnvironment(name: string) {
   const value = process.env[name]?.trim();
   return value || undefined;

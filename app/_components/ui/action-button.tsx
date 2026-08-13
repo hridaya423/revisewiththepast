@@ -1,12 +1,12 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 
 import { motionTokens } from "./motion-tokens";
 
 export type ActionState = "idle" | "pending" | "success" | "error";
 
-type ActionButtonProps = Omit<React.ComponentProps<typeof motion.button>, "children"> & {
+type ActionButtonProps = Omit<React.ComponentProps<typeof m.button>, "children"> & {
   state: ActionState;
   idleLabel: string;
   pendingLabel: string;
@@ -34,7 +34,7 @@ export function ActionButton({
   const pending = state === "pending";
 
   return (
-    <motion.button
+    <m.button
       {...props}
       type={props.type ?? "button"}
       disabled={disabled || pending}
@@ -45,7 +45,7 @@ export function ActionButton({
       className={`btn-press inline-grid place-items-center ${className}`}
     >
       <AnimatePresence initial={false} mode="popLayout">
-        <motion.span
+        <m.span
           key={state}
           className="col-start-1 row-start-1 inline-flex items-center justify-center gap-2"
           initial={reduce ? false : { opacity: 0, y: 4 }}
@@ -55,8 +55,8 @@ export function ActionButton({
         >
           {pending ? <span className="operation-dot" aria-hidden="true" /> : null}
           {labels[state]}
-        </motion.span>
+        </m.span>
       </AnimatePresence>
-    </motion.button>
+    </m.button>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { motion, useReducedMotion } from "motion/react";
+import { m, useReducedMotion } from "motion/react";
 
 import { motionTokens } from "@/app/_components/ui/motion-tokens";
 
@@ -31,7 +31,7 @@ export function BuilderProgress({ stage, subjectReady, topicsReady, topicSelecti
           <button key={step.key} type="button" onClick={() => onStageChange(step.key)} disabled={step.disabled} aria-current={current ? "step" : undefined} className={`relative inline-flex min-h-10 items-center gap-2 px-3 text-[0.74rem] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-35 ${current ? "text-accent" : "text-text-secondary hover:text-accent"}`}>
             {step.label}
             {step.ready && !current ? <Check className="h-4 w-4 text-success" /> : <span className="font-mono text-[0.66rem] text-text-subtle">{index + 1}</span>}
-            {current ? <motion.span layoutId="builder-progress-indicator" className="absolute inset-x-1 bottom-0 h-0.5 bg-accent" transition={reduce ? { duration: 0 } : motionTokens.control} /> : null}
+            {current ? <m.span layoutId="builder-progress-indicator" className="absolute inset-x-1 bottom-0 h-0.5 bg-accent" transition={reduce ? { duration: 0 } : motionTokens.control} /> : null}
           </button>
         );
       })}

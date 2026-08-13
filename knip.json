@@ -1,0 +1,7 @@
+{
+  "entry": [
+    "convex/**/*.ts",
+    "convex/_generated/*.js",
+    "features/**/infrastructure/http/*.ts"
+  ]
+}

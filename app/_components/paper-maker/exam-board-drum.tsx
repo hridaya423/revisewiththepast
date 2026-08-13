@@ -2,14 +2,8 @@
 
 import { useRef, type CSSProperties } from "react";
 
-export type ExamBoardOption = {
-  label: string;
-  courseCount: number;
-};
-
-export function examBoardTabId(label: string) {
-  return `exam-board-tab-${label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-}
+import type { ExamBoardOption } from "@/app/_components/paper-maker/exam-board-model";
+import { examBoardTabId } from "@/app/_components/paper-maker/exam-board-model";
 
 export function ExamBoardDrum({
   boards,

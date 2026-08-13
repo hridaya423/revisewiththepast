@@ -180,10 +180,15 @@ function resolvePaperLabels(subject: PaperMakerSubjectDefinition, selectedUnits:
 export function buildGeneratedCoverModel(input: BuildCoverModelInput): GeneratedCoverModel {
   const selectedQuestionKeys = new Set(input.selectedUnits.map((unit) => unit.sourceQuestionKey));
   const paperLabels = resolvePaperLabels(input.subject, input.selectedUnits, input.selectedPapers);
-  const materials = input.examContext.materials
-    .map(withoutBullet)
-    .filter((line) => line && !/^for this paper you must have:?$/i.test(line));
-  const instructions = input.examContext.instructions.map(withoutBullet).filter(Boolean);
+  const materials: string[] = [];
+  for (const material of input.examContext.materials) {
+    const line = withoutBullet(material);
+    if (line && !/^for this paper you must have:?$/i.test(line)) materials.push(line);
+  }
+  const instructions = input.examContext.instructions.flatMap((instruction) => {
+    const cleaned = withoutBullet(instruction);
+    return cleaned ? [cleaned] : [];
+  });
   const identity = [
     input.subject.key,
     input.subject.coverTitle,
@@ -289,8 +294,10 @@ function drawBrandMark(page: PDFPage, x: number, y: number, scale = 1) {
 
 export async function drawGeneratedCoverPage(outputDoc: PDFDocument, cover: GeneratedCoverModel) {
   const page = outputDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-  const regular = await outputDoc.embedFont(StandardFonts.Helvetica);
-  const bold = await outputDoc.embedFont(StandardFonts.HelveticaBold);
+  const [regular, bold] = await Promise.all([
+    outputDoc.embedFont(StandardFonts.Helvetica),
+    outputDoc.embedFont(StandardFonts.HelveticaBold),
+  ]);
 
   page.drawRectangle({ x: 24, y: 821, width: PAGE_WIDTH - 56, height: 5, color: BLUE });
   page.drawRectangle({ x: PAGE_WIDTH - 32, y: 821, width: 8, height: 5, color: MINT });

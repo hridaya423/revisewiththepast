@@ -16,7 +16,7 @@ const questionPageManifestSchema = z.object({
   records: z.array(z.object({
     sourceRelativePath: z.string(),
     pageNumber: z.number(),
-    url: z.string().url(),
+    url: z.url(),
     fileName: z.string(),
     relativePath: z.string(),
   })).optional(),
@@ -98,10 +98,6 @@ export async function getPaperMakerQuestionBankFromConvex(
   }
 
   return questionParts;
-}
-
-export async function getAqaGeographyQuestionBankFromConvex(): Promise<QuestionBankPart[]> {
-  return getPaperMakerQuestionBankFromConvex("aqa", "geography");
 }
 
 export async function getTaggingCountsFromConvex() {

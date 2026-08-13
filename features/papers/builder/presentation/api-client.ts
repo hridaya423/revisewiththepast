@@ -17,7 +17,7 @@ export type SubjectDetailResponse = {
 
 const savedPaperResponseSchema = z.object({
   savedPaperId: z.string().optional(),
-  pdfUrl: z.string().url().optional(),
+  pdfUrl: z.url().optional(),
 });
 const subjectDetailResponseSchema = z.custom<SubjectDetailResponse>((value) => {
   if (typeof value !== "object" || value === null) return false;
@@ -61,7 +61,10 @@ export async function requestPaperGeneration(input: Omit<GeneratePaperRequest, "
     coveredTopics: Number(response.headers.get("X-Covered-Topics") ?? 0),
     timeMinutes: Number(response.headers.get("X-Time-Minutes") ?? input.timeMinutes ?? 0),
     selectedSourceQuestionKeys: decodeHeaderLines(response.headers.get("X-Selected-Source-Question-Keys")),
-    selectedUnitMarks: decodeHeaderLines(response.headers.get("X-Selected-Unit-Marks")).map(Number).filter(Number.isFinite),
+    selectedUnitMarks: decodeHeaderLines(response.headers.get("X-Selected-Unit-Marks")).flatMap((value) => {
+      const mark = Number(value);
+      return Number.isFinite(mark) ? [mark] : [];
+    }),
     coveredLeafTopicIds: decodeHeaderLines(response.headers.get("X-Covered-Leaf-Topic-Ids")),
     selectedUnitKeys: decodeHeaderLines(response.headers.get("X-Selected-Unit-Keys")),
   };

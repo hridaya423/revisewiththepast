@@ -29,11 +29,44 @@ export function SuccessModal({
   onClose: () => void;
   onBuildAnother: () => void;
 }) {
-  const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDialogElement>(null);
+  const onCloseRef = useRef(onClose);
   const titleId = "paper-ready-title";
   const [markSchemeState, setMarkSchemeState] = useState<{ status: "idle" | "loading" | "error" | "warning"; message?: string }>({ status: "idle" });
   const [markingState, setMarkingState] = useState<{ status: "idle" | "loading" | "error"; message?: string }>({ status: "idle" });
+  const isMountedRef = useRef(true);
   const hasUnitKeys = result.markSchemeUnitKeys.some((keys) => keys.length > 0);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const dialog = modalRef.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    const handleBackdropClick = (event: MouseEvent) => {
+      if (event.target === dialog) onCloseRef.current();
+    };
+
+    document.body.style.overflow = "hidden";
+    if (dialog && !dialog.open) dialog.showModal();
+    dialog?.addEventListener("click", handleBackdropClick);
+    dialog?.querySelector<HTMLElement>("button:not([disabled])")?.focus();
+    return () => {
+      dialog?.removeEventListener("click", handleBackdropClick);
+      if (dialog?.open) dialog.close();
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, []);
 
   const openMarkingStudio = async () => {
     setMarkingState({ status: "loading" });
@@ -51,43 +84,15 @@ export function SuccessModal({
     }
     setMarkSchemeState({ status: "loading" });
     const outcome = await downloadMarkSchemePdfs({ unitKeysByPaper: result.markSchemeUnitKeys, subjectKey, subjectTier });
+    if (!isMountedRef.current) return;
     const generated = outcome.generated;
     const warning = outcome.warning;
     if (!generated) setMarkSchemeState({ status: "error", message: warning ?? "Could not generate the mark scheme." });
     else setMarkSchemeState(warning ? { status: "warning", message: warning } : { status: "idle" });
   };
 
-  useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    modalRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-      if (event.key !== "Tab" || !modalRef.current) return;
-      const focusable = Array.from(modalRef.current.querySelectorAll<HTMLElement>("button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])"));
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-      previousFocus?.focus();
-    };
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-text/30 p-4 backdrop-blur-[3px]" onClick={onClose}>
-      <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby={titleId} tabIndex={-1} className="max-h-[calc(100dvh-2rem)] w-full max-w-[520px] overflow-y-auto border border-text/15 bg-bg-workspace shadow-[0_24px_70px_rgba(13,23,52,0.2)] outline-none" onClick={(event) => event.stopPropagation()}>
+    <dialog ref={modalRef} aria-labelledby={titleId} onCancel={(event) => { event.preventDefault(); onClose(); }} className="fixed inset-0 z-[100] m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[520px] overflow-y-auto border border-text/15 bg-bg-workspace p-0 shadow-[0_24px_70px_rgba(13,23,52,0.2)] backdrop:bg-text/30 backdrop:backdrop-blur-[3px]">
         <div className="p-6 sm:p-8">
           <div className="flex items-start justify-between gap-5">
             <div>
@@ -121,7 +126,6 @@ export function SuccessModal({
             <button type="button" onClick={onBuildAnother} className="btn-press mx-auto block px-4 py-2 text-[0.68rem] font-semibold text-text-muted hover:text-accent">Build another paper</button>
           </div>
         </div>
-      </div>
-    </div>
+    </dialog>
   );
 }

@@ -20,7 +20,8 @@
     "cdn:upload-downloads": "tsx scripts/upload-downloads-to-hackclub-cdn.ts",
     "papers:qa": "NODE_OPTIONS=\"--import ./scripts/shims/server-only-register.mjs\" tsx scripts/qa-papers.ts",
     "papers:backfill-regions": "tsx scripts/backfill-regions.ts",
-    "mcp:audit-build": "tsx scripts/audit-mcp-trace.ts"
+    "mcp:audit-build": "tsx scripts/audit-mcp-trace.ts",
+    "doctor": "npx react-doctor@latest"
   },
   "dependencies": {
     "@convex-dev/better-auth": "^0.12.2",
@@ -52,6 +53,7 @@
     "@types/react-katex": "^3.0.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "react-doctor": "^0.9.11",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5",

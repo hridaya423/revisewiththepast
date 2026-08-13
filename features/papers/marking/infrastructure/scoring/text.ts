@@ -39,16 +39,16 @@ export function formatStructuredLines(lines: StructuredPdfLine[]) {
     mergedLines.push({ ...line });
   }
 
-  return mergedLines
-    .map((line) => [
+  return mergedLines.flatMap((line) => {
+    const text = [
       line.leftText ? `Question: ${line.leftText}` : null,
       line.answerText ? `Answer: ${line.answerText}` : null,
       line.markText ? `Marks: ${line.markText}` : null,
       line.schemeText ? `Mark scheme: ${line.schemeText}` : null,
       line.guidanceText ? `Guidance: ${line.guidanceText}` : null,
-    ].filter(Boolean).join(" | "))
-    .filter(Boolean)
-    .join("\n");
+    ].filter(Boolean).join(" | ");
+    return text ? [text] : [];
+  }).join("\n");
 }
 
 export function fallbackSlicePartText(questionText: string, questionPartNumber: string | null) {

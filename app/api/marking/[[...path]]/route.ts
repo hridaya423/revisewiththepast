@@ -14,6 +14,15 @@ export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ path?: string[] }> };
 
+const postHandlers: Record<string, (request: NextRequest) => Promise<Response>> = {
+  "auto-score": autoScore,
+  "import-finished-paper": importFinishedPaper,
+  ocr,
+  score,
+  submissions,
+  uploads,
+};
+
 export async function GET(request: NextRequest, context: Context) {
   const path = (await context.params).path ?? [];
   if (path.length === 2 && path[0] === "submissions") {
@@ -27,13 +36,5 @@ export async function GET(request: NextRequest, context: Context) {
 
 export async function POST(request: NextRequest, context: Context) {
   const path = (await context.params).path?.join("/");
-  const handlers: Record<string, (request: NextRequest) => Promise<Response>> = {
-    "auto-score": autoScore,
-    "import-finished-paper": importFinishedPaper,
-    ocr,
-    score,
-    submissions,
-    uploads,
-  };
-  return path && handlers[path] ? handlers[path](request) : new Response("Not found", { status: 404 });
+  return path && postHandlers[path] ? postHandlers[path](request) : new Response("Not found", { status: 404 });
 }

@@ -254,7 +254,7 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
         questionPath,
         totalMarks: unit.totalMarks,
         promptText: unit.parts.map((p) => p.promptText).join("\n\n"),
-        contextText: unit.parts.map((p) => p.contextText ?? "").filter(Boolean).join("\n\n") || null,
+        contextText: unit.parts.flatMap((p) => p.contextText ? [p.contextText] : []).join("\n\n") || null,
         questionType: part?.questionType ?? null,
         isChoiceQuestion: part?.isChoiceQuestion ?? false,
       };
@@ -316,7 +316,7 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
     }
 
     const promptText = unit.parts.map((part) => part.promptText).join("\n\n");
-    const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null;
+    const contextText = unit.parts.flatMap((part) => part.contextText ? [part.contextText] : []).join("\n\n") || null;
     const resolved = await resolveAnswerOcr({
       merged,
       promptText,
@@ -417,10 +417,11 @@ async function attachScriptToExistingSubmission(params: {
   }
 
   const unitKeys = bundle.savedPaperQuestions.map((question) => question.unitKey);
+  const unitKeySet = new Set(unitKeys);
   const subject = getPaperMakerSubject(bundle.submission.subjectKey);
   if (!subject) throw new DomainError("This submission uses an unsupported subject.");
   const paperUnits = (await getMarkableUnitsForSubject(subject.key))
-    .filter((unit) => unitKeys.includes(unit.unitKey));
+    .filter((unit) => unitKeySet.has(unit.unitKey));
 
   const bodyTextPages = filterBodyPages(params.textPages);
   const { pageOcrByNumber, pageImageByNumber } = await prepareImportedPages(
@@ -475,8 +476,9 @@ async function attachScriptToExistingSubmission(params: {
   }
 
   const handwrittenOcrByNumber = new Map<number, string>();
+  const unitByKey = new Map(paperUnits.map((entry) => [entry.unitKey, entry]));
   for (const savedQuestion of bundle.savedPaperQuestions) {
-    const unit = paperUnits.find((entry) => entry.unitKey === savedQuestion.unitKey);
+    const unit = unitByKey.get(savedQuestion.unitKey);
     if (!unit) continue;
     const merged = mergedResponses.get(unit.unitKey);
     if (!merged) {
@@ -490,7 +492,7 @@ async function attachScriptToExistingSubmission(params: {
     }
 
     const promptText = unit.parts.map((part) => part.promptText).join("\n\n");
-    const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join("\n\n") || null;
+    const contextText = unit.parts.flatMap((part) => part.contextText ? [part.contextText] : []).join("\n\n") || null;
     const resolved = await resolveAnswerOcr({
       merged,
       promptText,

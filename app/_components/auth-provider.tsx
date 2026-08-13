@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, type ReactNode } from "react";
+import { LazyMotion, domAnimation } from "motion/react"; 
 import { authClient } from "@/shared/infrastructure/auth/client";
 
 type User = {
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [user, isPending, signOut],
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}><LazyMotion features={domAnimation}>{children}</LazyMotion></AuthContext.Provider>;
 }
 
 export function useAuth(): AuthState {

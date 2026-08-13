@@ -67,11 +67,12 @@ export async function computeInkCoverage(png: Buffer): Promise<number> {
 }
 
 function meaningfulTextLength(pageText: string): number {
-  return pageText
-    .split(/\s{2,}|\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length >= 3 && !isHeaderFurnitureLine(line) && !isFooterFurnitureLine(line))
-    .join("")
+  const meaningfulLines: string[] = [];
+  for (const rawLine of pageText.split(/\s{2,}|\n/)) {
+    const line = rawLine.trim();
+    if (line.length >= 3 && !isHeaderFurnitureLine(line) && !isFooterFurnitureLine(line)) meaningfulLines.push(line);
+  }
+  return meaningfulLines.join("")
     .replace(/\s+/g, "").length;
 }
 
@@ -319,14 +320,15 @@ export function checkRenderedQuestionTotals(textPages: RenderedTextPage[], optio
 }
 
 async function checkCoverOnlyOrMissingQuestions(pngPages: RenderedPngPage[], textPages: RenderedTextPage[], options?: QaCheckOptions): Promise<QaFinding[]> {
-  const contentPages = textPages.filter((page) => page.pageNumber >= CONTENT_PAGE_START);
-  const meaningfulLengths = contentPages.map((page) => meaningfulTextLength(page.text));
-  const meaningfulPages = meaningfulLengths.filter((length) => length >= BLANK_PAGE_TEXT_THRESHOLD).length;
-  const inkedPages = await Promise.all(
-    pngPages
-      .filter((page) => page.pageNumber >= CONTENT_PAGE_START)
-      .map(async (page) => await computeInkCoverage(page.png)),
-  );
+  const contentPages: RenderedTextPage[] = [];
+  let meaningfulPages = 0;
+  for (const page of textPages) {
+    if (page.pageNumber < CONTENT_PAGE_START) continue;
+    contentPages.push(page);
+    if (meaningfulTextLength(page.text) >= BLANK_PAGE_TEXT_THRESHOLD) meaningfulPages += 1;
+  }
+  const contentPngPages = pngPages.filter((page) => page.pageNumber >= CONTENT_PAGE_START);
+  const inkedPages = await Promise.all(contentPngPages.map((page) => computeInkCoverage(page.png)));
   const findings: QaFinding[] = [];
 
   if ((options?.selectedUnitCount ?? 1) > 0 && meaningfulPages === 0 && !inkedPages.some((coverage) => coverage >= BLANK_PAGE_INK_THRESHOLD)) {
@@ -456,10 +458,13 @@ function checkBusinessMissingReferences(textPages: RenderedTextPage[], options?:
     text: normalizeRenderedText(page.text),
   }));
 
-  const getContextWindow = (pageNumber: number) => normalizedPages
-    .filter((page) => page.pageNumber >= pageNumber - 3 && page.pageNumber <= pageNumber + 1)
-    .map((page) => page.text)
-    .join(" ");
+  const getContextWindow = (pageNumber: number) => {
+    const context: string[] = [];
+    for (const page of normalizedPages) {
+      if (page.pageNumber >= pageNumber - 3 && page.pageNumber <= pageNumber + 1) context.push(page.text);
+    }
+    return context.join(" ");
+  };
 
   for (const page of normalizedPages) {
     if (page.pageNumber < CONTENT_PAGE_START) continue;

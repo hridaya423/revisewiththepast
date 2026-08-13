@@ -242,8 +242,10 @@ async function prepareWorkingPage(
   sourceDocCache: Map<string, PDFDocument>,
   sourcePageIndex: number,
 ) {
-  const sourceDoc = await loadSourcePdfDocument(pageAssetUrl, sourcePdfCache, sourceDocCache);
-  const workingDoc = await PDFDocument.create();
+  const [sourceDoc, workingDoc] = await Promise.all([
+    loadSourcePdfDocument(pageAssetUrl, sourcePdfCache, sourceDocCache),
+    PDFDocument.create(),
+  ]);
   try {
     const [workingPage] = await workingDoc.copyPages(sourceDoc, [sourcePageIndex]);
     return workingPage;

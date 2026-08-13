@@ -427,7 +427,8 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     throw new PaperGenerationError(config.messages.noTopicsMapped);
   }
 
-  const filteredBenchmarkUnits = allUnits.filter((unit) => input.paperCodes.length === 0 || input.paperCodes.includes(unit.paperCode));
+  const paperCodeSet = new Set(input.paperCodes);
+  const filteredBenchmarkUnits = allUnits.filter((unit) => input.paperCodes.length === 0 || paperCodeSet.has(unit.paperCode));
   const benchmark = buildRealPaperBenchmark(filteredBenchmarkUnits);
   const resolvedTargetMarks = input.targetMode === "time"
     ? estimateMarksFromTimeMinutes(
@@ -460,7 +461,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   }
 
   const coverTierLabel = config.tier && tier ? config.tier.coverTierLabel(tier) : null;
-  const selectedPapers = subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || input.paperCodes.includes(paper.code));
+  const selectedPapers = subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || paperCodeSet.has(paper.code));
   const examContext = getCoverExamContext(subject, selectedPapers);
   const renderExclusions = new Set(input.excludeSourceQuestionKeys);
   let selection: ReturnType<typeof selectQuestionUnits> | null = null;

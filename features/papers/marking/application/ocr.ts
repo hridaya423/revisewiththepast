@@ -18,11 +18,11 @@ export async function runQuestionOcr(input: OcrRequest) {
 
   const pageUrls = input.imageUrl
     ? [input.imageUrl]
-    : (bundle.pages ?? [])
-      .filter((page) => page.questionKey === input.questionKey)
-      
-      .map((page) => page.sourceImageUrl)
-      .filter((url): url is string => Boolean(url));
+    : (bundle.pages ?? []).flatMap((page) => (
+      page.questionKey === input.questionKey && page.sourceImageUrl
+        ? [page.sourceImageUrl]
+        : []
+    ));
   if (pageUrls.length === 0) throw new ValidationError("No uploaded page was found for this question.");
 
   await upsertMarkingQuestionStatusInConvex({ submissionId: input.submissionId, questionKey: input.questionKey, status: "ocr_pending" });

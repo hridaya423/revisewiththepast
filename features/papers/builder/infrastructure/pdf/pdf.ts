@@ -163,16 +163,14 @@ function getSourceQuestionNumberBox(unit: QuestionUnit, pageNumber: number, crop
     && line.bbox.y0 >= cropBox.bottom - 2
   ));
   const promptLine = findPromptLine(extractedPage, unit.parts[0]?.promptText ?? "");
-  const inlineLine = visibleLines
-    .filter((line) => {
+  const inlineLines = visibleLines.filter((line) => {
       const trimmed = line.text.trim();
       if (!startsWithNumber.test(trimmed)) return false;
       if (!isMathematicsUnit(unit)) return true;
       const remainder = trimmed.replace(startsWithNumber, "").trim();
-      return /^(?:\([a-z]\)|[A-Za-z])/.test(remainder);
-    })
-    .filter((line) => line.bbox.x0 <= cropBox.left + 180)
-    .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
+      return /^(?:\([a-z]\)|[A-Za-z])/.test(remainder) && line.bbox.x0 <= cropBox.left + 180;
+    }).sort((a, b) => b.bbox.y1 - a.bbox.y1);
+  const inlineLine = inlineLines[0] ?? null;
 
   if (inlineLine) {
     const height = Math.max(10, inlineLine.bbox.y1 - inlineLine.bbox.y0);
@@ -187,12 +185,13 @@ function getSourceQuestionNumberBox(unit: QuestionUnit, pageNumber: number, crop
     } satisfies CropBox;
   }
 
-  const standaloneLine = visibleLines
-    .filter((line) => standaloneNumber.test(line.text.trim()))
-    .filter((line) => line.bbox.x0 <= cropBox.left + 180)
-    .filter((line) => line.bbox.y0 > cropBox.bottom + 80)
-    .filter((line) => !promptLine || (line.bbox.y1 >= promptLine.bbox.y0 - 28 && line.bbox.y0 <= promptLine.bbox.y1 + 70))
-    .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
+  const standaloneLines = visibleLines.filter((line) => (
+    standaloneNumber.test(line.text.trim())
+    && line.bbox.x0 <= cropBox.left + 180
+    && line.bbox.y0 > cropBox.bottom + 80
+    && (!promptLine || (line.bbox.y1 >= promptLine.bbox.y0 - 28 && line.bbox.y0 <= promptLine.bbox.y1 + 70))
+  )).sort((a, b) => b.bbox.y1 - a.bbox.y1);
+  const standaloneLine = standaloneLines[0] ?? null;
 
   if (!standaloneLine) return null;
   return {
@@ -214,49 +213,45 @@ function getAqaCompoundMarkerLines(unit: QuestionUnit, pageNumber: number, cropB
   if (unit.boardCode !== "aqa") return [];
   const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
   if (!extractedPage) return [];
-  const sourceQuestions = new Set(
-    unit.parts
-      .map((part) => part.questionNumber.replace(/\s+/g, "").replace(/^0+/, ""))
-      .filter(Boolean),
-  );
+  const sourceQuestions = new Set<string>();
+  for (const part of unit.parts) {
+    const question = part.questionNumber.replace(/\s+/g, "").replace(/^0+/, "");
+    if (question) sourceQuestions.add(question);
+  }
   if (sourceQuestions.size === 0) sourceQuestions.add(unit.questionNumber.replace(/\s+/g, "").replace(/^0+/, ""));
-  const sourceParts = new Set(
-    unit.parts
-      .map((part) => part.questionPartNumber?.replace(/\s+/g, "").replace(/^0+/, "") ?? "")
-      .filter(Boolean),
-  );
-  return extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)
-    .filter((line) => {
+  const sourceParts = new Set<string>();
+  for (const part of unit.parts) {
+    const value = part.questionPartNumber?.replace(/\s+/g, "").replace(/^0+/, "") ?? "";
+    if (value) sourceParts.add(value);
+  }
+  return extractedPage.text_lines.filter((line) => {
+      if (!(line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)) return false;
       const match = line.text.trim().match(/^((?:\d\s*)+)\.\s*((?:\d\s*)+)/);
       if (!match) return false;
       const question = match[1].replace(/\s+/g, "").replace(/^0+/, "") || "0";
       const part = match[2].replace(/\s+/g, "").replace(/^0+/, "") || "0";
       return sourceQuestions.has(question)
         && (unit.parts.length > 1 || sourceParts.size === 0 || sourceParts.has(part));
-    })
-    .sort((a, b) => b.bbox.y1 - a.bbox.y1);
+    }).sort((a, b) => b.bbox.y1 - a.bbox.y1);
 }
 
 function getAqaMajorMarkerLines(unit: QuestionUnit, pageNumber: number, cropBox: CropBox) {
   if (unit.boardCode !== "aqa") return [];
   const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
   if (!extractedPage) return [];
-  const sourceQuestions = new Set(
-    unit.parts
-      .map((part) => part.questionNumber.replace(/\s+/g, "").replace(/^0+/, ""))
-      .filter(Boolean),
-  );
+  const sourceQuestions = new Set<string>();
+  for (const part of unit.parts) {
+    const question = part.questionNumber.replace(/\s+/g, "").replace(/^0+/, "");
+    if (question) sourceQuestions.add(question);
+  }
   if (sourceQuestions.size === 0) sourceQuestions.add(unit.questionNumber.replace(/\s+/g, "").replace(/^0+/, ""));
-  return extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)
-    .filter((line) => {
+  return extractedPage.text_lines.filter((line) => {
+      if (!(line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)) return false;
       const match = line.text.trim().match(/^((?:\d\s*)+)\s+(.+)$/);
       if (!match || /^\s*(?:\.\s*\d|\d\s*\.)/.test(match[2])) return false;
       const question = match[1].replace(/\s+/g, "").replace(/^0+/, "") || "0";
       return sourceQuestions.has(question);
-    })
-    .sort((a, b) => b.bbox.y1 - a.bbox.y1);
+    }).sort((a, b) => b.bbox.y1 - a.bbox.y1);
 }
 
 function getAqaCompoundMarkerMaskRight(unit: QuestionUnit, pageNumber: number, cropBox: CropBox, markerLine: ExtractedTextLine, fallbackRight: number) {
@@ -264,10 +259,12 @@ function getAqaCompoundMarkerMaskRight(unit: QuestionUnit, pageNumber: number, c
   if (!extractedPage) return fallbackRight;
 
   const continuationLine = extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= markerLine.bbox.y0 + 2 && line.bbox.y0 >= markerLine.bbox.y0 - 60)
-    .filter((line) => line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2)
-    .filter((line) => line.bbox.x0 > markerLine.bbox.x0 + 50 && line.bbox.x0 < fallbackRight + 18)
-    .filter((line) => !/^\[/.test(line.text.trim()))
+    .filter((line) => (
+      line.bbox.y1 <= markerLine.bbox.y0 + 2 && line.bbox.y0 >= markerLine.bbox.y0 - 60
+      && line.bbox.y1 <= cropBox.top + 2 && line.bbox.y0 >= cropBox.bottom - 2
+      && line.bbox.x0 > markerLine.bbox.x0 + 50 && line.bbox.x0 < fallbackRight + 18
+      && !/^\[/.test(line.text.trim())
+    ))
     .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
 
   return continuationLine ? Math.min(fallbackRight, continuationLine.bbox.x0 - 4) : fallbackRight;
@@ -306,14 +303,15 @@ function drawAqaSourceFurnitureLineMasks(
   const extractedPage = getExtractedPage(unit.sourceRelativePath, sourcePageNumber);
   if (!extractedPage) return;
   for (const line of extractedPage.text_lines) {
-     if (line.bbox.y1 > sourceCropBox.top + 2 || line.bbox.y0 < sourceCropBox.bottom - 2) continue;
-     if (!isAqaSourceFurnitureLine(line.text, line, sourceCropBox)) continue;
-      const left = Math.max(sourceCropBox.left, line.bbox.x0 - 4);
-      const right = Math.min(sourceCropBox.right, line.bbox.x1 + 10);
-      if (right <= left) continue;
-     const x = drawX + (left - sourceCropBox.left) * scaleX;
-     const y = drawY + (line.bbox.y0 - 4 - sourceCropBox.bottom) * scaleY;
-     const width = (right - left) * scaleX;
+    const y0 = line.bbox.y0;
+    if (line.bbox.y1 > sourceCropBox.top + 2 || y0 < sourceCropBox.bottom - 2) continue;
+    if (!isAqaSourceFurnitureLine(line.text, line, sourceCropBox)) continue;
+    const left = Math.max(sourceCropBox.left, line.bbox.x0 - 4);
+    const right = Math.min(sourceCropBox.right, line.bbox.x1 + 10);
+    if (right <= left) continue;
+    const x = drawX + (left - sourceCropBox.left) * scaleX;
+    const y = drawY + (y0 - 4 - sourceCropBox.bottom) * scaleY;
+    const width = (right - left) * scaleX;
     const height = (line.bbox.y1 - line.bbox.y0 + 8) * scaleY;
     if (width > 0 && height > 0) page.drawRectangle({ x, y, width, height, color: rgb(1, 1, 1) });
   }
@@ -340,8 +338,7 @@ function getMathsTotalLine(unit: QuestionUnit, pageNumber: number, cropBox: Crop
   if (!extractedPage) return null;
   const sourceQuestionNumber = normalizeMathsQuestionNumber(unit.questionNumber);
   return extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top + 3 && line.bbox.y0 >= cropBox.bottom - 3)
-    .filter((line) => parseMathsTotalLine(line.text)?.questionNumber === sourceQuestionNumber)
+    .filter((line) => line.bbox.y1 <= cropBox.top + 3 && line.bbox.y0 >= cropBox.bottom - 3 && parseMathsTotalLine(line.text)?.questionNumber === sourceQuestionNumber)
     .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
 }
 
@@ -352,10 +349,12 @@ function getMathsQuestionNumberLine(unit: QuestionUnit, pageNumber: number, crop
   const escaped = sourceQuestionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const startsWithQuestionNumber = new RegExp(`^\\s*(?:0\\s*)?${escaped}\\b`, "i");
   return extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top + 3 && line.bbox.y0 >= cropBox.bottom - 3)
-    .filter((line) => startsWithQuestionNumber.test(line.text.trim()))
-    .filter((line) => !parseMathsTotalLine(line.text))
-    .filter((line) => line.bbox.x0 <= cropBox.left + 180)
+    .filter((line) => (
+      line.bbox.y1 <= cropBox.top + 3 && line.bbox.y0 >= cropBox.bottom - 3
+      && startsWithQuestionNumber.test(line.text.trim())
+      && !parseMathsTotalLine(line.text)
+      && line.bbox.x0 <= cropBox.left + 180
+    ))
     .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
 }
 
@@ -633,8 +632,7 @@ function trimEnglishLiteratureOptionBleedCropBox(unit: QuestionUnit, crop: Regio
   if (!page) return cropBox;
 
   const optionBreak = page.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom)
-    .filter((line) => /^or$/i.test(line.text.trim()))
+    .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom && /^or$/i.test(line.text.trim()))
     .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
   if (!optionBreak) return cropBox;
 
@@ -778,8 +776,7 @@ function isMathContextBoundaryLine(text: string) {
 
 function getImmediateMathContextLinesAbove(page: ExtractedPaperPage, startLine: ExtractedTextLine) {
   const aboveLines = page.text_lines
-    .filter((line) => line.bbox.y0 >= startLine.bbox.y1 - 4)
-    .filter((line) => line.bbox.y1 <= startLine.bbox.y1 + 180)
+    .filter((line) => line.bbox.y0 >= startLine.bbox.y1 - 4 && line.bbox.y1 <= startLine.bbox.y1 + 180)
     .sort((left, right) => left.bbox.y0 - right.bbox.y0);
 
   const selected: ExtractedTextLine[] = [];
@@ -840,10 +837,11 @@ function resolveMathQuestionCropBox(
   const supportPage = supportUnit?.pages.find((entry) => entry.pageNumber === pageNumber) ?? null;
   const supportBox = supportPage?.bboxUnion ? toCropBox(supportPage.bboxUnion) : null;
 
-  const relevantLines = extractedPage.text_lines
-    .filter((line) => !shouldIgnorePageLine(line.text))
-    .filter((line) => !parseMathsTotalLine(line.text))
-    .filter((line) => !/^total for paper/i.test(line.text.trim()));
+  const relevantLines = extractedPage.text_lines.filter((line) => (
+    !shouldIgnorePageLine(line.text)
+    && !parseMathsTotalLine(line.text)
+    && !/^total for paper/i.test(line.text.trim())
+  ));
   if (relevantLines.length === 0) {
     return null;
   }
@@ -861,11 +859,13 @@ function resolveMathQuestionCropBox(
     : null;
 
   const excludedUnitKeys = new Set([unit.unitKey, ...matchingUnitPage.parts.map((part) => part.partKey)]);
-  const siblingStartLines = (unitStartPages.get(`${unit.sourceRelativePath}::${pageNumber}`) ?? [])
-    .filter((entry) => !excludedUnitKeys.has(entry.unitKey))
-    .map((entry) => findMathUnitStartLine(extractedPage, entry))
-    .filter((line): line is ExtractedTextLine => line !== null)
-    .sort((a, b) => b.bbox.y1 - a.bbox.y1);
+  const siblingStartLines: ExtractedTextLine[] = [];
+  for (const entry of unitStartPages.get(`${unit.sourceRelativePath}::${pageNumber}`) ?? []) {
+    if (excludedUnitKeys.has(entry.unitKey)) continue;
+    const line = findMathUnitStartLine(extractedPage, entry);
+    if (line) siblingStartLines.push(line);
+  }
+  siblingStartLines.sort((a, b) => b.bbox.y1 - a.bbox.y1);
   const nextSiblingLine = siblingStartLines.find((line) => line.bbox.y1 < startLine.bbox.y0 - 4) ?? null;
 
   const topCeiling = Math.min(
@@ -904,12 +904,12 @@ function resolveMathQuestionCropBox(
     ? Math.max(footerFloor, nextSiblingLine.bbox.y1 + 24, lowestTextY - getMathAnswerPadding(unit.totalMarks))
     : Math.max(footerFloor, lowestTextY - getMathAnswerPadding(unit.totalMarks));
 
-  const expectedSpanBottoms = unit.parts.flatMap((part) => [
-    ...(part.regionSpans ?? []),
-    ...(part.stemSpans ?? []),
-  ])
-    .filter((span) => span.pageNumber === pageNumber)
-    .map((span) => span.yBottom);
+  const expectedSpanBottoms: number[] = [];
+  for (const part of unit.parts) {
+    for (const span of [...(part.regionSpans ?? []), ...(part.stemSpans ?? [])]) {
+      if (span.pageNumber === pageNumber) expectedSpanBottoms.push(span.yBottom);
+    }
+  }
   if (expectedSpanBottoms.length > 0) {
     bottom = Math.min(bottom, Math.min(...expectedSpanBottoms));
   }
@@ -997,14 +997,15 @@ function deriveDownloadedInsertPdfPaths(unit: QuestionUnit) {
   const paperNeedle = unit.paperCode.toLowerCase();
   const yearNeedle = unit.year ? String(unit.year) : "";
 
-  return readdirSync(downloadsDir)
-    .filter((fileName) => fileName.toLowerCase().endsWith(".pdf"))
-    .filter((fileName) => fileName.toLowerCase().includes("insert"))
-    .filter((fileName) => (yearNeedle ? fileName.includes(yearNeedle) : true))
-    .filter((fileName) => fileName.toLowerCase().includes(paperNeedle))
-    .filter((fileName) => (sessionNeedle ? fileName.toLowerCase().includes(sessionNeedle) : true))
-    .sort((a, b) => a.localeCompare(b))
-    .map((fileName) => resolve(downloadsDir, fileName));
+  const fileNames = readdirSync(downloadsDir).filter((fileName) => (
+    fileName.toLowerCase().endsWith(".pdf")
+    && fileName.toLowerCase().includes("insert")
+    && (yearNeedle ? fileName.includes(yearNeedle) : true)
+    && fileName.toLowerCase().includes(paperNeedle)
+    && (sessionNeedle ? fileName.toLowerCase().includes(sessionNeedle) : true)
+  ));
+  fileNames.sort((a, b) => a.localeCompare(b));
+  return fileNames.map((fileName) => resolve(downloadsDir, fileName));
 }
 
 function deriveDownloadedPageAssetPath(relativePath: string) {
@@ -1178,9 +1179,10 @@ function trimScienceRegionCropBox(unit: QuestionUnit, crop: { pageNumber: number
   if (!extractedPage) return crop.cropBox;
   let cropBox = crop.cropBox;
 
-  const footerLines = extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom)
-    .filter((line) => isSourceFooterFurnitureLine(line.text) || /\bturn over\b|\bp\s*\d\s*\d\s*\d\s*\d\b/i.test(line.text));
+  const footerLines = extractedPage.text_lines.filter((line) => (
+    line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom
+    && (isSourceFooterFurnitureLine(line.text) || /\bturn over\b|\bp\s*\d\s*\d\s*\d\s*\d\b/i.test(line.text))
+  ));
   if (footerLines.length > 0) {
     const footerTop = Math.max(...footerLines.map((line) => line.bbox.y1)) + 10;
     if (footerTop < cropBox.top - MIN_VISIBLE_CROP_HEIGHT) cropBox = { ...cropBox, bottom: Math.max(cropBox.bottom, footerTop) };
@@ -1188,8 +1190,7 @@ function trimScienceRegionCropBox(unit: QuestionUnit, crop: { pageNumber: number
 
   if (crop.kind === "question") {
     const totalLine = extractedPage.text_lines
-      .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom)
-      .filter((line) => /^\(?\s*total for question\b/i.test(line.text.trim()))
+      .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom && /^\(?\s*total for question\b/i.test(line.text.trim()))
       .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
     if (!totalLine) return cropBox;
     const bottom = Math.min(cropBox.top - MIN_VISIBLE_CROP_HEIGHT, totalLine.bbox.y1 + 8);
@@ -1198,8 +1199,7 @@ function trimScienceRegionCropBox(unit: QuestionUnit, crop: { pageNumber: number
 
   const questionNumberPattern = new RegExp(`^\\s*${unit.questionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
   const questionStartLine = extractedPage.text_lines
-    .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom)
-    .filter((line) => questionNumberPattern.test(line.text.trim()))
+    .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom && questionNumberPattern.test(line.text.trim()))
     .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
   if (!questionStartLine) return cropBox;
   if (cropBox.top - questionStartLine.bbox.y1 < 80) return cropBox;
@@ -1301,7 +1301,11 @@ function isAnswerContinuationOnlyLine(text: string) {
 
 function isAnswerOnlyContinuationCrop(unit: QuestionUnit, crop: RegionCrop) {
   if (crop.kind !== "question") return false;
-  const firstQuestionPage = Math.min(...unit.parts.flatMap((part) => part.regionSpans ?? []).map((span) => span.pageNumber));
+  const questionPages: number[] = [];
+  for (const part of unit.parts) {
+    for (const span of part.regionSpans ?? []) questionPages.push(span.pageNumber);
+  }
+  const firstQuestionPage = Math.min(...questionPages);
   if (Number.isFinite(firstQuestionPage) && crop.pageNumber < firstQuestionPage) return false;
 
   const meaningfulLines = getVisibleMeaningfulLines(unit.sourceRelativePath, crop.pageNumber, crop.cropBox);
@@ -1328,15 +1332,18 @@ function isGenericAdditionalAnswerPage(unit: QuestionUnit, pageNumber: number) {
     return true;
   }
   if (unit.boardCode !== "ocr") return false;
-  const meaningfulLines = page.text_lines
-    .map((line) => line.text.trim())
-    .filter(Boolean)
-    .filter((line) => !/^ocr is (?:an exempt charity|committed)\b/i.test(line))
-    .filter((line) => !/^copyright information$/i.test(line))
-    .filter((line) => !/^©\s*ocr/i.test(line))
-    .filter((line) => !/^h\d+/i.test(line))
-    .filter((line) => !/^\(?\d+\)?$/.test(line))
-    .filter((line) => !/^\[\d+\]$/.test(line));
+  const meaningfulLines: string[] = [];
+  for (const line of page.text_lines) {
+    const text = line.text.trim();
+    if (text && !/^ocr is (?:an exempt charity|committed)\b/i.test(text)
+      && !/^copyright information$/i.test(text)
+      && !/^©\s*ocr/i.test(text)
+      && !/^h\d+/i.test(text)
+      && !/^\(?\d+\)?$/.test(text)
+      && !/^\[\d+\]$/.test(text)) {
+      meaningfulLines.push(text);
+    }
+  }
   return meaningfulLines.length === 0 || meaningfulLines.every((line) => /^[._\-\s]+$/.test(line) || isAnswerContinuationOnlyLine(line));
 }
 
@@ -1396,9 +1403,14 @@ function isEnglishLiteratureUnit(unit: QuestionUnit) {
 }
 
 function getReferencedFigureNumbers(unit: QuestionUnit) {
-  const searchable = `${unit.parts.map((part) => part.promptText).join(" ")} ${unit.parts.map((part) => part.contextText ?? "").join(" ")}`;
+  const searchable = unit.parts.map((part) => `${part.promptText} ${part.contextText ?? ""}`).join(" ");
   const matches = Array.from(searchable.matchAll(/\bfigure\s+(\d+)\b/gi));
-  return Array.from(new Set(matches.map((match) => Number(match[1])).filter((value) => Number.isFinite(value))));
+  const numbers = new Set<number>();
+  for (const match of matches) {
+    const value = Number(match[1]);
+    if (Number.isFinite(value)) numbers.add(value);
+  }
+  return Array.from(numbers);
 }
 
 function isLikelyQuestionInstructionLine(text: string) {
@@ -1441,11 +1453,12 @@ function pageContainsSupportContext(page: ExtractedPaperPage | null) {
 
 function getFooterFloor(page: ExtractedPaperPage, pageHeight: number, ceilingY?: number) {
   const footerRegionMaxY = Math.max(140, pageHeight * 0.28);
-  const footerLines = page.text_lines
-    .filter((line) => !isAnswerLine(line.text))
-    .filter((line) => isSourceFooterFurnitureLine(line.text) || shouldIgnorePageLine(line.text) && !/^[.\s]+$/.test(line.text.trim()))
-    .filter((line) => line.bbox.y1 <= footerRegionMaxY)
-    .filter((line) => ceilingY === undefined || line.bbox.y1 < ceilingY);
+  const footerLines = page.text_lines.filter((line) => (
+    !isAnswerLine(line.text)
+    && (isSourceFooterFurnitureLine(line.text) || shouldIgnorePageLine(line.text) && !/^[.\s]+$/.test(line.text.trim()))
+    && line.bbox.y1 <= footerRegionMaxY
+    && (ceilingY === undefined || line.bbox.y1 < ceilingY)
+  ));
 
   return footerLines.length > 0
     ? Math.min(pageHeight - MIN_VISIBLE_CROP_HEIGHT, Math.max(...footerLines.map((line) => line.bbox.y1)) + 8)
@@ -1461,8 +1474,7 @@ function getPageAnswerMarks(unit: QuestionUnit, pageNumber: number) {
 
 function getAnswerLineFloor(page: ExtractedPaperPage, cropTop: number, cropBottom: number) {
   const answerLines = page.text_lines
-    .filter((line) => isAnswerLine(line.text))
-    .filter((line) => line.bbox.y1 <= cropTop + 2 && line.bbox.y0 >= cropBottom - 2)
+    .filter((line) => isAnswerLine(line.text) && line.bbox.y1 <= cropTop + 2 && line.bbox.y0 >= cropBottom - 2)
     .sort((left, right) => left.bbox.y0 - right.bbox.y0);
   const lastLine = answerLines[0];
   return lastLine ? Math.max(cropBottom, lastLine.bbox.y0) : null;
@@ -1500,16 +1512,17 @@ function resolveFigureSupportTopOnPage(
 
   const figureNumbers = getReferencedFigureNumbers(unit);
   const exactFigureLines = getReferencedFigureLines(page, figureNumbers)
-    .filter((line) => line.bbox.y0 >= questionBoundaryTop - 12)
-    .filter((line) => line.bbox.y1 <= ceilingTop + 4);
+    .filter((line) => line.bbox.y0 >= questionBoundaryTop - 12 && line.bbox.y1 <= ceilingTop + 4);
 
   const candidateLines = exactFigureLines.length > 0
     ? exactFigureLines
     : page.text_lines
-      .filter((line) => !shouldIgnorePageLine(line.text))
-      .filter((line) => SUPPORT_CONTEXT_PATTERN.test(line.text))
-      .filter((line) => line.bbox.y0 >= questionBoundaryTop - 12)
-      .filter((line) => line.bbox.y1 <= ceilingTop + 4);
+      .filter((line) => (
+        !shouldIgnorePageLine(line.text)
+        && SUPPORT_CONTEXT_PATTERN.test(line.text)
+        && line.bbox.y0 >= questionBoundaryTop - 12
+        && line.bbox.y1 <= ceilingTop + 4
+      ));
 
   if (candidateLines.length === 0) {
     return null;
@@ -1905,9 +1918,7 @@ function resolveFullPageTextCropBox(
     return null;
   }
 
-  const relevantLines = extractedPage.text_lines
-    .filter((line) => !shouldIgnorePageLine(line.text))
-    .filter((line) => !isSourceFooterFurnitureLine(line.text));
+  const relevantLines = extractedPage.text_lines.filter((line) => !shouldIgnorePageLine(line.text) && !isSourceFooterFurnitureLine(line.text));
   if (relevantLines.length === 0) {
     return null;
   }
@@ -1948,13 +1959,11 @@ function resolveFullPageTextCropBox(
     : Math.min(pageHeight, Math.max(...relevantLines.map((line) => line.bbox.y1)) + 12);
 
   if (promptLine) {
-    const contextAbove = relevantLines.filter((line) =>
+    const contextAbove = relevantLines.filter((line) => (
       line.bbox.y0 >= promptLine.bbox.y1
-      && line.bbox.y1 <= pageHeight,
-    ).filter((line) =>
-      !isScienceUnit(unit)
-      || (hasFigureContext(unit) && SUPPORT_CONTEXT_PATTERN.test(line.text)),
-    );
+      && line.bbox.y1 <= pageHeight
+      && (!isScienceUnit(unit) || (hasFigureContext(unit) && SUPPORT_CONTEXT_PATTERN.test(line.text)))
+    ));
     if (contextAbove.length > 0) {
       top = Math.min(pageHeight, Math.max(...contextAbove.map((line) => line.bbox.y1)) + 12);
     }
@@ -2092,11 +2101,10 @@ function isSkippableInsertFillerPage(text: string) {
 async function getSkippableInsertPageIndexes(pdfBytes: Uint8Array) {
   try {
     const rendered = await renderPdfToPngBuffers(new Uint8Array(pdfBytes), 0.25);
-    const skippablePageIndexes = new Set(
-      rendered.textPages
-        .filter((page) => isSkippableInsertFillerPage(page.text))
-        .map((page) => page.pageNumber - 1),
-    );
+    const skippablePageIndexes = new Set<number>();
+    for (const page of rendered.textPages) {
+      if (isSkippableInsertFillerPage(page.text)) skippablePageIndexes.add(page.pageNumber - 1);
+    }
     if (skippablePageIndexes.size >= rendered.textPages.length) return new Set<number>();
     return skippablePageIndexes;
   } catch {
@@ -2232,13 +2240,15 @@ async function renderRegionUnit(
   flow: RegionRenderFlow,
   questionNumber: number,
 ) {
-  const rawPlan = buildUnitRenderPlan(unit, layoutByPage, figures)
-    .filter((crop) => !isBoilerplateRegionCrop(unit, crop))
-    .filter((crop) => !shouldSkipBusinessRegionCrop(unit, crop))
-    .filter((crop) => !isEnglishLiteratureOtherOptionPage(unit, crop));
-  const plan = rawPlan
-    .filter((crop) => !isGeographyUnit(unit) || !isAnswerOnlyContinuationCrop(unit, crop))
-    .filter((crop) => !shouldSkipRegionAnswerContinuation(unit, crop));
+  const rawPlan = buildUnitRenderPlan(unit, layoutByPage, figures).filter((crop) => (
+    !isBoilerplateRegionCrop(unit, crop)
+    && !shouldSkipBusinessRegionCrop(unit, crop)
+    && !isEnglishLiteratureOtherOptionPage(unit, crop)
+  ));
+  const plan = rawPlan.filter((crop) => (
+    (!isGeographyUnit(unit) || !isAnswerOnlyContinuationCrop(unit, crop))
+    && !shouldSkipRegionAnswerContinuation(unit, crop)
+  ));
   if (plan.length === 0) return false;
 
   const sideMargin = SHORT_PAGE_SIDE_MARGIN;

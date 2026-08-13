@@ -18,7 +18,7 @@ export const createSubmissionRequestSchema = z.object({
 
 export const ocrRequestSchema = z.object({
   submissionId: submissionIdSchema,
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.url().optional(),
   questionKey: questionKeySchema,
   questionNumber: z.string().trim().optional(),
   questionPartNumber: z.string().trim().optional(),

@@ -29,15 +29,14 @@ export function normalizeScoreModelResult(
       : valid
         ? "Auto-scored against the retrieved mark scheme excerpt."
         : "The scoring model returned an invalid or incomplete result.",
-    markBreakdown: markBreakdown
-      .map((entry) => {
-        if (typeof entry !== "object" || entry === null) return { criterion: "criterion", awarded: false, evidence: "" };
-        return {
-          criterion: "criterion" in entry && typeof entry.criterion === "string" ? entry.criterion : "criterion",
-          awarded: "awarded" in entry && entry.awarded === true,
-          evidence: "evidence" in entry && typeof entry.evidence === "string" ? entry.evidence : "",
-        };
-      })
-      .filter((entry) => entry.criterion || entry.evidence),
+    markBreakdown: markBreakdown.flatMap((entry) => {
+      if (typeof entry !== "object" || entry === null) return [{ criterion: "criterion", awarded: false, evidence: "" }];
+      const normalized = {
+        criterion: "criterion" in entry && typeof entry.criterion === "string" ? entry.criterion : "criterion",
+        awarded: "awarded" in entry && entry.awarded === true,
+        evidence: "evidence" in entry && typeof entry.evidence === "string" ? entry.evidence : "",
+      };
+      return normalized.criterion || normalized.evidence ? [normalized] : [];
+    }),
   };
 }

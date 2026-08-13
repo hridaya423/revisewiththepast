@@ -76,10 +76,10 @@ export function buildRealPaperBenchmark(units: QuestionUnit[]): RealPaperBenchma
     papersBySource.set(unit.sourceRelativePath, existing);
   }
 
-  const papers = Array.from(papersBySource.values())
-    .map((paper) => {
+  const papers = [];
+  for (const paper of papersBySource.values()) {
       const extractedMetrics = getExtractedPaperMetrics(paper.sourceRelativePath);
-      return {
+      const result = {
         sourceRelativePath: paper.sourceRelativePath,
         paperCode: paper.paperCode,
         year: paper.year,
@@ -88,9 +88,9 @@ export function buildRealPaperBenchmark(units: QuestionUnit[]): RealPaperBenchma
         timeMinutes: extractedMetrics.timeMinutes,
         questionCount: paper.questionKeys.size,
       };
-    })
-    .filter((paper) => paper.totalMarks > 0)
-    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
+      if (result.totalMarks > 0) papers.push(result);
+  }
+  papers.sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
 
   if (papers.length === 0) {
     return {

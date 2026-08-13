@@ -8,7 +8,7 @@ import { getServerEnvironment } from "@/shared/infrastructure/env/server";
 const HACKCLUB_UPLOAD_URL = "https://cdn.hackclub.com/api/v4/upload";
 const uploadedFileResponseSchema = z.object({
   id: z.string(),
-  url: z.string().url(),
+  url: z.url(),
   size: z.number().finite(),
   content_type: z.string(),
   created_at: z.string().optional(),

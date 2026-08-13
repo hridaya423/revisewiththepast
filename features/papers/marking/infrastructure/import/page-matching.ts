@@ -62,7 +62,7 @@ export function detectBlankQuestionPaper(params: {
     let bestScore = 0;
     for (const unit of params.matchedUnits) {
       const promptText = unit.parts.map((part) => part.promptText).join(" ");
-      const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join(" ") || null;
+    const contextText = unit.parts.flatMap((part) => part.contextText ? [part.contextText] : []).join(" ") || null;
       bestScore = Math.max(bestScore, scorePromptMatch(page.text, promptText, contextText));
     }
     return bestScore >= STRONG_PROMPT_MATCH_THRESHOLD;
@@ -72,7 +72,7 @@ export function detectBlankQuestionPaper(params: {
     let matchCount = 0;
     for (const unit of params.matchedUnits) {
       const promptText = unit.parts.map((part) => part.promptText).join(" ");
-      const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join(" ") || null;
+      const contextText = unit.parts.flatMap((part) => part.contextText ? [part.contextText] : []).join(" ") || null;
       if (scorePromptMatch(page.text, promptText, contextText) >= IMPORT_MATCH_THRESHOLD) matchCount += 1;
     }
     return matchCount >= 2;
@@ -98,7 +98,7 @@ export function detectBlankQuestionPaper(params: {
 export function matchUnitsToPage(pageText: string, units: QuestionUnit[]) {
   return units.filter((unit) => {
     const promptText = unit.parts.map((part) => part.promptText).join(" ");
-    const contextText = unit.parts.map((part) => part.contextText ?? "").filter(Boolean).join(" ") || null;
+      const contextText = unit.parts.flatMap((part) => part.contextText ? [part.contextText] : []).join(" ") || null;
     return scorePromptMatch(pageText, promptText, contextText) >= IMPORT_MATCH_THRESHOLD;
   });
 }

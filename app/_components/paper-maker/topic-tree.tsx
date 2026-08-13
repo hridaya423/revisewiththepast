@@ -2,42 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 
 import { motionTokens } from "@/app/_components/ui/motion-tokens";
 import type { TopicTreeNodeWithCounts } from "@/shared/domain/topic";
-
-export type SelectedTopicSummary = {
-  id: string;
-  label: string;
-  leafTopicIds: string[];
-};
-
-export function flattenLeafIds(nodes: TopicTreeNodeWithCounts[]) {
-  return Array.from(new Set(nodes.flatMap((node) => node.leafTopicIds)));
-}
-
-export function getSelectionState(node: TopicTreeNodeWithCounts, selectedLeafIds: Set<string>) {
-  const matchedLeafCount = node.leafTopicIds.filter((leafId) => selectedLeafIds.has(leafId)).length;
-  return {
-    checked: matchedLeafCount > 0 && matchedLeafCount === node.leafTopicIds.length,
-    partial: matchedLeafCount > 0 && matchedLeafCount < node.leafTopicIds.length,
-  };
-}
-
-export function buildSelectedTopicSummaries(nodes: TopicTreeNodeWithCounts[], selectedLeafIds: Set<string>) {
-  const summaries: SelectedTopicSummary[] = [];
-  const walk = (node: TopicTreeNodeWithCounts) => {
-    const selection = getSelectionState(node, selectedLeafIds);
-    if (!node.children?.length) {
-      if (selection.checked) summaries.push({ id: node.id, label: node.label, leafTopicIds: node.leafTopicIds });
-      return;
-    }
-    node.children.forEach(walk);
-  };
-  nodes.forEach(walk);
-  return summaries;
-}
+import { getSelectionState } from "@/app/_components/paper-maker/topic-tree-model";
 
 function topicDomId(id: string) {
   return `topic-children-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
@@ -106,7 +75,7 @@ export function TopicNode({
 
       <AnimatePresence initial={false}>
         {hasChildren && isExpanded ? (
-          <motion.div
+          <m.div
             id={childrenId}
             aria-label={`${node.label} subtopics`}
             initial={reduceMotion ? false : { opacity: 0, y: -4 }}
@@ -125,7 +94,7 @@ export function TopicNode({
                 onToggleSelected={onToggleSelected}
               />
             ))}
-          </motion.div>
+          </m.div>
         ) : null}
       </AnimatePresence>
     </div>

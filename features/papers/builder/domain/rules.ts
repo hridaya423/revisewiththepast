@@ -69,7 +69,3 @@ export function resolveSubjectTopics<T extends { id: string }>(subject: SubjectT
   if (subject.tiers.length > 0) return subject.topicsByTier?.[tierKey] ?? [];
   return subject.topics;
 }
-
-export function defaultTimeForMarks(minutesPerMark: number, marks: number) {
-  return clampTimeMinutes(estimatePaperTimeMinutes(minutesPerMark, marks));
-}

@@ -34,12 +34,6 @@ export class ValidationError extends ApplicationError {
   }
 }
 
-export class AuthenticationError extends ApplicationError {
-  constructor(message = "Authentication is required.") {
-    super("AUTHENTICATION_REQUIRED", message, 401);
-  }
-}
-
 export class AuthorizationError extends ApplicationError {
   constructor(message = "You are not allowed to perform this operation.") {
     super("FORBIDDEN", message, 403);
@@ -49,12 +43,6 @@ export class AuthorizationError extends ApplicationError {
 export class NotFoundError extends ApplicationError {
   constructor(message = "The requested resource was not found.") {
     super("NOT_FOUND", message, 404);
-  }
-}
-
-export class ConflictError extends ApplicationError {
-  constructor(message: string) {
-    super("CONFLICT", message, 409);
   }
 }
 

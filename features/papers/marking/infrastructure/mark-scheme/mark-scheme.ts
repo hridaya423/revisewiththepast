@@ -474,8 +474,10 @@ function safePdfText(text: string) {
 
 export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<MarkSchemePdfResult> {
   const outputDoc = await PDFDocument.create();
-  const labelFont = await outputDoc.embedFont(StandardFonts.HelveticaBold);
-  const noteFont = await outputDoc.embedFont(StandardFonts.Helvetica);
+  const [labelFont, noteFont] = await Promise.all([
+    outputDoc.embedFont(StandardFonts.HelveticaBold),
+    outputDoc.embedFont(StandardFonts.Helvetica),
+  ]);
   const fonts = { regular: noteFont, bold: labelFont } satisfies MarkSchemeFonts;
   const srcDocCache = new Map<string, PDFDocument | null>();
   const pdfJsDocCache = new Map<string, PdfJsDocument>();
@@ -697,7 +699,7 @@ function stripSourceFurnitureText(text: string) {
 }
 
 function cleanQuestionPrompt(unit: MarkableUnit) {
-  const raw = stripSourceFurnitureText(safePdfText(normalizeInlineText(unit.parts.map((part) => part.promptText).filter(Boolean).join(" "))));
+  const raw = stripSourceFurnitureText(safePdfText(normalizeInlineText(unit.parts.flatMap((part) => part.promptText ? [part.promptText] : []).join(" "))));
   let prompt = raw
     .replace(/\([^)]*\b(?:G|H|F|QP|Jun|June|Nov|November)\b[^)]*\)$/i, "")
     .replace(/\bQuestion\s+\d+\s+[A-Z][^0]+(?=0\s*\d\s*\.)/i, "")
@@ -1340,7 +1342,7 @@ function drawMathMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout 
   const width = LANDSCAPE_WIDTH - 68;
   const cols = [40, 92, 56, 350, width - 40 - 92 - 56 - 350];
   const entry = buildStructuredEntry(row.unit, row.text, row.continuation);
-  const structuredAnswer = row.lines?.map((line) => line.answerText).filter(Boolean).join(" ") ?? "";
+  const structuredAnswer = row.lines?.flatMap((line) => line.answerText ? [line.answerText] : []).join(" ") ?? "";
   const answerLines = wrapText(structuredAnswer || extractMathAnswerText(row.text), fonts.regular, 8.4, cols[1] - 12);
   const criteria = row.totalRow ? [] : extractMathCriteria(row.lines, row.text, entry, String(row.unit.parts[0]?.marks ?? row.unit.totalMarks));
   const promptLines = wrapText(entry.prompt, fonts.bold, 8.3, cols[3] - 12);

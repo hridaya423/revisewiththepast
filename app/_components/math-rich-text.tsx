@@ -53,13 +53,18 @@ function renderTextWithBreaks(value: string, keyPrefix: string) {
 
 export function MathRichText({ text, className = "" }: { text: string; className?: string }) {
   const segments = parseMathSegments(text);
+  const occurrences = new Map<string, number>();
 
   return (
     <div className={className}>
-      {segments.map((segment, index) => {
+      {segments.map((segment) => {
+        const identity = `${segment.type}:${segment.value}`;
+        const occurrence = occurrences.get(identity) ?? 0;
+        occurrences.set(identity, occurrence + 1);
+        const key = `${identity}-${occurrence}`;
         if (segment.type === "block-math") {
           return (
-            <div key={`block-${index}`} className="my-3 overflow-x-auto rounded-lg bg-white/65 px-3 py-2">
+            <div key={key} className="my-3 overflow-x-auto rounded-lg bg-white/65 px-3 py-2">
               <BlockMath math={segment.value} renderError={() => <span className="font-mono text-[0.85em]">{segment.value}</span>} />
             </div>
           );
@@ -67,11 +72,11 @@ export function MathRichText({ text, className = "" }: { text: string; className
 
         if (segment.type === "inline-math") {
           return (
-            <InlineMath key={`inline-${index}`} math={segment.value} renderError={() => <span className="font-mono text-[0.9em]">{segment.value}</span>} />
+            <InlineMath key={key} math={segment.value} renderError={() => <span className="font-mono text-[0.9em]">{segment.value}</span>} />
           );
         }
 
-        return <Fragment key={`text-${index}`}>{renderTextWithBreaks(segment.value, `text-${index}`)}</Fragment>;
+        return <Fragment key={key}>{renderTextWithBreaks(segment.value, key)}</Fragment>;
       })}
     </div>
   );

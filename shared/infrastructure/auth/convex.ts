@@ -11,12 +11,8 @@ if (!convexUrl || !environment.NEXT_PUBLIC_CONVEX_SITE_URL) {
 
 export const {
   handler,
-  preloadAuthQuery,
-  isAuthenticated,
-  getToken,
   fetchAuthQuery,
   fetchAuthMutation,
-  fetchAuthAction,
 } = convexBetterAuthNextJs({
   convexUrl,
   convexSiteUrl: environment.NEXT_PUBLIC_CONVEX_SITE_URL,

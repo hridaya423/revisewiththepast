@@ -1,19 +1,14 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { AlignLeft, Clock3, List, Scale, type LucideIcon } from "lucide-react";
+import { Clock3 } from "lucide-react";
 
 import { EmbossIcon } from "@/app/_components/emboss/emboss-icon";
 import { EMBOSS_PRESETS } from "@/app/_components/emboss/params";
 import type { QuestionMixProfile } from "@/shared/domain/paper";
 import { MAX_MARKS, MAX_TIME_MINUTES, MIN_MARKS, MIN_TIME_MINUTES } from "@/features/papers/client";
 
-export const QUESTION_MIX_OPTIONS: { key: QuestionMixProfile; label: string; description: string; icon: LucideIcon }[] = [
-  { key: "balanced", label: "Balanced", description: "A mix of short and extended questions.", icon: Scale },
-  { key: "short-form", label: "Short form", description: "More 1–4 mark questions.", icon: List },
-  { key: "long-form", label: "Long form", description: "More extended-response questions.", icon: AlignLeft },
-];
-
+import { QUESTION_MIX_OPTIONS } from "@/app/_components/paper-maker/paper-setup-model";
 type PaperSetupControlsProps = {
   generationEnabled: boolean;
   targetMarks: number;

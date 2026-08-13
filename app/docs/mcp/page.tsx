@@ -39,7 +39,7 @@ export default function McpDocsPage() {
       <div className="mx-auto max-w-[1180px]">
         <div className="flex items-center justify-between gap-4 text-[0.7rem] font-bold text-text-muted">
           <Link href="/" className="inline-flex items-center gap-2 transition-colors hover:text-accent"><ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Home</Link>
-          <a href="/mcp" className="inline-flex items-center gap-2 transition-colors hover:text-accent">Endpoint <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></a>
+          <Link href="/mcp" className="inline-flex items-center gap-2 transition-colors hover:text-accent">Endpoint <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /></Link>
         </div>
 
         <header className="mt-12 max-w-[760px]">

@@ -10,6 +10,12 @@ export const dynamic = "force-dynamic";
 
 type Context = { params: Promise<{ path?: string[] }> };
 
+const postHandlers: Record<string, (request: NextRequest) => Promise<Response>> = {
+  generate,
+  "generate-mark-scheme": generateMarkScheme,
+  "save-generated": saveGenerated,
+};
+
 export async function GET(request: NextRequest, context: Context) {
   const path = (await context.params).path?.join("/");
   return path === "subject-detail" ? subjectDetail(request) : new Response("Not found", { status: 404 });
@@ -17,10 +23,5 @@ export async function GET(request: NextRequest, context: Context) {
 
 export async function POST(request: NextRequest, context: Context) {
   const path = (await context.params).path?.join("/");
-  const handlers: Record<string, (request: NextRequest) => Promise<Response>> = {
-    generate,
-    "generate-mark-scheme": generateMarkScheme,
-    "save-generated": saveGenerated,
-  };
-  return path && handlers[path] ? handlers[path](request) : new Response("Not found", { status: 404 });
+  return path && postHandlers[path] ? postHandlers[path](request) : new Response("Not found", { status: 404 });
 }

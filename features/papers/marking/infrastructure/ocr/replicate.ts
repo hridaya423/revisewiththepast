@@ -56,11 +56,10 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = FETCH_RETRY_ATTEMPT
 function extractTextFromOutput(output: unknown): string {
   if (typeof output === "string") return output.trim();
   if (Array.isArray(output)) {
-    return output
-      .map((item) => extractTextFromOutput(item))
-      .filter(Boolean)
-      .join("\n")
-      .trim();
+    return output.flatMap((item) => {
+      const text = extractTextFromOutput(item);
+      return text ? [text] : [];
+    }).join("\n").trim();
   }
   if (output && typeof output === "object") {
     const candidates = ["text", "output_text", "markdown", "content", "result"].map((key) => Reflect.get(output, key));
