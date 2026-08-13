@@ -5,6 +5,8 @@ const paperMakerRoutes = [
   "/mcp",
 ];
 
+const markingRoutes = ["/api/marking/**"];
+
 const serverTraceExcludes = [
   "./.git/**/*",
   "./.claude/**/*",
@@ -25,7 +27,7 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist"],
   outputFileTracingExcludes: Object.fromEntries(
-    paperMakerRoutes.map((route) => [route, serverTraceExcludes]),
+    [...paperMakerRoutes, ...markingRoutes].map((route) => [route, serverTraceExcludes]),
   ),
   outputFileTracingIncludes: {
     "/api/paper-maker/**": ["./data/extracted-lite/**/paper.json.gz"],
