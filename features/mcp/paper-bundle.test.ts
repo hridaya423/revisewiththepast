@@ -50,6 +50,7 @@ const baseInput = {
 describe("MCP paper bundle", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("fetch", vi.fn());
     mocks.parseGeneratePaperRequest.mockImplementation((input) => ({ success: true, data: input }));
     mocks.reservePaperGeneration.mockResolvedValue({ allowed: true, retryAt: Date.now(), remainingForCaller: 9, remainingGlobal: 299 });
     mocks.getArtifactExpiry.mockReturnValue(1_800_000_000_000);
@@ -156,8 +157,12 @@ describe("MCP paper bundle", () => {
     expect(mocks.generateMarkScheme).not.toHaveBeenCalled();
   });
 
-  it("returns compact human content alongside machine-readable artifact links", () => {
-    const content = paperBundleContent({
+  it("embeds generated PDFs as MCP resources", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(new Response(new Uint8Array([37, 80, 68, 70])))
+      .mockResolvedValueOnce(new Response(new Uint8Array([37, 80, 68, 70, 45])));
+
+    const content = await paperBundleContent({
       bundleId: "bundle_1",
       subjectKey: "aqa-geography",
       totalMarks: 40,
@@ -173,6 +178,23 @@ describe("MCP paper bundle", () => {
     expect(content).toHaveLength(3);
     expect(content[0]).toMatchObject({ type: "text" });
     expect((content[0] as { text: string }).text).not.toContain('"bundleId"');
-    expect(content.slice(1).every((item) => item.type === "resource_link")).toBe(true);
+    expect(content.slice(1)).toEqual([
+      {
+        type: "resource",
+        resource: {
+          uri: "https://cdn.example/paper.pdf",
+          blob: "JVBERg==",
+          mimeType: "application/pdf",
+        },
+      },
+      {
+        type: "resource",
+        resource: {
+          uri: "https://cdn.example/ms.pdf",
+          blob: "JVBERi0=",
+          mimeType: "application/pdf",
+        },
+      },
+    ]);
   });
 });

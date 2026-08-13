@@ -184,28 +184,33 @@ export function formatSubjectCatalogForTool(output: SubjectCatalogOutput) {
     : `${text.slice(0, 11_800)}\n... catalog text truncated; use structuredContent for the remaining topic tree.`;
 }
 
-function artifactResource(artifact: ArtifactOutput, description: string) {
+async function artifactResource(artifact: ArtifactOutput) {
+  const response = await fetch(artifact.url);
+  if (!response.ok) throw new DomainError(`Could not attach ${artifact.fileName}.`);
   return {
-    type: "resource_link" as const,
-    uri: artifact.url,
-    name: artifact.fileName,
-    description,
-    mimeType: artifact.mimeType,
+    type: "resource" as const,
+    resource: {
+      uri: artifact.url,
+      blob: Buffer.from(await response.arrayBuffer()).toString("base64"),
+      mimeType: artifact.mimeType,
+    },
   };
 }
 
-export function paperBundleContent(output: PaperBundleOutput) {
+export async function paperBundleContent(output: PaperBundleOutput) {
   const summary = [
     `Generated ${output.subjectKey}: ${output.questionCount} questions, ${output.totalMarks} marks, ${output.timeMinutes} minutes.`,
-    `Question paper: ${output.paper.url}`,
-    output.markScheme ? `Mark scheme: ${output.markScheme.url}` : "Mark scheme: unavailable.",
+    output.markScheme ? "Question paper and mark scheme are attached." : "Question paper is attached. Mark scheme: unavailable.",
     `Downloads expire at ${output.expiresAt}.`,
     ...output.warnings.map((warning) => `Warning: ${warning}`),
   ].join("\n");
+  const artifacts = await Promise.all([
+    artifactResource(output.paper),
+    ...(output.markScheme ? [artifactResource(output.markScheme)] : []),
+  ]);
   return [
     { type: "text" as const, text: summary },
-    artifactResource(output.paper, "Generated GCSE question paper PDF."),
-    ...(output.markScheme ? [artifactResource(output.markScheme, "Generated mark scheme PDF.")] : []),
+    ...artifacts,
   ];
 }
 

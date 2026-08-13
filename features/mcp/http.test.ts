@@ -73,8 +73,8 @@ describe("MCP Streamable HTTP integration", () => {
     mocks.generatePaperBundle.mockResolvedValue(bundle);
     mocks.paperBundleContent.mockReturnValue([
       { type: "text", text: "Generated paper." },
-      { type: "resource_link", uri: bundle.paper.url, name: bundle.paper.fileName, mimeType: "application/pdf" },
-      { type: "resource_link", uri: bundle.markScheme.url, name: bundle.markScheme.fileName, mimeType: "application/pdf" },
+      { type: "resource", resource: { uri: bundle.paper.url, blob: "JVBERg==", mimeType: "application/pdf" } },
+      { type: "resource", resource: { uri: bundle.markScheme.url, blob: "JVBERg==", mimeType: "application/pdf" } },
     ]);
   });
 
@@ -122,7 +122,7 @@ describe("MCP Streamable HTTP integration", () => {
       });
       expect(bundleResult.isError).not.toBe(true);
       expect(bundleResult.structuredContent).toEqual(bundle);
-      expect(bundleResult.content.filter((item) => item.type === "resource_link")).toHaveLength(2);
+      expect(bundleResult.content.filter((item) => item.type === "resource")).toHaveLength(2);
       expect(mocks.generatePaperBundle).toHaveBeenCalledWith(
         expect.objectContaining({ subjectKey: "aqa-geography" }),
         expect.any(Request),

@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const paperMakerRoutes = [
-  "/api/paper-maker/generate",
-  "/api/paper-maker/subject-detail",
+  "/api/paper-maker/**",
   "/mcp",
 ];
 
@@ -29,8 +28,7 @@ const nextConfig: NextConfig = {
     paperMakerRoutes.map((route) => [route, serverTraceExcludes]),
   ),
   outputFileTracingIncludes: {
-    "/api/paper-maker/generate": ["./data/extracted-lite/**/paper.json.gz"],
-    "/api/paper-maker/subject-detail": ["./data/extracted-lite/**/paper.json.gz"],
+    "/api/paper-maker/**": ["./data/extracted-lite/**/paper.json.gz"],
     "/mcp": ["./data/extracted-lite/**/paper.json.gz"],
   },
 };

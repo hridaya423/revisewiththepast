@@ -93,7 +93,7 @@ export function createPaperMakerMcpServer() {
       try {
         const output = await generatePaperBundle(input, context.http?.req);
         return {
-          content: paperBundleContent(output),
+          content: await paperBundleContent(output),
           structuredContent: output,
         };
       } catch (error) {
