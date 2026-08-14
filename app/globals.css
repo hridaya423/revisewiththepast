@@ -285,6 +285,74 @@ input[type="number"]::-webkit-inner-spin-button {
   transform: translateX(-50%);
 }
 
+@keyframes assembly-enter {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+}
+
+.assembly-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  width: min(calc(100% - 2rem), 46rem);
+  max-width: none;
+  max-height: calc(100dvh - 2rem);
+  margin: auto;
+  overflow-y: auto;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  outline: none;
+}
+
+.assembly-dialog::backdrop {
+  background: rgba(13, 23, 52, 0.62);
+  backdrop-filter: blur(9px) saturate(75%);
+}
+
+.assembly-surface {
+  display: grid;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.52);
+  background: #f3efe6;
+  box-shadow: 0 35px 110px rgba(4, 9, 25, 0.42), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  animation: assembly-enter 240ms var(--ease-control) both;
+}
+
+.assembly-visual {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(13, 23, 52, 0.14);
+  background: #1f45f5;
+}
+
+.dotcut-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 22rem;
+  overflow: hidden;
+  background: #1f45f5;
+  isolation: isolate;
+  font-family: var(--font-display), serif;
+}
+
+.assembly-copy {
+  align-self: center;
+  min-width: 0;
+  padding: 2rem;
+}
+
+@media (min-width: 640px) {
+  .assembly-surface { grid-template-columns: minmax(0, 1.13fr) minmax(16rem, 0.87fr); }
+  .assembly-visual { border-right: 1px solid rgba(13, 23, 52, 0.14); border-bottom: 0; }
+}
+
+@media (max-width: 639px) {
+  .dotcut-canvas { min-height: 19rem; }
+}
+
 @keyframes draw-check {
   from { stroke-dashoffset: 28; }
   to { stroke-dashoffset: 0; }
@@ -651,6 +719,9 @@ input[type="number"]::-webkit-inner-spin-button {
   .status-breathe,
   .operation-dot,
   .operation-orbit {
+    animation: none;
+  }
+  .assembly-surface {
     animation: none;
   }
   .btn-press:active {

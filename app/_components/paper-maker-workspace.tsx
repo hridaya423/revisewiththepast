@@ -2,10 +2,12 @@
 
 import { ArrowRight } from "lucide-react";
 
-import { PaperSetupStage, SubjectEmboss, SubjectSelectionStage, TopicsStage } from "@/app/_components/paper-maker/paper-maker-stages";
+import { PaperSetupStage, SubjectSelectionStage, TopicsStage } from "@/app/_components/paper-maker/paper-maker-stages";
 import { usePaperMakerWorkspace, type PaperMakerWorkspaceProps } from "@/app/_components/paper-maker/paper-maker-workspace-controller";
 import { BuilderProgress } from "@/app/_components/paper-maker/builder-progress";
 import { GenerationState } from "@/app/_components/paper-maker/generation-state";
+import { PaperAssemblyModal } from "@/app/_components/paper-maker/paper-assembly-modal";
+import { SubjectEmboss } from "@/app/_components/paper-maker/subject-emboss";
 
 export function PaperMakerWorkspace(props: PaperMakerWorkspaceProps) {
   const workspace = usePaperMakerWorkspace(props);
@@ -22,6 +24,7 @@ export function PaperMakerWorkspace(props: PaperMakerWorkspaceProps) {
       </div>}
     </div></div>
     {builderStage !== "subject" ? <div className="fixed inset-x-0 bottom-0 z-40 border-t border-text/10 bg-bg-elevated/95 p-3 lg:hidden">{builderStage === "topics" ? <button type="button" onClick={() => workspace.goToStage("paper")} disabled={!topicsReady} className="btn-press flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-5 text-[0.8rem] font-bold text-white disabled:opacity-40">Continue to paper setup<ArrowRight className="h-4 w-4" /></button> : <GenerationState canGenerate={canGenerate} isPending={workspace.isPending} generationMode={workspace.generationMode} paperCount={workspace.paperCount} compact onGenerate={workspace.handleGenerate} />}</div> : null}
+    {workspace.isPending && workspace.generationMode ? <PaperAssemblyModal includeMarkScheme={workspace.generationMode === "paper-and-mark-scheme"} paperCount={workspace.paperCount} subjectKey={selectedSubjectKey} subjectLabel={activeSubject?.label ?? "exam"} /> : null}
     {result ? <workspace.SuccessModal result={result} subjectKey={selectedSubjectKey} subjectTier={activeSubject?.tiers.length ? workspace.selectedTier : undefined} subjectLabel={activeSubject?.label ?? ""} tierLabel={activeTier?.label} minutesPerMark={workspace.activeMinutesPerMark} isAuthenticated={workspace.isAuthenticated} onOpenMarking={async () => { if (!workspace.isAuthenticated) { router.push("/auth?redirect=/marking"); return; } if (result.savedPaperIds.length !== 1) { router.push("/marking"); return; } const payload = await workspace.createMarkingSubmission({ savedPaperId: result.savedPaperIds[0] }); router.push(`/marking/${payload.submissionId}`); }} onClose={() => workspace.setResult(null)} onBuildAnother={() => { workspace.setResult(null); workspace.setSelectedLeafIds(new Set()); }} /> : null}
   </div>;
 }

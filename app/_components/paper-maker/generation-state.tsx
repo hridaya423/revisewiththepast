@@ -1,7 +1,6 @@
 "use client";
 
 import { ActionButton } from "@/app/_components/ui/action-button";
-import { OperationProgress } from "@/app/_components/ui/operation-progress";
 
 type GenerationStateProps = {
   canGenerate: boolean;
@@ -34,7 +33,6 @@ export function GenerationState({ canGenerate, isPending, generationMode, paperC
         disabled={!canGenerate || isPending}
         className={`${compact ? "col-span-2 mx-auto min-h-10 px-3 text-[0.61rem]" : "min-h-11 w-full px-3 text-[0.68rem]"} rounded-md border border-text/15 bg-transparent font-bold text-accent hover:border-accent/50 hover:bg-white/55 disabled:opacity-40`}
       />
-      {isPending ? <OperationProgress kind="paper" label={generationMode === "paper-and-mark-scheme" ? "Assembling paper and mark scheme" : "Assembling exam questions"} compact className={compact ? "col-span-2 justify-center" : "justify-center"} /> : null}
     </div>
   );
 }
