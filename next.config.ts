@@ -12,6 +12,7 @@ const markingRoutes = ["/api/marking/**", "/marking/**"];
 const serverTraceExcludes = [
   "./.git/**/*",
   "./.claude/**/*",
+  "./.next/cache/**/*",
   "./.env*",
   "./data/downloads/**/*",
   "./data/extracted/**/*",
