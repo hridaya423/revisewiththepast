@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { QuestionBankPart } from "@/shared/domain/paper";
-import { groupQuestionPartsIntoUnits, groupQuestionUnitsBySourceQuestion, selectQuestionUnits } from "./aqa-geography";
+import { groupQuestionPartsIntoUnits, groupQuestionUnitsBySourceQuestion, selectQuestionUnits, sortQuestionUnitsForRendering } from "./aqa-geography";
 
 function part(overrides: Partial<QuestionBankPart>): QuestionBankPart {
   return {
@@ -81,5 +81,50 @@ describe("question unit validation", () => {
       maxQuestions: 1,
       rng: () => 0,
     }).selectedUnits).toEqual([]);
+  });
+});
+
+describe("question unit rendering order", () => {
+  it("keeps French questions in source path and page order instead of marks order", () => {
+    const units = groupQuestionPartsIntoUnits([
+      part({
+        partKey: "later-source",
+        unitKey: "later-source",
+        sourceRelativePath: "edexcel/french/higher/2024.pdf",
+        subjectSlug: "french",
+        questionNumber: "2",
+        pageNumber: 3,
+        pageNumbers: [3],
+        marks: 3,
+      }),
+      part({
+        partKey: "earlier-source-later-page",
+        unitKey: "earlier-source-later-page",
+        sourceRelativePath: "edexcel/french/higher/2023.pdf",
+        subjectSlug: "french",
+        questionNumber: "8",
+        pageNumber: 14,
+        pageNumbers: [14],
+        marks: 4,
+      }),
+      part({
+        partKey: "earlier-source-earlier-page",
+        unitKey: "earlier-source-earlier-page",
+        sourceRelativePath: "edexcel/french/higher/2023.pdf",
+        subjectSlug: "french",
+        questionNumber: "5",
+        pageNumber: 9,
+        pageNumbers: [9],
+        marks: 6,
+      }),
+    ]);
+
+    sortQuestionUnitsForRendering(units);
+
+    expect(units.map((unit) => unit.unitKey)).toEqual([
+      "earlier-source-earlier-page",
+      "earlier-source-later-page",
+      "later-source",
+    ]);
   });
 });

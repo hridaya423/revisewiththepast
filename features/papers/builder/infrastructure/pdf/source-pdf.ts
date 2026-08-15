@@ -37,7 +37,7 @@ type PdfTextItem = {
   height: number;
 };
 
-const SOURCE_FURNITURE_PATTERN = /do not write|outside the box|turn over|pearson edexcel|^pmt$|^\*?[a-z]\d{5,}[a-z]?\*?$/i;
+const SOURCE_FURNITURE_PATTERN = /do not write|outside the box|turn over|pearson edexcel|total for (?:question|section|paper)|^pmt$|^\*?[a-z]\d{5,}[a-z]?\*?$/i;
 
 async function sanitizeRasterPage(
   png: Buffer,

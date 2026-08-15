@@ -178,7 +178,6 @@ function resolvePaperLabels(subject: PaperMakerSubjectDefinition, selectedUnits:
 }
 
 export function buildGeneratedCoverModel(input: BuildCoverModelInput): GeneratedCoverModel {
-  const selectedQuestionKeys = new Set(input.selectedUnits.map((unit) => unit.sourceQuestionKey));
   const paperLabels = resolvePaperLabels(input.subject, input.selectedUnits, input.selectedPapers);
   const materials: string[] = [];
   for (const material of input.examContext.materials) {
@@ -204,7 +203,10 @@ export function buildGeneratedCoverModel(input: BuildCoverModelInput): Generated
     tierLabel: input.tierLabel ? cleanLabel(input.tierLabel) : null,
     totalMarks: input.selectedUnits.reduce((total, unit) => total + Math.max(0, unit.totalMarks), 0),
     timeMinutes: Math.max(1, Math.round(input.timeMinutes)),
-    questionCount: selectedQuestionKeys.size,
+    questionCount: input.selectedUnits.reduce((count, unit) => {
+      if (input.subject.key !== "aqa-english-language" || unit.sectionCode !== "A") return count + 1;
+      return count + new Set(unit.parts.map((part) => part.questionNumber)).size;
+    }, 0),
     topicLabels: resolveTopicLabels(input.subject, input.selectedUnits),
     paperLabels,
     materials,

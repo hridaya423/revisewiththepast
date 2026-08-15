@@ -446,6 +446,10 @@ function drawQuestionNumberReplacement(
 
       drawAqaSourceFurnitureLineMasks(page, unit, sourcePageNumber, sourceCropBox, drawX, drawY, scaleX, scaleY);
 
+      if (isEnglishLanguageUnit(unit) && new Set(unit.parts.map((part) => part.questionNumber)).size > 1) {
+        return true;
+      }
+
       const markerLines = getAqaCompoundMarkerLines(unit, sourcePageNumber, sourceCropBox);
      for (const markerLine of markerLines) {
        const markerMatch = markerLine.text.trim().match(/^((?:\d\s*)+)\.\s*((?:\d\s*)+)/);
@@ -1403,7 +1407,9 @@ function isEnglishLiteratureUnit(unit: QuestionUnit) {
 }
 
 function getReferencedFigureNumbers(unit: QuestionUnit) {
-  const searchable = unit.parts.map((part) => `${part.promptText} ${part.contextText ?? ""}`).join(" ");
+  const searchable = unit.parts
+    .map((part) => `${part.referencedFigures?.join(" ") ?? ""} ${part.promptText} ${part.contextText ?? ""}`)
+    .join(" ");
   const matches = Array.from(searchable.matchAll(/\bfigure\s+(\d+)\b/gi));
   const numbers = new Set<number>();
   for (const match of matches) {
@@ -1411,6 +1417,48 @@ function getReferencedFigureNumbers(unit: QuestionUnit) {
     if (Number.isFinite(value)) numbers.add(value);
   }
   return Array.from(numbers);
+}
+
+export function expandScienceCropToReferencedFigures(
+  crop: CropBox,
+  pageNumber: number,
+  pageWidth: number,
+  pageHeight: number,
+  referencedFigureNumbers: number[],
+  figures: RegionFigure[],
+  siblingBoxes: CropBox[],
+) {
+  const referenced = new Set(referencedFigureNumbers);
+  const matchingFigures = figures.filter((figure) => {
+    if (figure.pageNumber !== pageNumber || figure.yTop <= figure.yBottom) return false;
+    const match = figure.label.match(/\bfigure\s+(\d+)\b/i);
+    return match ? referenced.has(Number(match[1])) : false;
+  });
+  if (matchingFigures.length === 0) return crop;
+
+  const overlappingSiblings = siblingBoxes.filter((sibling) => sibling.left < crop.right && sibling.right > crop.left);
+  const nearestAbove = getNearestSiblingAbove(crop, overlappingSiblings);
+  const nearestBelow = getNearestSiblingBelow(crop, overlappingSiblings);
+  const safeMargin = 8;
+  const top = Math.min(
+    pageHeight,
+    nearestAbove ? nearestAbove.bottom - 10 : pageHeight,
+    Math.max(crop.top, ...matchingFigures.map((figure) => figure.yTop + safeMargin)),
+  );
+  const bottom = Math.max(
+    0,
+    nearestBelow ? nearestBelow.top + 10 : 0,
+    Math.min(crop.bottom, ...matchingFigures.map((figure) => figure.yBottom - safeMargin)),
+  );
+
+  const expanded = {
+    left: Math.max(0, crop.left),
+    right: Math.min(pageWidth, crop.right),
+    bottom,
+    top,
+  } satisfies CropBox;
+
+  return isValidCropBox(expanded, pageWidth, pageHeight) ? expanded : crop;
 }
 
 function isLikelyQuestionInstructionLine(text: string) {
@@ -2178,7 +2226,7 @@ async function withSourcePdfCandidate<T>(
     try {
       let sourceDoc: PDFDocument;
       let sourcePdfPage: import("pdf-lib").PDFPage;
-      if (isMathematicsUnit(unit)) {
+      if (isMathematicsUnit(unit) || isFrenchReadingUnit(unit)) {
         const raster = await rasterizeSourcePdfPage(candidate.pdfUrl, candidate.sourcePageIndex, sourcePdfCache, sourceDocCache, {
           sanitizeFurniture: true,
           sourceQuestionNumber: unit.questionNumber,
@@ -2586,6 +2634,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             const pageWidth = pageGeometry.width;
             const pageHeight = pageGeometry.height;
             const siblingBoxes = getSiblingBoxesForPage(unit, allUnits, pageNumber);
+            const sourceFigures = figuresBySource?.get(unit.sourceRelativePath) ?? [];
             const includeFigureAbove = hasFigureContext(unit);
             const isFullPageSource = isFrenchReadingUnit(unit) || unit.parts.some((part) => part.sourceMode === "full_page");
             const isMaths = isMathematicsUnit(unit);
@@ -2603,10 +2652,17 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                 ? resolveFullPageTextCropBox(unit, pageNumber, pageWidth, pageHeight, unitStartPages, { includeFigureSupport: false, marks: getPageAnswerMarks(unit, pageNumber) })
                 : buildShortQuestionCropBox(pageWidth, pageHeight, selectedBox, siblingBoxes, unit.totalMarks, false, isMaths);
 
-              if (supportCrop && questionCrop && isValidCropBox(questionCrop, pageWidth, pageHeight)) {
+              const geometrySupportCrop = supportCrop
+                ? isScienceUnit(unit)
+                  ? expandScienceCropToReferencedFigures(supportCrop, pageNumber, pageWidth, pageHeight, getReferencedFigureNumbers(unit), sourceFigures, siblingBoxes)
+                  : supportCrop
+                : null;
+              const geometryQuestionCrop = questionCrop;
+
+              if (geometrySupportCrop && geometryQuestionCrop && isValidCropBox(geometryQuestionCrop, pageWidth, pageHeight)) {
                 const probeDoc = await PDFDocument.create();
-                const polishedSupportCrop = trimSourceFurnitureCropBox(unit, supportCrop, pageWidth);
-                const polishedQuestionCrop = trimSourceFurnitureCropBox(unit, questionCrop, pageWidth);
+                const polishedSupportCrop = trimSourceFurnitureCropBox(unit, geometrySupportCrop, pageWidth);
+                const polishedQuestionCrop = trimSourceFurnitureCropBox(unit, geometryQuestionCrop, pageWidth);
                  await prepareSnippet(probeDoc, sourcePage.pdfUrl, polishedSupportCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                  await prepareSnippet(probeDoc, sourcePage.pdfUrl, polishedQuestionCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                 await probeDoc.save();
@@ -2629,17 +2685,20 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
               : selectedBox
                 ? buildShortQuestionCropBoxWithSupportTop(pageWidth, pageHeight, selectedBox, siblingBoxes, unit.totalMarks, supportTop)
                 : null);
+            const geometryCropBox = cropBox && isScienceUnit(unit)
+              ? expandScienceCropToReferencedFigures(cropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureNumbers(unit), sourceFigures, siblingBoxes)
+              : cropBox;
 
             if (
-              !cropBox
-              || !isValidCropBox(cropBox, pageWidth, pageHeight)
-              || !shouldPackShortSnippet(unit, pageHeight, cropBox, includeFigureAbove)
+              !geometryCropBox
+              || !isValidCropBox(geometryCropBox, pageWidth, pageHeight)
+              || !shouldPackShortSnippet(unit, pageHeight, geometryCropBox, includeFigureAbove)
             ) {
               return null;
             }
 
             const probeDoc = await PDFDocument.create();
-            const polishedCropBox = trimSourceFurnitureCropBox(unit, cropBox, pageWidth);
+             const polishedCropBox = trimSourceFurnitureCropBox(unit, geometryCropBox, pageWidth);
              await prepareSnippet(probeDoc, sourcePage.pdfUrl, polishedCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
             await probeDoc.save();
              const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, polishedCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
@@ -2690,6 +2749,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
       let renderedAnyPage = false;
       let drewQuestionBadge = false;
       let mathsTotalTarget: MathsTotalTarget | null = null;
+      const sourceFigures = figuresBySource?.get(unit.sourceRelativePath) ?? [];
 
       if (isEnglishLanguageUnit(unit) && prefaceSourcePdfs.length === 0 && !prependedInsertBySource.has(unit.sourceRelativePath)) {
         for (const insertPdfPath of deriveDownloadedInsertPdfPaths(unit)) {
@@ -2742,7 +2802,10 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
               unitStartPages,
             );
             const scienceTrimmedCropBox = trimScienceRegionCropBox(unit, { pageNumber, cropBox: resolvedCropBox, kind: "question" });
-            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, scienceTrimmedCropBox), pageWidth);
+            const geometryCropBox = isScienceUnit(unit)
+              ? expandScienceCropToReferencedFigures(scienceTrimmedCropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureNumbers(unit), sourceFigures, siblingBoxes)
+              : scienceTrimmedCropBox;
+            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, geometryCropBox), pageWidth);
 
             const meaningfulLines = getVisibleMeaningfulLines(unit.sourceRelativePath, pageNumber, cropBox);
             if (isMaths && meaningfulLines && meaningfulLines.length === 0) {

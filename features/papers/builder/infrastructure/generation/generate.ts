@@ -443,14 +443,22 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let pageLayoutsBySource: Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>> | undefined;
   let selectableUnits = allUnits;
   let pageAssetsBySource: Awaited<ReturnType<typeof getQuestionPageAssetsBySourceRelativePaths>> | undefined;
-  if (regionMode) {
+  const needsScienceFigureGeometry = allUnits.some((unit) => (
+    ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug)
+    && unit.parts.some((part) => (part.referencedFigures?.length ?? 0) > 0)
+  ));
+  if (regionMode || needsScienceFigureGeometry) {
     const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
-    [figuresBySource, pageLayoutsBySource] = isLocalGeometryEnabled()
-      ? [getLocalFiguresBySource(candidateSourcePaths), getLocalPageLayoutsBySource(candidateSourcePaths)]
-      : await Promise.all([
-          getPaperFiguresBySourceRelativePaths(candidateSourcePaths),
-          getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths),
-        ]);
+    figuresBySource = isLocalGeometryEnabled()
+      ? getLocalFiguresBySource(candidateSourcePaths)
+      : await getPaperFiguresBySourceRelativePaths(candidateSourcePaths);
+    if (regionMode) {
+      pageLayoutsBySource = isLocalGeometryEnabled()
+        ? getLocalPageLayoutsBySource(candidateSourcePaths)
+        : await getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths);
+    }
+  }
+  if (regionMode && figuresBySource && pageLayoutsBySource) {
     const gate = filterUnitsByFigureResolvability(allUnits, {
       figuresBySource,
       pageLayoutsBySource,

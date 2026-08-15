@@ -14,6 +14,9 @@ export async function generateMarkScheme(input: GenerateMarkSchemeRequest) {
   if (result.includedCount === 0) {
     throw new DomainError(`No mark scheme pages could be assembled. ${result.failures.map((failure) => failure.error).join("; ")}`);
   }
+  if (result.failures.length > 0 || result.includedCount !== units.length || result.bytes.length === 0) {
+    throw new DomainError(`Could not assemble every selected question. ${result.failures.map((failure) => failure.error).join("; ")}`);
+  }
   return {
     ...result,
     fileName: `${subject.coverTitle.replace(/\s+/g, "-").toLowerCase()}-mark-scheme.pdf`,
