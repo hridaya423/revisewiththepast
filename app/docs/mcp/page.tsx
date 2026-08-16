@@ -5,8 +5,8 @@ import { ArrowLeft, ArrowRight, ExternalLink } from "lucide-react";
 import { AppShell } from "@/app/_components/app-shell";
 
 export const metadata: Metadata = {
-  title: "MCP documentation | Revise with the Past",
-  description: "Connect OpenCode, OpenClaw, and other MCP clients to GCSE paper generation.",
+  title: "MCP documentation",
+  description: "Connect Hermes, OpenClaw, and other MCP clients to GCSE paper generation.",
 };
 
 const OPENCODE_CONFIG = `{
@@ -65,7 +65,7 @@ export default function McpDocsPage() {
           <section id="connect" className="scroll-mt-24">
             <p className="font-mono text-[0.64rem] font-bold uppercase tracking-[0.15em] text-accent">01 / Connect</p>
             <h2 className="mt-4 text-[2rem] font-extrabold leading-tight tracking-[-0.05em] text-text">Use the hosted endpoint.</h2>
-            <p className="mt-4 text-[0.86rem] leading-7 text-text-secondary">OpenCode uses the configuration below. In another MCP client, add the same URL as a remote server. PDF generation can take several minutes, so keep the timeout at 290000 milliseconds.</p>
+            <p className="mt-4 text-[0.86rem] leading-7 text-text-secondary">In a MCP client, add the same URL as a remote server.</p>
           </section>
           <div className="grid gap-4">
             <CodeBlock label="opencode.json">{OPENCODE_CONFIG}</CodeBlock>
@@ -104,7 +104,7 @@ export default function McpDocsPage() {
             <li className="border-l-2 border-accent-warm px-4">10 bundles per caller per hour and 300 bundles globally per hour by default.</li>
             <li className="border-l-2 border-accent-warm px-4">Generated PDFs are temporary download links and normally expire after 24 hours.</li>
             <li className="border-l-2 border-accent-warm px-4">The generated paper and mark scheme use source exam material. Share or redistribute them only where your exam board or school permits it.</li>
-            <li className="border-l-2 border-accent-warm px-4">If a request times out, retry with the 290000 millisecond client timeout; generation is compute-heavy.</li>
+            <li className="border-l-2 border-accent-warm px-4">If a request times out, retry it; timeouts are rare and generation is typically fast.</li>
           </ul>
         </section>
 

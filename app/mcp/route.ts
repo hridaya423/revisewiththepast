@@ -39,7 +39,7 @@ function withCors(response: Response, request: Request) {
   if (!origin) return response;
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", origin);
-  headers.set("Access-Control-Expose-Headers", "Mcp-Session-Id, Last-Event-Id");
+  headers.set("Access-Control-Expose-Headers", "Last-Event-Id");
   const vary = headers.get("Vary");
   headers.set("Vary", vary ? `${vary}, Origin` : "Origin");
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -56,7 +56,7 @@ async function handle(request: Request) {
       status: 204,
       headers: {
         "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers": "Accept, Content-Type, Mcp-Protocol-Version, Mcp-Session-Id, Last-Event-Id",
+        "Access-Control-Allow-Headers": "Accept, Content-Type, Mcp-Protocol-Version, Mcp-Method, Mcp-Name, Last-Event-Id",
         "Access-Control-Max-Age": "600",
       },
     }), request);

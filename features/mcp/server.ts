@@ -31,6 +31,28 @@ function toolError(error: unknown, fallback: string) {
   };
 }
 
+function traceTool<T>(toolName: string, run: () => Promise<T>): Promise<T> {
+  const startedAt = Date.now();
+  return run().then(
+    (result) => {
+      console.info("MCP tool call", {
+        tool: toolName,
+        durationMs: Date.now() - startedAt,
+        isError: (result as { isError?: boolean } | null)?.isError === true,
+      });
+      return result;
+    },
+    (error) => {
+      console.error("MCP tool call failed", {
+        tool: toolName,
+        durationMs: Date.now() - startedAt,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    },
+  );
+}
+
 export function createPaperMakerMcpServer() {
   const server = new McpServer({
     name: "gcse-paper-maker",
@@ -46,15 +68,17 @@ export function createPaperMakerMcpServer() {
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
     async () => {
-      try {
-        const output = await listGenerationSubjects();
-        return {
-          content: [{ type: "text" as const, text: formatSubjectsForTool(output) }],
-          structuredContent: output,
-        };
-      } catch (error) {
-        return toolError(error, "Could not list paper subjects.");
-      }
+      return traceTool("list_subjects", async () => {
+        try {
+          const output = await listGenerationSubjects();
+          return {
+            content: [{ type: "text" as const, text: formatSubjectsForTool(output) }],
+            structuredContent: output,
+          };
+        } catch (error) {
+          return toolError(error, "Could not list paper subjects.");
+        }
+      });
     },
   );
 
@@ -68,15 +92,17 @@ export function createPaperMakerMcpServer() {
       annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
     },
     async ({ subjectKey, subjectTier }) => {
-      try {
-        const output = await getGenerationSubjectCatalog(subjectKey, subjectTier);
-        return {
-          content: [{ type: "text" as const, text: formatSubjectCatalogForTool(output) }],
-          structuredContent: output,
-        };
-      } catch (error) {
-        return toolError(error, "Could not load the subject catalog.");
-      }
+      return traceTool("get_subject_catalog", async () => {
+        try {
+          const output = await getGenerationSubjectCatalog(subjectKey, subjectTier);
+          return {
+            content: [{ type: "text" as const, text: formatSubjectCatalogForTool(output) }],
+            structuredContent: output,
+          };
+        } catch (error) {
+          return toolError(error, "Could not load the subject catalog.");
+        }
+      });
     },
   );
 
@@ -90,15 +116,17 @@ export function createPaperMakerMcpServer() {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
     async (input, context) => {
-      try {
-        const output = await generatePaperBundle(input, context.http?.req);
-        return {
-          content: await paperBundleContent(output),
-          structuredContent: output,
-        };
-      } catch (error) {
-        return toolError(error, "Could not generate the requested paper bundle.");
-      }
+      return traceTool("generate_paper_bundle", async () => {
+        try {
+          const output = await generatePaperBundle(input, context.http?.req);
+          return {
+            content: await paperBundleContent(output),
+            structuredContent: output,
+          };
+        } catch (error) {
+          return toolError(error, "Could not generate the requested paper bundle.");
+        }
+      });
     },
   );
 

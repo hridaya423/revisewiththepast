@@ -38,7 +38,8 @@ describe("MCP HTTP route protection", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get("access-control-allow-origin")).toBe("https://example.test");
-    expect(response.headers.get("access-control-expose-headers")).toContain("Mcp-Session-Id");
+    expect(response.headers.get("access-control-expose-headers")).toContain("Last-Event-Id");
+    expect(response.headers.get("access-control-expose-headers")).not.toContain("Mcp-Session-Id");
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
@@ -51,6 +52,9 @@ describe("MCP HTTP route protection", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("access-control-allow-methods")).toContain("POST");
     expect(response.headers.get("access-control-allow-headers")).toContain("Mcp-Protocol-Version");
+    expect(response.headers.get("access-control-allow-headers")).toContain("Mcp-Method");
+    expect(response.headers.get("access-control-allow-headers")).toContain("Mcp-Name");
+    expect(response.headers.get("access-control-allow-headers")).not.toContain("Mcp-Session-Id");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
