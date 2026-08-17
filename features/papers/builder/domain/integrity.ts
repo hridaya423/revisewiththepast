@@ -1,20 +1,12 @@
 
 import type { QuestionUnit } from "@/shared/domain/paper";
 import type { RegionFigure } from "./region-render";
-import { isUnitRegionRenderable, type RegionPageLayout } from "./region-render";
+import { getReferencedFigureLabels, isScienceUnit, isUnitRegionRenderable, normalizeFigureLabel, type RegionPageLayout } from "./region-render";
 
 export type FigureGateResult = {
   kept: QuestionUnit[];
   excluded: Array<{ unitKey: string; missingFigures: string[] }>;
 };
-
-function referencedFigureLabels(unit: QuestionUnit): string[] {
-  const labels = new Set<string>();
-  for (const part of unit.parts) {
-    for (const label of part.referencedFigures ?? []) labels.add(label);
-  }
-  return Array.from(labels);
-}
 
 export function filterUnitsByFigureResolvability(
   units: QuestionUnit[],
@@ -28,7 +20,7 @@ export function filterUnitsByFigureResolvability(
   const getLabels = (sourceRelativePath: string) => {
     let set = labelSetBySource.get(sourceRelativePath);
     if (!set) {
-      set = new Set((options.figuresBySource.get(sourceRelativePath) ?? []).map((figure) => figure.label));
+      set = new Set((options.figuresBySource.get(sourceRelativePath) ?? []).map((figure) => normalizeFigureLabel(figure.label).toLowerCase()));
       labelSetBySource.set(sourceRelativePath, set);
     }
     return set;
@@ -47,19 +39,19 @@ export function filterUnitsByFigureResolvability(
   const excluded: FigureGateResult["excluded"] = [];
 
   for (const unit of units) {
-    if (!isUnitRegionRenderable(unit, getLayoutMap(unit.sourceRelativePath))) {
+    const referenced = getReferencedFigureLabels(unit);
+    if (!isScienceUnit(unit) && !isUnitRegionRenderable(unit, getLayoutMap(unit.sourceRelativePath))) {
       kept.push(unit);
       continue;
     }
 
-    const referenced = referencedFigureLabels(unit);
     if (referenced.length === 0) {
       kept.push(unit);
       continue;
     }
 
     const available = getLabels(unit.sourceRelativePath);
-    const missing = referenced.filter((label) => !available.has(label));
+    const missing = referenced.filter((label) => !available.has(label.toLowerCase()));
     if (missing.length === 0 || options.subjectUsesInserts) {
       kept.push(unit);
       continue;

@@ -33,8 +33,29 @@ export type RegionFigure = {
 
 const CONTIGUOUS_MERGE_GAP = 40;
 
-function isScienceUnit(unit: QuestionUnit) {
+export function isScienceUnit(unit: QuestionUnit) {
   return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
+}
+
+export function normalizeFigureLabel(label: string) {
+  const match = label.trim().match(/^figure\s+([a-z]|\d{1,3}\s?[a-z]?)\b/i);
+  return match ? `Figure ${match[1].replace(/\s+/g, "").toUpperCase()}` : label.trim();
+}
+
+export function getReferencedFigureLabels(unit: QuestionUnit) {
+  const labels = new Map<string, string>();
+  for (const part of unit.parts) {
+    for (const label of part.referencedFigures ?? []) {
+      const canonical = normalizeFigureLabel(label);
+      if (canonical) labels.set(canonical.toLowerCase(), canonical);
+    }
+    const text = `${part.promptText} ${part.contextText ?? ""}`;
+    for (const match of text.matchAll(/\bfigure\s+([a-z]|\d{1,3}\s?[a-z]?)\b/gi)) {
+      const canonical = normalizeFigureLabel(match[0]);
+      labels.set(canonical.toLowerCase(), canonical);
+    }
+  }
+  return Array.from(labels.values());
 }
 
 function spanKey(pageNumber: number, yTop: number, yBottom: number) {
@@ -123,16 +144,13 @@ export function buildUnitRenderPlan(
 ): RegionCrop[] {
   const questionSpans = dedupeSpans(unit.parts.flatMap((part) => part.regionSpans ?? []));
 
-  const referenced = new Set<string>();
-  for (const part of unit.parts) {
-    for (const label of part.referencedFigures ?? []) referenced.add(label);
-  }
+  const referenced = new Set(getReferencedFigureLabels(unit));
 
-  const unreferencedFigures = figures.filter((figure) => !referenced.has(figure.label));
+  const unreferencedFigures = figures.filter((figure) => !referenced.has(normalizeFigureLabel(figure.label)));
   const questionPages = new Set(questionSpans.map((span) => span.pageNumber));
   const referencedFigurePages = new Set<number>();
   for (const figure of figures) {
-    if (referenced.has(figure.label)) referencedFigurePages.add(figure.pageNumber);
+    if (referenced.has(normalizeFigureLabel(figure.label))) referencedFigurePages.add(figure.pageNumber);
   }
   const stemSpans: RegionSpan[] = [];
   for (const span of dedupeSpans(unit.parts.flatMap((part) => part.stemSpans ?? []))) {
@@ -145,7 +163,8 @@ export function buildUnitRenderPlan(
 
   const figureByLabel = new Map<string, RegionFigure>();
   for (const figure of figures) {
-    if (!figureByLabel.has(figure.label)) figureByLabel.set(figure.label, figure);
+    const label = normalizeFigureLabel(figure.label);
+    if (!figureByLabel.has(label)) figureByLabel.set(label, figure);
   }
   const extraFigures: RegionFigure[] = [];
   for (const label of referenced) {
@@ -218,11 +237,8 @@ export function findOrphanStemFigures(
   layoutByPage: Map<number, RegionPageLayout>,
   figures: RegionFigure[],
 ): OrphanFigureIssue[] {
-  const referenced = new Set<string>();
-  for (const part of unit.parts) {
-    for (const label of part.referencedFigures ?? []) referenced.add(label);
-  }
-  const unreferenced = figures.filter((figure) => !referenced.has(figure.label));
+  const referenced = new Set(getReferencedFigureLabels(unit));
+  const unreferenced = figures.filter((figure) => !referenced.has(normalizeFigureLabel(figure.label)));
   if (unreferenced.length === 0) return [];
 
   const plan = buildUnitRenderPlan(unit, layoutByPage, figures).filter((crop) => crop.kind === "stem");

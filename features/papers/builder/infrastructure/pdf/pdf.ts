@@ -11,7 +11,9 @@ import { fetchPdfBytes, loadSourcePdfDocument, prepareSnippet, rasterizeSourcePd
 import { readExtractedPaperJson } from "../extracted-store";
 import {
   buildUnitRenderPlan,
+  getReferencedFigureLabels,
   isUnitRegionRenderable,
+  normalizeFigureLabel,
   type RegionFigure,
   type RegionCrop,
   type RegionPageLayout,
@@ -563,6 +565,36 @@ function drawSourceFurnitureMask(page: import("pdf-lib").PDFPage, unit: Question
   page.drawRectangle({ x, y, width, height: edge, color: rgb(1, 1, 1) });
 }
 
+function drawScienceSourceTotalMask(
+  page: import("pdf-lib").PDFPage,
+  unit: QuestionUnit,
+  sourcePageNumber: number,
+  sourceCropBox: CropBox,
+  drawX: number,
+  drawY: number,
+  drawWidth: number,
+  drawHeight: number,
+) {
+  if (!isScienceUnit(unit)) return;
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, sourcePageNumber);
+  const totalLine = extractedPage?.text_lines.find((line) => (
+    line.bbox.y1 <= sourceCropBox.top
+    && line.bbox.y0 >= sourceCropBox.bottom
+    && /^\(?\s*total for question\b/i.test(line.text.trim())
+  ));
+  if (!totalLine) return;
+
+  const scaleX = drawWidth / Math.max(1, sourceCropBox.right - sourceCropBox.left);
+  const scaleY = drawHeight / Math.max(1, sourceCropBox.top - sourceCropBox.bottom);
+  page.drawRectangle({
+    x: drawX + (totalLine.bbox.x0 - sourceCropBox.left) * scaleX - 2,
+    y: drawY + (totalLine.bbox.y0 - sourceCropBox.bottom) * scaleY - 2,
+    width: (totalLine.bbox.x1 - totalLine.bbox.x0) * scaleX + 4,
+    height: (totalLine.bbox.y1 - totalLine.bbox.y0) * scaleY + 4,
+    color: rgb(1, 1, 1),
+  });
+}
+
 function shouldMaskSourceFurniture(unit: QuestionUnit) {
   return unit.boardCode === "aqa" || unit.boardCode === "edexcel";
 }
@@ -579,7 +611,6 @@ function isSourceFooterFurnitureLine(text: string) {
   return /\bquestion \d+ continues on the next page\b/.test(normalized)
     || /^turn over(?: for the next question)?/.test(normalized)
     || /\bturn over(?: for the next question)?\b/.test(normalized)
-    || /^\*?\d{2}\*?$/.test(normalized)
     || /^ib\/[gmn]\//.test(normalized)
     || /^g\/jun\d+\//.test(normalized)
     || /^jun\d+\//.test(normalized)
@@ -591,11 +622,10 @@ function isAnswerLine(text: string) {
   return /^[.\s]+$/.test(text.trim()) || /^[._\-\s]+$/.test(text.trim());
 }
 
-function trimSourceFooterCropBox(unit: QuestionUnit, pageNumber: number, cropBox: CropBox) {
+export function trimSourceFooterCropBox(unit: QuestionUnit, pageNumber: number, cropBox: CropBox) {
   if (unit.boardCode === "aqa") return cropBox;
   const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
   if (!extractedPage) return cropBox;
-
   const footerLines = extractedPage.text_lines.filter((line) => (
     line.bbox.y1 <= cropBox.top
     && line.bbox.y0 >= cropBox.bottom
@@ -1177,7 +1207,7 @@ function isScienceUnit(unit: QuestionUnit) {
   return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
 }
 
-function trimScienceRegionCropBox(unit: QuestionUnit, crop: { pageNumber: number; cropBox: CropBox; kind: string }) {
+export function trimScienceRegionCropBox(unit: QuestionUnit, crop: { pageNumber: number; cropBox: CropBox; kind: string }) {
   if (!isScienceUnit(unit) || (crop.kind !== "stem" && crop.kind !== "figure" && crop.kind !== "question")) return crop.cropBox;
   const extractedPage = getExtractedPage(unit.sourceRelativePath, crop.pageNumber);
   if (!extractedPage) return crop.cropBox;
@@ -1193,12 +1223,7 @@ function trimScienceRegionCropBox(unit: QuestionUnit, crop: { pageNumber: number
   }
 
   if (crop.kind === "question") {
-    const totalLine = extractedPage.text_lines
-      .filter((line) => line.bbox.y1 <= cropBox.top && line.bbox.y0 >= cropBox.bottom && /^\(?\s*total for question\b/i.test(line.text.trim()))
-      .sort((a, b) => b.bbox.y1 - a.bbox.y1)[0] ?? null;
-    if (!totalLine) return cropBox;
-    const bottom = Math.min(cropBox.top - MIN_VISIBLE_CROP_HEIGHT, totalLine.bbox.y1 + 8);
-    return bottom > cropBox.bottom ? { ...cropBox, bottom } : cropBox;
+    return cropBox;
   }
 
   const questionNumberPattern = new RegExp(`^\\s*${unit.questionNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
@@ -1406,33 +1431,19 @@ function isEnglishLiteratureUnit(unit: QuestionUnit) {
   return unit.subjectSlug === "english-literature";
 }
 
-function getReferencedFigureNumbers(unit: QuestionUnit) {
-  const searchable = unit.parts
-    .map((part) => `${part.referencedFigures?.join(" ") ?? ""} ${part.promptText} ${part.contextText ?? ""}`)
-    .join(" ");
-  const matches = Array.from(searchable.matchAll(/\bfigure\s+(\d+)\b/gi));
-  const numbers = new Set<number>();
-  for (const match of matches) {
-    const value = Number(match[1]);
-    if (Number.isFinite(value)) numbers.add(value);
-  }
-  return Array.from(numbers);
-}
-
 export function expandScienceCropToReferencedFigures(
   crop: CropBox,
   pageNumber: number,
   pageWidth: number,
   pageHeight: number,
-  referencedFigureNumbers: number[],
+  referencedFigureLabels: string[],
   figures: RegionFigure[],
   siblingBoxes: CropBox[],
 ) {
-  const referenced = new Set(referencedFigureNumbers);
+  const referenced = new Set(referencedFigureLabels.map(normalizeFigureLabel));
   const matchingFigures = figures.filter((figure) => {
     if (figure.pageNumber !== pageNumber || figure.yTop <= figure.yBottom) return false;
-    const match = figure.label.match(/\bfigure\s+(\d+)\b/i);
-    return match ? referenced.has(Number(match[1])) : false;
+    return referenced.has(normalizeFigureLabel(figure.label));
   });
   if (matchingFigures.length === 0) return crop;
 
@@ -1461,6 +1472,14 @@ export function expandScienceCropToReferencedFigures(
   return isValidCropBox(expanded, pageWidth, pageHeight) ? expanded : crop;
 }
 
+export function padScienceCropBox(crop: CropBox, pageWidth: number) {
+  return {
+    ...crop,
+    left: Math.max(0, crop.left - 8),
+    right: Math.min(pageWidth, crop.right + 8),
+  };
+}
+
 function isLikelyQuestionInstructionLine(text: string) {
   const normalized = text.trim().toLowerCase().replace(/\s+/g, " ");
   if (!normalized) return false;
@@ -1469,28 +1488,29 @@ function isLikelyQuestionInstructionLine(text: string) {
   return /\b(using|use|state|describe|explain|suggest|give|calculate|which|what|name|compare|complete|outline|discuss|assess|evaluate|write|tick|shade)\b/.test(normalized);
 }
 
-function isReferencedFigureLabelLine(text: string, figureNumber: number) {
+function isReferencedFigureLabelLine(text: string, figureLabel: string) {
   const normalized = text.trim().toLowerCase().replace(/\s+/g, " ");
   if (!normalized) return false;
   if (isLikelyQuestionInstructionLine(normalized)) return false;
 
-  const figurePattern = new RegExp(`^figure\\s+${figureNumber}(?:\\b|[.:\u2013\u2014-])`, "i");
-  const studyFigurePattern = new RegExp(`^study\\s+figure\\s+${figureNumber}(?:\\b|[.:\u2013\u2014-])`, "i");
-  return figurePattern.test(normalized) || studyFigurePattern.test(normalized);
+  const expected = normalizeFigureLabel(figureLabel).toLowerCase();
+  const candidate = normalized.replace(/^study\s+/, "");
+  if (!candidate.startsWith(expected)) return false;
+  return !/^[a-z0-9]/i.test(candidate.slice(expected.length));
 }
 
-function pageContainsReferencedFigure(page: ExtractedPaperPage | null, figureNumbers: number[]) {
-  if (!page || figureNumbers.length === 0) return false;
+function pageContainsReferencedFigure(page: ExtractedPaperPage | null, figureLabels: string[]) {
+  if (!page || figureLabels.length === 0) return false;
   return page.text_lines.some((line) => {
-    return figureNumbers.some((figureNumber) => isReferencedFigureLabelLine(line.text, figureNumber));
+    return figureLabels.some((figureLabel) => isReferencedFigureLabelLine(line.text, figureLabel));
   });
 }
 
-function getReferencedFigureLines(page: ExtractedPaperPage, figureNumbers: number[]) {
-  if (figureNumbers.length === 0) return [];
+function getReferencedFigureLines(page: ExtractedPaperPage, figureLabels: string[]) {
+  if (figureLabels.length === 0) return [];
 
   return page.text_lines.filter((line) => {
-    return figureNumbers.some((figureNumber) => isReferencedFigureLabelLine(line.text, figureNumber));
+    return figureLabels.some((figureLabel) => isReferencedFigureLabelLine(line.text, figureLabel));
   });
 }
 
@@ -1499,11 +1519,11 @@ function pageContainsSupportContext(page: ExtractedPaperPage | null) {
   return page.text_lines.some((line) => !shouldIgnorePageLine(line.text) && SUPPORT_CONTEXT_PATTERN.test(line.text));
 }
 
-function getFooterFloor(page: ExtractedPaperPage, pageHeight: number, ceilingY?: number) {
+export function getFooterFloor(page: ExtractedPaperPage, pageHeight: number, ceilingY?: number) {
   const footerRegionMaxY = Math.max(140, pageHeight * 0.28);
   const footerLines = page.text_lines.filter((line) => (
     !isAnswerLine(line.text)
-    && (isSourceFooterFurnitureLine(line.text) || shouldIgnorePageLine(line.text) && !/^[.\s]+$/.test(line.text.trim()))
+    && isSourceFooterFurnitureLine(line.text)
     && line.bbox.y1 <= footerRegionMaxY
     && (ceilingY === undefined || line.bbox.y1 < ceilingY)
   ));
@@ -1558,8 +1578,8 @@ function resolveFigureSupportTopOnPage(
     return null;
   }
 
-  const figureNumbers = getReferencedFigureNumbers(unit);
-  const exactFigureLines = getReferencedFigureLines(page, figureNumbers)
+  const figureLabels = getReferencedFigureLabels(unit);
+  const exactFigureLines = getReferencedFigureLines(page, figureLabels)
     .filter((line) => line.bbox.y0 >= questionBoundaryTop - 12 && line.bbox.y1 <= ceilingTop + 4);
 
   const candidateLines = exactFigureLines.length > 0
@@ -1630,7 +1650,7 @@ function shouldUseAnswerLayout(unit: QuestionUnit) {
 
 function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<string, QuestionUnit[]>) {
   const rawPageNumbers = Array.from(new Set(unit.pages.map((page) => page.pageNumber))).sort((a, b) => a - b);
-  const figureNumbers = getReferencedFigureNumbers(unit);
+  const figureLabels = getReferencedFigureLabels(unit);
   const firstPageNumber = rawPageNumbers[0];
   const actualFirstPageNumber = unit.pages[0]?.pageNumber;
   const prependedSupportPages = new Set<number>();
@@ -1660,12 +1680,12 @@ function determineRenderPageNumbers(unit: QuestionUnit, unitStartPages: Map<stri
     const firstPage = getExtractedPage(unit.sourceRelativePath, firstPageNumber);
     const previousPageNumber = firstPageNumber - 1;
     const previousPage = previousPageNumber > 0 ? getExtractedPage(unit.sourceRelativePath, previousPageNumber) : null;
-    const firstPageHasReferencedFigure = pageContainsReferencedFigure(firstPage, figureNumbers);
-    const previousPageHasReferencedFigure = pageContainsReferencedFigure(previousPage, figureNumbers);
-    const firstPageHasSupport = figureNumbers.length > 0
+    const firstPageHasReferencedFigure = pageContainsReferencedFigure(firstPage, figureLabels);
+    const previousPageHasReferencedFigure = pageContainsReferencedFigure(previousPage, figureLabels);
+    const firstPageHasSupport = figureLabels.length > 0
       ? firstPageHasReferencedFigure
       : pageContainsSupportContext(firstPage);
-    const previousPageHasSupport = figureNumbers.length > 0
+    const previousPageHasSupport = figureLabels.length > 0
       ? previousPageHasReferencedFigure
       : pageContainsSupportContext(previousPage);
 
@@ -1988,8 +2008,8 @@ function resolveFullPageTextCropBox(
   const nextSiblingLine = promptLine
     ? siblingPromptLines.find((line) => line.bbox.y1 < promptLine.bbox.y0 - 4) ?? null
     : siblingPromptLines[0] ?? null;
-  const figureNumbers = getReferencedFigureNumbers(unit);
-  const hasReferencedFigureOnPage = pageContainsReferencedFigure(extractedPage, figureNumbers);
+  const figureLabels = getReferencedFigureLabels(unit);
+  const hasReferencedFigureOnPage = pageContainsReferencedFigure(extractedPage, figureLabels);
   const footerFloor = getFooterFloor(extractedPage, pageHeight, promptLine?.bbox.y0);
 
   const regionLines = relevantLines.filter((line) => {
@@ -2654,7 +2674,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
 
               const geometrySupportCrop = supportCrop
                 ? isScienceUnit(unit)
-                  ? expandScienceCropToReferencedFigures(supportCrop, pageNumber, pageWidth, pageHeight, getReferencedFigureNumbers(unit), sourceFigures, siblingBoxes)
+                  ? expandScienceCropToReferencedFigures(supportCrop, pageNumber, pageWidth, pageHeight, getReferencedFigureLabels(unit), sourceFigures, siblingBoxes)
                   : supportCrop
                 : null;
               const geometryQuestionCrop = questionCrop;
@@ -2686,7 +2706,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                 ? buildShortQuestionCropBoxWithSupportTop(pageWidth, pageHeight, selectedBox, siblingBoxes, unit.totalMarks, supportTop)
                 : null);
             const geometryCropBox = cropBox && isScienceUnit(unit)
-              ? expandScienceCropToReferencedFigures(cropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureNumbers(unit), sourceFigures, siblingBoxes)
+              ? expandScienceCropToReferencedFigures(cropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureLabels(unit), sourceFigures, siblingBoxes)
               : cropBox;
 
             if (
@@ -2803,9 +2823,10 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             );
             const scienceTrimmedCropBox = trimScienceRegionCropBox(unit, { pageNumber, cropBox: resolvedCropBox, kind: "question" });
             const geometryCropBox = isScienceUnit(unit)
-              ? expandScienceCropToReferencedFigures(scienceTrimmedCropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureNumbers(unit), sourceFigures, siblingBoxes)
+              ? expandScienceCropToReferencedFigures(scienceTrimmedCropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureLabels(unit), sourceFigures, siblingBoxes)
               : scienceTrimmedCropBox;
-            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, geometryCropBox), pageWidth);
+            const contentCropBox = isScienceUnit(unit) ? padScienceCropBox(geometryCropBox, pageWidth) : geometryCropBox;
+            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, contentCropBox), pageWidth);
 
             const meaningfulLines = getVisibleMeaningfulLines(unit.sourceRelativePath, pageNumber, cropBox);
             if (isMaths && meaningfulLines && meaningfulLines.length === 0) {
@@ -2905,7 +2926,8 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                y: drawY,
                width: drawWidth,
                height: drawHeight,
-             });
+              });
+             drawScienceSourceTotalMask(outputPage, unit, pageNumber, cropBox, drawX, drawY, drawWidth, drawHeight);
              if (shouldMaskSourceFurniture(unit)) {
               const isEdexcelBusiness = unit.boardCode === "edexcel" && unit.subjectSlug === "business";
               const maskWidth = isEdexcelBusiness ? targetPageWidth : drawWidth;

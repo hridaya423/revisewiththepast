@@ -25,7 +25,7 @@ import {
   isLocalGeometryEnabled,
   overlayQuestionBankWithLocalGeometry,
 } from "../geometry/local";
-import { findOrphanStemFigures, type OrphanFigureIssue } from "../../domain/region-render";
+import { findOrphanStemFigures, getReferencedFigureLabels, isScienceUnit, type OrphanFigureIssue } from "../../domain/region-render";
 import type { GeneratedCoverModel } from "../pdf/cover";
 import { getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefinition } from "../../domain/subjects";
 import { estimatePaperTimeMinutes } from "../../domain/rules";
@@ -444,8 +444,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let selectableUnits = allUnits;
   let pageAssetsBySource: Awaited<ReturnType<typeof getQuestionPageAssetsBySourceRelativePaths>> | undefined;
   const needsScienceFigureGeometry = allUnits.some((unit) => (
-    ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug)
-    && unit.parts.some((part) => (part.referencedFigures?.length ?? 0) > 0)
+    isScienceUnit(unit) && getReferencedFigureLabels(unit).length > 0
   ));
   if (regionMode || needsScienceFigureGeometry) {
     const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
@@ -458,14 +457,17 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
         : await getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths);
     }
   }
-  if (regionMode && figuresBySource && pageLayoutsBySource) {
+  if (figuresBySource) {
     const gate = filterUnitsByFigureResolvability(allUnits, {
       figuresBySource,
-      pageLayoutsBySource,
+      pageLayoutsBySource: pageLayoutsBySource ?? new Map(),
       subjectUsesInserts: Boolean(config.prefaceInserts),
     });
-    const contextGate = filterUnitsByDanglingContext(gate.kept, { pageLayoutsBySource });
-    selectableUnits = contextGate.kept;
+    selectableUnits = gate.kept;
+    if (regionMode && pageLayoutsBySource) {
+      const contextGate = filterUnitsByDanglingContext(selectableUnits, { pageLayoutsBySource });
+      selectableUnits = contextGate.kept;
+    }
   }
 
   const coverTierLabel = config.tier && tier ? config.tier.coverTierLabel(tier) : null;

@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { QuestionUnit } from "@/shared/domain/paper";
+import { filterUnitsByFigureResolvability } from "../../domain/integrity";
+import { buildUnitRenderPlan, getReferencedFigureLabels } from "../../domain/region-render";
 import { expandScienceCropToReferencedFigures } from "./pdf";
 import { findMathUnitStartLine } from "./pdf";
+import { getFooterFloor } from "./pdf";
+import { padScienceCropBox } from "./pdf";
+import { trimScienceRegionCropBox } from "./pdf";
+import { trimSourceFooterCropBox } from "./pdf";
 
 describe("Maths crop discovery", () => {
   it("uses the question part that belongs to a continuation page", () => {
@@ -44,7 +50,7 @@ describe("expandScienceCropToReferencedFigures", () => {
       21,
       595,
       842,
-      [12],
+      ["Figure 12"],
       [{ label: "Figure 12", pageNumber: 21, yTop: 817.8895, yBottom: 442.5559 }],
       [],
     );
@@ -55,7 +61,7 @@ describe("expandScienceCropToReferencedFigures", () => {
   it("leaves crops without a matching figure unchanged", () => {
     const crop = { left: 0, right: 595, bottom: 460, top: 600 };
 
-    expect(expandScienceCropToReferencedFigures(crop, 21, 595, 842, [11], [{ label: "Figure 12", pageNumber: 21, yTop: 817, yBottom: 443 }], [])).toBe(crop);
+    expect(expandScienceCropToReferencedFigures(crop, 21, 595, 842, ["Figure 11"], [{ label: "Figure 12", pageNumber: 21, yTop: 817, yBottom: 443 }], [])).toBe(crop);
   });
 
   it("ignores siblings in another column", () => {
@@ -64,7 +70,7 @@ describe("expandScienceCropToReferencedFigures", () => {
       21,
       595,
       842,
-      [12],
+      ["Figure 12"],
       [{ label: "Figure 12", pageNumber: 21, yTop: 817, yBottom: 443 }],
       [{ left: 315, right: 595, bottom: 700, top: 820 }],
     );
@@ -72,4 +78,190 @@ describe("expandScienceCropToReferencedFigures", () => {
     expect(crop.top).toBe(825);
   });
 
+});
+
+
+describe("science figure ownership", () => {
+  const scienceUnit = {
+    unitKey: "science.pdf::q1",
+    sourceRelativePath: "science.pdf",
+    subjectSlug: "combined-science",
+    parts: [{
+      promptText: "Use Figure 6 to answer the question.",
+      contextText: "Figure 8 shows the results.",
+      pageNumbers: [2],
+    }],
+  } as QuestionUnit;
+
+  it("expands a crop to a letter-labelled figure", () => {
+    expect(expandScienceCropToReferencedFigures(
+      { left: 0, right: 595, bottom: 460, top: 600 },
+      2,
+      595,
+      842,
+      ["Figure A"],
+      [{ label: "figure a", pageNumber: 2, yTop: 760, yBottom: 420 }],
+      [],
+    )).toEqual({ left: 0, right: 595, bottom: 412, top: 768 });
+  });
+
+  it("matches normalized geometry labels when planning figure crops", () => {
+    const unit = {
+      ...scienceUnit,
+      parts: [{
+        promptText: "Use Figure 6.",
+        referencedFigures: ["Figure 6"],
+        pageNumbers: [2],
+        regionSpans: [{ pageNumber: 2, yTop: 700, yBottom: 500 }],
+      }],
+    } as QuestionUnit;
+    const layouts = new Map([
+      [1, { pageNumber: 1, pageWidth: 595, pageHeight: 842, contentX0: 0, contentX1: 595, headerFloorY: 820, footerCeilingY: 20 }],
+      [2, { pageNumber: 2, pageWidth: 595, pageHeight: 842, contentX0: 0, contentX1: 595, headerFloorY: 820, footerCeilingY: 20 }],
+    ]);
+
+    expect(buildUnitRenderPlan(unit, layouts, [{ label: " figure 6 ", pageNumber: 1, yTop: 700, yBottom: 500 }]))
+      .toEqual(expect.arrayContaining([expect.objectContaining({ pageNumber: 1, kind: "figure" })]));
+  });
+
+  it("discovers figure references when structured metadata is absent", () => {
+    expect(getReferencedFigureLabels(scienceUnit)).toEqual(["Figure 6", "Figure 8"]);
+  });
+
+  it("normalizes number-and-letter figure labels across text and geometry", () => {
+    const unit = {
+      ...scienceUnit,
+      parts: [{
+        promptText: "Use Figure 1a.",
+        referencedFigures: ["Figure 1A"],
+        pageNumbers: [2],
+      }],
+    } as QuestionUnit;
+    const labels = getReferencedFigureLabels(unit);
+
+    expect(labels).toEqual(["Figure 1A"]);
+    expect(expandScienceCropToReferencedFigures(
+      { left: 0, right: 595, bottom: 460, top: 600 },
+      2,
+      595,
+      842,
+      labels,
+      [{ label: "figure 1a", pageNumber: 2, yTop: 760, yBottom: 420 }],
+      [],
+    )).toEqual({ left: 0, right: 595, bottom: 412, top: 768 });
+  });
+
+  it("rejects a legacy science unit when referenced figure geometry is absent", () => {
+    const result = filterUnitsByFigureResolvability([scienceUnit], {
+      figuresBySource: new Map(),
+      pageLayoutsBySource: new Map(),
+      subjectUsesInserts: false,
+    });
+
+    expect(result.kept).toEqual([]);
+    expect(result.excluded).toEqual([{
+      unitKey: "science.pdf::q1",
+      missingFigures: ["Figure 6", "Figure 8"],
+    }]);
+  });
+
+  it("keeps a legacy science unit when every referenced figure has geometry", () => {
+    const result = filterUnitsByFigureResolvability([scienceUnit], {
+      figuresBySource: new Map([["science.pdf", [
+        { label: " figure 6 ", pageNumber: 2, yTop: 700, yBottom: 500 },
+        { label: "FIGURE 8", pageNumber: 2, yTop: 450, yBottom: 250 },
+      ]]]),
+      pageLayoutsBySource: new Map(),
+      subjectUsesInserts: false,
+    });
+
+    expect(result.kept).toEqual([scienceUnit]);
+    expect(result.excluded).toEqual([]);
+  });
+
+  it("still rejects unresolved figures for non-science region units", () => {
+    const unit = {
+      ...scienceUnit,
+      subjectSlug: "geography",
+      parts: [{
+        promptText: "Use Figure 6.",
+        pageNumbers: [2],
+        regionSpans: [{ pageNumber: 2, yTop: 700, yBottom: 500 }],
+      }],
+    } as QuestionUnit;
+    const pageLayoutsBySource = new Map([["science.pdf", [
+      { pageNumber: 2, pageWidth: 595, pageHeight: 842, contentX0: 0, contentX1: 595, headerFloorY: 820, footerCeilingY: 20 },
+    ]]])
+
+    expect(filterUnitsByFigureResolvability([unit], {
+      figuresBySource: new Map(),
+      pageLayoutsBySource,
+      subjectUsesInserts: false,
+    }).excluded).toEqual([{ unitKey: "science.pdf::q1", missingFigures: ["Figure 6"] }]);
+  });
+
+  it("keeps unresolved references when the subject provides figures through inserts", () => {
+    const result = filterUnitsByFigureResolvability([scienceUnit], {
+      figuresBySource: new Map(),
+      pageLayoutsBySource: new Map(),
+      subjectUsesInserts: true,
+    });
+
+    expect(result.kept).toEqual([scienceUnit]);
+    expect(result.excluded).toEqual([]);
+  });
+});
+
+describe("science footer trimming", () => {
+  it("does not treat a graph axis tick as a page number", () => {
+    const unit = {
+      boardCode: "edexcel",
+      subjectSlug: "combined-science",
+      sourceRelativePath: "edexcel/combined-science/foundation/000618-2020-chemistry-2-question_paper-june-202020-20qp-20-20chemistry-202-20-f-20edexcel-20science-20gcse-pdf.pdf",
+    } as QuestionUnit;
+    const crop = { left: 0, right: 595.2755, bottom: 235.5625, top: 822.874 };
+
+    expect(trimSourceFooterCropBox(unit, 17, crop)).toEqual(crop);
+  });
+
+  it("does not treat a response mark label as footer furniture", () => {
+    const page = {
+      page_number: 17,
+      page_text: "(1) *P62098A01724* Turn over",
+      text_lines: [
+        { text: "(1)", y: 204.8, bbox: { x0: 524, y0: 204.8, x1: 539, y1: 216.8 } },
+        { text: "*P62098A01724* Turn over", y: 42.6, bbox: { x0: 210, y0: 42, x1: 577, y1: 68.6 } },
+      ],
+    };
+
+    expect(getFooterFloor(page, 842)).toBeCloseTo(76.6);
+  });
+
+  it("preserves the final response line above a source total", () => {
+    const unit = {
+      boardCode: "edexcel",
+      subjectSlug: "combined-science",
+      sourceRelativePath: "edexcel/combined-science/foundation/000618-2020-chemistry-2-question_paper-june-202020-20qp-20-20chemistry-202-20-f-20edexcel-20science-20gcse-pdf.pdf",
+      questionNumber: "5",
+    } as QuestionUnit;
+
+    const crop = trimScienceRegionCropBox(unit, {
+      pageNumber: 17,
+      cropBox: { left: 0, right: 595.2755, bottom: 76.6, top: 822.874 },
+      kind: "question",
+    });
+
+    expect(crop.bottom).toBeCloseTo(76.6);
+  });
+});
+
+describe("science crop padding", () => {
+  it("keeps glyphs that extend beyond extracted text bounds", () => {
+    expect(padScienceCropBox({ left: 70.8661, right: 538.5781, bottom: 68, top: 822 }, 595.2755)).toEqual({
+      left: 62.8661,
+      right: 546.5781,
+      bottom: 68,
+      top: 822,
+    });
+  });
 });
