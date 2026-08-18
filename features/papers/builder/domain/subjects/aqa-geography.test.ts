@@ -85,11 +85,11 @@ describe("question unit validation", () => {
 });
 
 describe("question unit rendering order", () => {
-  it("keeps French questions in source path and page order instead of marks order", () => {
+  it("orders French questions by marks before source position", () => {
     const units = groupQuestionPartsIntoUnits([
       part({
-        partKey: "later-source",
-        unitKey: "later-source",
+        partKey: "later-source-lower-marks",
+        unitKey: "later-source-lower-marks",
         sourceRelativePath: "edexcel/french/higher/2024.pdf",
         subjectSlug: "french",
         questionNumber: "2",
@@ -115,16 +115,16 @@ describe("question unit rendering order", () => {
         questionNumber: "5",
         pageNumber: 9,
         pageNumbers: [9],
-        marks: 6,
+        marks: 4,
       }),
     ]);
 
     sortQuestionUnitsForRendering(units);
 
     expect(units.map((unit) => unit.unitKey)).toEqual([
+      "later-source-lower-marks",
       "earlier-source-earlier-page",
       "earlier-source-later-page",
-      "later-source",
     ]);
   });
 });

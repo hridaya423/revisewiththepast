@@ -467,7 +467,7 @@ function drawQuestionNumberReplacement(
         top: markerLine.bbox.y1 + 7,
        });
        page.drawRectangle({ ...markerBox, color: rgb(1, 1, 1) });
-       const generatedMarker = `${String(questionNumber).padStart(2, "0")}.${suffix}`;
+        const generatedMarker = formatGeneratedAqaMarker(unit, questionNumber, suffix);
        page.drawText(generatedMarker, {
          x: markerBox.x + 10 * scaleX,
          y: markerBox.y + Math.max(1, (markerBox.height - GENERATED_NUMBER_FONT_SIZE * scaleY) / 2),
@@ -1419,6 +1419,18 @@ function isFrenchReadingUnit(unit: QuestionUnit) {
   return unit.boardCode === "edexcel" && unit.subjectSlug === "french";
 }
 
+export function shouldSanitizeSourcePageForGeneratedIdentity(unit: Pick<QuestionUnit, "boardCode" | "subjectSlug">) {
+  return unit.subjectSlug === "mathematics"
+    || unit.subjectSlug.startsWith("mathematics-")
+    || (unit.boardCode === "edexcel" && unit.subjectSlug === "french")
+    || unit.subjectSlug === "business";
+}
+
+export function formatGeneratedAqaMarker(unit: Pick<QuestionUnit, "subjectSlug">, questionNumber: number, sourcePartNumber: string) {
+  if (unit.subjectSlug === "english-literature") return `${questionNumber}.`;
+  return `${String(questionNumber).padStart(2, "0")}.${sourcePartNumber}`;
+}
+
 function isMathematicsUnit(unit: QuestionUnit) {
   return unit.subjectSlug === "mathematics" || unit.subjectSlug.startsWith("mathematics-");
 }
@@ -2246,7 +2258,7 @@ async function withSourcePdfCandidate<T>(
     try {
       let sourceDoc: PDFDocument;
       let sourcePdfPage: import("pdf-lib").PDFPage;
-      if (isMathematicsUnit(unit) || isFrenchReadingUnit(unit)) {
+      if (shouldSanitizeSourcePageForGeneratedIdentity(unit)) {
         const raster = await rasterizeSourcePdfPage(candidate.pdfUrl, candidate.sourcePageIndex, sourcePdfCache, sourceDocCache, {
           sanitizeFurniture: true,
           sourceQuestionNumber: unit.questionNumber,

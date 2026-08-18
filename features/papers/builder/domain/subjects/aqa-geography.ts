@@ -209,16 +209,6 @@ function getMarkCategory(totalMarks: number) {
 }
 
 export function compareQuestionUnitsForRendering(a: QuestionUnit, b: QuestionUnit) {
-  if (a.subjectSlug === "french" && b.subjectSlug === "french") {
-    if (a.sourceRelativePath !== b.sourceRelativePath) return a.sourceRelativePath.localeCompare(b.sourceRelativePath, undefined, { numeric: true });
-    const aPage = a.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
-    const bPage = b.pages[0]?.pageNumber ?? Number.MAX_SAFE_INTEGER;
-    if (aPage !== bPage) return aPage - bPage;
-    if (a.questionNumber !== b.questionNumber) return a.questionNumber.localeCompare(b.questionNumber, undefined, { numeric: true });
-    const pathCompare = compareQuestionPaths(a.questionPath ?? [], b.questionPath ?? []);
-    if (pathCompare !== 0) return pathCompare;
-    return a.unitKey.localeCompare(b.unitKey, undefined, { numeric: true });
-  }
   if (a.totalMarks !== b.totalMarks) return a.totalMarks - b.totalMarks;
   if (a.paperCode !== b.paperCode) return a.paperCode.localeCompare(b.paperCode, undefined, { numeric: true });
   if ((a.sectionCode ?? "") !== (b.sectionCode ?? "")) return (a.sectionCode ?? "").localeCompare(b.sectionCode ?? "");

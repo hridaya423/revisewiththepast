@@ -6,9 +6,30 @@ import { buildUnitRenderPlan, getReferencedFigureLabels } from "../../domain/reg
 import { expandScienceCropToReferencedFigures } from "./pdf";
 import { findMathUnitStartLine } from "./pdf";
 import { getFooterFloor } from "./pdf";
+import { formatGeneratedAqaMarker } from "./pdf";
 import { padScienceCropBox } from "./pdf";
+import { shouldSanitizeSourcePageForGeneratedIdentity } from "./pdf";
 import { trimScienceRegionCropBox } from "./pdf";
 import { trimSourceFooterCropBox } from "./pdf";
+
+describe("generated question identity", () => {
+  it("sanitizes Business source labels before drawing generated numbering", () => {
+    const unit = {
+      boardCode: "edexcel",
+      subjectSlug: "business",
+    };
+
+    expect(shouldSanitizeSourcePageForGeneratedIdentity(unit)).toBe(true);
+  });
+
+  it("replaces an English Literature compound source marker with the generated question number", () => {
+    const unit = {
+      subjectSlug: "english-literature",
+    };
+
+    expect(formatGeneratedAqaMarker(unit, 1, "2")).toBe("1.");
+  });
+});
 
 describe("Maths crop discovery", () => {
   it("uses the question part that belongs to a continuation page", () => {
