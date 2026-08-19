@@ -8,6 +8,7 @@ import { findMathUnitStartLine } from "./pdf";
 import { getFooterFloor } from "./pdf";
 import { formatGeneratedAqaMarker } from "./pdf";
 import { padScienceCropBox } from "./pdf";
+import { resolveMathHorizontalCropBounds } from "./pdf";
 import { shouldSanitizeSourcePageForGeneratedIdentity } from "./pdf";
 import { trimScienceRegionCropBox } from "./pdf";
 import { trimSourceFooterCropBox } from "./pdf";
@@ -61,6 +62,26 @@ describe("Maths crop discovery", () => {
     } as QuestionUnit;
 
     expect(findMathUnitStartLine(page, unit)?.text).toBe("(b) Work out the total surface area of the pyramid.");
+  });
+
+  it("keeps a left-edge graph label without widening to the full source page", () => {
+    const bounds = resolveMathHorizontalCropBounds([
+      { bbox: { x0: 75.24, x1: 131.24 } },
+      { bbox: { x0: 153.96, x1: 506.41 } },
+    ], 595.28);
+
+    expect(bounds.left).toBeCloseTo(59.24);
+    expect(bounds.right).toBeCloseTo(522.41);
+  });
+
+  it("keeps a right-edge answer unit without widening to the full source page", () => {
+    const bounds = resolveMathHorizontalCropBounds([
+      { bbox: { x0: 42.48, x1: 425.42 } },
+      { bbox: { x0: 398.02, x1: 552.74 } },
+    ], 595.28);
+
+    expect(bounds.left).toBeCloseTo(26.48);
+    expect(bounds.right).toBeCloseTo(568.74);
   });
 });
 

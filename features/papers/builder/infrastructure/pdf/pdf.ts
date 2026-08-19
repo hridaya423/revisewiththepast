@@ -853,6 +853,26 @@ function getMathSupportUnit(targetUnit: QuestionUnit, allUnits: QuestionUnit[]) 
   return currentIndex > 0 ? relatedUnits[currentIndex - 1] : null;
 }
 
+export function resolveMathHorizontalCropBounds(
+  contentLines: Array<{ bbox: { x0: number; x1: number } }>,
+  pageWidth: number,
+  additionalBoxes: Array<{ left: number; right: number }> = [],
+) {
+  const xValues = [
+    ...contentLines.flatMap((line) => [line.bbox.x0, line.bbox.x1]),
+    ...additionalBoxes.flatMap((box) => [box.left, box.right]),
+  ];
+  const left = Math.max(0, Math.min(...xValues) - 16);
+  const right = Math.min(pageWidth, Math.max(...xValues) + 16);
+  const minimumWidth = Math.min(pageWidth, 280);
+  const cropWidth = right - left;
+  const horizontalExpansion = cropWidth >= minimumWidth ? 0 : (minimumWidth - cropWidth) / 2;
+  return {
+    left: Math.max(0, left - horizontalExpansion),
+    right: Math.min(pageWidth, right + horizontalExpansion),
+  };
+}
+
 function resolveMathQuestionCropBox(
   unit: QuestionUnit,
   allUnits: QuestionUnit[],
@@ -959,17 +979,12 @@ function resolveMathQuestionCropBox(
       ? immediateContextTop + 18
       : Math.max(startLine.bbox.y1 + 10, highestTextY + 8);
 
-  const xValues = contentLines.flatMap((line) => [line.bbox.x0, line.bbox.x1]);
-  if (matchingUnitPage.bboxUnion) xValues.push(matchingUnitPage.bboxUnion.x0, matchingUnitPage.bboxUnion.x1);
-  if (supportBox) xValues.push(supportBox.left, supportBox.right);
-  const left = Math.max(0, Math.min(...xValues) - 16);
-  const right = Math.min(pageWidth, Math.max(...xValues) + 16);
-  const minimumWidth = Math.min(pageWidth, 280);
-  const cropWidth = right - left;
-  const horizontalExpansion = cropWidth >= minimumWidth ? 0 : (minimumWidth - cropWidth) / 2;
+  const horizontalBounds = resolveMathHorizontalCropBounds(contentLines, pageWidth, [
+    ...(matchingUnitPage.bboxUnion ? [{ left: matchingUnitPage.bboxUnion.x0, right: matchingUnitPage.bboxUnion.x1 }] : []),
+    ...(supportBox ? [{ left: supportBox.left, right: supportBox.right }] : []),
+  ]);
   const cropBox = {
-    left: Math.max(0, left - horizontalExpansion),
-    right: Math.min(pageWidth, right + horizontalExpansion),
+    ...horizontalBounds,
     bottom: Math.max(0, bottom - 6),
     top: Math.min(pageHeight, cropTop),
   } satisfies CropBox;

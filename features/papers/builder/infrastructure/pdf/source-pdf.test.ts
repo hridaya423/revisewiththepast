@@ -133,4 +133,43 @@ describe("source PDF rasterization", () => {
       rmSync(directory, { recursive: true, force: true });
     }
   });
+
+  it("preserves legitimate labels at both horizontal page edges", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("Cumulative frequency", { x: 4, y: 110, size: 12, font });
+    page.drawText("minutes", { x: 254, y: 110, size: 12, font });
+    page.drawText("DO NOT WRITE IN THIS AREA", { x: 120, y: 60, size: 9, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-edge-labels-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+      const image = await loadImage(rendered.pages[0].png);
+      const canvas = createCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const leftLabel = context.getImageData(0, 145, 170, 55).data;
+      const rightLabel = context.getImageData(490, 145, 110, 55).data;
+      const warning = context.getImageData(225, 245, 350, 45).data;
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+
+      expect(darkPixelCount(leftLabel)).toBeGreaterThan(50);
+      expect(darkPixelCount(rightLabel)).toBeGreaterThan(20);
+      expect(darkPixelCount(warning)).toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
 });

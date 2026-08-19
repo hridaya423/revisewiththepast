@@ -27,45 +27,57 @@ export function normalizeInlineText(text: string) {
   return text.replace(/\s+/g, " ").trim();
 }
 
-type ColumnBoundaries = {
-  answer: number;
-  mark: number;
-  scheme: number;
-  guidance: number;
-};
+type ColumnName = "left" | "answer" | "mark" | "scheme" | "guidance";
+type ColumnLayout = Array<{ column: ColumnName; start: number }>;
 
-function inferColumnBoundaries(items: PositionedPdfItem[], pageWidth?: number): ColumnBoundaries {
+function inferColumnLayout(items: PositionedPdfItem[], pageWidth?: number): ColumnLayout {
   if (!pageWidth) {
-    return { answer: 120, mark: 210, scheme: 250, guidance: 560 };
+    return [
+      { column: "left", start: -Infinity },
+      { column: "answer", start: 120 },
+      { column: "mark", start: 210 },
+      { column: "scheme", start: 250 },
+      { column: "guidance", start: 560 },
+    ];
   }
 
   const scale = pageWidth / 841.89;
-  const defaults = {
-    answer: 72 * scale,
-    mark: 166 * scale,
-    scheme: 224 * scale,
-    guidance: 590 * scale,
-  };
+  const defaults: ColumnLayout = [
+    { column: "left", start: -Infinity },
+    { column: "answer", start: 72 * scale },
+    { column: "mark", start: 166 * scale },
+    { column: "scheme", start: 224 * scale },
+    { column: "guidance", start: 590 * scale },
+  ];
 
-  const headerStarts = new Map<string, number>();
+  const headerStarts = new Map<Exclude<ColumnName, "left">, number>();
   for (const item of items) {
     const text = item.text.trim().toLowerCase().replace(/\s+/g, " ");
-    if (text === "answer" || text === "mark" || text === "marks" || text === "guidance") {
-      if (!headerStarts.has(text)) headerStarts.set(text, item.x);
-    }
+    const column = text === "answer"
+      ? "answer"
+      : text === "mark" || text === "marks"
+        ? "mark"
+        : text === "scheme" || text === "mark scheme"
+          ? "scheme"
+          : text.endsWith("guidance")
+            ? "guidance"
+            : null;
+    if (column && !headerStarts.has(column)) headerStarts.set(column, item.x);
   }
 
   const answerStart = headerStarts.get("answer");
-  const markStart = headerStarts.get("mark") ?? headerStarts.get("marks");
+  const markStart = headerStarts.get("mark");
+  const schemeStart = headerStarts.get("scheme");
   const guidanceStart = headerStarts.get("guidance");
-  if (answerStart !== undefined && markStart !== undefined && guidanceStart !== undefined
-    && answerStart < markStart && markStart < guidanceStart) {
-    return {
-      answer: Math.max(1, answerStart - 10 * scale),
-      mark: Math.max(answerStart + 1, markStart - 10 * scale),
-      scheme: Math.max(markStart + 1, defaults.scheme),
-      guidance: Math.max(markStart + 1, guidanceStart - 10 * scale),
-    };
+  if (answerStart !== undefined && markStart !== undefined && (schemeStart !== undefined || guidanceStart !== undefined)) {
+    const layout: ColumnLayout = [
+      { column: "left", start: -Infinity },
+      ...Array.from(headerStarts, ([column, start]) => ({
+        column,
+        start: Math.max(1, start - 10 * scale),
+      })),
+    ];
+    return layout.sort((left, right) => left.start - right.start);
   }
 
   return defaults;
@@ -73,7 +85,7 @@ function inferColumnBoundaries(items: PositionedPdfItem[], pageWidth?: number): 
 
 export function buildStructuredLines(pageNumber: number, items: PositionedPdfItem[], pageWidth?: number) {
   const grouped = new Map<number, PositionedPdfItem[]>();
-  const boundaries = inferColumnBoundaries(items, pageWidth);
+  const layout = inferColumnLayout(items, pageWidth);
 
   for (const item of items) {
     const bucket = Math.round(item.y / 3) * 3;
@@ -91,25 +103,20 @@ export function buildStructuredLines(pageNumber: number, items: PositionedPdfIte
       }
       sortedItems.sort((a, b) => a.x - b.x);
 
-      const columns = [[], [], [], [], []] as string[][];
+      const columns: Record<ColumnName, string[]> = { left: [], answer: [], mark: [], scheme: [], guidance: [] };
       for (const item of sortedItems) {
-        const column = item.x < boundaries.answer
-          ? 0
-          : item.x < boundaries.mark
-            ? 1
-            : item.x < boundaries.scheme
-              ? 2
-              : item.x < boundaries.guidance
-                ? 3
-                : 4;
+        let column: ColumnName = "left";
+        for (const candidate of layout) {
+          if (item.x < candidate.start) break;
+          column = candidate.column;
+        }
         columns[column].push(item.text);
       }
-      const [left, answer, mark, scheme, guidance] = columns;
-      const leftText = normalizeInlineText(left.join(" "));
-      const answerText = normalizeInlineText(answer.join(" "));
-      const markText = normalizeInlineText(mark.join(" "));
-      const schemeText = normalizeInlineText(scheme.join(" "));
-      const guidanceText = normalizeInlineText(guidance.join(" "));
+      const leftText = normalizeInlineText(columns.left.join(" "));
+      const answerText = normalizeInlineText(columns.answer.join(" "));
+      const markText = normalizeInlineText(columns.mark.join(" "));
+      const schemeText = normalizeInlineText(columns.scheme.join(" "));
+      const guidanceText = normalizeInlineText(columns.guidance.join(" "));
       const fullText = normalizeInlineText([leftText, answerText, markText, schemeText, guidanceText].filter(Boolean).join(" "));
 
       if (fullText.length > 0) lines.push({

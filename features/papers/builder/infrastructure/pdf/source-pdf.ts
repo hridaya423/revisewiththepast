@@ -54,13 +54,6 @@ async function sanitizeRasterPage(
   const pdfjs = await loadPdfJsForNode();
   const viewport = pdfJsPage.getViewport({ scale });
   const textContent = await pdfJsPage.getTextContent();
-  const pageText = textContent.items
-    .flatMap((item) => "str" in item ? [item.str] : [])
-    .join(" ")
-    .replace(/\s+/g, " ");
-  const normalizedPageText = pageText.toLowerCase();
-  const hasRightWarningLane = normalizedPageText.includes("write")
-    && (normalizedPageText.includes("area") || normalizedPageText.includes("outside"));
   const normalizedQuestionNumber = sourceQuestionNumber?.replace(/\s+/g, "") ?? null;
 
   for (const rawItem of textContent.items) {
@@ -115,26 +108,18 @@ async function sanitizeRasterPage(
   }
 
   context.fillRect(0, 0, image.width, 48 * scale);
-  context.fillRect(0, 0, 52 * scale, image.height);
-  const rightBandWidth = Math.min(image.width, Math.round(80 * scale));
-  const rightBandX = image.width - rightBandWidth;
-  const rightBand = context.getImageData(rightBandX, 0, rightBandWidth, image.height);
-  const darkPixelsByColumn = new Uint32Array(rightBandWidth);
-  let darkPixelCount = 0;
-  for (let pixel = 0; pixel < rightBand.data.length; pixel += 4) {
-    if (rightBand.data[pixel] < 220 && rightBand.data[pixel + 1] < 220 && rightBand.data[pixel + 2] < 220) {
-      const column = (pixel / 4) % rightBandWidth;
-      darkPixelsByColumn[column] += 1;
-      darkPixelCount += 1;
+  for (const bandX of [0, Math.max(0, image.width - 80 * scale)]) {
+    const bandWidth = Math.min(image.width - bandX, Math.round(80 * scale));
+    const band = context.getImageData(bandX, 0, bandWidth, image.height);
+    const darkPixelsByColumn = new Uint32Array(bandWidth);
+    for (let pixel = 0; pixel < band.data.length; pixel += 4) {
+      if (band.data[pixel] < 220 && band.data[pixel + 1] < 220 && band.data[pixel + 2] < 220) {
+        darkPixelsByColumn[(pixel / 4) % bandWidth] += 1;
+      }
     }
-  }
-  const hasVisualRightWarningLane = darkPixelCount > rightBandWidth * image.height * 0.05;
-  if (hasRightWarningLane || hasVisualRightWarningLane) {
-    context.fillRect(image.width - 66 * scale, 0, 66 * scale, image.height);
-  } else {
     for (let column = 0; column < darkPixelsByColumn.length; column += 1) {
       if (darkPixelsByColumn[column] <= image.height * 0.35) continue;
-      context.fillRect(rightBandX + column - 2 * scale, 0, 4 * scale, image.height);
+      context.fillRect(bandX + column - 2 * scale, 0, 4 * scale, image.height);
     }
   }
   context.fillRect(0, image.height - 52 * scale, image.width, 52 * scale);
