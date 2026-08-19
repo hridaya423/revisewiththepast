@@ -434,6 +434,9 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
     const hasOtherSubjectQuestion = unit.subjectSlug === "computer-science"
       ? detectOcrComputerScienceQuestionStart(page, String(Number(targetQuestionNumber) + 1))
       : false;
+    if (unit.subjectSlug === "computer-science" && !/\bMark Scheme\b/i.test(page.text)) {
+      break;
+    }
     if ((pageQuestionNumber && pageQuestionNumber !== targetQuestionNumber && !hasTargetStart) || (unit.subjectSlug === "computer-science" && hasOtherSubjectQuestion && !hasSubjectSpecificStart)) {
       break;
     }
@@ -753,6 +756,7 @@ function cleanFallbackGuidance(text: string, unit: MarkableUnit) {
     .replace(/\bPMT\b/g, " ")
     .replace(/\bMARK SCHEME\s*-\s*GCSE\s+[^\n]+?\s*-\s*(?:JUNE|NOVEMBER)\s+\d{4}\b/gi, " ")
     .replace(/\bQuestion\s+Answer(?:\s+Additional\s+guidance)?\s+Mark\s+number\b/gi, " ")
+    .replace(/\(?\bTotal\s+for\s+(?:the\s+)?question\s+\d+\s*(?:=|is)?\s*\d+\s*marks?\)?/gi, " ")
     .replace(/\bAO(\d)\s+([a-z])\b/gi, "AO$1$2")
     .replace(/\s+/g, " ")
     .trim();
@@ -804,9 +808,10 @@ function partMarkerPattern(unit: MarkableUnit, partNumber: string) {
   const question = normalizeQuestionNumber(unit.questionNumber);
   const escapedPart = partNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (/^\d+$/.test(partNumber)) {
-    return new RegExp(`\\b0?${question}\\s*(?:\\.|\\s)\\s*${escapedPart}\\b`, "i");
+    const separator = unit.boardCode === "aqa" ? "\\s*\\.\\s*" : "\\s*(?:\\.|\\s)\\s*";
+    return new RegExp(`\\b0?${question}${separator}${escapedPart}\\b`, "i");
   }
-  const nestedPart = `\\s*\\([a-z]\\)\\s*\\(\\s*${escapedPart}\\s*\\)(?:\\s*\\*)?(?=\\s|$)`;
+  const nestedPart = `\\s*\\([a-z]\\)\\s*(?:\\(\\s*${escapedPart}\\s*\\)|${escapedPart}\\b)(?:\\s*\\*)?(?=\\s|$)`;
   const spacedNestedPart = `\\s+[a-z]\\s+(?:\\(?${escapedPart}\\)?)(?=\\s|$)`;
   const directPart = `(?:\\.|\\s+)\\s*${escapedPart}\\b|\\s*\\(\\s*${escapedPart}\\s*\\)(?:\\s*\\([ivx]+\\))?(?:\\s*\\*)?(?=\\s|$)`;
   return new RegExp(`\\b(?:Question\\s+)?0?${question}(?:${nestedPart}|${spacedNestedPart}|${directPart})`, "i");
@@ -828,7 +833,8 @@ function partPathMarkerPattern(unit: MarkableUnit, partPath: string[]) {
 
 function findNextQuestionPartBoundary(unit: MarkableUnit, text: string, from: number) {
   const question = normalizeQuestionNumber(unit.questionNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const pattern = new RegExp(`(?:\\bQuestion\\s+0?\\d{1,2}\\s*(?:\\.|\\s|\\()?\\s*(?:[a-z]|[ivx]{1,4})|\\b0?${question}\\s*(?:(?:\\.\\s*)?\\d+\\b|\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)|[a-z]\\b))`, "gi");
+  const numericPart = unit.boardCode === "aqa" ? "\\.\\s*\\d+\\b" : "(?:\\.\\s*|\\s+)\\d+\\b";
+  const pattern = new RegExp(`(?:\\bQuestion\\s+0?\\d{1,2}\\s*(?:\\.|\\s|\\()?\\s*(?:[a-z]|[ivx]{1,4})|\\b0?${question}\\s*(?:${numericPart}|\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)|[a-z]\\b))`, "gi");
   for (const match of text.slice(from).matchAll(pattern)) {
     if (match.index === undefined) continue;
     const precedingText = text.slice(from, from + match.index);
@@ -839,8 +845,32 @@ function findNextQuestionPartBoundary(unit: MarkableUnit, text: string, from: nu
 }
 
 function isQuestionPartBoundaryLine(unit: MarkableUnit, text: string) {
+  if (/^\s*\((?:[a-z]|[ivx]{1,4})\)(?:\s*\([ivx]{1,4}\))?(?:\s|$)/i.test(text)) return true;
   const question = normalizeQuestionNumber(unit.questionNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`^\\s*(?:Question\\s+0?\\d{1,2}\\b|0?${question}\\b)\\s*(?:(?:\\.\\s*)?\\d+\\b|\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)|[a-z]\\b)`, "i").test(text);
+  const numericPart = unit.boardCode === "aqa" ? "\\.\\s*\\d+\\b" : "(?:\\.\\s*|\\s+)\\d+\\b";
+  return new RegExp(`^\\s*(?:Question\\s+0?\\d{1,2}\\b\\s*(?:(?:\\.\\s*)?\\d+\\b|\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)|[a-z]\\b)|0?${question}\\b\\s*(?:${numericPart}|\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)|[a-z]\\b))`, "i").test(text);
+}
+
+function findStructuredPartStart(lines: StructuredPdfLine[], markerIndex: number) {
+  const marker = lines[markerIndex];
+  if (!marker) return { contentIndex: markerIndex, boundaryIndex: markerIndex };
+  const earliest = Math.max(0, markerIndex - 5);
+  let headerIndex = -1;
+  for (let index = markerIndex - 1; index >= earliest; index -= 1) {
+    const line = lines[index];
+    if (line.pageNumber !== marker.pageNumber) break;
+    if (/\bAnswer\b.*\bMark\b/i.test(line.fullText)) {
+      headerIndex = index;
+      break;
+    }
+  }
+  if (headerIndex < 0) return { contentIndex: markerIndex, boundaryIndex: markerIndex };
+
+  let startIndex = headerIndex + 1;
+  while (startIndex < markerIndex && /^(?:number|no\s*:?|cs\s+no\s*:?|:)$/i.test(lines[startIndex].fullText.trim())) {
+    startIndex += 1;
+  }
+  return { contentIndex: startIndex, boundaryIndex: headerIndex };
 }
 
 export function splitMarkSchemePagesByParts(unit: MarkableUnit, pages: CachedPdfPage[]): RenderedMarkSchemePage[] | null {
@@ -943,9 +973,9 @@ export function splitMarkSchemePagesByParts(unit: MarkableUnit, pages: CachedPdf
   };
 
   if (sourceLines.length === 0) return buildInlineSegments();
-  const starts: Array<{ index: number; part: MarkableUnit["parts"][number] }> = [];
+  const starts: Array<{ index: number; boundaryIndex: number; markerIndex: number; part: MarkableUnit["parts"][number] }> = [];
   let searchFrom = 0;
-  for (const part of orderedParts) {
+  for (const [partIndex, part] of orderedParts.entries()) {
     const partNumber = part.questionPartNumber?.trim();
     if (!partNumber) return null;
     const promptPrefix = normalizeInlineText(part.promptText).match(new RegExp(`^${normalizeQuestionNumber(unit.questionNumber)}\\s*((?:\\(\\s*(?:[a-z]|[ivx]{1,4})\\s*\\)\\s*)+)`, "i"));
@@ -957,24 +987,33 @@ export function splitMarkSchemePagesByParts(unit: MarkableUnit, pages: CachedPdf
     const pathPattern = partPath.length > 1 ? partPathMarkerPattern(unit, partPath) : null;
     const markerPattern = partMarkerPattern(unit, partNumber);
     const barePattern = /^\d+$/.test(partNumber) ? null : barePartMarkerPattern(partNumber);
-    const lineIndex = sourceLines.findIndex((line, index) => {
+    const fullLineIndex = sourceLines.findIndex((line, index) => {
       if (index < searchFrom) return false;
       const searchable = `${line.leftText} ${line.fullText}`;
       return (pathPattern?.test(searchable) ?? false)
-        || markerPattern.test(searchable)
-        || (barePattern?.test(searchable) ?? false);
+        || markerPattern.test(searchable);
     });
+    const bareLineIndex = barePattern
+      ? sourceLines.findIndex((line, index) => index >= searchFrom && barePattern.test(`${line.leftText} ${line.fullText}`))
+      : -1;
+    const targetQuestionPattern = new RegExp(`\\b(?:Question\\s+)?0?${normalizeQuestionNumber(unit.questionNumber)}\\s*(?:\\.|\\(|[a-z]\\b)`, "i");
+    const hasTargetQuestionBeforeBare = bareLineIndex >= 0
+      && sourceLines.slice(0, bareLineIndex).some((line) => targetQuestionPattern.test(`${line.leftText} ${line.fullText}`));
+    const lineIndex = partIndex === 0
+      ? fullLineIndex >= 0 ? fullLineIndex : hasTargetQuestionBeforeBare ? bareLineIndex : -1
+      : [fullLineIndex, bareLineIndex].filter((index) => index >= 0).sort((left, right) => left - right)[0] ?? -1;
     if (lineIndex < 0) {
       return buildInlineSegments();
     }
-    starts.push({ index: lineIndex, part });
+    const start = findStructuredPartStart(sourceLines, lineIndex);
+    starts.push({ index: start.contentIndex, boundaryIndex: start.boundaryIndex, markerIndex: lineIndex, part });
     searchFrom = lineIndex + 1;
   }
   if (starts.length !== orderedParts.length || starts.length < 2) return null;
 
   const partPages = starts.map((start, index) => {
-    const selectedEnd = starts[index + 1]?.index ?? sourceLines.length;
-    const sourceBoundary = sourceLines.findIndex((line, lineIndex) => lineIndex > start.index && isQuestionPartBoundaryLine(unit, `${line.leftText} ${line.fullText}`));
+    const selectedEnd = starts[index + 1]?.boundaryIndex ?? sourceLines.length;
+    const sourceBoundary = sourceLines.findIndex((line, lineIndex) => lineIndex > start.markerIndex && isQuestionPartBoundaryLine(unit, `${line.leftText} ${line.fullText}`));
     const end = Math.min(selectedEnd, sourceBoundary < 0 ? sourceLines.length : sourceBoundary);
     const segmentLines = sourceLines.slice(start.index, end);
     const partUnit = {

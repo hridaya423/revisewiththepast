@@ -121,6 +121,67 @@ function markSchemeLine(fullText: string, leftText = "") {
 }
 
 describe("multipart mark scheme splitting", () => {
+  it("starts the first selected part at the target question rather than an earlier bare part", () => {
+    const unit = scienceUnit([sciencePart("a", 1), sciencePart("b", 1)]);
+    const pages = [{
+      pageNumber: 20,
+      text: "7 (a) unrelated answer 8 (a) selected answer 8 (b) selected answer",
+      lines: [
+        markSchemeLine("7 (a) unrelated answer", "7 (a)"),
+        markSchemeLine("8 (a) selected answer", "8 (a)"),
+        markSchemeLine("8 (b) selected answer", "8 (b)"),
+      ],
+    }];
+
+    const split = splitMarkSchemePagesByParts(unit, pages);
+
+    expect(split?.slice(0, -1).map((page) => page.text)).toEqual([
+      "8 (a) selected answer",
+      "8 (b) selected answer",
+    ]);
+  });
+
+  it("binds a flattened nested part to a source marker with its parent", () => {
+    const nestedPart = { ...sciencePart("ii", 2), questionPath: [] };
+    const followingPart = { ...sciencePart("d", 6), questionPath: [] };
+    const unit = scienceUnit([nestedPart, followingPart]);
+    const pages = [{
+      pageNumber: 20,
+      text: "8 (c) ii selected nested answer 8 (d) selected answer",
+      lines: [],
+    }];
+
+    const split = splitMarkSchemePagesByParts(unit, pages);
+
+    expect(split?.slice(0, -1).map((page) => page.text)).toEqual([
+      "8 (c) ii selected nested answer",
+      "8 (d) selected answer",
+    ]);
+  });
+
+  it("moves source-row text before a displaced marker into the following part", () => {
+    const unit = scienceUnit([sciencePart("a", 1), sciencePart("b", 1)]);
+    const pages = [{
+      pageNumber: 20,
+      text: "8 (a) first answer Answers will be credited 8 (b) second answer",
+      lines: [
+        markSchemeLine("8 (a) first answer", "8 (a)"),
+        markSchemeLine("Question Answer Mark"),
+        markSchemeLine("number"),
+        markSchemeLine("Answers will be credited"),
+        markSchemeLine("8 (b)", "8 (b)"),
+        markSchemeLine("second answer"),
+      ],
+    }];
+
+    const split = splitMarkSchemePagesByParts(unit, pages);
+
+    expect(split?.slice(0, -1).map((page) => page.text)).toEqual([
+      "8 (a) first answer",
+      "Answers will be credited 8 (b) second answer",
+    ]);
+  });
+
   it("stops selected parts before unselected siblings and adjacent questions", () => {
     const parts = [sciencePart("a", 1), sciencePart("b", 1)];
     const unit = scienceUnit(parts);
@@ -169,11 +230,111 @@ describe("multipart mark scheme splitting", () => {
 
     expect(split?.[1].text).toBe("8 (b) Conversion of mm to m: 47 (m) Substitution: complete answer");
   });
+
+  it("keeps undotted level rows inside dotted numeric question parts", () => {
+    const parts = [sciencePart("3", 6), sciencePart("4", 5)].map((part) => ({
+      ...part,
+      boardCode: "aqa",
+      subjectSlug: "business",
+      questionNumber: "3",
+      questionPath: [part.questionPartNumber ?? ""],
+      promptText: `0 3 . ${part.questionPartNumber} Answer the question.`,
+    }));
+    const unit = {
+      ...scienceUnit(parts),
+      boardCode: "aqa",
+      subjectSlug: "business",
+      questionNumber: "3",
+    };
+    const pages = [{
+      pageNumber: 18,
+      text: "3.3 selected answer Level Marks Description 3 5-6 detailed analysis 2 3-4 sound analysis 3.4 next answer",
+      lines: [
+        markSchemeLine("3.3 selected answer", "3.3"),
+        markSchemeLine("Level Marks Description"),
+        markSchemeLine("3 5-6 detailed analysis"),
+        markSchemeLine("2 3-4 sound analysis"),
+        markSchemeLine("3.4 next answer", "3.4"),
+      ],
+    }];
+
+    const split = splitMarkSchemePagesByParts(unit, pages);
+
+    expect(split?.[0].text).toContain("3 5-6 detailed analysis 2 3-4 sound analysis");
+  });
+
+  it("accepts undotted numeric part markers outside AQA", () => {
+    const parts = [sciencePart("1", 2), sciencePart("2", 3)];
+    const unit = scienceUnit(parts);
+    const pages = [{
+      pageNumber: 18,
+      text: "8 1 first answer 8 2 second answer",
+      lines: [
+        markSchemeLine("8 1 first answer", "8 1"),
+        markSchemeLine("8 2 second answer", "8 2"),
+      ],
+    }];
+
+    expect(splitMarkSchemePagesByParts(unit, pages)?.slice(0, -1).map((page) => page.text)).toEqual([
+      "8 1 first answer",
+      "8 2 second answer",
+    ]);
+  });
+
+  it("accepts a first bare continuation after a full target-question marker", () => {
+    const unit = scienceUnit([
+      { ...sciencePart("ii", 2), questionPath: [] },
+      { ...sciencePart("b", 3), questionPath: [] },
+    ]);
+    const pages = [{
+      pageNumber: 18,
+      text: "8 (a) (i) unselected answer (ii) selected answer (b) selected answer",
+      lines: [
+        markSchemeLine("8 (a) (i) unselected answer", "8 (a) (i)"),
+        markSchemeLine("(ii) selected answer", "(ii)"),
+        markSchemeLine("(b) selected answer", "(b)"),
+      ],
+    }];
+
+    expect(splitMarkSchemePagesByParts(unit, pages)?.slice(0, -1).map((page) => page.text)).toEqual([
+      "(ii) selected answer",
+      "(b) selected answer",
+    ]);
+  });
+
+  it("stops a selected continuation before an unselected bare sibling", () => {
+    const unit = scienceUnit([
+      { ...sciencePart("ii", 2), questionPath: [] },
+      { ...sciencePart("c", 3), questionPath: [] },
+    ]);
+    const pages = [{
+      pageNumber: 18,
+      text: "8 (a) (i) unselected answer (ii) selected answer (b) unrelated answer (c) selected answer",
+      lines: [
+        markSchemeLine("8 (a) (i) unselected answer", "8 (a) (i)"),
+        markSchemeLine("(ii) selected answer", "(ii)"),
+        markSchemeLine("(b) unrelated answer", "(b)"),
+        markSchemeLine("(c) selected answer", "(c)"),
+      ],
+    }];
+
+    expect(splitMarkSchemePagesByParts(unit, pages)?.[0].text).toBe("(ii) selected answer");
+  });
 });
 
 describe("generated mark scheme identity", () => {
   it("uses generated order instead of the source question number in total rows", () => {
     expect(formatGeneratedTotalRow(scienceUnit([sciencePart("a", 5)], 5), 4)).toBe("Total for Question 4 is 5 marks");
+  });
+
+  it("removes source totals from selected-part guidance", () => {
+    const entry = buildStructuredEntry(
+      scienceUnit([sciencePart("b", 2)], 2),
+      "8 (b) selected answer (2) (Total for question 8 = 9 marks)",
+    );
+
+    expect(entry.guidance).toContain("selected answer");
+    expect(entry.guidance).not.toContain("Total for question");
   });
 });
 

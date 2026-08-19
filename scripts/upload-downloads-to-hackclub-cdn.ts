@@ -3,9 +3,10 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 import { ConvexHttpClient } from "convex/browser";
 import { getFirstEnvironment, getNumberEnvironment, getOptionalEnvironment, readJsonFile, retryWithBackoff, writeJsonFile } from "./runtime";
+import { extractExamSession, type ExamSession } from "./paper-asset-metadata";
 
 type Tier = "none" | "foundation" | "higher";
-type Session = "june" | "november" | "january" | "unknown";
+type Session = ExamSession;
 type DownloadKind = "question_paper" | "mark_scheme" | "insert";
 type Source = "pmt" | "revisionworld" | "manual";
 
@@ -52,20 +53,6 @@ const CONVEX_URL = getFirstEnvironment("CONVEX_URL", "NEXT_PUBLIC_CONVEX_URL");
 
 function normalizeRelativePath(pathValue: string): string {
   return pathValue.replaceAll("\\", "/");
-}
-
-function extractSessionFromText(text: string): Session {
-  const lower = text.toLowerCase();
-  if (lower.includes("november") || lower.includes(" nov ") || lower.startsWith("nov-")) {
-    return "november";
-  }
-  if (lower.includes("june") || lower.includes(" jun ") || lower.startsWith("jun-")) {
-    return "june";
-  }
-  if (lower.includes("january") || lower.includes(" jan ") || lower.startsWith("jan-")) {
-    return "january";
-  }
-  return "unknown";
 }
 
 function inferSource(relativePath: string): Source {
@@ -124,7 +111,7 @@ function scanDownloadFiles(): AssetUploadRecord[] {
         paperCode: match[2],
         paperName: derivePaperName(match[2]),
         kind: match[3] as DownloadKind,
-        session: extractSessionFromText(match[4]),
+        session: extractExamSession(match[4]),
         source: inferSource(rel),
         relativePath: normalizeRelativePath(rel),
         absolutePath: fullPath,
@@ -254,6 +241,7 @@ async function main() {
       console.log(`[${currentIndex + 1}/${records.length}] ${record.relativePath}`);
 
       if (existing) {
+        Object.assign(existing, record);
         await upsertConvexMetadata(convexClient, existing);
         skippedCount += 1;
         console.log("  skipped");
