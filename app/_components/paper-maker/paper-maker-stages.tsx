@@ -30,6 +30,26 @@ function TopicSelectionSummary({ topics, onRemove }: { topics: SelectedTopicSumm
   );
 }
 
+function TopicLoadingState({ subjectLabel }: { subjectLabel: string }) {
+  return (
+    <div className="topic-loading-state mt-5 border border-text/10 bg-white px-5 py-12 sm:px-8" role="status" aria-live="polite">
+      <div className="mx-auto flex max-w-md flex-col items-center gap-5 text-center">
+        <div className="topic-dot-loader shrink-0" aria-hidden="true">
+          {Array.from({ length: 25 }, (_, index) => {
+            const column = index % 5;
+            const row = Math.floor(index / 5);
+            return <span key={index} className={`topic-loader-dot ${column === 3 ? "topic-loader-dot-active" : ""}`} style={column === 3 ? { animationDelay: `${row * -0.12}s` } : undefined} />;
+          })}
+        </div>
+        <div>
+          <p className="text-[0.8rem] font-semibold text-text">Loading {subjectLabel} topics</p>
+          <p className="mt-1 text-[0.7rem] leading-5 text-text-muted">Preparing the topic list.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SubjectSelectionStage({ groups, activeBoardLabel, headingRef, onBoardChange, onSubjectChange }: { groups: SubjectGroup[]; activeBoardLabel: string; headingRef: React.RefObject<HTMLHeadingElement | null>; onBoardChange: (label: string) => void; onSubjectChange: (key: PaperMakerSubjectKey) => void }) {
   const activeGroup = groups.find((group) => group.boardLabel === activeBoardLabel) ?? groups[0];
   return <section aria-labelledby="subject-heading">
@@ -54,10 +74,10 @@ export function TopicsStage({ activeSubjectLabel, headingRef, topicSearch, filte
   const isPreparing = isLoading && !detailLoaded;
   return <section aria-labelledby="topics-heading" aria-busy={isPreparing}>
     <h2 ref={headingRef} tabIndex={-1} id="topics-heading" className="text-[1.3rem] font-semibold tracking-[-0.04em] text-text outline-none">Choose focus topics</h2><p className="mt-1 text-[0.75rem] leading-5 text-text-muted">Select the topics to include.</p>
-    {!isPreparing ? <><div className="relative mt-5"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" aria-hidden="true" /><input type="search" value={topicSearch} onChange={(event) => onSearchChange(event.target.value)} placeholder="Search topics" aria-label="Search topics" className="h-12 w-full border border-text/15 bg-bg-elevated pl-10 pr-10 text-[0.8rem] text-text placeholder:text-text-subtle outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-glow)]" />{topicSearch ? <button type="button" onClick={onClearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent" aria-label="Clear topic search"><X className="h-4 w-4" /></button> : null}</div>
+    {isPreparing ? <TopicLoadingState subjectLabel={activeSubjectLabel} /> : <><div className="relative mt-5"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" aria-hidden="true" /><input type="search" value={topicSearch} onChange={(event) => onSearchChange(event.target.value)} placeholder="Search topics" aria-label="Search topics" className="h-12 w-full border border-text/15 bg-bg-elevated pl-10 pr-10 text-[0.8rem] text-text placeholder:text-text-subtle outline-none focus:border-accent focus:shadow-[0_0_0_3px_var(--accent-glow)]" />{topicSearch ? <button type="button" onClick={onClearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-accent" aria-label="Clear topic search"><X className="h-4 w-4" /></button> : null}</div>
       {filteredTopics.length ? <div className="mt-5 overflow-hidden border border-text/10 bg-white lg:grid lg:grid-cols-[270px_minmax(0,1fr)]" aria-label={`${activeSubjectLabel} topics`}><div className="topic-browser-pane hidden overflow-y-auto border-r border-text/10 bg-bg-soft/65 p-2 lg:block">{filteredTopics.map((topic) => { const selectedCount = topic.leafTopicIds.filter((leafId) => selectedLeafIds.has(leafId)).length; const selected = selectedCount === topic.leafTopicIds.length; const partial = selectedCount > 0 && !selected; return <button key={topic.id} type="button" onClick={() => onActiveGroupChange(topic.id)} className={`mb-1 flex w-full items-start justify-between gap-3 rounded-md px-3 py-3 text-left transition-colors ${activeTopicGroup?.id === topic.id ? "bg-white text-text shadow-[0_1px_0_rgba(13,23,52,0.05)]" : "text-text-secondary hover:bg-white/75 hover:text-text"}`}><span className="text-[0.76rem] font-semibold leading-5">{topic.label}</span><span className={`mt-0.5 shrink-0 font-mono text-[0.58rem] ${selected || partial ? "text-accent" : "text-text-muted"}`}>{selectedCount}/{topic.leafTopicIds.length}</span></button>; })}</div><div className="topic-browser-pane overflow-y-auto p-1 lg:p-3"><div className="lg:hidden">{filteredTopics.map((topic) => <TopicNode key={topic.id} node={topic} depth={0} expandedIds={expandedIds} selectedLeafIds={selectedLeafIds} onToggleExpanded={onToggleExpanded} onToggleSelected={onToggleSelected} />)}</div><div className="hidden lg:block">{activeTopicGroup ? <TopicNode key={activeTopicGroup.id} node={activeTopicGroup} depth={0} expandedIds={expandedIds} selectedLeafIds={selectedLeafIds} onToggleExpanded={onToggleExpanded} onToggleSelected={onToggleSelected} /> : null}</div></div></div> : <div className="mt-5 border border-text/10 bg-white px-6 py-14 text-center"><Search className="mx-auto h-5 w-5 text-text-subtle" aria-hidden="true" /><p className="mx-auto mt-2 max-w-sm text-[0.75rem] leading-5 text-text-muted">{topicSearch ? "No topics match your search." : "No tagged topics are available for this selection yet."}</p></div>}
        <div className="mt-3 border-t border-text/10 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center lg:gap-6"><TopicSelectionSummary topics={selectedTopicSummaries} onRemove={onRemoveTopic} /><div className="flex items-center justify-between gap-3 lg:justify-end"><button type="button" onClick={onClearTopics} disabled={!selectedTopicSummaries.length} aria-label="Clear selected topics" className="text-[0.7rem] font-semibold text-text-secondary hover:text-accent disabled:opacity-40">Clear selected topics</button><button type="button" onClick={onContinue} disabled={!topicsReady} className="btn-press inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-accent px-6 text-[0.8rem] font-bold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-40">Continue to paper setup<ArrowRight className="h-4 w-4" /></button></div></div>
-    </> : null}
+    </>}
   </section>;
 }
 
