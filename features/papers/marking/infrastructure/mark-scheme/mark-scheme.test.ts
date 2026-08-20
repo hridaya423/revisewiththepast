@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 import type { QuestionBankPart, QuestionUnit } from "@/shared/domain/paper";
-import { buildStructuredEntry, formatGeneratedTotalRow, resolveMarkSchemeAsset, splitMarkSchemePagesByParts, stripMatchedPrompt } from "./mark-scheme";
+import { getPdfDocument, renderPdfPageToPng } from "@/features/papers/infrastructure/pdfjs-server";
+import { buildStructuredEntry, drawOcrMarkSchemeTableRow, drawSelectedAnswerRegion, findAqaNumberedQuestionStartIndex, formatGeneratedTotalRow, getOwnedOcrQuestionNumbers, planSelectedAnswerRegions, resolveMarkSchemeAsset, splitMarkSchemePagesByParts, stripMatchedPrompt } from "./mark-scheme";
 
 const identity = {
   boardCode: "edexcel",
@@ -49,6 +52,51 @@ describe("mark scheme asset resolution", () => {
     expect(resolveMarkSchemeAsset(identity, [
       asset({ id: "unknown-session", session: "unknown" }),
     ])).toEqual({ status: "not-found" });
+  });
+});
+
+describe("mark scheme question ownership", () => {
+  it("does not treat a level row as an AQA question-part start", () => {
+    const genuineLine = markSchemeLine("02 9 Plants and animals need special adaptations", "");
+    genuineLine.answerText = genuineLine.fullText;
+    const pages = [
+      {
+        pageNumber: 11,
+        text: "An answer is limited to Level 2. 9 Level Marks Description",
+        lines: [markSchemeLine("2 9 Level Marks Description", "")],
+      },
+      {
+        pageNumber: 20,
+        text: "02 9 Plants and animals need special adaptations",
+        lines: [genuineLine],
+      },
+    ];
+
+    expect(findAqaNumberedQuestionStartIndex(pages, "2", "9")).toBe(1);
+  });
+
+  it("finds an AQA question-part marker in the extracted answer column", () => {
+    const line = markSchemeLine("01 7 State two ways that planning might help", "");
+    line.answerText = "01 7 State two ways that planning might help";
+
+    expect(findAqaNumberedQuestionStartIndex([{
+      pageNumber: 9,
+      text: line.fullText,
+      lines: [line],
+    }], "1", "7")).toBe(0);
+  });
+
+  it("retains explicitly embedded OCR source questions as owned", () => {
+    const unit = {
+      ...scienceUnit([{
+        ...sciencePart("ii", 10),
+        questionNumber: "5",
+        promptText: "Describe one benefit. [2] 6* A shopping centre uses facial recognition. Discuss. [8]",
+      }], 10),
+      questionNumber: "5",
+    };
+
+    expect(getOwnedOcrQuestionNumbers(unit)).toEqual(new Set(["5", "6"]));
   });
 });
 
@@ -393,5 +441,102 @@ describe("mark scheme prompt stripping", () => {
     const metadataPrompt = "Describe how the sample was prepared using sterile equipment. Include every stage of the laboratory method in your answer.";
 
     expect(stripMatchedPrompt(source, metadataPrompt, 40)).toBe("award DNA sequence; accept lower case letters");
+  });
+});
+
+describe("OCR mark scheme layout", () => {
+  it("wraps guidance within the guidance column without dropping words", async () => {
+    const outputDoc = await PDFDocument.create();
+    const regular = await outputDoc.embedFont(StandardFonts.Helvetica);
+    const bold = await outputDoc.embedFont(StandardFonts.HelveticaBold);
+    const unit = {
+      ...scienceUnit([{ ...sciencePart("a", 1), subjectSlug: "computer-science" }]),
+      subjectSlug: "computer-science",
+    };
+    const guidance = "Accept a detailed explanation that identifies every required validation step before processing continues safely";
+
+    drawOcrMarkSchemeTableRow(outputDoc, null, {
+      unit,
+      order: 1,
+      text: `8 (a) ${guidance}`,
+    }, { regular, bold });
+
+    const pdf = await getPdfDocument((await outputDoc.save()).slice());
+    const page = await pdf.getPage(1);
+    const content = await page.getTextContent();
+    const guidanceLeft = 34 + 92 + 414 + 48 + 8;
+    const guidanceItems = content.items.filter((item) => (
+      "str" in item
+      && "transform" in item
+      && item.str !== "Guidance"
+      && item.transform[4] >= guidanceLeft
+      && item.transform[5] < 520
+    ));
+    const guidanceRight = guidanceLeft + (841.89 - 68 - 92 - 414 - 48) - 12;
+    const extracted = guidanceItems.flatMap((item) => "str" in item ? [item.str] : []).join(" ").replace(/\s+/g, " ").trim();
+
+    expect(extracted).toBe(guidance);
+    expect(guidanceItems.every((item) => "transform" in item && "width" in item && item.transform[4] + item.width <= guidanceRight)).toBe(true);
+  });
+});
+
+describe("selected source answer regions", () => {
+  it("plans distinct answer regions once when selected units share a physical page", () => {
+    const page = {
+      pageNumber: 0,
+      sourcePageNumber: 12,
+      text: "selected answer",
+      lines: [],
+      pageWidth: 595,
+      pageHeight: 842,
+    };
+
+    expect(planSelectedAnswerRegions([
+      { unitKey: "first", assetPath: "scheme.pdf", page: { ...page, regionTop: 720, regionBottom: 510 } },
+      { unitKey: "second", assetPath: "scheme.pdf", page: { ...page, regionTop: 500, regionBottom: 280 } },
+      { unitKey: "duplicate-first", assetPath: "scheme.pdf", page: { ...page, regionTop: 720, regionBottom: 510 } },
+    ])).toEqual([
+      { assetPath: "scheme.pdf", sourcePageNumber: 12, top: 720, bottom: 510, unitKeys: ["first", "duplicate-first"] },
+      { assetPath: "scheme.pdf", sourcePageNumber: 12, top: 500, bottom: 280, unitKeys: ["second"] },
+    ]);
+  });
+
+  it("preserves a graphical answer while excluding the neighboring answer", async () => {
+    const source = await PDFDocument.create();
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    const page = source.addPage([300, 400]);
+    page.drawText("5 (a) selected graphical answer", { x: 24, y: 320, size: 12, font });
+    page.drawCircle({ x: 150, y: 250, size: 34, borderColor: rgb(0, 0, 0), borderWidth: 3 });
+    page.drawLine({ start: { x: 116, y: 250 }, end: { x: 184, y: 250 }, thickness: 3, color: rgb(0, 0, 0) });
+    page.drawText("6 (a) neighboring answer", { x: 24, y: 110, size: 12, font });
+    const sourceBytes = await source.save();
+    const pdfJsDoc = await getPdfDocument(sourceBytes.slice());
+    const output = await PDFDocument.create();
+    const labelFont = await output.embedFont(StandardFonts.HelveticaBold);
+
+    await drawSelectedAnswerRegion(output, pdfJsDoc, {
+      assetPath: "scheme.pdf",
+      sourcePageNumber: 1,
+      top: 350,
+      bottom: 180,
+      unitKeys: ["selected"],
+    }, "Q1", labelFont);
+
+    const rendered = await getPdfDocument((await output.save()).slice());
+    const renderedPage = await rendered.getPage(1);
+    const text = (await renderedPage.getTextContent()).items.flatMap((item) => "str" in item ? [item.str] : []).join(" ");
+    const image = await loadImage(await renderPdfPageToPng(rendered, 1, 2));
+    const canvas = createCanvas(image.width, image.height);
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0);
+    const graphicalAnswer = context.getImageData(220, 170, 160, 120).data;
+    let darkPixels = 0;
+    for (let index = 0; index < graphicalAnswer.length; index += 4) {
+      if (graphicalAnswer[index] < 100 && graphicalAnswer[index + 1] < 100 && graphicalAnswer[index + 2] < 100) darkPixels += 1;
+    }
+
+    expect(renderedPage.getViewport({ scale: 1 }).height).toBe(188);
+    expect(text).not.toContain("neighboring answer");
+    expect(darkPixels).toBeGreaterThan(100);
   });
 });

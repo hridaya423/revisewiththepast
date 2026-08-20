@@ -37,7 +37,7 @@ type PdfTextItem = {
   height: number;
 };
 
-const SOURCE_FURNITURE_PATTERN = /do not write|outside the box|turn over|pearson edexcel|total for (?:question|section|paper)|^pmt$|^\*?[a-z]\d{5,}[a-z]?\*?$/i;
+const SOURCE_FURNITURE_PATTERN = /do not write|outside the box|turn over|pearson edexcel|copyright|total for (?:question|section|paper)|^pmt$|^\*?[a-z]\d{5,}[a-z]?\*?$/i;
 
 async function sanitizeRasterPage(
   png: Buffer,
@@ -55,6 +55,8 @@ async function sanitizeRasterPage(
   const viewport = pdfJsPage.getViewport({ scale });
   const textContent = await pdfJsPage.getTextContent();
   const normalizedQuestionNumber = sourceQuestionNumber?.replace(/\s+/g, "") ?? null;
+  const protectedTextBounds: Array<{ left: number; right: number; top: number; bottom: number }> = [];
+  const furnitureMasks: Array<{ left: number; right: number; top: number; bottom: number }> = [];
 
   for (const rawItem of textContent.items) {
     if (!("str" in rawItem) || !("transform" in rawItem)) continue;
@@ -72,57 +74,55 @@ async function sanitizeRasterPage(
     const itemWidth = Math.max(1, item.width * scale);
     const isRotatedSideFurniture = Math.abs(Math.sin(angle)) > 0.7
       && (originX < image.width * 0.2 || originX > image.width * 0.8)
-      && /^(?:do|not|write|in|this|area|outside|the|box)$/i.test(text);
+      && (SOURCE_FURNITURE_PATTERN.test(text) || /^(?:do|not|write|in|this|area|outside|the|box)$/i.test(text));
     const isFurniture = SOURCE_FURNITURE_PATTERN.test(text) || isRotatedSideFurniture;
     const itemQuestionNumber = text.match(/^0?\s*(\d{1,2})(?=\s|$)/)?.[1] ?? null;
     const isQuestionNumber = normalizedQuestionNumber !== null
       && itemQuestionNumber === normalizedQuestionNumber
       && originY < image.height * 0.35;
-    const isFooterPageNumber = /^\d{1,3}$/.test(text) && originY > image.height * 0.9;
-    if (!isFurniture && !isQuestionNumber && !isFooterPageNumber) continue;
 
     const maskWidth = isQuestionNumber
       ? Math.min(itemWidth, (normalizedQuestionNumber.length * 6.5 + 4) * scale)
       : itemWidth;
-    const padding = (isFurniture ? 7 : 2) * scale;
-    const localCorners = [
-      [-padding, -fontHeight - padding],
-      [maskWidth + padding, -fontHeight - padding],
-      [maskWidth + padding, fontHeight * 0.35 + padding],
-      [-padding, fontHeight * 0.35 + padding],
-    ] as const;
-    const corners = localCorners.map(([x, y]) => ({
-      x: originX + x * cos - y * sin,
-      y: originY + x * sin + y * cos,
-    }));
-    const left = Math.min(...corners.map((point) => point.x));
-    const right = Math.max(...corners.map((point) => point.x));
-    const top = Math.min(...corners.map((point) => point.y));
-    const bottom = Math.max(...corners.map((point) => point.y));
-
-    if (isFurniture && bottom - top > right - left) {
-      context.fillRect(Math.max(0, left - 6 * scale), 0, Math.min(image.width, right - left + 12 * scale), image.height);
-    } else {
-      context.fillRect(left, top, right - left, bottom - top);
+    const padding = isRotatedSideFurniture ? 0 : (isFurniture ? 7 : 2) * scale;
+    const boundsFor = (width: number, boundsPadding: number) => {
+      const corners = [
+        [-boundsPadding, -fontHeight - boundsPadding],
+        [width + boundsPadding, -fontHeight - boundsPadding],
+        [width + boundsPadding, fontHeight * 0.35 + boundsPadding],
+        [-boundsPadding, fontHeight * 0.35 + boundsPadding],
+      ].map(([x, y]) => ({
+        x: originX + x * cos - y * sin,
+        y: originY + x * sin + y * cos,
+      }));
+      return {
+        left: Math.min(...corners.map((point) => point.x)),
+        right: Math.max(...corners.map((point) => point.x)),
+        top: Math.min(...corners.map((point) => point.y)),
+        bottom: Math.max(...corners.map((point) => point.y)),
+      };
+    };
+    if (!isFurniture && !isQuestionNumber) {
+      protectedTextBounds.push(boundsFor(itemWidth, 2 * scale));
+      continue;
     }
+    const { left, right, top, bottom } = boundsFor(maskWidth, padding);
+    furnitureMasks.push({ left, right, top, bottom });
   }
 
-  context.fillRect(0, 0, image.width, 48 * scale);
-  for (const bandX of [0, Math.max(0, image.width - 80 * scale)]) {
-    const bandWidth = Math.min(image.width - bandX, Math.round(80 * scale));
-    const band = context.getImageData(bandX, 0, bandWidth, image.height);
-    const darkPixelsByColumn = new Uint32Array(bandWidth);
-    for (let pixel = 0; pixel < band.data.length; pixel += 4) {
-      if (band.data[pixel] < 220 && band.data[pixel + 1] < 220 && band.data[pixel + 2] < 220) {
-        darkPixelsByColumn[(pixel / 4) % bandWidth] += 1;
-      }
-    }
-    for (let column = 0; column < darkPixelsByColumn.length; column += 1) {
-      if (darkPixelsByColumn[column] <= image.height * 0.35) continue;
-      context.fillRect(bandX + column - 2 * scale, 0, 4 * scale, image.height);
+  for (const mask of furnitureMasks) {
+    context.fillRect(mask.left, mask.top, mask.right - mask.left, mask.bottom - mask.top);
+  }
+
+  for (const bounds of protectedTextBounds) {
+    const left = Math.max(0, Math.floor(bounds.left));
+    const top = Math.max(0, Math.floor(bounds.top));
+    const right = Math.min(image.width, Math.ceil(bounds.right));
+    const bottom = Math.min(image.height, Math.ceil(bounds.bottom));
+    if (right > left && bottom > top) {
+      context.drawImage(image, left, top, right - left, bottom - top, left, top, right - left, bottom - top);
     }
   }
-  context.fillRect(0, image.height - 52 * scale, image.width, 52 * scale);
 
   return canvas.toBuffer("image/png");
 }
@@ -183,7 +183,9 @@ export async function rasterizeSourcePdfPage(
   sourceDocCache: Map<string, PDFDocument>,
   options: RasterizeSourceOptions = {},
 ) {
-  const sanitizationKey = options.sanitizeFurniture ? `-clean-${options.sourceQuestionNumber ?? "none"}` : "";
+  const sanitizationKey = options.sanitizeFurniture
+    ? `-clean-${options.sourceQuestionNumber ?? "none"}`
+    : "";
   const rasterUrl = `${pageAssetUrl}#raster-page-${sourcePageIndex}${sanitizationKey}`;
   const cachedDoc = sourceDocCache.get(rasterUrl);
   if (cachedDoc) {

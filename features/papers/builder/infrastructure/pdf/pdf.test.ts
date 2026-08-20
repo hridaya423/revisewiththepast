@@ -4,10 +4,13 @@ import type { QuestionUnit } from "@/shared/domain/paper";
 import { filterUnitsByFigureResolvability } from "../../domain/integrity";
 import { buildUnitRenderPlan, getReferencedFigureLabels } from "../../domain/region-render";
 import { expandScienceCropToReferencedFigures } from "./pdf";
+import { extendComputerScienceAnswerGeometryCropBox } from "./pdf";
 import { findMathUnitStartLine } from "./pdf";
 import { getFooterFloor } from "./pdf";
 import { formatGeneratedAqaMarker } from "./pdf";
+import { isOcrAdditionalAnswerPage } from "./pdf";
 import { padScienceCropBox } from "./pdf";
+import { resolveContentHorizontalBounds } from "./pdf";
 import { resolveMathHorizontalCropBounds } from "./pdf";
 import { shouldSanitizeSourcePageForGeneratedIdentity } from "./pdf";
 import { trimScienceRegionCropBox } from "./pdf";
@@ -21,6 +24,20 @@ describe("generated question identity", () => {
     };
 
     expect(shouldSanitizeSourcePageForGeneratedIdentity(unit)).toBe(true);
+  });
+
+  it("sanitizes science source furniture before drawing generated identity", () => {
+    expect(shouldSanitizeSourcePageForGeneratedIdentity({
+      boardCode: "edexcel",
+      subjectSlug: "biology",
+    })).toBe(true);
+  });
+
+  it("sanitizes AQA English source furniture before drawing generated identity", () => {
+    expect(shouldSanitizeSourcePageForGeneratedIdentity({
+      boardCode: "aqa",
+      subjectSlug: "english-language",
+    })).toBe(true);
   });
 
   it("replaces an English Literature compound source marker with the generated question number", () => {
@@ -68,10 +85,10 @@ describe("Maths crop discovery", () => {
     const bounds = resolveMathHorizontalCropBounds([
       { bbox: { x0: 75.24, x1: 131.24 } },
       { bbox: { x0: 153.96, x1: 506.41 } },
-    ], 595.28);
+    ], 595.28, [], 40);
 
-    expect(bounds.left).toBeCloseTo(59.24);
-    expect(bounds.right).toBeCloseTo(522.41);
+    expect(bounds.left).toBeCloseTo(35.24);
+    expect(bounds.right).toBeCloseTo(546.41);
   });
 
   it("keeps a right-edge answer unit without widening to the full source page", () => {
@@ -82,6 +99,71 @@ describe("Maths crop discovery", () => {
 
     expect(bounds.left).toBeCloseTo(26.48);
     expect(bounds.right).toBeCloseTo(568.74);
+  });
+});
+
+describe("source furniture crop bounds", () => {
+  it("derives horizontal bounds from protected content rather than the furniture lane", () => {
+    expect(resolveContentHorizontalBounds(
+      { left: 0, right: 600, bottom: 0, top: 800 },
+      [{ left: 104, right: 512 }, { left: 96, right: 520 }],
+      40,
+    )).toEqual({ left: 56, right: 560, bottom: 0, top: 800 });
+  });
+});
+
+describe("computer science answer geometry", () => {
+  const crop = { left: 0, right: 595, bottom: 634, top: 783 };
+
+  it("includes empty high-mark answer geometry owned by the unit", () => {
+    expect(extendComputerScienceAnswerGeometryCropBox(crop, 56, 5, true, [
+      { text: "© OCR 2022", y: 56, bbox: { x0: 60, y0: 54, x1: 120, y1: 64 } },
+    ])).toEqual({ ...crop, bottom: 56 });
+  });
+
+  it("does not include a sibling question below the selected span", () => {
+    expect(extendComputerScienceAnswerGeometryCropBox(crop, 56, 5, true, [
+      { text: "4 A different question", y: 310, bbox: { x0: 60, y0: 300, x1: 260, y1: 320 } },
+    ])).toEqual(crop);
+  });
+
+  it("does not expand short text answers", () => {
+    expect(extendComputerScienceAnswerGeometryCropBox(crop, 56, 2, true, [])).toEqual(crop);
+  });
+
+  it("does not expand written high-mark answers", () => {
+    expect(extendComputerScienceAnswerGeometryCropBox(crop, 56, 6, false, [])).toEqual(crop);
+  });
+});
+
+describe("OCR additional answer pages", () => {
+  it("ignores the copyright block on the final lined answer page", () => {
+    expect(isOcrAdditionalAnswerPage([
+      "20",
+      "........................................................................",
+      "........................................................................",
+      "Oxford Cambridge and RSA",
+      "Copyright Information",
+      "OCR is committed to seeking permission to reproduce third-party content.",
+    ])).toBe(true);
+  });
+
+  it("keeps a real question page that ends with copyright furniture", () => {
+    expect(isOcrAdditionalAnswerPage([
+      "16",
+      "Write an algorithm to output the winning team.",
+      "........................................................................",
+      "© OCR 2024",
+    ])).toBe(false);
+  });
+
+  it("keeps real content immediately before the copyright block", () => {
+    expect(isOcrAdditionalAnswerPage([
+      "20",
+      "State one benefit of abstraction.",
+      "Copyright Information",
+      "OCR is committed to seeking permission to reproduce third-party content.",
+    ])).toBe(false);
   });
 });
 
@@ -252,6 +334,7 @@ describe("science figure ownership", () => {
     expect(result.kept).toEqual([scienceUnit]);
     expect(result.excluded).toEqual([]);
   });
+
 });
 
 describe("science footer trimming", () => {

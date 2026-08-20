@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { createCanvas, loadImage } from "@napi-rs/canvas";
-import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { degrees, PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import { extractPdfPageTexts, getPdfDocument, renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
@@ -134,13 +134,19 @@ describe("source PDF rasterization", () => {
     }
   });
 
-  it("preserves legitimate labels at both horizontal page edges", async () => {
+  it("removes identified source furniture while preserving content at every page edge", async () => {
     const source = await PDFDocument.create();
     const page = source.addPage([300, 200]);
     const font = await source.embedFont(StandardFonts.Helvetica);
     page.drawText("Cumulative frequency", { x: 4, y: 110, size: 12, font });
     page.drawText("minutes", { x: 254, y: 110, size: 12, font });
+    page.drawText("Top content", { x: 100, y: 182, size: 12, font });
+    page.drawText("Bottom content", { x: 100, y: 6, size: 12, font });
     page.drawText("DO NOT WRITE IN THIS AREA", { x: 120, y: 60, size: 9, font });
+    page.drawText("DO NOT WRITE IN THIS AREA", { x: 292, y: 30, size: 9, font, rotate: degrees(90) });
+    page.drawLine({ start: { x: 220, y: 74 }, end: { x: 286, y: 74 }, thickness: 2, color: rgb(0, 0, 0) });
+    page.drawRectangle({ x: 12, y: 125, width: 1, height: 45, color: rgb(0, 0, 0) });
+    page.drawRectangle({ x: 10, y: 135, width: 35, height: 4, color: rgb(0, 0, 0) });
     const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-edge-labels-"));
     const sourcePath = join(directory, "source.pdf");
 
@@ -154,9 +160,15 @@ describe("source PDF rasterization", () => {
       const canvas = createCanvas(image.width, image.height);
       const context = canvas.getContext("2d");
       context.drawImage(image, 0, 0);
-      const leftLabel = context.getImageData(0, 145, 170, 55).data;
-      const rightLabel = context.getImageData(490, 145, 110, 55).data;
-      const warning = context.getImageData(225, 245, 350, 45).data;
+      const leftLabel = context.getImageData(0, 145, 190, 55).data;
+      const rightLabel = context.getImageData(500, 145, 100, 55).data;
+      const topContent = context.getImageData(190, 10, 180, 55).data;
+      const bottomContent = context.getImageData(190, 350, 200, 45).data;
+      const warning = context.getImageData(225, 245, 275, 45).data;
+      const rotatedFurnitureTop = context.getImageData(580, 0, 20, 140).data;
+      const rotatedFurnitureBottom = context.getImageData(580, 220, 20, 180).data;
+      const graphAxis = context.getImageData(22, 60, 8, 100).data;
+      const edgeAnswerLine = context.getImageData(438, 246, 136, 16).data;
       const darkPixelCount = (pixels: Uint8ClampedArray) => {
         let count = 0;
         for (let index = 0; index < pixels.length; index += 4) {
@@ -167,7 +179,13 @@ describe("source PDF rasterization", () => {
 
       expect(darkPixelCount(leftLabel)).toBeGreaterThan(50);
       expect(darkPixelCount(rightLabel)).toBeGreaterThan(20);
+      expect(darkPixelCount(topContent)).toBeGreaterThan(20);
+      expect(darkPixelCount(bottomContent)).toBeGreaterThan(20);
       expect(darkPixelCount(warning)).toBe(0);
+      expect(darkPixelCount(rotatedFurnitureTop)).toBeLessThan(300);
+      expect(darkPixelCount(rotatedFurnitureBottom)).toBeLessThan(300);
+      expect(darkPixelCount(graphAxis)).toBeGreaterThan(20);
+      expect(darkPixelCount(edgeAnswerLine)).toBeGreaterThan(80);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

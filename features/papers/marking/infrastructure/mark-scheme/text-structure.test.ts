@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildStructuredLines, detectPageQuestionNumber, normalizeQuestionNumber } from "./text-structure";
+import { buildStructuredLines, detectEdexcelScienceQuestionStart, detectOcrComputerScienceQuestionNumbers, detectPageQuestionNumber, normalizeQuestionNumber } from "./text-structure";
 
 describe("mark-scheme text structure", () => {
   it("groups positioned text into the expected columns", () => {
@@ -85,5 +85,50 @@ describe("mark-scheme text structure", () => {
   it("normalizes numeric question tokens without changing non-numeric labels", () => {
     expect(normalizeQuestionNumber("007")).toBe("7");
     expect(normalizeQuestionNumber("A")).toBe("A");
+  });
+
+  it.each([
+    "9 (a) selected answer",
+    "09(a)(i) selected answer",
+    "Question Number Answer Mark 9(a)(i) selected answer",
+    "Question Number Answer Additional guidance Mark 09 (a) selected answer",
+  ])("detects an Edexcel Science question start in %s", (text) => {
+    expect(detectEdexcelScienceQuestionStart({ pageNumber: 1, text, lines: [] }, "9")).toBe(true);
+  });
+
+  it("detects an Edexcel Science start from the structured left column", () => {
+    expect(detectEdexcelScienceQuestionStart({
+      pageNumber: 1,
+      text: "table content",
+      lines: [{ pageNumber: 1, y: 1, leftText: "9(a)(i)", answerText: "answer", markText: "", schemeText: "", guidanceText: "", fullText: "9(a)(i) answer" }],
+    }, "9")).toBe(true);
+  });
+
+  it.each([
+    "compare with 9 (b) in the question",
+    "Question 8 (a) answer referring to 9 (b)",
+    "19(a) adjacent question",
+    "Question Number Answer Mark 10(a) adjacent question",
+  ])("rejects a non-start Edexcel Science reference in %s", (text) => {
+    expect(detectEdexcelScienceQuestionStart({ pageNumber: 1, text, lines: [] }, "9")).toBe(false);
+  });
+
+  it("detects a bare OCR question row from structured columns", () => {
+    expect(detectOcrComputerScienceQuestionNumbers({
+      pageNumber: 20,
+      text: "J277/01 Mark Scheme June 2023",
+      lines: [{ pageNumber: 20, y: 258, leftText: "6", answerText: "Mark Band 3-High Level", markText: "", schemeText: "", guidanceText: "8 Indicative content", fullText: "6 Mark Band 3-High Level 8 Indicative content" }],
+    })).toEqual(["6"]);
+  });
+
+  it("detects a skipped OCR question from a marking-table header", () => {
+    expect(detectOcrComputerScienceQuestionNumbers({
+      pageNumber: 23,
+      text: "Question Answer Mark Guidance 7 1 mark for example",
+      lines: [
+        { pageNumber: 23, y: 700, leftText: "Question", answerText: "Answer", markText: "Mark", schemeText: "", guidanceText: "Guidance", fullText: "Question Answer Mark Guidance" },
+        { pageNumber: 23, y: 680, leftText: "7 1 mark for example:", answerText: "", markText: "3", schemeText: "", guidanceText: "Allow", fullText: "7 1 mark for example: 3 Allow" },
+      ],
+    })).toEqual(["7"]);
   });
 });

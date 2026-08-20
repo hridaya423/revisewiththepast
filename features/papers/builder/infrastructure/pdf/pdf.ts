@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 
 import { PDFDocument, rgb, StandardFonts, type PDFPage, type PDFFont } from "pdf-lib";
 
-import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
+import { getPdfDocument, renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
 import type { BoundingBox, QuestionUnit, SourcePageAsset } from "@/shared/domain/paper";
 import { drawGeneratedCoverPage, type GeneratedCoverModel } from "./cover";
 import { drawGeneratedAnswerSpacePage, drawTurnOverForNextQuestion } from "./page-chrome";
@@ -395,7 +395,7 @@ function drawGeneratedMathsTotal(
   contentBottom: number,
   font: PDFFont,
 ) {
-  if (unit.boardCode !== "edexcel") return false;
+  if (!isMathematicsUnit(unit) || unit.boardCode !== "edexcel") return false;
   const totalText = `(Total for Question ${questionNumber} is ${unit.totalMarks} ${unit.totalMarks === 1 ? "mark" : "marks"})`;
   const textWidth = font.widthOfTextAtSize(totalText, MATH_TOTAL_FONT_SIZE);
   page.drawText(totalText, {
@@ -565,44 +565,43 @@ function drawSourceFurnitureMask(page: import("pdf-lib").PDFPage, unit: Question
   page.drawRectangle({ x, y, width, height: edge, color: rgb(1, 1, 1) });
 }
 
-function drawScienceSourceTotalMask(
-  page: import("pdf-lib").PDFPage,
-  unit: QuestionUnit,
-  sourcePageNumber: number,
-  sourceCropBox: CropBox,
-  drawX: number,
-  drawY: number,
-  drawWidth: number,
-  drawHeight: number,
-) {
-  if (!isScienceUnit(unit)) return;
-  const extractedPage = getExtractedPage(unit.sourceRelativePath, sourcePageNumber);
-  const totalLine = extractedPage?.text_lines.find((line) => (
-    line.bbox.y1 <= sourceCropBox.top
-    && line.bbox.y0 >= sourceCropBox.bottom
-    && /^\(?\s*total for question\b/i.test(line.text.trim())
-  ));
-  if (!totalLine) return;
-
-  const scaleX = drawWidth / Math.max(1, sourceCropBox.right - sourceCropBox.left);
-  const scaleY = drawHeight / Math.max(1, sourceCropBox.top - sourceCropBox.bottom);
-  page.drawRectangle({
-    x: drawX + (totalLine.bbox.x0 - sourceCropBox.left) * scaleX - 2,
-    y: drawY + (totalLine.bbox.y0 - sourceCropBox.bottom) * scaleY - 2,
-    width: (totalLine.bbox.x1 - totalLine.bbox.x0) * scaleX + 4,
-    height: (totalLine.bbox.y1 - totalLine.bbox.y0) * scaleY + 4,
-    color: rgb(1, 1, 1),
-  });
-}
-
 function shouldMaskSourceFurniture(unit: QuestionUnit) {
   return unit.boardCode === "aqa" || unit.boardCode === "edexcel";
 }
 
-function trimSourceFurnitureCropBox(unit: QuestionUnit, cropBox: CropBox, pageWidth: number) {
-  void unit;
-  void pageWidth;
-  return cropBox;
+export function resolveContentHorizontalBounds(cropBox: CropBox, contentBoxes: Array<{ left: number; right: number }>, padding = CROP_PADDING) {
+  if (contentBoxes.length === 0) return cropBox;
+  const left = Math.max(cropBox.left, Math.min(...contentBoxes.map((box) => box.left)) - padding);
+  const right = Math.min(cropBox.right, Math.max(...contentBoxes.map((box) => box.right)) + padding);
+  return right - left >= 80 ? { ...cropBox, left, right } : cropBox;
+}
+
+function trimSourceFurnitureCropBox(unit: QuestionUnit, pageNumber: number, cropBox: CropBox, pageWidth: number) {
+  const extractedPage = getExtractedPage(unit.sourceRelativePath, pageNumber);
+  if (!extractedPage) return cropBox;
+
+  if (shouldSanitizeSourcePageForGeneratedIdentity(unit)) {
+    if (!isFrenchReadingUnit(unit)) return cropBox;
+    const contentLines = extractedPage.text_lines.filter((line) => (
+      line.bbox.y1 <= cropBox.top
+      && line.bbox.y0 >= cropBox.bottom
+      && !shouldIgnorePageLine(line.text)
+      && !isSourceFooterFurnitureLine(line.text)
+    ));
+    return resolveContentHorizontalBounds(cropBox, [
+      ...contentLines.map((line) => ({ left: line.bbox.x0, right: line.bbox.x1 })),
+    ], 40);
+  }
+
+  const warningLines = extractedPage.text_lines.filter((line) => /do not write|outside the box/i.test(line.text));
+  const leftBoundary = warningLines
+    .filter((line) => line.bbox.x1 < pageWidth * 0.25)
+    .reduce((boundary, line) => Math.max(boundary, line.bbox.x1 + 4), cropBox.left);
+  const rightBoundary = warningLines
+    .filter((line) => line.bbox.x0 > pageWidth * 0.75)
+    .reduce((boundary, line) => Math.min(boundary, line.bbox.x0 - 4), cropBox.right);
+  if (rightBoundary - leftBoundary < 80) return cropBox;
+  return { ...cropBox, left: leftBoundary, right: rightBoundary };
 }
 
 function isSourceFooterFurnitureLine(text: string) {
@@ -857,13 +856,14 @@ export function resolveMathHorizontalCropBounds(
   contentLines: Array<{ bbox: { x0: number; x1: number } }>,
   pageWidth: number,
   additionalBoxes: Array<{ left: number; right: number }> = [],
+  padding = 16,
 ) {
   const xValues = [
     ...contentLines.flatMap((line) => [line.bbox.x0, line.bbox.x1]),
     ...additionalBoxes.flatMap((box) => [box.left, box.right]),
   ];
-  const left = Math.max(0, Math.min(...xValues) - 16);
-  const right = Math.min(pageWidth, Math.max(...xValues) + 16);
+  const left = Math.max(0, Math.min(...xValues) - padding);
+  const right = Math.min(pageWidth, Math.max(...xValues) + padding);
   const minimumWidth = Math.min(pageWidth, 280);
   const cropWidth = right - left;
   const horizontalExpansion = cropWidth >= minimumWidth ? 0 : (minimumWidth - cropWidth) / 2;
@@ -982,7 +982,7 @@ function resolveMathQuestionCropBox(
   const horizontalBounds = resolveMathHorizontalCropBounds(contentLines, pageWidth, [
     ...(matchingUnitPage.bboxUnion ? [{ left: matchingUnitPage.bboxUnion.x0, right: matchingUnitPage.bboxUnion.x1 }] : []),
     ...(supportBox ? [{ left: supportBox.left, right: supportBox.right }] : []),
-  ]);
+  ], hasFigureContext(unit) ? 40 : 16);
   const cropBox = {
     ...horizontalBounds,
     bottom: Math.max(0, bottom - 6),
@@ -1218,7 +1218,7 @@ function isCombinedScienceUnit(unit: QuestionUnit) {
   return unit.subjectSlug === "combined-science";
 }
 
-function isScienceUnit(unit: QuestionUnit) {
+function isScienceUnit(unit: Pick<QuestionUnit, "subjectSlug">) {
   return ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug);
 }
 
@@ -1366,6 +1366,23 @@ function isGenericAdditionalAnswerPageCrop(unit: QuestionUnit, crop: RegionCrop)
     || /extra answer space/.test(text);
 }
 
+export function isOcrAdditionalAnswerPage(lines: string[]) {
+  const copyrightStart = lines.findIndex((line) => /^(?:copyright information|ocr is committed\b)/i.test(line.trim()));
+  const contentLines = copyrightStart >= 0
+    ? lines.slice(0, copyrightStart)
+    : lines;
+  return contentLines.every((line) => {
+    const text = line.trim();
+    return !text
+      || /^\(?\d+\)?$/.test(text)
+      || /^\[\d+\]$/.test(text)
+      || /^©\s*ocr/i.test(text)
+      || /^oxford cambridge and rsa$/i.test(text)
+      || /^[._\-\s]+$/.test(text)
+      || isAnswerContinuationOnlyLine(text);
+  });
+}
+
 function isGenericAdditionalAnswerPage(unit: QuestionUnit, pageNumber: number) {
   const page = getExtractedPage(unit.sourceRelativePath, pageNumber);
   if (!page) return false;
@@ -1376,22 +1393,11 @@ function isGenericAdditionalAnswerPage(unit: QuestionUnit, pageNumber: number) {
     return true;
   }
   if (unit.boardCode !== "ocr") return false;
-  const meaningfulLines: string[] = [];
-  for (const line of page.text_lines) {
-    const text = line.text.trim();
-    if (text && !/^ocr is (?:an exempt charity|committed)\b/i.test(text)
-      && !/^copyright information$/i.test(text)
-      && !/^©\s*ocr/i.test(text)
-      && !/^h\d+/i.test(text)
-      && !/^\(?\d+\)?$/.test(text)
-      && !/^\[\d+\]$/.test(text)) {
-      meaningfulLines.push(text);
-    }
-  }
-  return meaningfulLines.length === 0 || meaningfulLines.every((line) => /^[._\-\s]+$/.test(line) || isAnswerContinuationOnlyLine(line));
+  return isOcrAdditionalAnswerPage(page.text_lines.map((line) => line.text));
 }
 
 function shouldSkipRegionAnswerContinuation(unit: QuestionUnit, crop: RegionCrop) {
+  if (isGenericAdditionalAnswerPage(unit, crop.pageNumber)) return true;
   if (isGenericAdditionalAnswerPageCrop(unit, crop)) return true;
   if (isEnglishLanguageUnit(unit) && isAnswerOnlyContinuationCrop(unit, crop)) return true;
   if (isAnswerOnlyContinuationCrop(unit, crop) && crop.cropBox.top - crop.cropBox.bottom < 260) return true;
@@ -1437,6 +1443,8 @@ function isFrenchReadingUnit(unit: QuestionUnit) {
 export function shouldSanitizeSourcePageForGeneratedIdentity(unit: Pick<QuestionUnit, "boardCode" | "subjectSlug">) {
   return unit.subjectSlug === "mathematics"
     || unit.subjectSlug.startsWith("mathematics-")
+    || ["combined-science", "biology", "chemistry", "physics"].includes(unit.subjectSlug)
+    || (unit.boardCode === "aqa" && ["english-language", "english-literature"].includes(unit.subjectSlug))
     || (unit.boardCode === "edexcel" && unit.subjectSlug === "french")
     || unit.subjectSlug === "business";
 }
@@ -2207,11 +2215,6 @@ async function getSkippableInsertPageIndexes(pdfBytes: Uint8Array) {
   }
 }
 
-function drawInsertFurnitureMask(page: import("pdf-lib").PDFPage, width: number, height: number) {
-  page.drawRectangle({ x: width - 48, y: height - 24, width: 48, height: 24, color: rgb(1, 1, 1) });
-  page.drawRectangle({ x: 0, y: 0, width, height: 42, color: rgb(1, 1, 1) });
-}
-
 async function addPdfPagesWithRasterFallback(
   outputDoc: PDFDocument,
   pdfPathOrUrl: string,
@@ -2221,33 +2224,20 @@ async function addPdfPagesWithRasterFallback(
   const bytes = await fetchPdfBytes(pdfPathOrUrl, sourcePdfCache);
   const skippablePageIndexes = await getSkippableInsertPageIndexes(bytes);
 
-  try {
-    const insertDoc = await loadSourcePdfDocument(pdfPathOrUrl, sourcePdfCache, sourceDocCache);
-    const pageIndexes = Array.from({ length: insertDoc.getPageCount() }, (_, index) => index)
-      .filter((index) => !skippablePageIndexes.has(index));
-    if (pageIndexes.length === 0) return false;
-    const probeDoc = await PDFDocument.create();
-    await probeDoc.copyPages(insertDoc, pageIndexes);
-    await probeDoc.save();
-    for (const pageIndex of pageIndexes) {
-      const sourcePage = insertDoc.getPage(pageIndex);
-      const { width, height } = sourcePage.getCropBox();
-      const embeddedPage = await outputDoc.embedPage(sourcePage);
-      const outputPage = outputDoc.addPage([width, height]);
-      outputPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
-      drawInsertFurnitureMask(outputPage, width, height);
-    }
-    return true;
-  } catch {
-    const rendered = await renderPdfToPngBuffers(new Uint8Array(bytes), 1);
-    for (const page of rendered.pages) {
-      if (skippablePageIndexes.has(page.pageNumber - 1)) continue;
-      const png = await outputDoc.embedPng(page.png);
-      const outputPage = outputDoc.addPage([png.width, png.height]);
-      outputPage.drawImage(png, { x: 0, y: 0, width: png.width, height: png.height });
-    }
-    return rendered.pages.some((page) => !skippablePageIndexes.has(page.pageNumber - 1));
+  const sourcePdf = await getPdfDocument(bytes.slice());
+  const pageIndexes = Array.from({ length: sourcePdf.numPages }, (_, index) => index)
+    .filter((index) => !skippablePageIndexes.has(index));
+  for (const pageIndex of pageIndexes) {
+    const raster = await rasterizeSourcePdfPage(pdfPathOrUrl, pageIndex, sourcePdfCache, sourceDocCache, {
+      sanitizeFurniture: true,
+    });
+    const sourcePage = raster.sourcePdfPage;
+    const { width, height } = sourcePage.getCropBox();
+    const embeddedPage = await outputDoc.embedPage(sourcePage);
+    const outputPage = outputDoc.addPage([width, height]);
+    outputPage.drawPage(embeddedPage, { x: 0, y: 0, width, height });
   }
+  return pageIndexes.length > 0;
 }
 
 async function withSourcePdfCandidate<T>(
@@ -2324,6 +2314,25 @@ type RegionRenderFlow = {
   cursorY: number;
 };
 
+export function extendComputerScienceAnswerGeometryCropBox(
+  cropBox: CropBox,
+  ownedBottom: number,
+  pageMarks: number,
+  requiresAnswerGeometry: boolean,
+  lines: ExtractedTextLine[],
+) {
+  if (!requiresAnswerGeometry || pageMarks < 4 || ownedBottom >= cropBox.bottom) return cropBox;
+  const bottom = Math.max(0, ownedBottom);
+  const hasFollowingContent = lines.some((line) => (
+    line.bbox.y1 < cropBox.bottom - 4
+    && line.bbox.y0 > bottom + 24
+    && !shouldIgnorePageLine(line.text)
+    && !isSourceFooterFurnitureLine(line.text)
+    && !/^(?:pmt|©?\s*ocr\b)/i.test(line.text.trim())
+  ));
+  return hasFollowingContent ? cropBox : { ...cropBox, bottom };
+}
+
 async function renderRegionUnit(
   unit: QuestionUnit,
   outputDoc: PDFDocument,
@@ -2375,7 +2384,7 @@ async function renderRegionUnit(
       sourceDocCache,
       async (sourcePage, _sourceDoc, sourcePdfPage): Promise<PreparedCrop | null> => {
         const pageGeometry = getVisiblePageGeometry(sourcePdfPage);
-        const adjustedCropBox = trimGeographyQuestionTop(
+        const textCropBox = trimGeographyQuestionTop(
           unit,
           crop,
           trimEnglishLiteratureOptionBleedCropBox(
@@ -2383,6 +2392,7 @@ async function renderRegionUnit(
             crop,
             trimSourceFurnitureCropBox(
               unit,
+              crop.pageNumber,
               trimAqaSupportFooterCropBox(
                 unit,
                 crop,
@@ -2392,6 +2402,28 @@ async function renderRegionUnit(
             ),
           ),
         );
+        const unitPage = unit.pages.find((page) => page.pageNumber === crop.pageNumber);
+        const pageMarks = unit.parts.reduce((marks, part) => (
+          part.pageNumbers.includes(crop.pageNumber) ? marks + (part.marks ?? 0) : marks
+        ), 0);
+        const pagePrompt = unit.parts
+          .filter((part) => part.pageNumbers.includes(crop.pageNumber))
+          .map((part) => part.promptText)
+          .join(" ");
+        const requiresAnswerGeometry = /\b(?:draw|design|complete)\b.{0,100}\b(?:flowchart|diagram|graph|logic gate)\b/i.test(pagePrompt);
+        const extractedPage = getExtractedPage(unit.sourceRelativePath, crop.pageNumber);
+        const adjustedCropBox = unit.subjectSlug === "computer-science"
+          && crop.kind === "question"
+          && unitPage?.bboxUnion
+          && extractedPage
+          ? extendComputerScienceAnswerGeometryCropBox(
+              textCropBox,
+              unitPage.bboxUnion.y0,
+              pageMarks,
+              requiresAnswerGeometry,
+              extractedPage.text_lines,
+            )
+          : textCropBox;
         if (crop.kind === "question" && adjustedCropBox.top - adjustedCropBox.bottom < 90) {
           return null;
         }
@@ -2708,8 +2740,8 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
 
               if (geometrySupportCrop && geometryQuestionCrop && isValidCropBox(geometryQuestionCrop, pageWidth, pageHeight)) {
                 const probeDoc = await PDFDocument.create();
-                const polishedSupportCrop = trimSourceFurnitureCropBox(unit, geometrySupportCrop, pageWidth);
-                const polishedQuestionCrop = trimSourceFurnitureCropBox(unit, geometryQuestionCrop, pageWidth);
+                const polishedSupportCrop = trimSourceFurnitureCropBox(unit, pageNumber, geometrySupportCrop, pageWidth);
+                const polishedQuestionCrop = trimSourceFurnitureCropBox(unit, pageNumber, geometryQuestionCrop, pageWidth);
                  await prepareSnippet(probeDoc, sourcePage.pdfUrl, polishedSupportCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                  await prepareSnippet(probeDoc, sourcePage.pdfUrl, polishedQuestionCrop, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
                 await probeDoc.save();
@@ -2745,7 +2777,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
             }
 
             const probeDoc = await PDFDocument.create();
-             const polishedCropBox = trimSourceFurnitureCropBox(unit, geometryCropBox, pageWidth);
+             const polishedCropBox = trimSourceFurnitureCropBox(unit, pageNumber, geometryCropBox, pageWidth);
              await prepareSnippet(probeDoc, sourcePage.pdfUrl, polishedCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
             await probeDoc.save();
              const snippet = await prepareSnippet(outputDoc, sourcePage.pdfUrl, polishedCropBox, sourcePdfCache, sourceDocCache, sourcePage.sourcePageIndex);
@@ -2853,7 +2885,7 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
               ? expandScienceCropToReferencedFigures(scienceTrimmedCropBox, pageNumber, pageWidth, pageHeight, getReferencedFigureLabels(unit), sourceFigures, siblingBoxes)
               : scienceTrimmedCropBox;
             const contentCropBox = isScienceUnit(unit) ? padScienceCropBox(geometryCropBox, pageWidth) : geometryCropBox;
-            const cropBox = trimSourceFurnitureCropBox(unit, trimSourceFooterCropBox(unit, pageNumber, contentCropBox), pageWidth);
+            const cropBox = trimSourceFurnitureCropBox(unit, pageNumber, trimSourceFooterCropBox(unit, pageNumber, contentCropBox), pageWidth);
 
             const meaningfulLines = getVisibleMeaningfulLines(unit.sourceRelativePath, pageNumber, cropBox);
             if (isMaths && meaningfulLines && meaningfulLines.length === 0) {
@@ -2905,8 +2937,8 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                     drawWidth,
                     drawHeight,
                     mathsSourceFont,
-                  ) || drewQuestionBadge;
-                }
+                   ) || drewQuestionBadge;
+                 }
                  drawBusinessAnswerBoxTailMask(outputPage, unit, pageNumber, cropBox, (targetPageWidth - drawWidth) / 2, (targetPageHeight - drawHeight) / 2, drawWidth, drawHeight);
                  mathsTotalTarget = { page: outputPage, drawY: furnitureDrawY };
                  renderedAnyPage = true;
@@ -2954,7 +2986,6 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
                width: drawWidth,
                height: drawHeight,
               });
-             drawScienceSourceTotalMask(outputPage, unit, pageNumber, cropBox, drawX, drawY, drawWidth, drawHeight);
              if (shouldMaskSourceFurniture(unit)) {
               const isEdexcelBusiness = unit.boardCode === "edexcel" && unit.subjectSlug === "business";
               const maskWidth = isEdexcelBusiness ? targetPageWidth : drawWidth;

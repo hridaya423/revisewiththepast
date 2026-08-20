@@ -13,6 +13,7 @@ import type { SubjectTierKey } from "@/shared/domain/subject";
 import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
 import { assembleMarkSchemePdf } from "@/features/papers/marking/infrastructure/mark-scheme/mark-scheme";
 import { runDeterministicChecks } from "@/features/papers/builder/infrastructure/qa/validate";
+import { decideQaPaperGate, type QaArtifactValidation } from "./qa-paper-gate";
 
 type CliOptions = {
   subject: string;
@@ -51,6 +52,9 @@ type PaperRunReport = {
   selectedCoveredLeafTopicIds?: string[];
   markSchemeIncludedCount?: number;
   markSchemeFailureCount?: number;
+  questionPaperArtifact?: QaArtifactValidation;
+  markSchemeArtifact?: QaArtifactValidation;
+  gateFailures?: string[];
   findings: QaCheckFinding[];
 };
 
@@ -63,6 +67,31 @@ type PriorSelectionState = {
 
 function shouldExcludeWholeSourceQuestion(subjectKey: string) {
   return subjectKey === "aqa-business" || subjectKey === "edexcel-business" || subjectKey === "aqa-english-language";
+}
+
+const invalidArtifact = (byteLength: number): QaArtifactValidation => ({
+  readable: false,
+  byteLength,
+  pageCount: 0,
+  renderedPageCount: 0,
+});
+
+async function validatePdfArtifact(bytes: Uint8Array, scale: number) {
+  if (bytes.byteLength === 0) return { artifact: invalidArtifact(0), rendered: null };
+  try {
+    const rendered = await renderPdfToPngBuffers(bytes, scale);
+    return {
+      artifact: {
+        readable: true,
+        byteLength: bytes.byteLength,
+        pageCount: rendered.document.numPages,
+        renderedPageCount: rendered.pages.length,
+      } satisfies QaArtifactValidation,
+      rendered,
+    };
+  } catch {
+    return { artifact: invalidArtifact(bytes.byteLength), rendered: null };
+  }
 }
 
 function parseCliOptions(argv: string[]): CliOptions {
@@ -177,25 +206,32 @@ async function runPaper(
     });
 
     mkdirSync(paperDir, { recursive: true });
-    writeFileSync(resolve(paperDir, result.fileName), Buffer.from(result.pdfBytes));
-
-    const rendered = await renderPdfToPngBuffers(result.pdfBytes, options.renderScale);
-    for (const page of rendered.pages) {
-      const pageName = `page-${String(page.pageNumber).padStart(2, "0")}.png`;
-      writeFileSync(resolve(paperDir, pageName), page.png);
+    const questionPaperValidation = await validatePdfArtifact(result.pdfBytes, options.renderScale);
+    report.questionPaperArtifact = questionPaperValidation.artifact;
+    if (questionPaperValidation.rendered) {
+      writeFileSync(resolve(paperDir, result.fileName), Buffer.from(result.pdfBytes));
+      for (const page of questionPaperValidation.rendered.pages) {
+        const pageName = `page-${String(page.pageNumber).padStart(2, "0")}.png`;
+        writeFileSync(resolve(paperDir, pageName), page.png);
+      }
+      report.findings = await runDeterministicChecks(questionPaperValidation.rendered.pages, questionPaperValidation.rendered.textPages, {
+        subjectKey: config.subjectKey,
+        totalMarks: result.selection.totalMarks,
+        selectedUnitCount: result.selection.selectedUnits.length,
+        selectedUnitMarks: result.selection.selectedUnits.map((unit) => unit.totalMarks),
+        coverPage: {
+          totalMarks: result.coverPage.totalMarks,
+          timeMinutes: result.coverPage.timeMinutes,
+          questionCount: result.coverPage.questionCount,
+        },
+      });
+    } else {
+      report.findings.push({
+        check: "question-paper-artifact",
+        severity: "error",
+        message: "Question paper PDF was empty or unreadable.",
+      });
     }
-
-    report.findings = await runDeterministicChecks(rendered.pages, rendered.textPages, {
-      subjectKey: config.subjectKey,
-      totalMarks: result.selection.totalMarks,
-      selectedUnitCount: result.selection.selectedUnits.length,
-      selectedUnitMarks: result.selection.selectedUnits.map((unit) => unit.totalMarks),
-      coverPage: {
-        totalMarks: result.coverPage.totalMarks,
-        timeMinutes: result.coverPage.timeMinutes,
-        questionCount: result.coverPage.questionCount,
-      },
-    });
     for (const issue of result.figureIntegrityIssues) {
       report.findings.push({
         check: "orphan-figure",
@@ -204,9 +240,9 @@ async function runPaper(
       });
     }
 
+    let markSchemeArtifact = invalidArtifact(0);
     try {
       const markScheme = await assembleMarkSchemePdf(result.selection.selectedUnits);
-      writeFileSync(resolve(paperDir, "mark-scheme.pdf"), Buffer.from(markScheme.bytes));
       report.markSchemeIncludedCount = markScheme.includedCount;
       report.markSchemeFailureCount = markScheme.failures.length;
       if (markScheme.includedCount !== result.selection.selectedUnits.length) {
@@ -224,6 +260,17 @@ async function runPaper(
           message: `${failure.label}: ${failure.error}`,
         });
       }
+      const markSchemeValidation = await validatePdfArtifact(markScheme.bytes, 1);
+      markSchemeArtifact = markSchemeValidation.artifact;
+      if (markSchemeValidation.rendered) {
+        writeFileSync(resolve(paperDir, "mark-scheme.pdf"), Buffer.from(markScheme.bytes));
+      } else {
+        report.findings.push({
+          check: "mark-scheme-artifact",
+          severity: "error",
+          message: "Mark scheme PDF was empty or unreadable.",
+        });
+      }
     } catch (error) {
       report.markSchemeIncludedCount = 0;
       report.markSchemeFailureCount = result.selection.selectedUnits.length;
@@ -234,21 +281,34 @@ async function runPaper(
       });
     }
 
-    report.ok = true;
-    report.pageCount = rendered.pages.length;
+    report.markSchemeArtifact = markSchemeArtifact;
+    report.pageCount = questionPaperValidation.artifact.renderedPageCount;
     report.totalMarks = result.selection.totalMarks;
     report.resolvedTargetMarks = result.resolvedTargetMarks;
     report.selectedUnitKeys = result.selection.selectedUnits.map((unit) => unit.unitKey);
     report.selectedSourceQuestionKeys = result.selection.selectedUnits.map((unit) => unit.sourceQuestionKey);
     report.selectedUnitMarks = result.selection.selectedUnits.map((unit) => unit.totalMarks);
     report.selectedCoveredLeafTopicIds = result.selection.coveredLeafTopicIds;
+    const gate = decideQaPaperGate({
+      findings: report.findings,
+      selectedUnitCount: result.selection.selectedUnits.length,
+      markSchemeIncludedCount: report.markSchemeIncludedCount ?? 0,
+      markSchemeFailureCount: report.markSchemeFailureCount ?? result.selection.selectedUnits.length,
+      questionPaper: questionPaperValidation.artifact,
+      markScheme: markSchemeArtifact,
+    });
+    report.ok = gate.ok;
+    report.gateFailures = gate.failures;
+    if (!report.ok) report.error = `QA gate failed: ${gate.failures.join(", ")}`;
 
-    priorState.sourceQuestionKeys.push(...result.selection.selectedUnits.map((unit) => (
-      shouldExcludeWholeSourceQuestion(config.subjectKey) ? unit.sourceQuestionKey : unit.unitKey
-    )));
-    priorState.unitMarks.push(...report.selectedUnitMarks);
-    priorState.paperCount += 1;
-    priorState.coveredLeafTopicIds.push(...report.selectedCoveredLeafTopicIds);
+    if (report.ok) {
+      priorState.sourceQuestionKeys.push(...result.selection.selectedUnits.map((unit) => (
+        shouldExcludeWholeSourceQuestion(config.subjectKey) ? unit.sourceQuestionKey : unit.unitKey
+      )));
+      priorState.unitMarks.push(...report.selectedUnitMarks);
+      priorState.paperCount += 1;
+      priorState.coveredLeafTopicIds.push(...report.selectedCoveredLeafTopicIds);
+    }
   } catch (error) {
     report.error = error instanceof PaperGenerationError
       ? `${error.status}: ${error.message}`
@@ -347,11 +407,7 @@ async function main() {
   }
 
   console.log(`\nReport: ${resolve(runDir, "report.json")}`);
-  const errorFindingCount = reports.reduce(
-    (sum, report) => sum + report.findings.filter((finding) => finding.severity === "error").length,
-    0,
-  );
-  process.exitCode = failures.length > 0 || errorFindingCount > 0 ? 1 : 0;
+  process.exitCode = failures.length > 0 ? 1 : 0;
 }
 
 main().catch((error) => {

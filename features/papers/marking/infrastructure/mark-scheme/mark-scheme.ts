@@ -3,15 +3,19 @@ import "server-only";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
+import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 
 import { getMarkableUnitsByUnitKeys } from "@/features/papers/infrastructure/paper-maker";
-import { getPdfDocument, renderPdfPageToPng } from "@/features/papers/infrastructure/pdfjs-server";
+import { getPdfDocument, loadPdfJsForNode, renderPdfPageToPng } from "@/features/papers/infrastructure/pdfjs-server";
 import { getPaperAssetsByBoardSubjectFromConvex } from "@/features/papers/infrastructure/question-bank";
 import {
   buildStructuredLines,
+  detectEdexcelScienceQuestionStart,
   detectOcrComputerScienceQuestionStart,
+  detectOcrComputerScienceQuestionNumbers,
   detectPageQuestionNumber,
+  findEdexcelScienceQuestionStart,
   normalizeInlineText,
   normalizeQuestionNumber,
   pageHasQuestionStart,
@@ -70,6 +74,7 @@ export async function loadMarkSchemeTextPages(relativePath: string, remoteUrl: s
 
   const data = await loadMarkSchemeBytes(relativePath, remoteUrl);
   const document = await getPdfDocument(data.slice());
+  const pdfjs = await loadPdfJsForNode();
   const pages: CachedPdfPage[] = [];
 
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
@@ -78,7 +83,8 @@ export async function loadMarkSchemeTextPages(relativePath: string, remoteUrl: s
     const textContent = await page.getTextContent();
     const positionedItems: PositionedPdfItem[] = textContent.items.flatMap((item) => {
       if (!isPositionedTextItem(item)) return [];
-      return [{ text: item.str, x: item.transform[4] ?? 0, y: item.transform[5] ?? 0 }];
+      const transform = pdfjs.Util.transform(viewport.transform, item.transform);
+      return [{ text: item.str, x: transform[4], y: viewport.height - transform[5] }];
     });
 
     pages.push({
@@ -165,6 +171,16 @@ function aqaPartPattern(questionNumber: string, partNumber: string) {
   return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*${escapedPart}\\b(?=\\s+[A-Z0-9‘’“”'"([{•]|\\s*$)`);
 }
 
+function isAqaQuestionPartLine(line: StructuredPdfLine, questionNumber: string, partNumber: string) {
+  const normalizedQuestion = normalizeQuestionNumber(questionNumber);
+  const questionColumnText = normalizeInlineText([line.leftText, line.answerText].filter(Boolean).join(" "));
+  return aqaPartPattern(normalizedQuestion, partNumber).test(questionColumnText);
+}
+
+export function findAqaNumberedQuestionStartIndex(pages: CachedPdfPage[], questionNumber: string, partNumber: string) {
+  return pages.findIndex((page) => page.lines.some((line) => isAqaQuestionPartLine(line, questionNumber, partNumber)));
+}
+
 function aqaOtherPartPattern(questionNumber: string, partNumber: string) {
   const escapedPart = partNumber.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`\\b0?${questionNumber}\\s*(?:\\.|\\s)\\s*(?!${escapedPart}\\b)\\d{1,2}\\b(?=\\s+[A-Z0-9‘’“”'"([{•]|\\s*$)`);
@@ -182,7 +198,7 @@ function narrowAqaNumberedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage
   const parts = unit.parts.map((part) => part.questionPartNumber).filter((part): part is string => Boolean(part));
   if (parts.length === 0) return [];
   const startPattern = aqaPartPattern(questionNumber, parts[0]);
-  const startIndex = pages.findIndex((page) => startPattern.test(page.text));
+  const startIndex = findAqaNumberedQuestionStartIndex(pages, questionNumber, parts[0]);
   if (startIndex < 0) return [];
 
   if (parts.length === 1) {
@@ -227,9 +243,9 @@ function narrowAqaNumberedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage
 }
 
 function trimPageToQuestionRange(page: CachedPdfPage, questionNumber: string) {
-  const targetStart = new RegExp(`\\b${questionNumber}\\s*\\(`, "i");
-  const otherStart = new RegExp(`^(?!${questionNumber}\\b)\\d{1,2}\\s*\\(`, "i");
-  const startIndex = page.lines.findIndex((line) => targetStart.test(line.fullText));
+  const targetStart = new RegExp(`^0?${questionNumber}(?:\\s*\\(|\\s*$)`, "i");
+  const otherStart = new RegExp(`^(?!0?${questionNumber}(?:\\s|\\(|$))0?\\d{1,2}(?:\\s*\\(|\\s*$)`, "i");
+  const startIndex = page.lines.findIndex((line) => targetStart.test(line.leftText.trim()));
   if (startIndex < 0) return page;
 
   let endIndex = page.lines.length;
@@ -243,16 +259,21 @@ function trimPageToQuestionRange(page: CachedPdfPage, questionNumber: string) {
   if (startIndex === 0 && endIndex === page.lines.length) return page;
   const lines = page.lines.slice(startIndex, endIndex);
   if (lines.length === 0) return page;
+  const pageHeight = page.pageHeight ?? Math.max(...page.lines.map((line) => line.y), 0) + 36;
+  const nextBoundary = page.lines[endIndex];
   return {
     ...page,
     pageNumber: 0,
+    sourcePageNumber: page.sourcePageNumber ?? page.pageNumber,
     text: normalizeInlineText(lines.map((line) => line.fullText).join(" ")),
     lines,
+    regionTop: Math.min(pageHeight, Math.max(...lines.map((line) => line.y)) + 30),
+    regionBottom: nextBoundary ? nextBoundary.y + 10 : Math.max(0, Math.min(...lines.map((line) => line.y)) - 30),
   };
 }
 
 function trimMixedQuestionPages(unit: MarkableUnit, pages: CachedPdfPage[]) {
-  if (unit.subjectSlug === "english-language" || unit.subjectSlug === "english-literature" || unit.subjectSlug === "mathematics") return pages;
+  if (unit.subjectSlug === "english-language" || unit.subjectSlug === "english-literature") return pages;
   const targetQuestionNumber = normalizeQuestionNumber(unit.questionNumber);
   return pages.map((page) => trimPageToQuestionRange(page, targetQuestionNumber));
 }
@@ -264,36 +285,43 @@ function narrowInlineQuestionTextPages(unit: MarkableUnit, pages: CachedPdfPage[
   const questionNumber = normalizeQuestionNumber(unit.questionNumber);
   const startPattern = unit.subjectSlug === "mathematics"
       ? new RegExp(`\\b${questionNumber}\\s*\\([a-z]\\)`, "i")
-      : isEdexcelScience
-        ? new RegExp(`\\b0?${questionNumber}\\s*(?=\\([a-z]\\))`, "i")
-        : new RegExp(`\\b${questionNumber}\\s*\\((?:[a-z]|[ivx]{1,4})\\)`, "i");
+      : new RegExp(`\\b${questionNumber}\\s*\\((?:[a-z]|[ivx]{1,4})\\)`, "i");
   const nextQuestion = String(Number(questionNumber) + 1);
   const nextPattern = unit.subjectSlug === "mathematics"
       ? new RegExp(`\\b${nextQuestion}(?:\\s*\\([a-z]\\))?\\b`, "i")
-      : isEdexcelScience
-        ? new RegExp(`\\b0?${nextQuestion}\\s*(?=\\([a-z]\\))`, "i")
-        : new RegExp(`\\b${nextQuestion}\\s*\\((?:[a-z]|[ivx]{1,4})\\)`, "i");
+      : new RegExp(`\\b${nextQuestion}\\s*\\((?:[a-z]|[ivx]{1,4})\\)`, "i");
   const effectiveNextPattern = unit.subjectSlug === "mathematics"
     ? new RegExp(String.raw`\b${nextQuestion}(?:\s*\([a-z]\))?\s+(?=[A-Za-z0-9(–—-])`, "i")
     : nextPattern;
-  const startIndex = pages.findIndex((page) => startPattern.test(page.text));
+  const startsTargetQuestion = (page: CachedPdfPage) => isEdexcelScience
+    ? detectEdexcelScienceQuestionStart(page, questionNumber)
+    : startPattern.test(page.text);
+  const nextQuestionOffset = (text: string) => isEdexcelScience
+    ? findEdexcelScienceQuestionStart(text, nextQuestion) ?? -1
+    : text.search(effectiveNextPattern);
+  const startIndex = pages.findIndex(startsTargetQuestion);
   if (startIndex < 0) return [];
 
   const selectedPages: CachedPdfPage[] = [];
   for (let index = startIndex; index < pages.length; index += 1) {
     const page = pages[index];
-    const startMatch = index === startIndex ? page.text.match(startPattern) : null;
-    const startOffset = startMatch?.index ?? 0;
+    const startOffset = index === startIndex
+      ? Math.max(0, isEdexcelScience ? findEdexcelScienceQuestionStart(page.text, questionNumber) ?? 0 : page.text.search(startPattern))
+      : 0;
     const afterStart = page.text.slice(startOffset);
-    const nextMatch = afterStart.match(effectiveNextPattern);
-    const pageTextBeforeNext = afterStart.slice(0, nextMatch?.index ?? afterStart.length);
-    if (index > startIndex && nextMatch && !new RegExp(`\\b${questionNumber}\\b`, "i").test(pageTextBeforeNext)) break;
+    const nextOffset = nextQuestionOffset(afterStart);
+    const pageTextBeforeNext = afterStart.slice(0, nextOffset >= 0 ? nextOffset : afterStart.length);
+    if (index > startIndex && nextOffset >= 0 && !new RegExp(`\\b${questionNumber}\\b`, "i").test(pageTextBeforeNext)) break;
     const text = normalizeInlineText(pageTextBeforeNext);
     const startLineIndex = index === startIndex
-      ? page.lines.findIndex((line) => startPattern.test(`${line.leftText} ${line.fullText}`))
+      ? page.lines.findIndex((line) => isEdexcelScience
+        ? detectEdexcelScienceQuestionStart({ pageNumber: page.pageNumber, text: line.fullText, lines: [line] }, questionNumber)
+        : startPattern.test(`${line.leftText} ${line.fullText}`))
       : 0;
     const nextLineIndex = startLineIndex >= 0
-      ? page.lines.findIndex((line, lineIndex) => lineIndex > startLineIndex && effectiveNextPattern.test(`${line.leftText} ${line.fullText}`))
+      ? page.lines.findIndex((line, lineIndex) => lineIndex > startLineIndex && (isEdexcelScience
+        ? detectEdexcelScienceQuestionStart({ pageNumber: page.pageNumber, text: line.fullText, lines: [line] }, nextQuestion)
+        : effectiveNextPattern.test(`${line.leftText} ${line.fullText}`)))
       : -1;
     const selectedLines = startLineIndex >= 0
       ? page.lines.slice(startLineIndex, nextLineIndex >= 0 ? nextLineIndex : undefined)
@@ -302,11 +330,18 @@ function narrowInlineQuestionTextPages(unit: MarkableUnit, pages: CachedPdfPage[
       selectedPages.push({
         ...page,
         pageNumber: 0,
+        sourcePageNumber: page.sourcePageNumber ?? page.pageNumber,
         text: selectedLines.length > 0 ? normalizeInlineText(selectedLines.map((line) => line.fullText).join(" ")) : text,
         lines: selectedLines.length > 0 ? selectedLines : [],
+        regionTop: selectedLines.length > 0 ? Math.min(page.pageHeight ?? Infinity, Math.max(...selectedLines.map((line) => line.y)) + 30) : undefined,
+        regionBottom: nextLineIndex >= 0
+          ? Math.max(0, page.lines[nextLineIndex].y + 10)
+          : selectedLines.length > 0
+            ? Math.max(0, Math.min(...selectedLines.map((line) => line.y)) - 30)
+            : undefined,
       });
     }
-    if (nextMatch) break;
+    if (nextOffset >= 0) break;
     if (index > startIndex && detectPageQuestionNumber(page) && detectPageQuestionNumber(page) !== questionNumber) break;
   }
   return selectedPages;
@@ -374,12 +409,22 @@ function collectedPagesMatchUnit(unit: MarkableUnit, pages: CachedPdfPage[]) {
   }
 
   if (unit.boardCode === "edexcel" && ["biology", "chemistry", "physics", "combined-science"].includes(unit.subjectSlug)) {
-    const questionNumber = normalizeQuestionNumber(unit.questionNumber).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    if (!new RegExp(`\\b(?:Question\\s+)?0?${questionNumber}\\s*(?:\\(|[a-z]\\b)`, "i").test(sourceText)) return false;
+    if (!pages.some((page) => detectEdexcelScienceQuestionStart(page, unit.questionNumber))) return false;
     return unit.parts.length < 2 || splitMarkSchemePagesByParts(unit, pages) !== null;
   }
 
   return true;
+}
+
+export function getOwnedOcrQuestionNumbers(unit: Pick<MarkableUnit, "questionNumber" | "parts">) {
+  const numbers = new Set(unit.parts.map((part) => normalizeQuestionNumber(part.questionNumber)));
+  numbers.add(normalizeQuestionNumber(unit.questionNumber));
+  for (const part of unit.parts) {
+    for (const match of part.promptText.matchAll(/\[\s*\d+\s*(?:marks?)?\s*\]\s+(\d{1,2})\s*\*?\s+(?=[A-Z])/gi)) {
+      numbers.add(normalizeQuestionNumber(match[1]));
+    }
+  }
+  return numbers;
 }
 
 function requireMatchingCollectedPages(unit: MarkableUnit, pages: CachedPdfPage[]) {
@@ -411,6 +456,8 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
 
   const pages = await loadMarkSchemeTextPages(markSchemeAsset.relativePath, markSchemeAsset.cdnUrl);
   const targetQuestionNumber = normalizeQuestionNumber(unit.questionNumber);
+  const isEdexcelScience = unit.boardCode === "edexcel" && ["biology", "chemistry", "physics", "combined-science"].includes(unit.subjectSlug);
+  const ownedOcrQuestionNumbers = unit.subjectSlug === "computer-science" ? getOwnedOcrQuestionNumbers(unit) : null;
   if (unit.boardCode === "aqa" && (unit.subjectSlug === "business" || unit.subjectSlug === "geography")) {
     const narrowedPages = narrowFallbackMarkSchemePages(unit, pages);
     if (narrowedPages.length > 0) return { markSchemeAsset, collectedPages: requireMatchingCollectedPages(unit, trimMixedQuestionPages(unit, narrowedPages)) };
@@ -420,7 +467,8 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
 
   for (const page of pages) {
     const pageQuestionNumber = detectPageQuestionNumber(page);
-    const hasTargetStart = pageHasQuestionStart(page, targetQuestionNumber);
+    const hasTargetStart = pageHasQuestionStart(page, targetQuestionNumber)
+      || (isEdexcelScience && detectEdexcelScienceQuestionStart(page, targetQuestionNumber));
     if (!collecting) {
       const hasSubjectSpecificStart = unit.subjectSlug === "computer-science" && detectOcrComputerScienceQuestionStart(page, targetQuestionNumber);
       if (pageQuestionNumber === targetQuestionNumber || hasTargetStart || hasSubjectSpecificStart) {
@@ -430,14 +478,17 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
       continue;
     }
 
-    const hasSubjectSpecificStart = unit.subjectSlug === "computer-science" && detectOcrComputerScienceQuestionStart(page, targetQuestionNumber);
-    const hasOtherSubjectQuestion = unit.subjectSlug === "computer-science"
-      ? detectOcrComputerScienceQuestionStart(page, String(Number(targetQuestionNumber) + 1))
+    const ocrQuestionNumbers = unit.subjectSlug === "computer-science" ? detectOcrComputerScienceQuestionNumbers(page) : [];
+    const hasOwnedOcrQuestion = ownedOcrQuestionNumbers
+      ? ocrQuestionNumbers.some((questionNumber) => ownedOcrQuestionNumbers.has(questionNumber))
+      : false;
+    const hasOtherSubjectQuestion = ownedOcrQuestionNumbers
+      ? ocrQuestionNumbers.some((questionNumber) => !ownedOcrQuestionNumbers.has(questionNumber))
       : false;
     if (unit.subjectSlug === "computer-science" && !/\bMark Scheme\b/i.test(page.text)) {
       break;
     }
-    if ((pageQuestionNumber && pageQuestionNumber !== targetQuestionNumber && !hasTargetStart) || (unit.subjectSlug === "computer-science" && hasOtherSubjectQuestion && !hasSubjectSpecificStart)) {
+    if ((pageQuestionNumber && pageQuestionNumber !== targetQuestionNumber && !hasTargetStart) || (unit.subjectSlug === "computer-science" && hasOtherSubjectQuestion && !hasOwnedOcrQuestion)) {
       break;
     }
     collectedPages.push(page);
@@ -538,6 +589,82 @@ function safePdfText(text: string) {
     .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, " ");
 }
 
+type SelectedAnswerRegionInput = {
+  unitKey: string;
+  assetPath: string;
+  page: CachedPdfPage;
+};
+
+export type SelectedAnswerRegion = {
+  assetPath: string;
+  sourcePageNumber: number;
+  top: number;
+  bottom: number;
+  unitKeys: string[];
+};
+
+export function planSelectedAnswerRegions(inputs: SelectedAnswerRegionInput[]) {
+  const regions = new Map<string, SelectedAnswerRegion>();
+  for (const { unitKey, assetPath, page } of inputs) {
+    const sourcePageNumber = page.sourcePageNumber ?? page.pageNumber;
+    const top = page.regionTop ?? (page.lines.length > 0 ? Math.min(page.pageHeight ?? Infinity, Math.max(...page.lines.map((line) => line.y)) + 30) : page.pageHeight);
+    const bottom = page.regionBottom ?? (page.lines.length > 0 ? Math.max(0, Math.min(...page.lines.map((line) => line.y)) - 30) : 0);
+    if (sourcePageNumber < 1 || top === undefined || bottom === undefined || !Number.isFinite(top) || top <= bottom) continue;
+    const key = `${assetPath}:${sourcePageNumber}:${top}:${bottom}`;
+    const existing = regions.get(key);
+    if (existing) {
+      existing.unitKeys.push(unitKey);
+    } else {
+      regions.set(key, { assetPath, sourcePageNumber, top, bottom, unitKeys: [unitKey] });
+    }
+  }
+  return Array.from(regions.values());
+}
+
+async function renderAndValidateAnswerRegion(pdfJsDoc: PdfJsDocument, region: SelectedAnswerRegion, pageWidth: number, pageHeight: number) {
+  const scale = 2;
+  const png = await renderPdfPageToPng(pdfJsDoc, region.sourcePageNumber, scale);
+  const image = await loadImage(png);
+  const sourceScaleY = image.height / pageHeight;
+  const sourceX = 0;
+  const sourceY = Math.max(0, Math.floor((pageHeight - region.top) * sourceScaleY));
+  const sourceWidth = image.width;
+  const sourceHeight = Math.min(image.height - sourceY, Math.ceil((region.top - region.bottom) * sourceScaleY));
+  if (sourceWidth < 1 || sourceHeight < 1) throw new Error("Selected mark scheme answer region was empty.");
+
+  const canvas = createCanvas(sourceWidth, sourceHeight);
+  const context = canvas.getContext("2d");
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, sourceWidth, sourceHeight);
+  const pixels = context.getImageData(0, 0, sourceWidth, sourceHeight).data;
+  let ink = 0;
+  for (let index = 0; index < pixels.length; index += 4) {
+    if (pixels[index] < 235 || pixels[index + 1] < 235 || pixels[index + 2] < 235) ink += 1;
+  }
+  if (ink < 20) throw new Error("Selected mark scheme answer region contained no visible answer content.");
+  return canvas.toBuffer("image/png");
+}
+
+export async function drawSelectedAnswerRegion(
+  outputDoc: PDFDocument,
+  pdfJsDoc: PdfJsDocument,
+  region: SelectedAnswerRegion,
+  label: string,
+  labelFont: PDFFont,
+) {
+  const pdfJsPage = await pdfJsDoc.getPage(region.sourcePageNumber);
+  const viewport = pdfJsPage.getViewport({ scale: 1 });
+  const top = Math.min(viewport.height, region.top);
+  const bottom = Math.max(0, region.bottom);
+  if (top <= bottom) throw new Error("Selected mark scheme answer boundaries were invalid.");
+  const validatedPng = await renderAndValidateAnswerRegion(pdfJsDoc, { ...region, top, bottom }, viewport.width, viewport.height);
+  const regionHeight = top - bottom;
+  const page = outputDoc.addPage([viewport.width, regionHeight + 18]);
+  const image = await outputDoc.embedPng(validatedPng);
+  page.drawImage(image, { x: 0, y: 0, width: viewport.width, height: regionHeight });
+  drawLabelBand(page, label, labelFont);
+  return page;
+}
+
 export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<MarkSchemePdfResult> {
   const outputDoc = await PDFDocument.create();
   const [labelFont, noteFont] = await Promise.all([
@@ -554,6 +681,7 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
   let tableLayout: TableLayout | null = null;
 
   let includedCount = 0;
+  const emittedAnswerRegions = new Map<string, { page: PDFPage; labels: string[] }>();
 
   for (let index = 0; index < units.length; index += 1) {
     const unit = units[index];
@@ -588,6 +716,40 @@ export async function assembleMarkSchemePdf(units: MarkableUnit[]): Promise<Mark
           return pages;
         }, [])
         : collectedPages;
+      const isEdexcelScience = unit.boardCode === "edexcel"
+        && ["biology", "chemistry", "physics", "combined-science"].includes(unit.subjectSlug);
+      const preserveSourceAnswerRegion = isEdexcelScience
+        || unit.subjectSlug === "mathematics"
+        || unit.subjectSlug === "computer-science";
+      if (preserveSourceAnswerRegion) {
+        let pdfJsDoc = pdfJsDocCache.get(markSchemeAsset.relativePath);
+        if (!pdfJsDoc) {
+          const bytes = await loadMarkSchemeBytes(markSchemeAsset.relativePath, markSchemeAsset.cdnUrl);
+          pdfJsDoc = await getPdfDocument(bytes.slice());
+          pdfJsDocCache.set(markSchemeAsset.relativePath, pdfJsDoc);
+        }
+        const answerPages = groupedPages.filter((page) => normalizeInlineText(page.text.replace(/\bPMT\b/gi, "")).length >= 10);
+        const regions = planSelectedAnswerRegions(answerPages.map((page) => ({
+          unitKey: unit.unitKey,
+          assetPath: markSchemeAsset.relativePath,
+          page,
+        })));
+        if (regions.length === 0) throw new Error("Could not establish selected mark scheme answer boundaries.");
+        tableLayout = null;
+        for (const region of regions) {
+          const key = `${region.assetPath}:${region.sourcePageNumber}:${region.top}:${region.bottom}`;
+          const emitted = emittedAnswerRegions.get(key);
+          if (emitted) {
+            emitted.labels.push(label);
+            drawLabelBand(emitted.page, emitted.labels.join(" / "), labelFont);
+            continue;
+          }
+          const page = await drawSelectedAnswerRegion(outputDoc, pdfJsDoc, region, label, labelFont);
+          emittedAnswerRegions.set(key, { page, labels: [label] });
+        }
+        includedCount += 1;
+        continue;
+      }
       const splitPages = splitMarkSchemePagesByParts(unit, groupedPages);
       const isMultipartUnit = unit.parts.length > 1
         && unit.parts.every((part) => part.questionPartNumber && normalizeQuestionNumber(part.questionNumber) === normalizeQuestionNumber(unit.questionNumber));
@@ -675,7 +837,8 @@ function drawMarkSchemeCoverPage(outputDoc: PDFDocument, units: MarkableUnit[], 
   const first = units[0];
   const board = first?.boardCode.toUpperCase() ?? "GCSE";
   const subject = first ? titleCaseSlug(first.subjectSlug).toUpperCase() : "MARK SCHEME";
-  const paper = first?.paperCode?.toUpperCase() ?? "CUSTOM";
+  const paperCodes = new Set(units.map((unit) => unit.paperCode.toUpperCase()));
+  const paper = paperCodes.size === 1 ? Array.from(paperCodes)[0] : "CUSTOM PAPER";
   const tier = first ? inferTierFromSourceRelativePath(first.sourceRelativePath) : "none";
   const tierLabel = tier === "none" ? null : `${titleCaseSlug(tier)} Tier`;
   const marks = units.reduce((sum, unit) => sum + unit.totalMarks, 0);
@@ -1342,13 +1505,16 @@ function drawBulletItems(page: PDFPage, items: BulletLine[], x: number, y: numbe
   return currentY;
 }
 
-function guidanceDisplayLines(text: string, fonts: MarkSchemeFonts, size: number, maxWidth: number) {
-  const chunks = text
+function guidanceDisplayChunks(text: string) {
+  return text
     .replace(/\((\d)\)\.?\s+/g, "($1)\n")
     .replace(/\s+(No credit|Credit|Accept|Allow|AO\d\b)/gi, "\n$1")
     .split("\n")
     .map((chunk) => chunk.trim())
     .filter(Boolean);
+}
+
+function wrapGuidanceDisplayChunks(chunks: string[], fonts: MarkSchemeFonts, size: number, maxWidth: number) {
   const lines: string[] = [];
   for (const chunk of chunks) {
     const prefix = /\(\d\)/.test(chunk) && !/^(No credit|Credit|Accept|Allow|AO\d\b)/i.test(chunk) ? "• " : "";
@@ -1356,6 +1522,10 @@ function guidanceDisplayLines(text: string, fonts: MarkSchemeFonts, size: number
     wrapped.forEach((line, index) => lines.push(`${index === 0 ? prefix : prefix ? "  " : ""}${line}`));
   }
   return lines;
+}
+
+function guidanceDisplayLines(text: string, fonts: MarkSchemeFonts, size: number, maxWidth: number) {
+  return wrapGuidanceDisplayChunks(guidanceDisplayChunks(text), fonts, size, maxWidth);
 }
 
 function drawLevelTable(page: PDFPage, levels: LevelDescriptor[], x: number, yTop: number, width: number, fonts: MarkSchemeFonts) {
@@ -1629,16 +1799,15 @@ function splitOcrAnswerGuidance(lines: string[]) {
   return { answerLines, guidanceLines };
 }
 
-function drawOcrMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; lines?: StructuredPdfLine[]; continuation?: boolean; totalRow?: boolean }, fonts: MarkSchemeFonts) {
+export function drawOcrMarkSchemeTableRow(outputDoc: PDFDocument, layout: TableLayout | null, row: { unit: MarkableUnit; order: number; text: string; lines?: StructuredPdfLine[]; continuation?: boolean; totalRow?: boolean }, fonts: MarkSchemeFonts) {
   const left = 34;
   const width = LANDSCAPE_WIDTH - 68;
   const cols = [92, 414, 48, width - 92 - 414 - 48];
   const entry = buildStructuredEntry(row.unit, row.text, row.continuation);
-  const allLines = guidanceDisplayLines(entry.guidance || row.text, fonts, 8, cols[1] - 12);
-  const split = splitOcrAnswerGuidance(allLines);
+  const split = splitOcrAnswerGuidance(guidanceDisplayChunks(entry.guidance || row.text));
   const promptLines = wrapText(entry.prompt, fonts.bold, 8.2, cols[1] - 12);
-  let remainingAnswer = [...promptLines, ...split.answerLines];
-  let remainingGuidance = split.guidanceLines;
+  let remainingAnswer = [...promptLines, ...wrapGuidanceDisplayChunks(split.answerLines, fonts, 8, cols[1] - 12)];
+  let remainingGuidance = wrapGuidanceDisplayChunks(split.guidanceLines, fonts, 8, cols[3] - 12);
   let current = layout ?? newOcrTablePage(outputDoc, row.unit, fonts, 1);
   let continuation = row.continuation ?? false;
 
