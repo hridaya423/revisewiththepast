@@ -2222,9 +2222,10 @@ async function addPdfPagesWithRasterFallback(
   sourceDocCache: Map<string, PDFDocument>,
 ) {
   const bytes = await fetchPdfBytes(pdfPathOrUrl, sourcePdfCache);
-  const skippablePageIndexes = await getSkippableInsertPageIndexes(bytes);
-
-  const sourcePdf = await getPdfDocument(bytes.slice());
+  const [skippablePageIndexes, sourcePdf] = await Promise.all([
+    getSkippableInsertPageIndexes(bytes),
+    getPdfDocument(bytes.slice()),
+  ]);
   const pageIndexes = Array.from({ length: sourcePdf.numPages }, (_, index) => index)
     .filter((index) => !skippablePageIndexes.has(index));
   for (const pageIndex of pageIndexes) {
@@ -2406,10 +2407,11 @@ async function renderRegionUnit(
         const pageMarks = unit.parts.reduce((marks, part) => (
           part.pageNumbers.includes(crop.pageNumber) ? marks + (part.marks ?? 0) : marks
         ), 0);
-        const pagePrompt = unit.parts
-          .filter((part) => part.pageNumbers.includes(crop.pageNumber))
-          .map((part) => part.promptText)
-          .join(" ");
+        const pagePrompt = unit.parts.reduce((prompt, part) => (
+          part.pageNumbers.includes(crop.pageNumber)
+            ? `${prompt}${prompt ? " " : ""}${part.promptText}`
+            : prompt
+        ), "");
         const requiresAnswerGeometry = /\b(?:draw|design|complete)\b.{0,100}\b(?:flowchart|diagram|graph|logic gate)\b/i.test(pagePrompt);
         const extractedPage = getExtractedPage(unit.sourceRelativePath, crop.pageNumber);
         const adjustedCropBox = unit.subjectSlug === "computer-science"

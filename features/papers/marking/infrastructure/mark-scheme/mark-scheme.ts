@@ -73,8 +73,10 @@ export async function loadMarkSchemeTextPages(relativePath: string, remoteUrl: s
   if (PDF_TEXT_CACHE.has(relativePath)) return PDF_TEXT_CACHE.get(relativePath)!;
 
   const data = await loadMarkSchemeBytes(relativePath, remoteUrl);
-  const document = await getPdfDocument(data.slice());
-  const pdfjs = await loadPdfJsForNode();
+  const [document, pdfjs] = await Promise.all([
+    getPdfDocument(data.slice()),
+    loadPdfJsForNode(),
+  ]);
   const pages: CachedPdfPage[] = [];
 
   for (let pageNumber = 1; pageNumber <= document.numPages; pageNumber += 1) {
