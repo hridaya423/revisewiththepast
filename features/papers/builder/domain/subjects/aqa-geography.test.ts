@@ -56,6 +56,26 @@ describe("question unit validation", () => {
     expect(units).toEqual([]);
   });
 
+  it("does not read Edexcel decimal values as AQA question numbers", () => {
+    const units = groupQuestionPartsIntoUnits([
+      part({
+        boardCode: "edexcel",
+        questionNumber: "6",
+        promptText: "The mass increased from 0.1 g to 0.3 g.",
+      }),
+    ]);
+
+    expect(units).toHaveLength(1);
+  });
+
+  it("drops a grouped source question when selectable parts do not reach its source total", () => {
+    const units = groupQuestionUnitsBySourceQuestion([
+      { ...groupQuestionPartsIntoUnits([part({ partKey: "b", marks: 2, questionPartNumber: "b", questionPath: ["b"], sourceTotalMarks: 4, marksValidated: "validated" })])[0] },
+    ]);
+
+    expect(units).toEqual([]);
+  });
+
   it("does not merge equal question numbers from different source PDFs", () => {
     const units = groupQuestionUnitsBySourceQuestion([
       { ...groupQuestionPartsIntoUnits([part({ sourceRelativePath: "edexcel/mathematics/a.pdf" })])[0] },

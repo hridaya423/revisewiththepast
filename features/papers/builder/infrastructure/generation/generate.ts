@@ -25,14 +25,14 @@ import {
   isLocalGeometryEnabled,
   overlayQuestionBankWithLocalGeometry,
 } from "../geometry/local";
-import { findOrphanStemFigures, getReferencedFigureLabels, isScienceUnit, type OrphanFigureIssue } from "../../domain/region-render";
+import { findOrphanStemFigures, type OrphanFigureIssue } from "../../domain/region-render";
 import type { GeneratedCoverModel } from "../pdf/cover";
 import { getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefinition } from "../../domain/subjects";
 import { estimatePaperTimeMinutes } from "../../domain/rules";
 import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
 import { buildGeneratedCoverModel } from "../pdf/cover";
 import { generateStrictSourcePaperPdf, SourceUnitRenderError } from "../pdf/pdf";
-import { assertGeneratedPaperQuality } from "../qa/validate";
+import { assertGeneratedPaperQuality, type QaCheckOptions } from "../qa/validate";
 import {
   getInsertPageAssetsBySourceRelativePaths,
   getPaperAssetsByBoardSubjectFromConvex,
@@ -42,7 +42,6 @@ import {
   getQuestionPageAssetsBySourceRelativePaths,
 } from "@/features/papers/infrastructure/question-bank";
 import { groupQuestionUnitsForSubject } from "@/features/papers/infrastructure/units";
-import { getServerEnvironment } from "@/shared/infrastructure/env/server";
 import type { SubjectTierKey } from "@/shared/domain/subject";
 
 export class PaperGenerationError extends Error {
@@ -87,6 +86,19 @@ export type GenerateCustomPaperResult = {
   coverPage: GeneratedCoverModel;
   figureIntegrityIssues: OrphanFigureIssue[];
 };
+
+export type GeneratedPaperQualityCheck = (pdfBytes: Uint8Array, options: QaCheckOptions) => Promise<void>;
+
+export async function assertGeneratedPaperForGeneration(
+  pdfBytes: Uint8Array,
+  options: QaCheckOptions,
+  qualityCheck: GeneratedPaperQualityCheck = assertGeneratedPaperQuality,
+) {
+  await qualityCheck(pdfBytes, {
+    ...options,
+    expectedOrdinalCount: options.selectedUnitCount,
+  });
+}
 
 type TierConfig = {
   required: boolean;
@@ -438,25 +450,15 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
       )
     : input.targetMarks;
 
-  const regionMode = getServerEnvironment().PAPER_MAKER_REGION_MODE !== "legacy" && subject.key !== "edexcel-combined-science";
-  let figuresBySource: Awaited<ReturnType<typeof getPaperFiguresBySourceRelativePaths>> | undefined;
-  let pageLayoutsBySource: Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>> | undefined;
+  const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
+  const figuresBySource: Awaited<ReturnType<typeof getPaperFiguresBySourceRelativePaths>> = isLocalGeometryEnabled()
+    ? getLocalFiguresBySource(candidateSourcePaths)
+    : await getPaperFiguresBySourceRelativePaths(candidateSourcePaths);
+  const pageLayoutsBySource: Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>> = isLocalGeometryEnabled()
+    ? getLocalPageLayoutsBySource(candidateSourcePaths)
+    : await getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths);
   let selectableUnits = allUnits;
   let pageAssetsBySource: Awaited<ReturnType<typeof getQuestionPageAssetsBySourceRelativePaths>> | undefined;
-  const needsScienceFigureGeometry = allUnits.some((unit) => (
-    isScienceUnit(unit) && getReferencedFigureLabels(unit).length > 0
-  ));
-  if (regionMode || needsScienceFigureGeometry) {
-    const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
-    figuresBySource = isLocalGeometryEnabled()
-      ? getLocalFiguresBySource(candidateSourcePaths)
-      : await getPaperFiguresBySourceRelativePaths(candidateSourcePaths);
-    if (regionMode) {
-      pageLayoutsBySource = isLocalGeometryEnabled()
-        ? getLocalPageLayoutsBySource(candidateSourcePaths)
-        : await getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths);
-    }
-  }
   if (figuresBySource) {
     const gate = filterUnitsByFigureResolvability(allUnits, {
       figuresBySource,
@@ -464,7 +466,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
       subjectUsesInserts: Boolean(config.prefaceInserts),
     });
     selectableUnits = gate.kept;
-    if (regionMode && pageLayoutsBySource) {
+    if (pageLayoutsBySource) {
       const contextGate = filterUnitsByDanglingContext(selectableUnits, { pageLayoutsBySource });
       selectableUnits = contextGate.kept;
     }
@@ -541,7 +543,6 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
         pageAssetsBySource,
         figuresBySource,
         pageLayoutsBySource,
-        regionMode,
         prefaceSourcePdfs: config.prefaceInserts ? await config.prefaceInserts(selection.selectedUnits) : undefined,
         coverPage,
       });
@@ -556,22 +557,20 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
       throw error;
     }
 
-    if (subject.subjectSlug === "mathematics") {
-      try {
-        await assertGeneratedPaperQuality(pdfBytes, {
-          subjectKey: subject.key,
-          totalMarks: selection.totalMarks,
-          selectedUnitCount: selection.selectedUnits.length,
-          selectedUnitMarks: selection.selectedUnits.map((unit) => unit.totalMarks),
-          coverPage: {
-            totalMarks: coverPage.totalMarks,
-            timeMinutes,
-            questionCount: coverPage.questionCount,
-          },
-        });
-      } catch (error) {
-        throw new PaperGenerationError(error instanceof Error ? error.message : String(error), 422);
-      }
+    try {
+      await assertGeneratedPaperForGeneration(pdfBytes, {
+        subjectKey: subject.key,
+        totalMarks: selection.totalMarks,
+        selectedUnitCount: selection.selectedUnits.length,
+        selectedUnitMarks: selection.selectedUnits.map((unit) => unit.totalMarks),
+        coverPage: {
+          totalMarks: coverPage.totalMarks,
+          timeMinutes,
+          questionCount: coverPage.questionCount,
+        },
+      });
+    } catch (error) {
+      throw new PaperGenerationError(error instanceof Error ? error.message : String(error), 422);
     }
     break;
   }

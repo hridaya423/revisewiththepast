@@ -4,7 +4,7 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 import type { QuestionBankPart, QuestionUnit } from "@/shared/domain/paper";
 import { getPdfDocument, renderPdfPageToPng } from "@/features/papers/infrastructure/pdfjs-server";
-import { buildStructuredEntry, drawOcrMarkSchemeTableRow, drawSelectedAnswerRegion, findAqaNumberedQuestionStartIndex, formatGeneratedTotalRow, getOwnedOcrQuestionNumbers, planSelectedAnswerRegions, resolveMarkSchemeAsset, splitMarkSchemePagesByParts, stripMatchedPrompt } from "./mark-scheme";
+import { buildStructuredEntry, drawOcrMarkSchemeTableRow, drawSelectedAnswerRegion, findAqaNumberedQuestionStartIndex, formatGeneratedTotalRow, getOwnedOcrQuestionNumbers, markSchemeDocumentMatchesUnitIdentity, planSelectedAnswerRegions, resolveMarkSchemeAsset, splitMarkSchemePagesByParts, stripMatchedPrompt } from "./mark-scheme";
 
 const identity = {
   boardCode: "edexcel",
@@ -53,6 +53,24 @@ describe("mark scheme asset resolution", () => {
       asset({ id: "unknown-session", session: "unknown" }),
     ])).toEqual({ status: "not-found" });
   });
+
+  it("rejects an Edexcel mark scheme from a different qualification", () => {
+    const unit = {
+      boardCode: "edexcel",
+      subjectSlug: "combined-science",
+    };
+
+    expect(markSchemeDocumentMatchesUnitIdentity(unit, [{
+      pageNumber: 1,
+      text: "Pearson Edexcel GCSE In Biology (1BI0) Paper 2H",
+      lines: [],
+    }])).toBe(false);
+    expect(markSchemeDocumentMatchesUnitIdentity(unit, [{
+      pageNumber: 1,
+      text: "Pearson Edexcel GCSE In Combined Science (1SC0) Paper 2BH",
+      lines: [],
+    }])).toBe(true);
+  });
 });
 
 describe("mark scheme question ownership", () => {
@@ -84,6 +102,16 @@ describe("mark scheme question ownership", () => {
       text: line.fullText,
       lines: [line],
     }], "1", "7")).toBe(0);
+  });
+
+  it("finds an AQA question-part marker in the full extracted line", () => {
+    const line = markSchemeLine("1.1 A - Commission", "");
+
+    expect(findAqaNumberedQuestionStartIndex([{
+      pageNumber: 4,
+      text: line.fullText,
+      lines: [line],
+    }], "1", "1")).toBe(0);
   });
 
   it("retains explicitly embedded OCR source questions as owned", () => {
@@ -169,6 +197,31 @@ function markSchemeLine(fullText: string, leftText = "") {
 }
 
 describe("multipart mark scheme splitting", () => {
+  it("preserves Edexcel Science source-reading order when paths omit parents", () => {
+    const parts = [
+      { ...sciencePart("a", 1), questionPath: ["a"] },
+      { ...sciencePart("ii", 1), questionPath: ["ii"] },
+      { ...sciencePart("iii", 1), questionPath: ["iii"] },
+      { ...sciencePart("b", 1), questionPath: ["b"] },
+      { ...sciencePart("i", 1), questionPath: ["c", "i"] },
+      { ...sciencePart("ii", 1), partKey: "q8-c-ii", questionPath: ["c", "ii"] },
+    ];
+    const pages = [{
+      pageNumber: 20,
+      text: "8(a)(i) first 8(a)(ii) second 8(a)(iii) third 8(b) fourth 8(c)(i) fifth 8(c)(ii) sixth",
+      lines: [],
+    }];
+
+    expect(splitMarkSchemePagesByParts(scienceUnit(parts), pages)?.slice(0, -1).map((page) => page.text)).toEqual([
+      "8(a)(i) first",
+      "8(a)(ii) second",
+      "8(a)(iii) third",
+      "8(b) fourth",
+      "8(c)(i) fifth",
+      "8(c)(ii) sixth",
+    ]);
+  });
+
   it("starts the first selected part at the target question rather than an earlier bare part", () => {
     const unit = scienceUnit([sciencePart("a", 1), sciencePart("b", 1)]);
     const pages = [{

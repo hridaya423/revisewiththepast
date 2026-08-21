@@ -12,6 +12,7 @@ const validArtifact = {
 function validGate(overrides: Partial<QaPaperGateInput> = {}): QaPaperGateInput {
   return {
     findings: [],
+    canonicalLayoutChecked: true,
     selectedUnitCount: 4,
     markSchemeIncludedCount: 4,
     markSchemeFailureCount: 0,
@@ -27,6 +28,7 @@ describe("QA paper gate", () => {
   });
 
   const failureCases: Array<[string, Partial<QaPaperGateInput>, string]> = [
+    ["missing canonical layout check", { canonicalLayoutChecked: false }, "canonical-layout-unchecked"],
     ["error finding", { findings: [{ severity: "error" }] }, "error-findings"],
     ["incomplete coverage", { markSchemeIncludedCount: 3 }, "mark-scheme-coverage"],
     ["assembly failure", { markSchemeFailureCount: 1 }, "mark-scheme-assembly"],

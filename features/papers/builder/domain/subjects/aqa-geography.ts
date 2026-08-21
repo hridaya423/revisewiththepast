@@ -187,6 +187,7 @@ function extractPromptQuestionNumber(promptText: string) {
 }
 
 function hasQuestionNumberMismatch(part: QuestionBankPart) {
+  if (part.boardCode !== "aqa") return false;
   const declared = parseDeclaredQuestionNumber(part.questionNumber);
   if (declared === null) return false;
   const promptDerived = extractPromptQuestionNumber(part.promptText);
@@ -416,6 +417,7 @@ export function groupQuestionUnitsBySourceQuestion(units: QuestionUnit[]): Quest
       : sourceTotalMarks === null
         ? "unknown"
         : sourceTotalMarks === partSum ? "validated" : "mismatch";
+    if (marksValidated === "mismatch") continue;
 
     const pageMap = new Map<number, QuestionBankPart[]>();
     for (const part of parts) {

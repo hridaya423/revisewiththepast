@@ -3,7 +3,8 @@ import { basename, resolve } from "node:path";
 import { OpenRouter } from "@openrouter/sdk";
 import { ConvexHttpClient } from "convex/browser";
 import { config as loadEnv } from "dotenv";
-import { getBooleanEnvironment, getFirstEnvironment, getNumberEnvironment, getOptionalEnvironment } from "./runtime";
+import type { QuestionIdentityAnchor } from "@/shared/domain/paper";
+import { deriveSourceRelativePath, getBooleanEnvironment, getFirstEnvironment, getNumberEnvironment, getOptionalEnvironment } from "./runtime";
 
 loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: true });
 loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
@@ -28,6 +29,10 @@ type ExtractedQuestionPart = {
   normalized_text: string;
   source_mode: string;
   bbox: { x0: number; y0: number; x1: number; y1: number } | null;
+  identity_anchor?: QuestionIdentityAnchor | null;
+  region_spans?: Array<{ page_number: number; y_top: number; y_bottom: number }> | null;
+  stem_spans?: Array<{ page_number: number; y_top: number; y_bottom: number }> | null;
+  referenced_support_labels?: string[];
   asset_ids: string[];
   parser_notes: string[];
   isChoiceQuestion: boolean;
@@ -97,16 +102,6 @@ function normalizePaperCode(extracted: ExtractedPaper): string {
   }
 
   return raw || "unknown";
-}
-
-function deriveSourceRelativePath(sourceFile: string) {
-  const normalized = sourceFile.replaceAll("\\", "/");
-  const marker = "/data/downloads/";
-  const markerIndex = normalized.indexOf(marker);
-  if (markerIndex >= 0) {
-    return normalized.slice(markerIndex + marker.length);
-  }
-  return basename(normalized);
 }
 
 type TaggedQuestionPart = {
@@ -1293,8 +1288,13 @@ async function upsertTaggedPaperToConvex(
       promptText: sourcePart.prompt_text,
       contextText: sourcePart.context_text,
       bbox: sourcePart.bbox,
+      identityAnchor: sourcePart.identity_anchor ?? null,
       sourceMode: sourcePart.source_mode,
       assetIds: sourcePart.asset_ids,
+      regionSpans: sourcePart.region_spans?.map((span) => ({ pageNumber: span.page_number, yTop: span.y_top, yBottom: span.y_bottom })) ?? null,
+      stemSpans: sourcePart.stem_spans?.map((span) => ({ pageNumber: span.page_number, yTop: span.y_top, yBottom: span.y_bottom })) ?? null,
+      referencedFigures: sourcePart.referenced_support_labels ?? [],
+      regionVersion: extracted.parser_version,
       isChoiceQuestion: sourcePart.isChoiceQuestion || false,
       choiceGroupId: sourcePart.choiceGroupId,
       choiceGroupType: sourcePart.choiceGroupType,

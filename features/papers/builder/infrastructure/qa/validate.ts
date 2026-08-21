@@ -6,6 +6,7 @@ import {
   isHeaderFurnitureLine,
 } from "../../domain/page-text";
 import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
+import { checkQuestionLayout } from "./question-layout";
 
 export type QaSeverity = "error" | "warning";
 
@@ -23,6 +24,7 @@ export type QaCheckOptions = {
   subjectKey?: string;
   totalMarks?: number;
   selectedUnitCount?: number;
+  expectedOrdinalCount?: number;
   selectedUnitMarks?: number[];
   coverPage?: {
     totalMarks: number;
@@ -177,7 +179,7 @@ async function checkVisibleFurniture(pngPages: RenderedPngPage[], textPages: Ren
     }
     findings.push({
       check: "visible-source-furniture",
-      severity: "warning",
+      severity: "error",
       pageNumber: page.pageNumber,
       message: "source paper furniture is visible on generated page",
     });
@@ -279,7 +281,7 @@ export function checkRenderedQuestionTotals(textPages: RenderedTextPage[], optio
   if (!options?.subjectKey?.includes("mathematics") || !options.selectedUnitMarks?.length) return [];
 
   const totals = new Map<number, { marks: Set<number>; count: number }>();
-  const pattern = /Total\s+for\s+Question\s+(\d+)\s+is\s+(\d+)\s+marks?/gi;
+  const pattern = /Total\s+for\s+Question\s+(\d+)\s+(?:is|=)\s+(\d+)\s+marks?/gi;
   for (const page of textPages) {
     for (const match of page.text.matchAll(pattern)) {
       const questionNumber = Number(match[1]);
@@ -523,6 +525,9 @@ export async function assertGeneratedPaperQuality(
 ) {
   const rendered = await renderPdfToPngBuffers(pdfBytes, 0.75);
   const findings = await runDeterministicChecks(rendered.pages, rendered.textPages, options);
+  if (options.selectedUnitCount !== undefined || options.expectedOrdinalCount !== undefined) {
+    findings.push(...await checkQuestionLayout(pdfBytes, options));
+  }
   const errors = findings.filter((finding) => finding.severity === "error");
   if (errors.length === 0) return;
 

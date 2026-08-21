@@ -31,11 +31,6 @@ function getTrustedOrigins(request?: Request) {
     origins.add(origin);
   }
 
-  const requestOrigin = request?.headers.get("origin");
-  if (requestOrigin) {
-    origins.add(requestOrigin);
-  }
-
   const forwardedHost = request?.headers.get("x-forwarded-host") || request?.headers.get("host");
   const forwardedProto = request?.headers.get("x-forwarded-proto") || "https";
   if (forwardedHost) {

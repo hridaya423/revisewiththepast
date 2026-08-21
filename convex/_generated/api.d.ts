@@ -21,6 +21,7 @@ import type * as model_auth from "../model/auth.js";
 import type * as model_markingSummary from "../model/markingSummary.js";
 import type * as paperAssets from "../paperAssets.js";
 import type * as paperRegions from "../paperRegions.js";
+import type * as questionIdentityAnchor from "../questionIdentityAnchor.js";
 import type * as questionPageAssets from "../questionPageAssets.js";
 import type * as questionTags from "../questionTags.js";
 import type * as savedPapers from "../savedPapers.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   "model/markingSummary": typeof model_markingSummary;
   paperAssets: typeof paperAssets;
   paperRegions: typeof paperRegions;
+  questionIdentityAnchor: typeof questionIdentityAnchor;
   questionPageAssets: typeof questionPageAssets;
   questionTags: typeof questionTags;
   savedPapers: typeof savedPapers;

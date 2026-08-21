@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -7,7 +7,7 @@ import { degrees, PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import { describe, expect, it } from "vitest";
 
 import { extractPdfPageTexts, getPdfDocument, renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
-import { prepareSnippet, rasterizeSourcePdfPage } from "./source-pdf";
+import { prepareSnippet, rasterizeSourcePdfPage, sourceBoundsToRasterMask } from "./source-pdf";
 
 describe("source PDF rasterization", () => {
   it("removes source text objects when a page is rasterized for masking", async () => {
@@ -24,6 +24,89 @@ describe("source PDF rasterization", () => {
       const document = await getPdfDocument(await raster.sourceDoc.save());
       const [text] = await extractPdfPageTexts(document);
       expect(text?.text).not.toContain("SECRET SOURCE TOTAL");
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("reports answer-line-only pages as having no meaningful text", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("........................................................", { x: 30, y: 120, size: 8, font });
+    page.drawText("TOTAL FOR SECTION B = 30 MARKS", { x: 80, y: 30, size: 10, font });
+    page.drawText("*P67619A01624*", { x: 110, y: 10, size: 8, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-answer-lines-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      expect(raster.hasMeaningfulText).toBe(false);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("identifies OCR additional answer sheets", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("EXTRA ANSWER SPACE", { x: 90, y: 160, size: 12, font });
+    page.drawText("If you need extra space use these lined pages.", { x: 30, y: 140, size: 9, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-ocr-answer-sheet-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+        boardCode: "ocr",
+      });
+      expect(raster.isAdditionalAnswerPage).toBe(true);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("identifies OCR line-only continuation sheets", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("19", { x: 20, y: 180, size: 9, font });
+    page.drawText("........................................................", { x: 30, y: 120, size: 8, font });
+    page.drawText("PMT", { x: 250, y: 10, size: 8, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-ocr-lines-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+        boardCode: "ocr",
+      });
+      expect(raster.isAdditionalAnswerPage).toBe(true);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("does not treat footer-adjacent words as barcodes", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("Identify", { x: 30, y: 10, size: 10, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-footer-word-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      expect(raster.hasMeaningfulText).toBe(true);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -129,6 +212,85 @@ describe("source PDF rasterization", () => {
 
       expect(darkPixelCount(answerPixels)).toBeGreaterThan(50);
       expect(darkPixelCount(totalPixels)).toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("masks AQA question headers while preserving the adjacent topic heading", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("Question 7", { x: 30, y: 140, size: 14, font });
+    page.drawText("The living world", { x: 120, y: 140, size: 14, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-question-header-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+      const image = await loadImage(rendered.pages[0].png);
+      const canvas = createCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const sourceHeader = context.getImageData(50, 85, 170, 70).data;
+      const topicHeading = context.getImageData(230, 85, 250, 70).data;
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+
+      expect(darkPixelCount(sourceHeader)).toBe(0);
+      expect(darkPixelCount(topicHeading)).toBeGreaterThan(50);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("masks only exact source number bounds when the prompt starts immediately beside the number", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    const numberFont = await source.embedFont(StandardFonts.HelveticaBold);
+    page.drawText("2", { x: 30, y: 140, size: 14, font: numberFont });
+    page.drawText("PROMPT", { x: 37, y: 140, size: 14, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-number-bounds-"));
+    const sourcePath = join(directory, "source.pdf");
+    const artifactDirectory = join(tmpdir(), "opencode", "source-number-mask");
+    mkdirSync(artifactDirectory, { recursive: true });
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const viewport = (await getPdfDocument(new Uint8Array(await source.save()))).getPage(1)
+        .then((pdfJsPage) => pdfJsPage.getViewport({ scale: 2 }));
+      const rasterViewport = await viewport;
+      const exactMask = sourceBoundsToRasterMask(
+        { x0: 30, y0: 140, x1: 37, y1: 154 },
+        rasterViewport,
+      );
+      expect(exactMask.left).toBe(60);
+      expect(exactMask.right).toBe(74);
+      expect(exactMask.top).toBe(92);
+      expect(exactMask.bottom).toBe(120);
+
+      const before = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+        sourceQuestionNumber: "2",
+      });
+      const after = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+        sourceQuestionNumber: "2",
+        numberBounds: { x0: 30, y0: 140, x1: 37, y1: 154 },
+      });
+      writeFileSync(join(artifactDirectory, "before-guessed-mask.png"), (await renderPdfToPngBuffers(await before.sourceDoc.save(), 2)).pages[0].png);
+      writeFileSync(join(artifactDirectory, "after-exact-mask.png"), (await renderPdfToPngBuffers(await after.sourceDoc.save(), 2)).pages[0].png);
+      expect(exactMask.right).toBeLessThan(2 * 37.1);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 import { generateMarkScheme, generateMarkSchemeRequestSchema } from "@/features/papers/server";
+import { reservePaperGeneration } from "@/features/mcp/rate-limit";
 import { normalizeApplicationError } from "@/shared/application/errors";
 
 export const runtime = "nodejs";
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
   const parsed = generateMarkSchemeRequestSchema.safeParse(rawBody);
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid mark scheme request.");
   try {
+    await reservePaperGeneration(request, "mark-scheme");
     const result = await generateMarkScheme(parsed.data);
     return new Response(Buffer.from(result.bytes), {
       headers: {
@@ -32,6 +34,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const normalized = normalizeApplicationError(error, "Failed to generate mark scheme.");
     console.error("Mark scheme generation failed", { subjectKey: parsed.data.subjectKey, unitCount: parsed.data.selectedUnitKeys.length, message: normalized.message });
-    return badRequest(normalized.message, normalized.status);
+    const headers: Record<string, string> = {};
+    if (typeof error === "object" && error !== null && "retryAt" in error && typeof error.retryAt === "number") {
+      headers["Retry-After"] = String(Math.max(1, Math.ceil((error.retryAt - Date.now()) / 1000)));
+    }
+    return new Response(normalized.message, { status: normalized.status, headers });
   }
 }

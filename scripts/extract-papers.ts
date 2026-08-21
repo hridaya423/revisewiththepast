@@ -5,6 +5,8 @@ import { execFileSync } from "node:child_process";
 import { basename, resolve } from "node:path";
 import { PDFDocument } from "pdf-lib";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import type { QuestionIdentityAnchor } from "@/shared/domain/paper";
+import { discoverGroupedQuestionIdentityAnchors } from "./question-identity-anchor";
 
 process.on("unhandledRejection", (reason) => {
   const message = reason instanceof Error ? reason.message : String(reason);
@@ -16,7 +18,7 @@ process.on("unhandledRejection", (reason) => {
 import { extractReferencedSupportLabels, isFooterFurnitureLine, isHeaderFurnitureLine, matchSupportCaption } from "@/features/papers/builder/domain/page-text";
 
 type BoundingBox = { x0: number; y0: number; x1: number; y1: number };
-type TextLine = { text: string; bbox: BoundingBox; y: number };
+type TextLine = { text: string; bbox: BoundingBox; y: number; spans?: Array<{ text: string; bbox: BoundingBox }> };
 
 type RegionSpan = { page_number: number; y_top: number; y_bottom: number };
 
@@ -70,6 +72,7 @@ type ExtractedQuestionPart = {
   normalized_text: string;
   source_mode: "full_page" | "crop_or_text";
   bbox: BoundingBox | null;
+  identity_anchor: QuestionIdentityAnchor | null;
   region_spans: RegionSpan[] | null;
   stem_spans: RegionSpan[] | null;
   referenced_support_labels: string[];
@@ -420,6 +423,7 @@ function finalizeQuestionPart(
     normalized_text: cleanedNormalizedText(combinedText),
     source_mode: mode,
     bbox,
+    identity_anchor: null,
     region_spans: null,
     stem_spans: null,
     referenced_support_labels: extractReferencedSupportLabels(rawCombinedText),
@@ -433,6 +437,27 @@ function finalizeQuestionPart(
     choiceSiblingQuestionIds: [],
     sharedChoiceStem: active.sharedChoiceStem,
   };
+}
+
+function attachQuestionIdentityAnchors(questionParts: ExtractedQuestionPart[], pages: ExtractedPage[], boardCode: string, subjectSlug: string) {
+  const pagesForDiscovery = pages.map((page) => ({ pageNumber: page.page_number, lines: page.text_lines }));
+  const assigned = discoverGroupedQuestionIdentityAnchors({
+    boardCode,
+    subjectSlug,
+    pages: pagesForDiscovery,
+    parts: questionParts.map((part) => ({
+      questionId: part.question_id,
+      questionNumber: part.question_number,
+      questionPartNumber: part.question_part_number,
+      sectionCode: part.section_code,
+      choiceGroupId: part.choiceGroupId,
+      pageNumber: part.page_number,
+      pageNumbers: part.page_numbers,
+      identity_anchor: part.identity_anchor,
+    })),
+  });
+  const anchors = new Map(assigned.parts.map((part) => [part.questionId, part.identity_anchor]));
+  questionParts.forEach((part) => { part.identity_anchor = anchors.get(part.question_id) ?? null; });
 }
 
 function isFiller(text: string, config: BoardConfig) {
@@ -1030,6 +1055,10 @@ function groupTextItemsIntoLines(items: Array<{ str: string; transform: number[]
       return {
         text: normalizeText(text),
         y: line.y,
+        spans: sortedItems.map((item) => ({
+          text: item.text,
+          bbox: { x0: item.x, y0: item.y, x1: item.x + item.width, y1: item.y + item.height },
+        })),
         bbox: {
           x0: Math.min(...xs),
           y0: Math.min(...ys),
@@ -2364,6 +2393,7 @@ async function extractPaper(pdfPath: string, outputDir: string, config: BoardCon
     normalizeLanguageReadingMarks(questionParts, pages);
   }
   reconcileQuestionMarks(questionParts, pages);
+  attachQuestionIdentityAnchors(questionParts, pages, boardCode, subjectSlug);
 
   return {
     source_file: pdfPath,

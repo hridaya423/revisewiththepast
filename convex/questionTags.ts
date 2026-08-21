@@ -1,6 +1,8 @@
 import { mutationGeneric, queryGeneric, type GenericMutationCtx } from "convex/server";
 import { v } from "convex/values";
+import type { QuestionIdentityAnchor } from "../shared/domain/paper";
 import type { DataModel } from "./_generated/dataModel";
+import { questionIdentityAnchorValidator } from "./questionIdentityAnchor";
 
 function compareTaggedPaperPriority(
   left: {
@@ -93,6 +95,7 @@ const taggedQuestionPartValidator = v.object({
     }),
     v.null(),
   ),
+  identityAnchor: v.optional(v.union(questionIdentityAnchorValidator, v.null())),
   sourceMode: v.string(),
   assetIds: v.array(v.string()),
 
@@ -692,7 +695,8 @@ export const getPaperMakerQuestionBank = queryGeneric({
       contextText: string | null;
       pageNumber: number;
       pageNumbers: number[];
-      bbox: { x0: number; y0: number; x1: number; y1: number } | null;
+       bbox: { x0: number; y0: number; x1: number; y1: number } | null;
+       identityAnchor?: QuestionIdentityAnchor | null;
       regionSpans?: Array<{ pageNumber: number; yTop: number; yBottom: number }> | null;
       stemSpans?: Array<{ pageNumber: number; yTop: number; yBottom: number }> | null;
       referencedFigures?: string[];
@@ -761,6 +765,7 @@ export const getPaperMakerQuestionBank = queryGeneric({
           pageNumber: part.pageNumber,
           pageNumbers: part.pageNumbers,
           bbox: part.bbox,
+          identityAnchor: part.identityAnchor ?? null,
           regionSpans: part.regionSpans ?? null,
           stemSpans: part.stemSpans ?? null,
           referencedFigures: part.referencedFigures ?? [],

@@ -106,6 +106,28 @@ function normalizeMarkSchemeText(text: string) {
   return text.replace(/\s+/g, " ").trim();
 }
 
+const EDEXCEL_QUALIFICATION_CODES: Record<string, string> = {
+  "combined-science": "1SC0",
+  biology: "1BI0",
+  chemistry: "1CH0",
+  physics: "1PH0",
+  business: "1BS0",
+  french: "1FR0",
+  mathematics: "1MA1",
+};
+
+export function markSchemeDocumentMatchesUnitIdentity(
+  unit: Pick<MarkableUnit, "boardCode" | "subjectSlug">,
+  pages: CachedPdfPage[],
+) {
+  if (unit.boardCode !== "edexcel") return true;
+  const expectedCode = EDEXCEL_QUALIFICATION_CODES[unit.subjectSlug];
+  if (!expectedCode) return true;
+  const coverText = pages.slice(0, 2).map((page) => page.text).join(" ");
+  const detectedCode = coverText.match(/\b1(?:SC|BI|CH|PH|BS|FR|MA)0\b/i)?.[0]?.toUpperCase();
+  return detectedCode === undefined || detectedCode === expectedCode;
+}
+
 function narrowAqaEnglishLanguagePages(unit: MarkableUnit, pages: CachedPdfPage[]) {
   const questionNumbers = Array.from(new Set(unit.parts.map((part) => normalizeQuestionNumber(part.questionNumber))));
   if (questionNumbers.length === 0) return [];
@@ -175,7 +197,9 @@ function aqaPartPattern(questionNumber: string, partNumber: string) {
 
 function isAqaQuestionPartLine(line: StructuredPdfLine, questionNumber: string, partNumber: string) {
   const normalizedQuestion = normalizeQuestionNumber(questionNumber);
-  const questionColumnText = normalizeInlineText([line.leftText, line.answerText].filter(Boolean).join(" "));
+  if (/\bLevel\s+Marks?\b/i.test(line.fullText)) return false;
+  const extractedColumns = normalizeInlineText([line.leftText, line.answerText].filter(Boolean).join(" "));
+  const questionColumnText = extractedColumns || normalizeInlineText(line.fullText);
   return aqaPartPattern(normalizedQuestion, partNumber).test(questionColumnText);
 }
 
@@ -457,6 +481,9 @@ export async function locateMarkSchemePagesForUnit(unit: MarkableUnit): Promise<
   const markSchemeAsset = resolvedAsset.asset;
 
   const pages = await loadMarkSchemeTextPages(markSchemeAsset.relativePath, markSchemeAsset.cdnUrl);
+  if (!markSchemeDocumentMatchesUnitIdentity(unit, pages)) {
+    throw new Error(`Mark scheme document identity did not match ${unit.subjectSlug}`);
+  }
   const targetQuestionNumber = normalizeQuestionNumber(unit.questionNumber);
   const isEdexcelScience = unit.boardCode === "edexcel" && ["biology", "chemistry", "physics", "combined-science"].includes(unit.subjectSlug);
   const ownedOcrQuestionNumbers = unit.subjectSlug === "computer-science" ? getOwnedOcrQuestionNumbers(unit) : null;
@@ -1041,8 +1068,10 @@ function findStructuredPartStart(lines: StructuredPdfLine[], markerIndex: number
 export function splitMarkSchemePagesByParts(unit: MarkableUnit, pages: CachedPdfPage[]): RenderedMarkSchemePage[] | null {
   if (unit.parts.length < 2 || unit.parts.some((part) => !part.questionPartNumber || !part.marks)) return null;
   if (unit.parts.reduce((sum, part) => sum + (part.marks ?? 0), 0) !== unit.totalMarks) return null;
-  const useCanonicalPathOrder = unit.subjectSlug === "french"
-    || unit.parts.some((part) => (part.questionPath?.length ?? 0) > 0);
+  const isEdexcelScience = unit.boardCode === "edexcel"
+    && ["biology", "chemistry", "physics", "combined-science"].includes(unit.subjectSlug);
+  const useCanonicalPathOrder = !isEdexcelScience && (unit.subjectSlug === "french"
+    || unit.parts.some((part) => (part.questionPath?.length ?? 0) > 0));
   const orderedParts = unit.parts
     .map((part, index) => ({ part, index }))
     .sort((leftEntry, rightEntry) => {

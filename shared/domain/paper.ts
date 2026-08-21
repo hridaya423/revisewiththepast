@@ -5,6 +5,30 @@ import type { TopicId } from "./topic";
 export type { BoundingBox, RegionSpan } from "./geometry";
 export type { TopicTreeNode, TopicTreeNodeWithCounts } from "./topic";
 
+export type QuestionIdentityAnchor = {
+  pageNumber: number;
+  numberBounds: BoundingBox;
+  promptBaseline: number;
+  promptBounds: BoundingBox;
+};
+
+export function questionIdentityAnchorsEqual(
+  left: QuestionIdentityAnchor | null | undefined,
+  right: QuestionIdentityAnchor | null | undefined,
+) {
+  if (!left || !right) return left == null && right == null;
+  return left.pageNumber === right.pageNumber
+    && left.promptBaseline === right.promptBaseline
+    && left.numberBounds.x0 === right.numberBounds.x0
+    && left.numberBounds.y0 === right.numberBounds.y0
+    && left.numberBounds.x1 === right.numberBounds.x1
+    && left.numberBounds.y1 === right.numberBounds.y1
+    && left.promptBounds.x0 === right.promptBounds.x0
+    && left.promptBounds.y0 === right.promptBounds.y0
+    && left.promptBounds.x1 === right.promptBounds.x1
+    && left.promptBounds.y1 === right.promptBounds.y1;
+}
+
 export type PaperMakerSubjectKey =
   | "aqa-geography"
   | "aqa-business"
@@ -64,6 +88,7 @@ export type QuestionBankPart = {
   pageNumber: number;
   pageNumbers: number[];
   bbox: BoundingBox | null;
+  identityAnchor?: QuestionIdentityAnchor | null;
   regionSpans?: RegionSpan[] | null;
   stemSpans?: RegionSpan[] | null;
   referencedFigures?: string[];

@@ -15,18 +15,20 @@ type Reservation = {
 };
 
 function getClientAddress(request?: Request) {
-  if (!request || process.env.VERCEL !== "1") return "unknown";
-  const value = request.headers.get("x-vercel-forwarded-for")
-    ?? request.headers.get("x-forwarded-for");
-  return value?.split(",")[0]?.trim() || "unknown";
+  if (request && process.env.VERCEL === "1") {
+    return request.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() || null;
+  }
+  return process.env.NODE_ENV === "production" ? null : "unknown";
 }
 
 export function getCallerKey(request?: Request) {
+  const address = getClientAddress(request);
+  if (!address) throw new DependencyUnavailableError("Generation safeguards are unavailable.");
   const secret = getMcpServiceSecret();
-  return createHmac("sha256", secret).update(getClientAddress(request)).digest("hex");
+  return createHmac("sha256", secret).update(address).digest("hex");
 }
 
-export async function reservePaperGeneration(request?: Request) {
+export async function reservePaperGeneration(request?: Request, scope = "paper") {
   const serviceSecret = getMcpServiceSecret();
   const callerKey = getCallerKey(request);
 
@@ -35,6 +37,7 @@ export async function reservePaperGeneration(request?: Request) {
     result = await getMcpConvexClient().mutation(api.mcpRateLimits.reserve, {
       serviceSecret,
       callerKey,
+      scope,
     });
   } catch (error) {
     console.error("MCP rate-limit reservation failed", {

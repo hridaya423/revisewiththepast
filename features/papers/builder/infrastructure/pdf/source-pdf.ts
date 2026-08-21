@@ -5,6 +5,7 @@ import { PDFDocument } from "pdf-lib";
 
 import { toPdfCropBox } from "../../domain/crop-geometry";
 import { getPdfDocument, loadPdfJsForNode, renderPdfPageToPng } from "@/features/papers/infrastructure/pdfjs-server";
+import type { QuestionIdentityAnchor, QuestionUnit } from "@/shared/domain/paper";
 
 export type CropBox = {
   left: number;
@@ -28,6 +29,8 @@ export type PreparedSnippet = {
 type RasterizeSourceOptions = {
   sanitizeFurniture?: boolean;
   sourceQuestionNumber?: string;
+  numberBounds?: QuestionIdentityAnchor["numberBounds"];
+  boardCode?: QuestionUnit["boardCode"];
 };
 
 type PdfTextItem = {
@@ -37,13 +40,100 @@ type PdfTextItem = {
   height: number;
 };
 
-const SOURCE_FURNITURE_PATTERN = /do not write|outside the box|turn over|pearson edexcel|copyright|total for (?:question|section|paper)|^pmt$|^\*?[a-z]\d{5,}[a-z]?\*?$/i;
+type Rectangle = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+type SanitizedPageMetadata = {
+  hasMeaningfulText: boolean;
+  isAdditionalAnswerPage: boolean;
+};
+
+const sanitizedPageMetadata = new WeakMap<PDFDocument, SanitizedPageMetadata>();
+
+export function sourceBoundsToRasterMask(
+  numberBounds: QuestionIdentityAnchor["numberBounds"],
+  viewport: { convertToViewportPoint: (x: number, y: number) => number[] },
+): Rectangle {
+  const points = [
+    viewport.convertToViewportPoint(numberBounds.x0, numberBounds.y0),
+    viewport.convertToViewportPoint(numberBounds.x1, numberBounds.y0),
+    viewport.convertToViewportPoint(numberBounds.x1, numberBounds.y1),
+    viewport.convertToViewportPoint(numberBounds.x0, numberBounds.y1),
+  ];
+  return {
+    left: Math.min(...points.map(([x]) => x)),
+    right: Math.max(...points.map(([x]) => x)),
+    top: Math.min(...points.map(([, y]) => y)),
+    bottom: Math.max(...points.map(([, y]) => y)),
+  };
+}
+
+const SOURCE_FURNITURE_PATTERN = /do not write|outside the box|turn over|pearson edexcel|copyright|total for (?:question|section|paper)|^question\s+\d+\b|^pmt$/i;
+
+function isAdditionalAnswerPage(lines: string[], boardCode?: RasterizeSourceOptions["boardCode"]) {
+  const text = lines.join(" ").toLowerCase().replace(/\s+/g, " ");
+  if (/additional page, if required|write the question numbers in the left-hand margin|extra answer space/.test(text)) {
+    return true;
+  }
+  if (boardCode !== "ocr") return false;
+
+  const copyrightStart = lines.findIndex((line) => /^(?:copyright information|ocr is committed\b)/i.test(line));
+  const contentLines = copyrightStart >= 0 ? lines.slice(0, copyrightStart) : lines;
+  return contentLines.every((line) => (
+    !line
+    || SOURCE_FURNITURE_PATTERN.test(line)
+    || /^\(?\d+\)?$/.test(line)
+    || /^\[\d+\]$/.test(line)
+    || /^©\s*ocr/i.test(line)
+    || /^oxford cambridge and rsa$/i.test(line)
+    || /^[._\-\s]+$/.test(line)
+    || /^question \d+ continues/i.test(line)
+    || /^additional (?:answer )?space/i.test(line)
+    || /^extra space(?: for question\b)?/i.test(line)
+    || /^end of (?:question paper|section)\b/i.test(line)
+  ));
+}
+
+function subtractRectangle(rectangle: Rectangle, masks: readonly Rectangle[]) {
+  let remainder = [rectangle];
+
+  for (const mask of masks) {
+    const nextRemainder: Rectangle[] = [];
+
+    for (const piece of remainder) {
+      const left = Math.max(piece.left, mask.left);
+      const right = Math.min(piece.right, mask.right);
+      const top = Math.max(piece.top, mask.top);
+      const bottom = Math.min(piece.bottom, mask.bottom);
+
+      if (left >= right || top >= bottom) {
+        nextRemainder.push(piece);
+        continue;
+      }
+
+      if (piece.top < top) nextRemainder.push({ left: piece.left, right: piece.right, top: piece.top, bottom: top });
+      if (bottom < piece.bottom) nextRemainder.push({ left: piece.left, right: piece.right, top: bottom, bottom: piece.bottom });
+      if (piece.left < left) nextRemainder.push({ left: piece.left, right: left, top, bottom });
+      if (right < piece.right) nextRemainder.push({ left: right, right: piece.right, top, bottom });
+    }
+
+    remainder = nextRemainder;
+  }
+
+  return remainder;
+}
 
 async function sanitizeRasterPage(
   png: Buffer,
   pdfJsPage: Awaited<ReturnType<Awaited<ReturnType<typeof getPdfDocument>>["getPage"]>>,
   scale: number,
   sourceQuestionNumber?: string,
+  numberBounds?: QuestionIdentityAnchor["numberBounds"],
+  boardCode?: RasterizeSourceOptions["boardCode"],
 ) {
   const image = await loadImage(png);
   const canvas = createCanvas(image.width, image.height);
@@ -55,14 +145,18 @@ async function sanitizeRasterPage(
   const viewport = pdfJsPage.getViewport({ scale });
   const textContent = await pdfJsPage.getTextContent();
   const normalizedQuestionNumber = sourceQuestionNumber?.replace(/\s+/g, "") ?? null;
-  const protectedTextBounds: Array<{ left: number; right: number; top: number; bottom: number }> = [];
-  const furnitureMasks: Array<{ left: number; right: number; top: number; bottom: number }> = [];
+  const protectedTextBounds: Rectangle[] = [];
+  const furnitureMasks: Rectangle[] = [];
+  const sourceIdentityMasks = numberBounds ? [sourceBoundsToRasterMask(numberBounds, viewport)] : [];
+  const pageTextLines: string[] = [];
 
   for (const rawItem of textContent.items) {
     if (!("str" in rawItem) || !("transform" in rawItem)) continue;
     const item = rawItem as PdfTextItem;
     const text = item.str.trim().replace(/\s+/g, " ");
     if (!text) continue;
+    pageTextLines.push(text);
+    if (/^[.\s_-]+$/.test(text)) continue;
 
     const transform = pdfjs.Util.transform(viewport.transform, item.transform);
     const originX = transform[4];
@@ -75,7 +169,9 @@ async function sanitizeRasterPage(
     const isRotatedSideFurniture = Math.abs(Math.sin(angle)) > 0.7
       && (originX < image.width * 0.2 || originX > image.width * 0.8)
       && (SOURCE_FURNITURE_PATTERN.test(text) || /^(?:do|not|write|in|this|area|outside|the|box)$/i.test(text));
-    const isFurniture = SOURCE_FURNITURE_PATTERN.test(text) || isRotatedSideFurniture;
+    const isPageNumber = /^\d{1,3}$/.test(text) && originY > image.height * 0.85;
+    const isFooterBarcode = /^(?=.*\d)\*?[a-z0-9]{8,}\*?$/i.test(text) && originY > image.height * 0.85;
+    const isFurniture = SOURCE_FURNITURE_PATTERN.test(text) || isRotatedSideFurniture || isPageNumber || isFooterBarcode;
     const itemQuestionNumber = text.match(/^0?\s*(\d{1,2})(?=\s|$)/)?.[1] ?? null;
     const isQuestionNumber = normalizedQuestionNumber !== null
       && itemQuestionNumber === normalizedQuestionNumber
@@ -114,17 +210,41 @@ async function sanitizeRasterPage(
     context.fillRect(mask.left, mask.top, mask.right - mask.left, mask.bottom - mask.top);
   }
 
+  const allMasks = [...furnitureMasks, ...sourceIdentityMasks];
   for (const bounds of protectedTextBounds) {
     const left = Math.max(0, Math.floor(bounds.left));
     const top = Math.max(0, Math.floor(bounds.top));
     const right = Math.min(image.width, Math.ceil(bounds.right));
     const bottom = Math.min(image.height, Math.ceil(bounds.bottom));
     if (right > left && bottom > top) {
-      context.drawImage(image, left, top, right - left, bottom - top, left, top, right - left, bottom - top);
+      for (const remainder of subtractRectangle({ left, right, top, bottom }, allMasks)) {
+        context.drawImage(
+          image,
+          remainder.left,
+          remainder.top,
+          remainder.right - remainder.left,
+          remainder.bottom - remainder.top,
+          remainder.left,
+          remainder.top,
+          remainder.right - remainder.left,
+          remainder.bottom - remainder.top,
+        );
+      }
     }
   }
 
-  return canvas.toBuffer("image/png");
+  for (const mask of furnitureMasks) {
+    context.fillRect(mask.left, mask.top, mask.right - mask.left, mask.bottom - mask.top);
+  }
+  for (const mask of sourceIdentityMasks) {
+    context.fillRect(mask.left, mask.top, mask.right - mask.left, mask.bottom - mask.top);
+  }
+
+  return {
+    png: canvas.toBuffer("image/png"),
+    hasMeaningfulText: protectedTextBounds.length > 0,
+    isAdditionalAnswerPage: isAdditionalAnswerPage(pageTextLines, boardCode),
+  };
 }
 
 function getEmbeddedPages(outputDoc: PDFDocument) {
@@ -184,15 +304,17 @@ export async function rasterizeSourcePdfPage(
   options: RasterizeSourceOptions = {},
 ) {
   const sanitizationKey = options.sanitizeFurniture
-    ? `-clean-${options.sourceQuestionNumber ?? "none"}`
+    ? `-clean-${options.boardCode ?? "none"}-${options.sourceQuestionNumber ?? "none"}-${options.numberBounds ? Object.values(options.numberBounds).join("-") : "none"}`
     : "";
   const rasterUrl = `${pageAssetUrl}#raster-page-${sourcePageIndex}${sanitizationKey}`;
   const cachedDoc = sourceDocCache.get(rasterUrl);
   if (cachedDoc) {
+    const metadata = sanitizedPageMetadata.get(cachedDoc) ?? { hasMeaningfulText: true, isAdditionalAnswerPage: false };
     return {
       candidate: { pdfUrl: rasterUrl, sourcePageIndex: 0 } satisfies SourcePdfCandidate,
       sourceDoc: cachedDoc,
       sourcePdfPage: cachedDoc.getPage(0),
+      ...metadata,
     };
   }
 
@@ -204,22 +326,25 @@ export async function rasterizeSourcePdfPage(
   const viewport = pdfJsPage.getViewport({ scale: 1 });
   const renderScale = 2;
   const renderedPng = await renderPdfPageToPng(pdfJsDoc, pdfJsPageNumber, renderScale);
-  const png = options.sanitizeFurniture
-    ? await sanitizeRasterPage(renderedPng, pdfJsPage, renderScale, options.sourceQuestionNumber)
-    : renderedPng;
+  const sanitized = options.sanitizeFurniture
+    ? await sanitizeRasterPage(renderedPng, pdfJsPage, renderScale, options.sourceQuestionNumber, options.numberBounds, options.boardCode)
+    : { png: renderedPng, hasMeaningfulText: true, isAdditionalAnswerPage: false };
   const rasterDoc = await PDFDocument.create();
   const page = rasterDoc.addPage([viewport.width, viewport.height]);
   page.setMediaBox(pageX, pageY, viewport.width, viewport.height);
   page.setCropBox(pageX, pageY, viewport.width, viewport.height);
-  const image = await rasterDoc.embedPng(png);
+  const image = await rasterDoc.embedPng(sanitized.png);
   page.drawImage(image, { x: pageX, y: pageY, width: viewport.width, height: viewport.height });
   sourcePdfCache.set(rasterUrl, await rasterDoc.save());
   sourceDocCache.set(rasterUrl, rasterDoc);
+  sanitizedPageMetadata.set(rasterDoc, sanitized);
 
   return {
     candidate: { pdfUrl: rasterUrl, sourcePageIndex: 0 } satisfies SourcePdfCandidate,
     sourceDoc: rasterDoc,
     sourcePdfPage: page,
+    hasMeaningfulText: sanitized.hasMeaningfulText,
+    isAdditionalAnswerPage: sanitized.isAdditionalAnswerPage,
   };
 }
 

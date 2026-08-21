@@ -16,7 +16,6 @@ const serverEnvironmentSchema = z.object({
   OPENROUTER_API_KEY: z.string().optional(),
   OPENROUTER_MODEL: z.string().default("google/gemini-3.1-flash-lite"),
   HANDWRITTEN_OCR_VERSION: z.string().optional(),
-  PAPER_MAKER_REGION_MODE: z.enum(["auto", "legacy"]).default("auto"),
   PAPER_MAKER_LOCAL_GEOMETRY: z.string().optional(),
   LOCAL_GEOMETRY_DEBUG: z.string().optional(),
   MCP_SERVICE_SECRET: z.string().min(32).optional(),

@@ -11,6 +11,7 @@ export type QaArtifactValidation = {
 
 export type QaPaperGateInput = {
   findings: QaGateFinding[];
+  canonicalLayoutChecked: boolean;
   selectedUnitCount: number;
   markSchemeIncludedCount: number;
   markSchemeFailureCount: number;
@@ -20,6 +21,7 @@ export type QaPaperGateInput = {
 
 export function decideQaPaperGate(input: QaPaperGateInput) {
   const failures: string[] = [];
+  if (!input.canonicalLayoutChecked) failures.push("canonical-layout-unchecked");
   if (input.findings.some((finding) => finding.severity === "error")) failures.push("error-findings");
   if (input.markSchemeIncludedCount !== input.selectedUnitCount) failures.push("mark-scheme-coverage");
   if (input.markSchemeFailureCount > 0) failures.push("mark-scheme-assembly");

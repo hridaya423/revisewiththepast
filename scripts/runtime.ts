@@ -1,5 +1,12 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
+
+export function deriveSourceRelativePath(sourceFile: string) {
+  const normalized = sourceFile.replaceAll("\\", "/");
+  const marker = "/downloads/";
+  const markerIndex = normalized.lastIndexOf(marker);
+  return markerIndex >= 0 ? normalized.slice(markerIndex + marker.length) : basename(normalized);
+}
 
 export function getOptionalEnvironment(name: string) {
   const value = process.env[name]?.trim();

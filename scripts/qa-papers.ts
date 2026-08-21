@@ -13,6 +13,7 @@ import type { SubjectTierKey } from "@/shared/domain/subject";
 import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
 import { assembleMarkSchemePdf } from "@/features/papers/marking/infrastructure/mark-scheme/mark-scheme";
 import { runDeterministicChecks } from "@/features/papers/builder/infrastructure/qa/validate";
+import { checkQuestionLayout } from "@/features/papers/builder/infrastructure/qa/question-layout";
 import { decideQaPaperGate, type QaArtifactValidation } from "./qa-paper-gate";
 
 type CliOptions = {
@@ -214,10 +215,11 @@ async function runPaper(
         const pageName = `page-${String(page.pageNumber).padStart(2, "0")}.png`;
         writeFileSync(resolve(paperDir, pageName), page.png);
       }
-      report.findings = await runDeterministicChecks(questionPaperValidation.rendered.pages, questionPaperValidation.rendered.textPages, {
+      const deterministicFindings = await runDeterministicChecks(questionPaperValidation.rendered.pages, questionPaperValidation.rendered.textPages, {
         subjectKey: config.subjectKey,
         totalMarks: result.selection.totalMarks,
         selectedUnitCount: result.selection.selectedUnits.length,
+        expectedOrdinalCount: result.selection.selectedUnits.length,
         selectedUnitMarks: result.selection.selectedUnits.map((unit) => unit.totalMarks),
         coverPage: {
           totalMarks: result.coverPage.totalMarks,
@@ -225,6 +227,13 @@ async function runPaper(
           questionCount: result.coverPage.questionCount,
         },
       });
+      report.findings = [
+        ...deterministicFindings,
+        ...await checkQuestionLayout(result.pdfBytes, {
+          selectedUnitCount: result.selection.selectedUnits.length,
+          expectedOrdinalCount: result.selection.selectedUnits.length,
+        }),
+      ];
     } else {
       report.findings.push({
         check: "question-paper-artifact",
@@ -291,6 +300,7 @@ async function runPaper(
     report.selectedCoveredLeafTopicIds = result.selection.coveredLeafTopicIds;
     const gate = decideQaPaperGate({
       findings: report.findings,
+      canonicalLayoutChecked: questionPaperValidation.rendered !== null,
       selectedUnitCount: result.selection.selectedUnits.length,
       markSchemeIncludedCount: report.markSchemeIncludedCount ?? 0,
       markSchemeFailureCount: report.markSchemeFailureCount ?? result.selection.selectedUnits.length,

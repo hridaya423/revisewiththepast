@@ -16,13 +16,22 @@ export async function runQuestionOcr(input: OcrRequest) {
   const bundle = await getMarkingSubmissionBundleFromConvex(input.submissionId);
   if (!bundle) throw new NotFoundError("Submission not found.");
 
-  const pageUrls = input.imageUrl
-    ? [input.imageUrl]
-    : (bundle.pages ?? []).flatMap((page) => (
+  const storedPageUrls = new Set(
+    (bundle.pages ?? []).flatMap((page) => (page.sourceImageUrl ? [page.sourceImageUrl] : [])),
+  );
+  let pageUrls: string[];
+  if (input.imageUrl) {
+    if (!storedPageUrls.has(input.imageUrl)) {
+      throw new ValidationError("imageUrl does not match any page uploaded to this submission.");
+    }
+    pageUrls = [input.imageUrl];
+  } else {
+    pageUrls = (bundle.pages ?? []).flatMap((page) => (
       page.questionKey === input.questionKey && page.sourceImageUrl
         ? [page.sourceImageUrl]
         : []
     ));
+  }
   if (pageUrls.length === 0) throw new ValidationError("No uploaded page was found for this question.");
 
   await upsertMarkingQuestionStatusInConvex({ submissionId: input.submissionId, questionKey: input.questionKey, status: "ocr_pending" });

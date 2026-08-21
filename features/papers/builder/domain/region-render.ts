@@ -102,12 +102,9 @@ function cropBoxForSpan(
   span: { yTop: number; yBottom: number },
   layout: RegionPageLayout,
 ): RegionCropBox {
-  const left = 0;
-  const right = layout.pageWidth;
-
   return {
-    left,
-    right,
+    left: Math.max(0, layout.contentX0 - 8),
+    right: Math.min(layout.pageWidth, layout.contentX1 + 8),
     bottom: Math.max(layout.footerCeilingY, span.yBottom),
     top: Math.min(layout.pageHeight, layout.headerFloorY > 0 ? layout.headerFloorY : layout.pageHeight, span.yTop),
   };
@@ -142,7 +139,13 @@ export function buildUnitRenderPlan(
   layoutByPage: Map<number, RegionPageLayout>,
   figures: RegionFigure[],
 ): RegionCrop[] {
-  const questionSpans = dedupeSpans(unit.parts.flatMap((part) => part.regionSpans ?? []));
+  const rawQuestionSpans = dedupeSpans(unit.parts.flatMap((part) => part.regionSpans ?? []));
+  const ownsQuestionSpan = (span: RegionSpan) => unit.parts.some((part) => (part.pageNumber === undefined || part.pageNumber <= span.pageNumber)
+    && part.regionSpans?.some((candidate) => candidate.pageNumber === span.pageNumber
+      && candidate.yTop === span.yTop
+      && candidate.yBottom === span.yBottom));
+  const questionSpans = rawQuestionSpans.filter(ownsQuestionSpan);
+  const leadingRegionSpans = rawQuestionSpans.filter((span) => !ownsQuestionSpan(span));
 
   const referenced = new Set(getReferencedFigureLabels(unit));
 
@@ -153,7 +156,10 @@ export function buildUnitRenderPlan(
     if (referenced.has(normalizeFigureLabel(figure.label))) referencedFigurePages.add(figure.pageNumber);
   }
   const stemSpans: RegionSpan[] = [];
-  for (const span of dedupeSpans(unit.parts.flatMap((part) => part.stemSpans ?? []))) {
+  for (const span of dedupeSpans([
+    ...unit.parts.flatMap((part) => part.stemSpans ?? []),
+    ...leadingRegionSpans,
+  ])) {
     if (unreferencedFigures.some((figure) => figureCoverageOfSpan(figure, span) > ORPHAN_FIGURE_SPAN_COVERAGE)) continue;
     if (isScienceUnit(unit) && referenced.size !== 0 && !questionPages.has(span.pageNumber) && !referencedFigurePages.has(span.pageNumber)) continue;
     if (unit.subjectSlug === "geography" && referenced.size !== 0 && !questionPages.has(span.pageNumber) && !referencedFigurePages.has(span.pageNumber)) continue;
@@ -177,7 +183,19 @@ export function buildUnitRenderPlan(
 
   type Entry = { pageNumber: number; top: number; bottom: number; kind: RegionCropKind };
   const entries: Entry[] = [
-    ...stemSpans.map((s) => ({ pageNumber: s.pageNumber, top: s.yTop, bottom: s.yBottom, kind: "stem" as const })),
+    ...stemSpans.map((span) => {
+      const startsQuestion = unit.parts.some((part) => {
+        const ownsSpan = part.stemSpans?.some((candidate) => candidate.pageNumber === span.pageNumber
+          && candidate.yTop === span.yTop
+          && candidate.yBottom === span.yBottom);
+        const firstRegionPage = Math.min(...(part.regionSpans ?? []).map((candidate) => candidate.pageNumber));
+        return ownsSpan
+          && (part.regionSpans?.length ?? 0) > 0
+          && part.identityAnchor?.pageNumber === span.pageNumber
+          && span.pageNumber < firstRegionPage;
+      });
+      return { pageNumber: span.pageNumber, top: span.yTop, bottom: span.yBottom, kind: startsQuestion ? "question" as const : "stem" as const };
+    }),
     ...extraFigures.map((f) => ({ pageNumber: f.pageNumber, top: f.yTop, bottom: f.yBottom, kind: "figure" as const })),
     ...questionSpans.map((s) => ({ pageNumber: s.pageNumber, top: s.yTop, bottom: s.yBottom, kind: "question" as const })),
   ];

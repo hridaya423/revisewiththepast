@@ -17,17 +17,20 @@ export const reserve = mutation({
   args: {
     serviceSecret: v.string(),
     callerKey: v.string(),
+    scope: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     requireServiceSecret(args.serviceSecret);
     if (!/^[a-f0-9]{64}$/.test(args.callerKey)) throw new Error("Invalid caller key.");
+    const scope = args.scope ?? "paper";
+    if (!/^[a-z][a-z0-9-]{0,31}$/.test(scope)) throw new Error("Invalid scope.");
 
     const now = Date.now();
     const windowStart = Math.floor(now / HOUR_MS) * HOUR_MS;
     const callerLimit = getPositiveInteger("MCP_RATE_LIMIT_PER_CALLER_PER_HOUR", 10, 1000);
     const globalLimit = getPositiveInteger("MCP_RATE_LIMIT_GLOBAL_PER_HOUR", 300, 100_000);
-    const callerScope = `caller:${args.callerKey}`;
-    const globalScope = "global";
+    const callerScope = `caller:${scope}:${args.callerKey}`;
+    const globalScope = `global:${scope}`;
     const [callerRow, globalRow] = await Promise.all([
       ctx.db.query("mcpRateLimits").withIndex("by_scope_window", (q) => q.eq("scope", callerScope).eq("windowStart", windowStart)).unique(),
       ctx.db.query("mcpRateLimits").withIndex("by_scope_window", (q) => q.eq("scope", globalScope).eq("windowStart", windowStart)).unique(),

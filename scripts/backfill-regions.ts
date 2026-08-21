@@ -1,14 +1,14 @@
 
 import { config as loadEnv } from "dotenv";
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { basename, resolve } from "node:path";
+import { resolve } from "node:path";
 
 loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: true });
 loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api";
-import { getFirstEnvironment } from "./runtime";
+import { deriveSourceRelativePath, getFirstEnvironment } from "./runtime";
 
 const CONVEX_URL = getFirstEnvironment("CONVEX_URL", "NEXT_PUBLIC_CONVEX_URL");
 
@@ -54,14 +54,6 @@ function parseArgs() {
     maxUnmatchedRatio: get("--max-unmatched-ratio") ? Number(get("--max-unmatched-ratio")) : 0.05,
     concurrency: get("--concurrency") ? Number(get("--concurrency")) : 12,
   };
-}
-
-function deriveSourceRelativePath(sourceFile: string) {
-  const normalized = sourceFile.replaceAll("\\", "/");
-  const marker = "/data/downloads/";
-  const markerIndex = normalized.indexOf(marker);
-  if (markerIndex >= 0) return normalized.slice(markerIndex + marker.length);
-  return basename(normalized);
 }
 
 function findPaperJsonFiles(dir: string): string[] {

@@ -1,5 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { questionIdentityAnchorValidator } from "./questionIdentityAnchor";
 
 export default defineSchema({
   examBoards: defineTable({
@@ -217,6 +218,7 @@ export default defineSchema({
       }),
       v.null(),
     )),
+    identityAnchor: v.optional(v.union(questionIdentityAnchorValidator, v.null())),
     regionSpans: v.optional(v.union(
       v.array(v.object({ pageNumber: v.number(), yTop: v.number(), yBottom: v.number() })),
       v.null(),
