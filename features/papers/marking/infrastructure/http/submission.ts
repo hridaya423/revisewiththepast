@@ -31,9 +31,10 @@ export async function GET(_request: Request, context: RouteContext) {
     return Response.json(bundle);
   } catch (error) {
     if (isUnauthorizedError(error)) return unauthorizedResponse();
-    return badRequest(
-      `Failed to load submission: ${error instanceof Error ? error.message : String(error)}`,
-      500,
-    );
+    console.error("Submission load failed", {
+      submissionId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return badRequest("Failed to load submission.", 500);
   }
 }

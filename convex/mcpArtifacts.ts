@@ -4,9 +4,18 @@ import { v } from "convex/values";
 const artifactKind = v.union(v.literal("paper"), v.literal("mark-scheme"));
 const MAX_ARTIFACT_BYTES = 25 * 1024 * 1024;
 
+function secretsMatch(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+  return diff === 0;
+}
+
 function requireServiceSecret(serviceSecret: string) {
   const expected = process.env.MCP_SERVICE_SECRET;
-  if (!expected || serviceSecret !== expected) throw new Error("Unauthorized");
+  if (!expected || !secretsMatch(serviceSecret, expected)) throw new Error("Unauthorized");
 }
 
 function assertExpiry(expiresAt: number) {

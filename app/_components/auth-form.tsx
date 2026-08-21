@@ -32,6 +32,7 @@ function getSafeRedirectTarget(value: string | null) {
   if (!value) return "/paper-maker";
   if (!value.startsWith("/")) return "/paper-maker";
   if (value.startsWith("//")) return "/paper-maker";
+  if (value.includes("\\")) return "/paper-maker";
   return value;
 }
 

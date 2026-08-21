@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
 import { importFinishedPaper } from "@/features/papers/server";
 import { normalizeApplicationError } from "@/shared/application/errors";
+import { reserveMarkingOperation, retryAfterHeaders } from "./rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export async function POST(request: NextRequest) {
   if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") return badRequest("Only PDF uploads are supported.");
 
   try {
+    await reserveMarkingOperation(request, "marking-import");
     const result = await importFinishedPaper({
       file,
       studentLabel,
@@ -40,6 +42,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const normalized = normalizeApplicationError(error, "Failed to import finished paper.");
     if (normalized.status === 403) return unauthorizedResponse();
-    return badRequest(normalized.message, normalized.status);
+    return new Response(normalized.message, { status: normalized.status, headers: retryAfterHeaders(error) });
   }
 }

@@ -9,7 +9,7 @@ import { api } from "@/convex/_generated/api";
 import type { QuestionBankPart, SourcePageAsset } from "@/shared/domain/paper";
 import type { SubjectTierKey } from "@/shared/domain/subject";
 import type { RegionFigure, RegionPageLayout } from "../builder/domain/region-render";
-import { getConvexUrl } from "@/shared/infrastructure/env/server";
+import { getConvexUrl, getServerEnvironment } from "@/shared/infrastructure/env/server";
 
 const QUESTION_BANK_CACHE_TTL_MS = 60_000;
 const questionPageManifestSchema = z.object({
@@ -168,7 +168,9 @@ export async function getSubjectDetailSnapshotFromConvex(boardCode: string, subj
 
 export async function upsertSubjectDetailSnapshotInConvex(boardCode: string, subjectSlug: string, snapshot: PaperMakerSubjectDetailSnapshot) {
   const client = getConvexClient();
+  const { MCP_SERVICE_SECRET } = getServerEnvironment();
   await client.mutation(api.questionTags.upsertSubjectDetailSnapshot, {
+    serviceSecret: MCP_SERVICE_SECRET ?? "",
     boardCode,
     subjectSlug,
     payloadJson: JSON.stringify(snapshot),

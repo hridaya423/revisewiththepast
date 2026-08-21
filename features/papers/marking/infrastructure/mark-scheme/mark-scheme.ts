@@ -51,13 +51,32 @@ export function inferTierFromSourceRelativePath(sourceRelativePath: string) {
 }
 
 function deriveDownloadedPdfPath(relativePath: string) {
-  return resolve(process.cwd(), "data", "downloads", ...relativePath.split("/").filter(Boolean));
+  const segments = relativePath.split("/").filter(Boolean);
+  if (segments.some((segment) => segment === ".." || segment === "." || segment.includes("\\"))) {
+    throw new Error(`Unsafe mark scheme asset path: ${relativePath}`);
+  }
+  return resolve(process.cwd(), "data", "downloads", ...segments);
+}
+
+const TRUSTED_ASSET_HOSTS = new Set(["cdn.hackclub.com"]);
+
+function assertTrustedAssetUrl(remoteUrl: string) {
+  let parsed: URL;
+  try {
+    parsed = new URL(remoteUrl);
+  } catch {
+    throw new Error("Mark scheme asset URL is not a valid URL.");
+  }
+  if (parsed.protocol !== "https:" || !TRUSTED_ASSET_HOSTS.has(parsed.hostname)) {
+    throw new Error("Mark scheme asset URL host is not allowed.");
+  }
 }
 
 async function loadMarkSchemeBytes(relativePath: string, remoteUrl: string) {
   if (PDF_BYTES_CACHE.has(relativePath)) return PDF_BYTES_CACHE.get(relativePath)!;
 
   const localPath = deriveDownloadedPdfPath(relativePath);
+  assertTrustedAssetUrl(remoteUrl);
   const data = existsSync(localPath)
     ? new Uint8Array(readFileSync(localPath))
     : new Uint8Array(await fetch(remoteUrl).then(async (response) => {

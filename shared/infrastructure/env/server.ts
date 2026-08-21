@@ -21,6 +21,8 @@ const serverEnvironmentSchema = z.object({
   MCP_SERVICE_SECRET: z.string().min(32).optional(),
   MCP_ALLOWED_HOSTS: z.string().optional(),
   MCP_ARTIFACT_TTL_HOURS: z.coerce.number().int().min(1).max(168).default(24),
+  MARKING_RATE_LIMIT_PER_CALLER_PER_HOUR: z.coerce.number().int().min(1).max(1000).default(60),
+  MARKING_RATE_LIMIT_GLOBAL_PER_HOUR: z.coerce.number().int().min(1).max(100_000).default(2000),
 });
 
 let cachedEnvironment: z.infer<typeof serverEnvironmentSchema> | null = null;

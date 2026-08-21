@@ -51,6 +51,20 @@ describe("MCP paper-generation rate limit", () => {
     expect(caller).toBe(expected);
   });
 
+  it("sends limit overrides under the argument names the Convex mutation declares", async () => {
+    mocks.mutation.mockResolvedValue({
+      allowed: true,
+      retryAt: 0,
+      remainingForCaller: 59,
+      remainingGlobal: 1999,
+    });
+
+    await reservePaperGeneration(undefined, "marking-ocr", { callerLimit: 60, globalLimit: 2000 });
+
+    const payload = mocks.mutation.mock.calls[0][1];
+    expect(payload).toMatchObject({ scope: "marking-ocr", callerLimit: 60, globalLimitOverride: 2000 });
+  });
+
   it("turns an atomic Convex denial into a retryable application error", async () => {
     mocks.mutation.mockResolvedValue({
       allowed: false,

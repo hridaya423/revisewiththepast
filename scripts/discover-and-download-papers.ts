@@ -41,6 +41,7 @@ type ExtractedPdfLink = {
 
 type PdfRecord = {
   jobKey: string;
+  source: string;
   boardCode: string;
   subjectSlug: string;
   tier: Tier;
@@ -722,6 +723,7 @@ function scanExistingRecords(): PdfRecord[] {
 
       records.push({
         jobKey: `${boardCode}-${tier}-${subjectSlug}`,
+        source: "",
         boardCode,
         subjectSlug,
         tier: tier as Tier,
@@ -741,6 +743,13 @@ function scanExistingRecords(): PdfRecord[] {
   return records;
 }
 
+function inferRecordSource(record: PdfRecord): PdfRecord {
+  if (record.source) return record;
+  if (record.pdfUrl.includes("revisionworld.com")) return { ...record, source: "revisionworld" };
+  if (record.pdfUrl.includes("physicsandmathstutor.com")) return { ...record, source: "pmt" };
+  return record;
+}
+
 function loadDiscoveryState(): DiscoveryState {
   const diskRecords = scanExistingRecords();
   if (!existsSync(PROGRESS_PATH)) {
@@ -751,7 +760,7 @@ function loadDiscoveryState(): DiscoveryState {
   }
 
   const parsed = JSON.parse(readFileSync(PROGRESS_PATH, "utf8")) as Partial<DiscoveryState>;
-  const combined = [...(Array.isArray(parsed.records) ? parsed.records : []), ...diskRecords];
+  const combined = [...(Array.isArray(parsed.records) ? parsed.records : []), ...diskRecords].map(inferRecordSource);
   const deduped = new Map<string, PdfRecord>();
   for (const record of combined) {
     const key = `${record.downloadedPath}|${record.pdfUrl}|${record.boardCode}|${record.subjectSlug}|${record.paperCode}|${record.kind}|${record.year}|${record.session}`;
@@ -785,7 +794,7 @@ function persistDiscoveryState(state: DiscoveryState) {
 }
 
 function matchesActiveFilters(record: PdfRecord) {
-  if (TARGET_SOURCE && record.jobKey.split("-").at(-1) !== TARGET_SOURCE) return false;
+  if (TARGET_SOURCE && record.source !== TARGET_SOURCE) return false;
   if (TARGET_BOARD_CODE && record.boardCode !== TARGET_BOARD_CODE) return false;
   if (TARGET_SUBJECT_SLUG && record.subjectSlug !== TARGET_SUBJECT_SLUG) return false;
   if (TARGET_TIER && record.tier !== TARGET_TIER) return false;
@@ -866,6 +875,7 @@ async function run() {
           await downloadPdf(canonicalPdfUrl, outPath);
           state.records.push({
             jobKey: buildJobKey(job),
+            source: job.source,
             boardCode: job.boardCode,
             subjectSlug: job.subjectSlug,
             tier: job.tier,
@@ -963,6 +973,7 @@ async function run() {
           await downloadPdf(canonicalPdfUrl, outPath);
           state.records.push({
             jobKey: buildJobKey(job),
+            source: job.source,
             boardCode: job.boardCode,
             subjectSlug: job.subjectSlug,
             tier: job.tier,

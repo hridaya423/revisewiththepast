@@ -25,6 +25,10 @@ export async function GET(request: Request, context: RouteContext) {
     return Response.json(combined);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Unauthorized")) return unauthorizedResponse();
-    return badRequest(`Failed to build mark scheme: ${error instanceof Error ? error.message : String(error)}`, 500);
+    console.error("Mark scheme build failed", {
+      submissionId,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return badRequest("Failed to build mark scheme.", 500);
   }
 }

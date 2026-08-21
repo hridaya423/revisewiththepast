@@ -3,9 +3,18 @@ import { v } from "convex/values";
 
 const HOUR_MS = 60 * 60 * 1000;
 
+function secretsMatch(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+  return diff === 0;
+}
+
 function requireServiceSecret(serviceSecret: string) {
   const expected = process.env.MCP_SERVICE_SECRET;
-  if (!expected || serviceSecret !== expected) throw new Error("Unauthorized");
+  if (!expected || !secretsMatch(serviceSecret, expected)) throw new Error("Unauthorized");
 }
 
 function getPositiveInteger(name: string, fallback: number, maximum: number) {
@@ -13,11 +22,19 @@ function getPositiveInteger(name: string, fallback: number, maximum: number) {
   return Number.isInteger(value) && value > 0 && value <= maximum ? value : fallback;
 }
 
+function resolvePositiveInteger(override: number | undefined, name: string, fallback: number, maximum: number) {
+  return override !== undefined && Number.isInteger(override) && override > 0 && override <= maximum
+    ? override
+    : getPositiveInteger(name, fallback, maximum);
+}
+
 export const reserve = mutation({
   args: {
     serviceSecret: v.string(),
     callerKey: v.string(),
     scope: v.optional(v.string()),
+    callerLimit: v.optional(v.number()),
+    globalLimitOverride: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     requireServiceSecret(args.serviceSecret);
@@ -27,8 +44,8 @@ export const reserve = mutation({
 
     const now = Date.now();
     const windowStart = Math.floor(now / HOUR_MS) * HOUR_MS;
-    const callerLimit = getPositiveInteger("MCP_RATE_LIMIT_PER_CALLER_PER_HOUR", 10, 1000);
-    const globalLimit = getPositiveInteger("MCP_RATE_LIMIT_GLOBAL_PER_HOUR", 300, 100_000);
+    const callerLimit = resolvePositiveInteger(args.callerLimit, "MCP_RATE_LIMIT_PER_CALLER_PER_HOUR", 10, 1000);
+    const globalLimit = resolvePositiveInteger(args.globalLimitOverride, "MCP_RATE_LIMIT_GLOBAL_PER_HOUR", 300, 100_000);
     const callerScope = `caller:${scope}:${args.callerKey}`;
     const globalScope = `global:${scope}`;
     const [callerRow, globalRow] = await Promise.all([

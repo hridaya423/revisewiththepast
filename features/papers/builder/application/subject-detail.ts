@@ -46,6 +46,14 @@ export async function getSubjectDetail(subjectKey: string) {
     tiers: detailParts.tiers,
     detailLoaded: true,
   };
-  await upsertSubjectDetailSnapshotInConvex(subject.boardCode, subject.subjectSlug, snapshot);
+  try {
+    await upsertSubjectDetailSnapshotInConvex(subject.boardCode, subject.subjectSlug, snapshot);
+  } catch (error) {
+    console.error("Failed to persist subject detail snapshot", {
+      boardCode: subject.boardCode,
+      subjectSlug: subject.subjectSlug,
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
   return snapshot;
 }

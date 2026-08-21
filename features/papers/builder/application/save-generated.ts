@@ -85,5 +85,6 @@ export async function saveGeneratedPaper(input: {
     }),
   });
 
-  return { savedPaperId, pdfUrl: upload.url };
+  const canonical = await getSavedPaperByImportKey(importKey);
+  return { savedPaperId, pdfUrl: canonical?.pdfUrl ?? upload.url };
 }

@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
 import { ocrRequestSchema, runQuestionOcr } from "@/features/papers/server";
 import { normalizeApplicationError } from "@/shared/application/errors";
+import { reserveMarkingOperation, retryAfterHeaders } from "./rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,10 +27,11 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid OCR request.");
 
   try {
+    await reserveMarkingOperation(request, "marking-ocr");
     return Response.json(await runQuestionOcr(parsed.data));
   } catch (error) {
     const normalized = normalizeApplicationError(error, "OCR failed.");
     if (normalized.status === 403) return unauthorizedResponse();
-    return badRequest(normalized.message, normalized.status);
+    return new Response(normalized.message, { status: normalized.status, headers: retryAfterHeaders(error) });
   }
 }

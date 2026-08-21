@@ -4,6 +4,7 @@ import { createHmac } from "node:crypto";
 
 import { api } from "@/convex/_generated/api";
 import { DependencyUnavailableError, RateLimitError } from "@/shared/application/errors";
+import { getServerEnvironment } from "@/shared/infrastructure/env/server";
 
 import { getMcpConvexClient, getMcpServiceSecret } from "./infrastructure/convex-client";
 
@@ -28,7 +29,19 @@ export function getCallerKey(request?: Request) {
   return createHmac("sha256", secret).update(address).digest("hex");
 }
 
-export async function reservePaperGeneration(request?: Request, scope = "paper") {
+export function getMarkingRateLimits() {
+  const environment = getServerEnvironment();
+  return {
+    callerLimit: environment.MARKING_RATE_LIMIT_PER_CALLER_PER_HOUR,
+    globalLimit: environment.MARKING_RATE_LIMIT_GLOBAL_PER_HOUR,
+  };
+}
+
+export async function reservePaperGeneration(
+  request?: Request,
+  scope = "paper",
+  limits?: { callerLimit?: number; globalLimit?: number },
+) {
   const serviceSecret = getMcpServiceSecret();
   const callerKey = getCallerKey(request);
 
@@ -38,6 +51,8 @@ export async function reservePaperGeneration(request?: Request, scope = "paper")
       serviceSecret,
       callerKey,
       scope,
+      ...(limits?.callerLimit !== undefined ? { callerLimit: limits.callerLimit } : {}),
+      ...(limits?.globalLimit !== undefined ? { globalLimitOverride: limits.globalLimit } : {}),
     });
   } catch (error) {
     console.error("MCP rate-limit reservation failed", {
@@ -48,7 +63,7 @@ export async function reservePaperGeneration(request?: Request, scope = "paper")
 
   if (!result.allowed) {
     throw new RateLimitError(
-      "Paper generation is temporarily rate limited. Try again after the current hourly window resets.",
+      "This operation is temporarily rate limited. Try again after the current hourly window resets.",
       result.retryAt,
     );
   }

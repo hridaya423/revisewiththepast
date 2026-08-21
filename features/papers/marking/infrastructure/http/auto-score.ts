@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
 import { autoScoreRequestSchema, autoScoreSubmission } from "@/features/papers/server";
 import { normalizeApplicationError } from "@/shared/application/errors";
+import { reserveMarkingOperation, retryAfterHeaders } from "./rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,10 +27,11 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid scoring request.");
 
   try {
+    await reserveMarkingOperation(request, "marking-auto-score");
     return Response.json(await autoScoreSubmission(parsed.data));
   } catch (error) {
     const normalized = normalizeApplicationError(error, "Auto-scoring failed.");
     if (normalized.status === 403) return unauthorizedResponse();
-    return badRequest(normalized.message, normalized.status);
+    return new Response(normalized.message, { status: normalized.status, headers: retryAfterHeaders(error) });
   }
 }

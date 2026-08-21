@@ -12,7 +12,7 @@ const siteUrl = process.env.SITE_URL
   ?? process.env.BETTER_AUTH_URL
   ?? "http://localhost:3000";
 
-function getTrustedOrigins(request?: Request) {
+function getTrustedOrigins() {
   const origins = new Set<string>([
     siteUrl,
     "http://localhost:3000",
@@ -31,22 +31,24 @@ function getTrustedOrigins(request?: Request) {
     origins.add(origin);
   }
 
-  const forwardedHost = request?.headers.get("x-forwarded-host") || request?.headers.get("host");
-  const forwardedProto = request?.headers.get("x-forwarded-proto") || "https";
-  if (forwardedHost) {
-    origins.add(`${forwardedProto}://${forwardedHost}`);
-  }
-
   return Array.from(origins);
+}
+
+function requireAuthSecret() {
+  const secret = process.env.BETTER_AUTH_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("BETTER_AUTH_SECRET must be set to at least 32 characters.");
+  }
+  return secret;
 }
 
 export const authComponent = createClient<DataModel>(components.betterAuth);
 
 export const createAuth = (ctx: GenericCtx<DataModel>) => {
   return betterAuth({
-    secret: process.env.BETTER_AUTH_SECRET,
+    secret: requireAuthSecret(),
     baseURL: siteUrl,
-    trustedOrigins: (request) => getTrustedOrigins(request),
+    trustedOrigins: () => getTrustedOrigins(),
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

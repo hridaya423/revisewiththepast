@@ -1325,6 +1325,7 @@ async function upsertTaggedPaperToConvex(
   };
 
   await untypedClient.mutation("questionTags:upsertTaggedPaperWithQuestions", {
+    serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
     sourceFile: extracted.source_file,
     sourceRelativePath,
     boardCode: extracted.board_code,

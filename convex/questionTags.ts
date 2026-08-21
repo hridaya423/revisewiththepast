@@ -4,6 +4,22 @@ import type { QuestionIdentityAnchor } from "../shared/domain/paper";
 import type { DataModel } from "./_generated/dataModel";
 import { questionIdentityAnchorValidator } from "./questionIdentityAnchor";
 
+function secretsMatch(a: string, b: string) {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
+  }
+  return diff === 0;
+}
+
+function requireServiceSecret(serviceSecret: string) {
+  const expected = process.env.MCP_SERVICE_SECRET;
+  if (!expected || !secretsMatch(serviceSecret, expected)) throw new Error("Unauthorized");
+}
+
+const serviceSecretArg = { serviceSecret: v.string() };
+
 function compareTaggedPaperPriority(
   left: {
     questionCount: number;
@@ -139,6 +155,7 @@ const taggedQuestionPartValidator = v.object({
 
 export const upsertTaggedPaperWithQuestions = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     sourceFile: v.string(),
     sourceRelativePath: v.string(),
     boardCode: v.string(),
@@ -153,6 +170,7 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
     questionParts: v.array(taggedQuestionPartValidator),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const [existingByIdentity, existingBySourceFile] = await Promise.all([
@@ -254,6 +272,7 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
 
 export const upsertTaggedPaperWithQuestionsBySourcePath = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     sourceFile: v.string(),
     sourceRelativePath: v.string(),
     boardCode: v.string(),
@@ -268,6 +287,7 @@ export const upsertTaggedPaperWithQuestionsBySourcePath = mutationGeneric({
     questionParts: v.array(taggedQuestionPartValidator),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const existing = await ctx.db
@@ -385,10 +405,12 @@ export const getDuplicateTaggedPapers = queryGeneric({
 
 export const dedupeTaggedPapersByIdentity = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     boardCode: v.string(),
     subjectSlug: v.string(),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const papers = await ctx.db
       .query("taggedPapers")
       .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
@@ -448,10 +470,12 @@ export const dedupeTaggedPapersByIdentity = mutationGeneric({
 
 export const deleteTaggedByBoardSubjects = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     boardCode: v.string(),
     subjectSlugs: v.array(v.string()),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     let deletedPapers = 0;
     let deletedQuestionParts = 0;
 
@@ -490,11 +514,13 @@ export const deleteTaggedByBoardSubjects = mutationGeneric({
 
 export const deleteTaggedByBoardSubjectTier = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     boardCode: v.string(),
     subjectSlug: v.string(),
     tier: v.union(v.literal("foundation"), v.literal("higher"), v.literal("none")),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const papers = await ctx.db
       .query("taggedPapers")
@@ -564,11 +590,13 @@ export const getSubjectDetailSnapshot = queryGeneric({
 
 export const upsertSubjectDetailSnapshot = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     boardCode: v.string(),
     subjectSlug: v.string(),
     payloadJson: v.string(),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     const existing = await ctx.db
       .query("subjectDetailSnapshots")
