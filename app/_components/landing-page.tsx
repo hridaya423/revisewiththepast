@@ -132,6 +132,7 @@ export function LandingPage() {
             <Link href="/marking" transitionTypes={["nav-forward"]} className="transition-colors hover:text-accent">Mark</Link>
             <Link href="/docs/mcp" className="transition-colors hover:text-accent">MCP docs</Link>
             <Link href="/auth" className="transition-colors hover:text-accent">Sign in</Link>
+            <a href="https://www.hridya.tech/projects/revise" className="transition-colors hover:text-accent">Built by Hridya Agrawal</a>
           </nav>
         </div>
       </footer>
