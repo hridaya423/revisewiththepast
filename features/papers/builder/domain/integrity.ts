@@ -40,7 +40,9 @@ export function filterUnitsByFigureResolvability(
 
   for (const unit of units) {
     const referenced = getReferencedFigureLabels(unit);
-    if (!isScienceUnit(unit) && !isUnitRegionRenderable(unit, getLayoutMap(unit.sourceRelativePath))) {
+    const hasRegionMetadata = unit.parts.some((part) => (part.regionSpans?.length ?? 0) > 0 || (part.stemSpans?.length ?? 0) > 0);
+    const regionRenderable = isUnitRegionRenderable(unit, getLayoutMap(unit.sourceRelativePath));
+    if (!isScienceUnit(unit) && !hasRegionMetadata) {
       kept.push(unit);
       continue;
     }
@@ -52,7 +54,9 @@ export function filterUnitsByFigureResolvability(
 
     const available = getLabels(unit.sourceRelativePath);
     const missing = referenced.filter((label) => !available.has(label.toLowerCase()));
-    if (missing.length === 0 || options.subjectUsesInserts) {
+    if (missing.length === 0
+      || options.subjectUsesInserts
+      || (regionRenderable && !isScienceUnit(unit) && unit.subjectSlug !== "geography")) {
       kept.push(unit);
       continue;
     }

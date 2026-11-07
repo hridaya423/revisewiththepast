@@ -1,4 +1,5 @@
 import { assembleMarkSchemePdf } from "../infrastructure/mark-scheme/mark-scheme";
+import { buildRevisionPaperCode } from "@/features/papers/builder/infrastructure/pdf/cover";
 import { getMarkableUnitsByUnitKeys } from "@/features/papers/infrastructure/paper-maker";
 import { getPaperMakerSubject } from "@/shared/domain/subject-catalog";
 import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
@@ -10,7 +11,9 @@ export async function generateMarkScheme(input: GenerateMarkSchemeRequest) {
   if (!subject) throw new NotFoundError("Unknown or missing subjectKey.");
   const units = await getMarkableUnitsByUnitKeys(input.subjectKey as PaperMakerSubjectKey, input.selectedUnitKeys, input.subjectTier ?? null);
   if (units.length !== input.selectedUnitKeys.length) throw new DomainError("Could not resolve every selected unit for this paper.");
-  const result = await assembleMarkSchemePdf(units);
+  const result = await assembleMarkSchemePdf(units, {
+    revisionPaperCode: buildRevisionPaperCode(input.subjectKey, subject.coverTitle, input.selectedUnitKeys),
+  });
   if (result.includedCount === 0) {
     throw new DomainError(`No mark scheme pages could be assembled. ${result.failures.map((failure) => failure.error).join("; ")}`);
   }

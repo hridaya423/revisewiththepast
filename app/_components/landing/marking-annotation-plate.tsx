@@ -9,8 +9,8 @@ export function MarkingAnnotationPlate() {
         <div data-proof-answer className="relative z-0 mx-auto w-full max-w-[410px] rotate-[-0.35deg] bg-white p-[7px] shadow-[0_18px_38px_rgba(23,33,63,0.16)]">
           <header className="border-b border-text/25 px-3 py-3 font-serif text-text">
             <div className="flex items-start justify-between gap-4">
-              <p className="text-[0.72rem] leading-5"><span className="mr-2 font-semibold">3(c)</span>Explain how flood defences can reduce the impact of flooding.</p>
-              <span className="shrink-0 font-mono text-[0.58rem] font-semibold text-text-muted">[6 marks]</span>
+              <p className="text-[0.8125rem] leading-5"><span className="mr-2 font-semibold">3(c)</span>Explain how flood defences can reduce the impact of flooding.</p>
+              <span className="shrink-0 font-mono text-xs font-semibold text-text-secondary">[6 marks]</span>
             </div>
           </header>
           <div className="relative min-w-0 overflow-visible">
@@ -25,7 +25,7 @@ export function MarkingAnnotationPlate() {
         <aside className="relative z-0" aria-label="Examiner assessment">
           <div className="flex items-end justify-between gap-4 border-b border-text/20 pb-4">
             <div>
-              <p className="mt-2 text-[0.72rem] leading-5 text-text-secondary">Accurate, relevant, but not fully developed.</p>
+              <p className="mt-2 text-[0.8125rem] leading-5 text-text-secondary">Accurate, relevant, but not fully developed.</p>
             </div>
             <p className="relative shrink-0 px-2 py-1 font-mono text-[1.45rem] font-bold tracking-[-0.06em] text-accent">
               4 / 6
@@ -38,31 +38,31 @@ export function MarkingAnnotationPlate() {
 
           <dl data-proof-evidence className="divide-y divide-text/12">
             <div className="grid grid-cols-[44px_1fr] gap-3 py-4">
-              <dt data-evidence-target="assertion" className="font-mono text-[0.62rem] font-bold text-danger">0</dt>
+              <dt data-evidence-target="assertion" className="font-mono text-xs font-bold text-danger">0</dt>
               <dd>
-                <p className="text-[0.72rem] font-bold text-text">Assertion only — no credit</p>
-                <p className="mt-1 text-[0.65rem] leading-4 text-text-muted">The opening is too general to demonstrate separate knowledge.</p>
+                <p className="text-[0.8125rem] font-bold text-text">Assertion only — no credit</p>
+                <p className="mt-1 text-xs leading-[1.125rem] text-text-secondary">The opening is too general to demonstrate separate knowledge.</p>
               </dd>
             </div>
             <div className="grid grid-cols-[44px_1fr] gap-3 py-4">
-              <dt data-evidence-target="ao1" className="font-mono text-[0.62rem] font-bold text-success">AO1</dt>
+              <dt data-evidence-target="ao1" className="font-mono text-xs font-bold text-success">AO1</dt>
               <dd>
-                <p className="text-[0.72rem] font-bold text-text">AO1 · 2/2</p>
-                <p className="mt-1 text-[0.65rem] leading-4 text-text-muted">Two accurate mechanisms: walls hold water back; embankments increase channel capacity.</p>
+                <p className="text-[0.8125rem] font-bold text-text">AO1 · 2/2</p>
+                <p className="mt-1 text-xs leading-[1.125rem] text-text-secondary">Two accurate mechanisms: walls hold water back; embankments increase channel capacity.</p>
               </dd>
             </div>
             <div className="grid grid-cols-[44px_1fr] gap-3 py-4">
-              <dt data-evidence-target="ao2" className="font-mono text-[0.62rem] font-bold text-success">AO2</dt>
+              <dt data-evidence-target="ao2" className="font-mono text-xs font-bold text-success">AO2</dt>
               <dd>
-                <p className="text-[0.72rem] font-bold text-text">AO2 · 2/4</p>
-                <p className="mt-1 text-[0.65rem] leading-4 text-text-muted">Both mechanisms reach a relevant consequence, but each chain stops after one causal step.</p>
+                <p className="text-[0.8125rem] font-bold text-text">AO2 · 2/4</p>
+                <p className="mt-1 text-xs leading-[1.125rem] text-text-secondary">Both mechanisms reach a relevant consequence, but each chain stops after one causal step.</p>
               </dd>
             </div>
           </dl>
 
           <div data-proof-next className="border-l-2 border-warning bg-warning-soft/55 px-3.5 py-3">
-            <p className="font-mono text-[0.57rem] font-bold uppercase tracking-[0.12em] text-warning">Why this stops at 4/6</p>
-            <p className="mt-1.5 text-[0.68rem] leading-5 text-text-secondary">Develop one chain further: reduced depth or velocity leads to less structural damage, disruption or danger. A precise example would strengthen it.</p>
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.12em] text-warning">Why this stops at 4/6</p>
+            <p className="mt-1.5 text-[0.8125rem] leading-5 text-text-secondary">Develop one chain further: reduced depth or velocity leads to less structural damage, disruption or danger. A precise example would strengthen it.</p>
           </div>
         </aside>
 

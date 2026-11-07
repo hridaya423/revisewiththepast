@@ -13,7 +13,7 @@ export async function getMarkableUnitsForSubject(subjectKey: PaperMakerSubjectKe
     throw new Error(`Unknown subject ${subjectKey}.`);
   }
 
-  const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+  const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug, { cache: true });
   return groupQuestionUnitsForSubject(subjectKey, filterQuestionBankForSubjectTier(subjectKey, questionBank, subjectTier));
 }
 

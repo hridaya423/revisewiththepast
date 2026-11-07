@@ -2,11 +2,15 @@ import { describe, expect, it } from "vitest";
 import { clampLocalCropBox, isValidLocalCropBox, toPdfCropBox } from "./crop-geometry";
 
 describe("crop geometry", () => {
-  it("translates local extraction coordinates through a non-zero PDF CropBox origin", () => {
+  it("keeps user-space extraction coordinates and clamps them into the visible page rect", () => {
     expect(toPdfCropBox(
       { left: 4, right: 100, bottom: 12, top: 220 },
       { x: 18, y: 26, width: 200, height: 300 },
-    )).toEqual({ left: 22, right: 118, bottom: 38, top: 246 });
+    )).toEqual({ left: 18, right: 100, bottom: 26, top: 220 });
+    expect(toPdfCropBox(
+      { left: -50, right: 400, bottom: 12, top: 220 },
+      { x: 18, y: 26, width: 200, height: 300 },
+    )).toEqual({ left: 18, right: 218, bottom: 26, top: 220 });
   });
 
   it("clamps oversize local crops without changing their meaning", () => {

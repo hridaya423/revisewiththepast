@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createCanvas } from "@napi-rs/canvas";
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { checkBlankPages, checkRenderedQuestionTotals } from "./validate";
+import { checkBlankPages, checkRenderedQuestionTotals, runDeterministicChecks } from "./validate";
 import { assertGeneratedPaperQuality } from "./validate";
 import { GENERATED_PAGE } from "../../domain/generated-layout";
 import { setGeneratedPageRole } from "../pdf/page-chrome";
@@ -102,5 +102,39 @@ describe("rendered paper QA", () => {
 
     await expect(assertGeneratedPaperQuality(new Uint8Array(await document.save()), { expectedOrdinalCount: 1 }))
       .rejects.toThrow(/x position/);
+  });
+
+  it("suppresses the heavy-mix warning when the pool could not supply a lighter mix", async () => {
+    const png = makePng((context) => {
+      context.fillStyle = "#000";
+      context.fillRect(50, 50, 400, 300);
+    });
+    const findings = await runDeterministicChecks(
+      [{ pageNumber: 2, png }],
+      [{ pageNumber: 2, text: "Question 1 answer space" }],
+      {
+        selectedUnitMarks: [4, 7, 11, 18],
+        totalMarks: 40,
+        candidateUnitMarks: [4, 7, 9, 10, 11, 11, 11, 13, 13, 13, 15, 17, 18, 19, 28],
+      },
+    );
+    expect(findings.some((finding) => finding.check === "question-mix-too-heavy")).toBe(false);
+  });
+
+  it("warns on a heavy mix when the pool offered lighter units", async () => {
+    const png = makePng((context) => {
+      context.fillStyle = "#000";
+      context.fillRect(50, 50, 400, 300);
+    });
+    const findings = await runDeterministicChecks(
+      [{ pageNumber: 2, png }],
+      [{ pageNumber: 2, text: "Question 1 answer space" }],
+      {
+        selectedUnitMarks: [4, 7, 11, 18],
+        totalMarks: 40,
+        candidateUnitMarks: [2, 3, 4, 7, 9, 11, 18],
+      },
+    );
+    expect(findings).toContainEqual(expect.objectContaining({ check: "question-mix-too-heavy", severity: "warning" }));
   });
 });

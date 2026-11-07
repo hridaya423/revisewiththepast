@@ -3,7 +3,7 @@ import type { PDFDocument, PDFPage } from "pdf-lib";
 import type { PreparedQuestionFragment, SourcePageCrop } from "../../domain/generated-layout";
 import { buildUnitRenderPlan, type RegionFigure, type RegionPageLayout } from "../../domain/region-render";
 import type { QuestionUnit, SourcePageAsset } from "@/shared/domain/paper";
-import { rasterizeSourcePdfPage, type SourcePdfCandidate } from "./source-pdf";
+import { createSourcePdfCache, rasterizeSourcePdfPage, type SourcePdfCache, type SourcePdfCandidate } from "./source-pdf";
 
 export type PreparedFragmentSource = {
   fragmentId: string;
@@ -40,11 +40,8 @@ type PreparationInput = {
   pageAssetsBySource: Map<string, SourcePageAsset[]>;
   figures: RegionFigure[];
   pageLayouts: RegionPageLayout[];
-};
-
-type SourceCache = {
-  bytes: Map<string, Uint8Array>;
-  documents: Map<string, PDFDocument>;
+  sourceCache?: SourcePdfCache;
+  maskPartMarkers?: boolean;
 };
 
 function cropFromRegion(crop: { left: number; right: number; bottom: number; top: number }): SourcePageCrop {
@@ -167,17 +164,32 @@ export async function prepareQuestionFragments(input: PreparationInput): Promise
       ? [index]
       : []
   ));
-  if (!contains(firstQuestionCrop, firstAnchor.promptBounds) || numberCropIndexes.length !== 1) {
+  if (!contains(firstQuestionCrop, firstAnchor.promptBounds) || numberCropIndexes.length === 0) {
     return { kind: "unrenderable", unitKey: input.unit.unitKey, page: firstQuestionPage, reason: "anchor-out-of-crop" };
   }
-  const cache: SourceCache = { bytes: new Map(), documents: new Map() };
+  const cache = input.sourceCache ?? createSourcePdfCache();
   const fragments: PreparedQuestionFragment[] = [];
   const sources = new Map<string, PreparedFragmentSource>();
-  const anchoredPart = input.unit.parts.find((part) => part.identityAnchor === firstAnchor)
-    ?? input.unit.parts.find((part) => part.identityAnchor?.pageNumber === firstAnchor.pageNumber
-      && part.identityAnchor.numberBounds.x0 === firstAnchor.numberBounds.x0
-      && part.identityAnchor.numberBounds.y0 === firstAnchor.numberBounds.y0);
-  const shouldMaskAnchor = !/^[a-z]/i.test(anchoredPart?.questionPartNumber ?? "");
+  const shouldMaskAnchor = firstAnchor.numberBounds.x1 <= firstAnchor.promptBounds.x0 + 4;
+  const partAnchors = input.unit.parts.flatMap((part) => (
+    part.identityAnchor ? [{ anchor: part.identityAnchor, partNumber: part.questionPartNumber?.trim() || null }] : []
+  ));
+  const seenMarkerBounds = new Set<string>();
+  const markersForCrop = (plannedPage: number, crop: SourcePageCrop) => {
+    if (!input.maskPartMarkers) return [] as typeof partAnchors;
+    return partAnchors.filter(({ anchor }) => {
+      if (anchor.pageNumber !== plannedPage || !contains(crop, anchor.numberBounds)) return false;
+      const key = [anchor.numberBounds.x0, anchor.numberBounds.x1, anchor.numberBounds.y0, anchor.numberBounds.y1].join(":");
+      if (seenMarkerBounds.has(`${plannedPage}:${key}`)) return false;
+      seenMarkerBounds.add(`${plannedPage}:${key}`);
+      return true;
+    });
+  };
+  const pageWipeBounds = (plannedPage: number) => (
+    input.maskPartMarkers
+      ? partAnchors.filter(({ anchor }) => anchor.pageNumber === plannedPage).map(({ anchor }) => anchor.numberBounds)
+      : []
+  );
   let questionSeen = false;
 
   for (let index = 0; index < effectiveCrops.length; index += 1) {
@@ -194,23 +206,38 @@ export async function prepareQuestionFragments(input: PreparationInput): Promise
 
     const fragmentId = `${input.unit.unitKey}:${planned.pageNumber}:${index}`;
     try {
+      const markers = markersForCrop(planned.pageNumber, crop);
+      const numberBounds = [
+        ...(shouldMaskAnchor && planned.pageNumber === firstAnchor.pageNumber ? [firstAnchor.numberBounds] : []),
+        ...pageWipeBounds(planned.pageNumber),
+      ];
       const raster = await rasterizeSourcePdfPage(source.url, source.sourcePageIndex, cache.bytes, cache.documents, {
         sanitizeFurniture: true,
         boardCode: input.unit.boardCode,
-        sourceQuestionNumber: planned.pageNumber === firstAnchor.pageNumber ? input.unit.questionNumber : undefined,
-        numberBounds: shouldMaskAnchor && planned.pageNumber === firstAnchor.pageNumber ? firstAnchor.numberBounds : undefined,
-      });
+        // The printed question number can sit on any of the unit's pages — a
+        // multi-page unit may carry its heading number on the stem page while
+        // the identity anchor resolves to a part row on a later page.
+        sourceQuestionNumber: input.unit.questionNumber,
+        numberBounds: numberBounds.length > 0 ? numberBounds : undefined,
+        promptBounds: identity?.promptBounds,
+        cropBox: crop,
+      }, cache.sourcePages);
       if (raster.isAdditionalAnswerPage) continue;
+      if (index > firstQuestionIndex && raster.isIsolatedItemHeading) continue;
       if (planned.kind === "stem" && !raster.hasMeaningfulText) continue;
+      const fragmentCrop = raster.cropBox ?? crop;
       const fragment = {
         fragmentId,
         unitKey: input.unit.unitKey,
         sourcePageNumber: planned.pageNumber,
-        crop,
+        crop: fragmentCrop,
         identity,
-        width: crop.right - crop.left,
-        height: crop.top - crop.bottom,
+        width: fragmentCrop.right - fragmentCrop.left,
+        height: fragmentCrop.top - fragmentCrop.bottom,
         kind: index < firstQuestionIndex ? "support" : index === firstQuestionIndex ? "question" : "continuation",
+        markers: markers.map((marker) => ({ numberBounds: marker.anchor.numberBounds, promptBounds: marker.anchor.promptBounds, partNumber: marker.partNumber })),
+        crossRefs: raster.crossRefs.length > 0 ? raster.crossRefs : undefined,
+        splitGaps: raster.splitGaps.length > 0 ? raster.splitGaps : undefined,
       } satisfies PreparedQuestionFragment;
       fragments.push(fragment);
       sources.set(fragmentId, { fragmentId, candidate: raster.candidate, sourceDoc: raster.sourceDoc, sourcePdfPage: raster.sourcePdfPage });

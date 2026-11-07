@@ -32,8 +32,14 @@ async function assertOk(response: Response, fallback: string) {
   throw new Error((await response.text()) || fallback);
 }
 
-export function uploadResponsePage(formData: FormData) {
-  return fetch("/api/marking/uploads", { method: "POST", body: formData }).then((response) => assertOk(response, "Could not upload response page."));
+export async function uploadResponsePage(formData: FormData) {
+  const response = await assertOk(await fetch("/api/marking/uploads", { method: "POST", body: formData }), "Could not upload response page.");
+  return z.object({ pageId: z.string(), imageUrl: z.string(), questionKeys: z.array(z.string()) }).parse(await response.json());
+}
+
+export async function setResponsePageMapping(input: { submissionId: string; pageId: string; questionKeys: string[] }) {
+  const response = await assertOk(await fetch("/api/marking/page-mapping", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }), "Could not update this page.");
+  return z.object({ questionKeys: z.array(z.string()) }).parse(await response.json());
 }
 
 export async function importFinishedPaper(formData: FormData) {
@@ -41,7 +47,7 @@ export async function importFinishedPaper(formData: FormData) {
   return submissionResponseSchema.parse(await response.json());
 }
 
-export async function createMarkingSubmission(input: { savedPaperId?: string; boardCode?: string; subjectSlug?: string; subjectKey?: string }) {
+export async function createMarkingSubmission(input: { savedPaperId?: string; newAttempt?: boolean; boardCode?: string; subjectSlug?: string; subjectKey?: string }) {
   const response = await fetch("/api/marking/submissions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -63,8 +69,18 @@ export function autoScoreWholePaper(submissionId: string) {
   return fetch("/api/marking/auto-score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ submissionId, scoreWholePaper: true }) }).then((response) => assertOk(response, "Could not auto-score the full paper."));
 }
 
-export function saveScore(input: Record<string, unknown>) {
-  return fetch("/api/marking/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) }).then((response) => assertOk(response, "Could not save score."));
+const currentScoreSchema = z.object({ awardedMarks: z.number(), maxMarks: z.number(), needsReview: z.boolean(), rationale: z.string(), scoreStatus: z.enum(["ai_suggested", "confirmed"]), updatedAt: z.number() });
+const saveScoreResponseSchema = z.discriminatedUnion("status", [
+  z.object({ status: z.literal("saved"), updatedAt: z.number().nullable() }),
+  z.object({ status: z.literal("conflict"), current: currentScoreSchema }),
+]);
+export type SaveScoreResult = z.infer<typeof saveScoreResponseSchema>;
+
+export async function saveScore(input: { submissionId: string; questionKey: string; awardedMarks: number; maxMarks: number; needsReview: boolean; rationale: string; evidence: unknown; expectedUpdatedAt: number | null }): Promise<SaveScoreResult> {
+  const response = await fetch("/api/marking/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+  if (response.status === 409) return saveScoreResponseSchema.parse(await response.json());
+  await assertOk(response, "Could not save score.");
+  return saveScoreResponseSchema.parse(await response.json());
 }
 
 export async function loadCombinedMarkScheme(submissionId: string) {

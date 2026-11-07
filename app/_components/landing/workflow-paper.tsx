@@ -19,8 +19,8 @@ export function WorkflowPaper() {
             <span data-workflow-glyph className="workflow-glyph flex h-[58px] w-[58px] items-center justify-center rounded-[8px] border border-text/15 bg-bg-warm" aria-hidden="true">
               <EmbossIcon icon={icon} color={color} surface="#ECE9E1" params={EMBOSS_PRESETS.process} size={58} />
             </span>
-            <h3 className="mt-5 text-[1rem] font-extrabold tracking-[-0.03em] text-text">{title}</h3>
-            <p className="mt-2 max-w-[25ch] text-[0.7rem] leading-5 text-text-muted">{description}</p>
+            <h3 className="mt-5 text-lg font-extrabold tracking-[-0.03em] text-text">{title}</h3>
+            <p className="mt-2 max-w-[25ch] text-base leading-6 text-text-secondary">{description}</p>
           </li>
         ))}
       </ol>

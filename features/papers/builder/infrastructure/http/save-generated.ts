@@ -2,11 +2,13 @@ import { NextRequest } from "next/server";
 
 import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
 import { saveGeneratedPaper } from "@/features/papers/server";
-import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
-import { normalizeApplicationError } from "@/shared/application/errors";
+import { reservePaperGeneration } from "@/features/mcp/rate-limit";
+import { normalizeApplicationError, RateLimitError } from "@/shared/application/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const MAX_GENERATED_PDF_BYTES = 40 * 1024 * 1024;
 
 function badRequest(message: string, status = 400) {
   return new Response(message, { status });
@@ -23,37 +25,29 @@ export async function POST(request: NextRequest) {
     return badRequest("Invalid multipart form data.");
   }
 
-  const subjectKey = typeof formData.get("subjectKey") === "string" ? String(formData.get("subjectKey")).trim() as PaperMakerSubjectKey : null;
-  const targetMarks = Number(formData.get("targetMarks") ?? 0);
-  const totalMarks = Number(formData.get("totalMarks") ?? 0);
-  const timeMinutes = Number(formData.get("timeMinutes") ?? 0);
-  const subjectTierRaw = typeof formData.get("subjectTier") === "string" ? String(formData.get("subjectTier")).trim() : "";
-  const unitKeysRaw = typeof formData.get("selectedUnitKeys") === "string" ? String(formData.get("selectedUnitKeys")).trim() : "";
+  const generationReceiptId = typeof formData.get("generationReceiptId") === "string"
+    ? String(formData.get("generationReceiptId")).trim()
+    : "";
   const file = formData.get("file");
 
-  if (!subjectKey) return badRequest("subjectKey is required.");
+  if (!generationReceiptId) return badRequest("generationReceiptId is required.");
   if (!(file instanceof File)) return badRequest("file is required.");
-  if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-    return badRequest("Only PDF uploads are supported.");
-  }
-  if (!unitKeysRaw) return badRequest("selectedUnitKeys is required.");
-
-  const selectedUnitKeys = unitKeysRaw.split("\n").map((value) => value.trim()).filter(Boolean);
-  if (selectedUnitKeys.length === 0) return badRequest("selectedUnitKeys is required.");
+  if (file.size === 0) return badRequest("The generated paper is empty.");
+  if (file.size > MAX_GENERATED_PDF_BYTES) return badRequest("Generated papers are limited to 40 MB.");
 
   try {
-    return Response.json(await saveGeneratedPaper({
-      subjectKey,
-      targetMarks,
-      totalMarks,
-      timeMinutes,
-      subjectTier: subjectTierRaw === "foundation" || subjectTierRaw === "higher" || subjectTierRaw === "none" ? subjectTierRaw : undefined,
-      selectedUnitKeys,
-      file,
-    }));
+    const reservation = await reservePaperGeneration(request, "save-generated");
+    const result = await saveGeneratedPaper({ generationReceiptId, file });
+    return Response.json(result, { headers: { "X-RateLimit-Remaining": String(reservation.remainingForCaller) } });
   } catch (error) {
     const normalized = normalizeApplicationError(error, "Could not save generated paper.");
     if (normalized.status === 403) return unauthorizedResponse();
+    if (normalized instanceof RateLimitError) {
+      return new Response(normalized.message, {
+        status: normalized.status,
+        headers: { "Retry-After": String(Math.max(1, Math.ceil((normalized.retryAt - Date.now()) / 1000))) },
+      });
+    }
     return badRequest(normalized.message, normalized.status);
   }
 }

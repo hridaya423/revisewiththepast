@@ -1,21 +1,9 @@
-import { internalMutation, mutation } from "./_generated/server";
+import { internalMutation, mutation, type MutationCtx } from "./_generated/server";
 import { v } from "convex/values";
 
+import { requireServiceSecret } from "./model/serviceAuth";
+
 const HOUR_MS = 60 * 60 * 1000;
-
-function secretsMatch(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let index = 0; index < a.length; index += 1) {
-    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  }
-  return diff === 0;
-}
-
-function requireServiceSecret(serviceSecret: string) {
-  const expected = process.env.MCP_SERVICE_SECRET;
-  if (!expected || !secretsMatch(serviceSecret, expected)) throw new Error("Unauthorized");
-}
 
 function getPositiveInteger(name: string, fallback: number, maximum: number) {
   const value = Number(process.env[name] ?? fallback);
@@ -28,15 +16,7 @@ function resolvePositiveInteger(override: number | undefined, name: string, fall
     : getPositiveInteger(name, fallback, maximum);
 }
 
-export const reserve = mutation({
-  args: {
-    serviceSecret: v.string(),
-    callerKey: v.string(),
-    scope: v.optional(v.string()),
-    callerLimit: v.optional(v.number()),
-    globalLimitOverride: v.optional(v.number()),
-  },
-  handler: async (ctx, args) => {
+export async function reserveQuota(ctx: MutationCtx, args: { serviceSecret: string; callerKey: string; scope?: string; callerLimit?: number; globalLimitOverride?: number }) {
     requireServiceSecret(args.serviceSecret);
     if (!/^[a-f0-9]{64}$/.test(args.callerKey)) throw new Error("Invalid caller key.");
     const scope = args.scope ?? "paper";
@@ -76,7 +56,17 @@ export const reserve = mutation({
       remainingForCaller: callerLimit - callerCount - 1,
       remainingGlobal: globalLimit - globalCount - 1,
     };
+}
+
+export const reserve = mutation({
+  args: {
+    serviceSecret: v.string(),
+    callerKey: v.string(),
+    scope: v.optional(v.string()),
+    callerLimit: v.optional(v.number()),
+    globalLimitOverride: v.optional(v.number()),
   },
+  handler: reserveQuota,
 });
 
 export const cleanupOldWindows = internalMutation({

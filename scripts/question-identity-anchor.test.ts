@@ -628,6 +628,40 @@ describe("hasDuplicateQuestionPartNumbers", () => {
 });
 
 describe("discoverGroupedQuestionIdentityAnchors", () => {
+  it("replaces a stale part-level anchor with the question stem when both are available", () => {
+    const stalePartAnchor = {
+      pageNumber: 6,
+      numberBounds: box(60, 440, 74, 452),
+      promptBaseline: 440,
+      promptBounds: box(82, 440, 280, 452),
+    };
+    const result = discoverGroupedQuestionIdentityAnchors({
+      boardCode: "edexcel",
+      subjectSlug: "mathematics",
+      pages: [page(6, [
+        line([["5", 42, 8, 0], ["Here is a pyramid.", 60, 120, 0]], 700),
+        line([["(a)", 60, 14, 0], ["Draw an accurate front elevation.", 82, 198, 0]], 440),
+      ])],
+      parts: [{
+        questionId: "q5a",
+        questionNumber: "5",
+        questionPartNumber: "a",
+        sectionCode: null,
+        choiceGroupId: null,
+        pageNumber: 6,
+        pageNumbers: [6],
+        identity_anchor: stalePartAnchor,
+      }],
+    });
+
+    expect(result.parts[0].identity_anchor).toEqual({
+      pageNumber: 6,
+      numberBounds: box(42, 700, 50, 712),
+      promptBaseline: 700,
+      promptBounds: box(60, 700, 180, 712),
+    });
+  });
+
   it("discovers independent AQA compound parts on their own pages", () => {
     const parts = [
       { questionId: "q1.1", questionNumber: "1", questionPartNumber: "1", sectionCode: null, choiceGroupId: null, pageNumber: 2, pageNumbers: [2], identity_anchor: null },

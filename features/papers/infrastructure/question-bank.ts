@@ -29,11 +29,16 @@ const questionBankCache = new Map<string, {
   expiresAt: number;
   questionParts: QuestionBankPart[];
 }>();
+const pendingQuestionBankReads = new Map<string, Promise<QuestionBankPart[]>>();
 
 function getConvexClient() {
   if (convexClient) return convexClient;
   convexClient = new ConvexHttpClient(getConvexUrl());
   return convexClient;
+}
+
+function serviceSecret() {
+  return getServerEnvironment().MCP_SERVICE_SECRET ?? "";
 }
 
 function getQuestionPageManifestBySourcePath() {
@@ -81,33 +86,50 @@ export async function getPaperMakerQuestionBankFromConvex(
   if (useCache) {
     const cached = questionBankCache.get(cacheKey);
     if (cached && cached.expiresAt > now) return cached.questionParts;
+    const pending = pendingQuestionBankReads.get(cacheKey);
+    if (pending) return await pending;
   }
 
   const client = getConvexClient();
-  const data = await client.query(api.questionTags.getPaperMakerQuestionBank, {
-    boardCode,
-    subjectSlug,
-  });
-  const questionParts = data.questionParts satisfies QuestionBankPart[];
-
-  if (useCache) {
-    questionBankCache.set(cacheKey, {
-      expiresAt: now + QUESTION_BANK_CACHE_TTL_MS,
-      questionParts,
+  const read = (async () => {
+    const snapshot = await client.query(api.questionTags.getQuestionBankSnapshot, {
+      serviceSecret: serviceSecret(),
+      boardCode,
+      subjectSlug,
     });
-  }
+    const data = snapshot ?? await client.mutation(api.questionTags.rebuildQuestionBankSnapshot, {
+      serviceSecret: serviceSecret(),
+      boardCode,
+      subjectSlug,
+    });
+    const questionParts = data.questionParts as QuestionBankPart[];
 
-  return questionParts;
+    if (useCache) {
+      questionBankCache.set(cacheKey, {
+        expiresAt: Date.now() + QUESTION_BANK_CACHE_TTL_MS,
+        questionParts,
+      });
+    }
+
+    return questionParts;
+  })();
+  if (useCache) pendingQuestionBankReads.set(cacheKey, read);
+  try {
+    return await read;
+  } finally {
+    if (useCache) pendingQuestionBankReads.delete(cacheKey);
+  }
 }
 
 export async function getTaggingCountsFromConvex() {
   const client = getConvexClient();
-  return await client.query(api.questionTags.getTaggingCounts, {});
+  return await client.query(api.questionTags.getTaggingCounts, { serviceSecret: serviceSecret() });
 }
 
 export async function getPaperAssetsByBoardSubjectFromConvex(boardCode: string, subjectSlug: string) {
   const client = getConvexClient();
   return await client.query(api.paperAssets.getPaperAssetsByBoardSubject, {
+    serviceSecret: serviceSecret(),
     boardCode,
     subjectSlug,
   });
@@ -125,6 +147,7 @@ export async function getInsertPageAssetsBySourceRelativePaths(sourceRelativePat
   const client = getConvexClient();
   const uniquePaths = Array.from(new Set(sourceRelativePaths));
   const assets = await client.query(api.insertPageAssets.getInsertPageAssetsBySourceRelativePaths, {
+    serviceSecret: serviceSecret(),
     sourceRelativePaths: uniquePaths,
   });
 
@@ -159,6 +182,7 @@ export type PaperMakerSubjectDetailSnapshot = {
 export async function getSubjectDetailSnapshotFromConvex(boardCode: string, subjectSlug: string) {
   const client = getConvexClient();
   const snapshot = await client.query(api.questionTags.getSubjectDetailSnapshot, {
+    serviceSecret: serviceSecret(),
     boardCode,
     subjectSlug,
   });
@@ -168,9 +192,8 @@ export async function getSubjectDetailSnapshotFromConvex(boardCode: string, subj
 
 export async function upsertSubjectDetailSnapshotInConvex(boardCode: string, subjectSlug: string, snapshot: PaperMakerSubjectDetailSnapshot) {
   const client = getConvexClient();
-  const { MCP_SERVICE_SECRET } = getServerEnvironment();
   await client.mutation(api.questionTags.upsertSubjectDetailSnapshot, {
-    serviceSecret: MCP_SERVICE_SECRET ?? "",
+    serviceSecret: serviceSecret(),
     boardCode,
     subjectSlug,
     payloadJson: JSON.stringify(snapshot),
@@ -181,6 +204,7 @@ export async function getQuestionPageAssetsBySourceRelativePaths(sourceRelativeP
   const client = getConvexClient();
   const uniquePaths = Array.from(new Set(sourceRelativePaths));
   const assets = await client.query(api.questionPageAssets.getQuestionPageAssetsBySourceRelativePaths, {
+    serviceSecret: serviceSecret(),
     sourceRelativePaths: uniquePaths,
   });
   const bySourcePath = new Map<string, SourcePageAsset[]>();
@@ -218,7 +242,7 @@ export async function getPaperFiguresBySourceRelativePaths(sourceRelativePaths: 
   const client = getConvexClient();
   const uniquePaths = Array.from(new Set(sourceRelativePaths));
   if (uniquePaths.length === 0) return new Map<string, RegionFigure[]>();
-  const rows = await client.query(api.paperRegions.getPaperFigures, { sourceRelativePaths: uniquePaths });
+  const rows = await client.query(api.paperRegions.getPaperFigures, { serviceSecret: serviceSecret(), sourceRelativePaths: uniquePaths });
   const bySourcePath = new Map<string, RegionFigure[]>();
   for (const row of rows as PaperFigureRow[]) {
     const existing = bySourcePath.get(row.sourceRelativePath) ?? [];
@@ -232,7 +256,7 @@ export async function getPaperPageLayoutsBySourceRelativePaths(sourceRelativePat
   const client = getConvexClient();
   const uniquePaths = Array.from(new Set(sourceRelativePaths));
   if (uniquePaths.length === 0) return new Map<string, RegionPageLayout[]>();
-  const rows = await client.query(api.paperRegions.getPaperPageLayouts, { sourceRelativePaths: uniquePaths });
+  const rows = await client.query(api.paperRegions.getPaperPageLayouts, { serviceSecret: serviceSecret(), sourceRelativePaths: uniquePaths });
   const bySourcePath = new Map<string, RegionPageLayout[]>();
   for (const row of rows as PaperPageLayoutRow[]) {
     const existing = bySourcePath.get(row.sourceRelativePath) ?? [];

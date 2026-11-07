@@ -1,5 +1,5 @@
 import type { Doc } from "../_generated/dataModel";
-import { deriveQuestionProgressState, deriveSubmissionStatus, type QuestionProgressState } from "../../shared/domain/marking";
+import { deriveQuestionProgressState, deriveSubmissionStatus, getResponsePageQuestionKeys, type QuestionProgressState } from "../../shared/domain/marking";
 
 export function isConfirmedScore(score: Doc<"markingScores">) {
   return score.scoreStatus !== "ai_suggested";
@@ -28,14 +28,14 @@ function buildQuestionProgress(
     ...scores.sort((left, right) => left.createdAt - right.createdAt),
     ...statuses.sort((left, right) => left.createdAt - right.createdAt),
   ];
-  for (const row of activityRows) orderedKeys.add(row.questionKey);
+  for (const row of activityRows) for (const key of getResponsePageQuestionKeys(row)) orderedKeys.add(key);
   const scoreByQuestion = new Map(scores.map((score) => [score.questionKey, score]));
   const statusByQuestion = new Map(statuses.map((status) => [status.questionKey, status]));
   const progress: Array<{ key: string; label: string; state: QuestionProgressState }> = Array.from(orderedKeys).map((questionKey, index) => {
     const score = scoreByQuestion.get(questionKey);
     const status = statusByQuestion.get(questionKey)?.status;
     const state = deriveQuestionProgressState({
-      hasPages: pages.some((page) => page.questionKey === questionKey),
+      hasPages: pages.some((page) => getResponsePageQuestionKeys(page).includes(questionKey)),
       hasResponse: responses.some((response) => response.questionKey === questionKey),
       hasScore: Boolean(score),
       scoreConfirmed: Boolean(score && isConfirmedScore(score)),
@@ -95,7 +95,7 @@ export function summarizeMarking(
       ocrCompletedCount: new Set(responses.map((response) => response.questionKey)).size,
     }),
     questionCount: knownQuestionKeys.size,
-    uploadedPageCount: pages.length,
+    uploadedPageCount: pages.filter((page) => getResponsePageQuestionKeys(page).length > 0).length,
     ocrCompletedCount: new Set(responses.map((response) => response.questionKey)).size,
     scoredCount: confirmedScores.length,
     confirmedCount: confirmedScores.length,

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
-import { addMarkingResponsePageInConvex, getMarkingResponsePageByUploadKey } from "../infrastructure/convex/commands";
-import { uploadToHackClubCdn } from "@/shared/infrastructure/cdn/hackclub";
+import { addMarkingResponsePageInConvex, getMarkingResponsePageByUploadKey, mergeResponsePageTargets, validateResponsePageTargets } from "../infrastructure/convex/commands";
+import { uploadPrivateMarkingFile } from "../infrastructure/private-files";
 import { ValidationError } from "@/shared/application/errors";
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -11,16 +11,17 @@ function assertRecognizedImage(bytes: Uint8Array) {
   const png = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
   const webp = bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46
     && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
-  const heic = new TextDecoder().decode(bytes.slice(4, 12)).startsWith("ftyp");
   const gif = bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46;
-  if (!(jpeg || png || webp || gif || heic)) {
-    throw new ValidationError("Uploaded file does not look like a supported image.");
+  if (!(jpeg || png || webp || gif)) {
+    throw new ValidationError("Use a JPG, PNG, WebP or GIF image.");
   }
+  return jpeg ? "image/jpeg" : png ? "image/png" : webp ? "image/webp" : "image/gif";
 }
 
 export async function uploadResponsePage(input: {
   submissionId: string;
   questionKey: string;
+  questionKeys?: string[];
   questionNumber?: string;
   questionPartNumber?: string;
   pageLabel?: string;
@@ -29,29 +30,35 @@ export async function uploadResponsePage(input: {
   if (input.file.size === 0) throw new ValidationError("Uploaded file is empty.");
   if (input.file.size > MAX_UPLOAD_BYTES) throw new ValidationError("Image uploads are limited to 10 MB.");
   const bytes = new Uint8Array(await input.file.arrayBuffer());
-  assertRecognizedImage(bytes);
+  const contentType = assertRecognizedImage(bytes);
+  const questionKeys = Array.from(new Set(input.questionKeys?.length ? input.questionKeys : [input.questionKey]));
+  await validateResponsePageTargets(input.submissionId, questionKeys);
 
   const uploadKey = createHash("sha256")
     .update(bytes)
-    .update(`\0${input.submissionId}\0${input.questionKey}\0${input.pageLabel ?? ""}`)
+    .update(`\0${input.submissionId}`)
     .digest("hex");
   const existing = await getMarkingResponsePageByUploadKey(input.submissionId, uploadKey);
-  if (existing) return { pageId: existing._id, imageUrl: existing.sourceImageUrl };
+  if (existing?.fileId) {
+    const merged = await mergeResponsePageTargets(input.submissionId, existing._id, questionKeys);
+    return { pageId: existing._id, imageUrl: existing.sourceImageUrl, questionKeys: merged };
+  }
 
-  const upload = await uploadToHackClubCdn(input.file);
+  const upload = await uploadPrivateMarkingFile(new File([bytes], input.file.name, { type: contentType }));
   const pageId = await addMarkingResponsePageInConvex({
     submissionId: input.submissionId,
     uploadKey,
-    questionKey: input.questionKey,
+    questionKey: questionKeys[0],
+    questionKeys,
     questionNumber: input.questionNumber,
     questionPartNumber: input.questionPartNumber,
     pageLabel: input.pageLabel,
     fileName: input.file.name,
     contentType: upload.contentType,
     fileSize: upload.size,
-    cdnUploadId: upload.id,
+    fileId: upload.id,
     sourceImageUrl: upload.url,
     uploadedAt: upload.createdAt,
   });
-  return { pageId, imageUrl: upload.url };
+  return { pageId, imageUrl: upload.url, questionKeys };
 }

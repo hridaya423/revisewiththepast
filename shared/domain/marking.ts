@@ -1,3 +1,7 @@
+export function getResponsePageQuestionKeys(page: { questionKey: string; questionKeys?: string[] }) {
+  return Array.from(new Set(page.questionKeys ?? [page.questionKey]));
+}
+
 export type MarkingQuestionStatus =
   | "unmapped"
   | "pages_assigned"

@@ -1,5 +1,7 @@
-import { mutationGeneric, queryGeneric } from "convex/server";
+import { internalMutationGeneric, mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
+
+import { requireServiceSecret, serviceSecretArg } from "./model/serviceAuth";
 
 const pageAssetArgs = {
   sourceRelativePath: v.string(),
@@ -15,8 +17,9 @@ const pageAssetArgs = {
 };
 
 export const upsertQuestionPageAsset = mutationGeneric({
-  args: pageAssetArgs,
+  args: { ...serviceSecretArg, ...pageAssetArgs },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     const existing = await ctx.db
       .query("questionPageAssets")
@@ -39,7 +42,7 @@ export const upsertQuestionPageAsset = mutationGeneric({
   },
 });
 
-export const deleteQuestionPageAssetsNotInBoardSubject = mutationGeneric({
+export const deleteQuestionPageAssetsNotInBoardSubject = internalMutationGeneric({
   args: {
     keepBoardCode: v.string(),
     keepSubjectSlug: v.string(),
@@ -69,8 +72,9 @@ export const deleteQuestionPageAssetsNotInBoardSubject = mutationGeneric({
 });
 
 export const getQuestionPageAssetsBySourceRelativePath = queryGeneric({
-  args: { sourceRelativePath: v.string() },
+  args: { ...serviceSecretArg, sourceRelativePath: v.string() },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     return await ctx.db
       .query("questionPageAssets")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
@@ -79,8 +83,9 @@ export const getQuestionPageAssetsBySourceRelativePath = queryGeneric({
 });
 
 export const getQuestionPageAssetsBySourceRelativePaths = queryGeneric({
-  args: { sourceRelativePaths: v.array(v.string()) },
+  args: { ...serviceSecretArg, sourceRelativePaths: v.array(v.string()) },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const uniquePaths = Array.from(new Set(args.sourceRelativePaths));
     const rows = await Promise.all(uniquePaths.map(async (sourceRelativePath) => {
       const assets = await ctx.db

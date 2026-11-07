@@ -28,7 +28,7 @@ export function OperationProgress({ kind, label, startedAt, compact = false, cla
       role="status"
       aria-live="polite"
       data-operation={kind}
-      className={`inline-flex items-center gap-2 text-text-secondary ${compact ? "text-[0.7rem]" : "text-[0.82rem]"} ${className}`}
+      className={`inline-flex items-center gap-2 text-text-secondary ${compact ? "text-sm" : "text-base"} ${className}`}
     >
       <span className="operation-orbit" aria-hidden="true"><span /></span>
       <span>{label}{elapsed === null ? "" : ` · ${elapsed}s`}</span>

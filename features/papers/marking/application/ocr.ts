@@ -1,3 +1,5 @@
+import { getResponsePageQuestionKeys } from "@/shared/domain/marking";
+
 import { getMarkingSubmissionBundleFromConvex, upsertMarkingQuestionStatusInConvex, upsertMarkingResponseInConvex } from "../infrastructure/convex/commands";
 import { extractAnswerRegionText } from "../domain/answer-extraction";
 import {
@@ -27,7 +29,7 @@ export async function runQuestionOcr(input: OcrRequest) {
     pageUrls = [input.imageUrl];
   } else {
     pageUrls = (bundle.pages ?? []).flatMap((page) => (
-      page.questionKey === input.questionKey && page.sourceImageUrl
+      getResponsePageQuestionKeys(page).includes(input.questionKey) && page.sourceImageUrl
         ? [page.sourceImageUrl]
         : []
     ));

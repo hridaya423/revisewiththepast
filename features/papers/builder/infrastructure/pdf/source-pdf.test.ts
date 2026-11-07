@@ -146,7 +146,7 @@ describe("source PDF rasterization", () => {
     const page = source.addPage([300, 200]);
     page.setMediaBox(18, 26, 300, 200);
     page.setCropBox(18, 26, 300, 200);
-    page.drawRectangle({ x: 118, y: 76, width: 20, height: 20, color: rgb(0, 0, 0) });
+    page.drawRectangle({ x: 100, y: 50, width: 20, height: 20, color: rgb(0, 0, 0) });
     const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-local-crop-"));
     const sourcePath = join(directory, "source.pdf");
 
@@ -212,6 +212,73 @@ describe("source PDF rasterization", () => {
 
       expect(darkPixelCount(answerPixels)).toBeGreaterThan(50);
       expect(darkPixelCount(totalPixels)).toBe(0);
+      // A reference inside a masked furniture line is dead — redrawing it
+      // would paint a lone digit into whitespace.
+      expect(raster.crossRefs.filter((entry) => entry.sourceNumber === "6")).toHaveLength(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("drops the cross-ref when a 'Total for Question N' line is split into word items", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("(Total for", { x: 120, y: 80, size: 12, font });
+    page.drawText("Question", { x: 185, y: 80, size: 12, font });
+    page.drawText("6", { x: 235, y: 80, size: 12, font });
+    page.drawText("= 4 marks)", { x: 243, y: 80, size: 12, font });
+    page.drawText("Answer content", { x: 30, y: 110, size: 14, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-total-split-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+        sourceQuestionNumber: "6",
+      });
+      expect(raster.crossRefs.filter((entry) => entry.sourceNumber === "6")).toHaveLength(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("masks a vector margin arrow while preserving same-row marks brackets", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("Answer content", { x: 30, y: 110, size: 14, font });
+    page.drawText("................................................", { x: 30, y: 70, size: 10, font });
+    page.drawText("[4 marks]", { x: 232, y: 70, size: 10, font });
+    // Vector "turn over" arrowhead below the last answer line — no text item,
+    // isolated in the right band.
+    page.drawSvgPath("M 262 30 L 274 36 L 262 42 Z", { color: rgb(0, 0, 0) });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-arrow-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+      const image = await loadImage(rendered.pages[0].png);
+      const canvas = createCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+      // Arrow: pdf x 262-274, y 30-42 → raster x 524-548, y ~308-332.
+      expect(darkPixelCount(context.getImageData(518, 302, 44, 36).data)).toBe(0);
+      // Marks bracket shares its row with the dotted rule — must survive.
+      expect(darkPixelCount(context.getImageData(455, 245, 120, 30).data)).toBeGreaterThan(50);
+      expect(darkPixelCount(context.getImageData(50, 145, 190, 45).data)).toBeGreaterThan(50);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -248,6 +315,161 @@ describe("source PDF rasterization", () => {
 
       expect(darkPixelCount(sourceHeader)).toBe(0);
       expect(darkPixelCount(topicHeading)).toBeGreaterThan(50);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("preserves a row of axis tick digits while still masking a lone page number", async () => {
+    const digitRow = await PDFDocument.create();
+    const digitPage = digitRow.addPage([300, 200]);
+    const font = await digitRow.embedFont(StandardFonts.Helvetica);
+    for (const [text, x] of [["0", 40], ["10", 80], ["20", 120], ["30", 160], ["40", 200], ["50", 240]] as const) {
+      digitPage.drawText(text, { x, y: 15, size: 10, font });
+    }
+    digitPage.drawText("Delay in minutes", { x: 110, y: 4, size: 9, font });
+    const loneDigit = await PDFDocument.create();
+    const lonePage = loneDigit.addPage([300, 200]);
+    lonePage.drawText("7", { x: 150, y: 15, size: 10, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-digit-rows-"));
+
+    try {
+      const rowPath = join(directory, "row.pdf");
+      const lonePath = join(directory, "lone.pdf");
+      writeFileSync(rowPath, await digitRow.save());
+      writeFileSync(lonePath, await loneDigit.save());
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+      const regionPixels = async (raster: Awaited<ReturnType<typeof rasterizeSourcePdfPage>>, x: number, y: number, w: number, h: number) => {
+        const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+        const image = await loadImage(rendered.pages[0].png);
+        const canvas = createCanvas(image.width, image.height);
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0);
+        return context.getImageData(x, y, w, h).data;
+      };
+
+      const rowRaster = await rasterizeSourcePdfPage(rowPath, 0, new Map(), new Map(), { sanitizeFurniture: true });
+      // pdf y=15 → raster originY ≈ 370; glyphs span roughly y 350–372 at scale 2.
+      expect(darkPixelCount(await regionPixels(rowRaster, 75, 350, 25, 25))).toBeGreaterThan(10);
+      expect(darkPixelCount(await regionPixels(rowRaster, 475, 350, 30, 25))).toBeGreaterThan(10);
+      expect(darkPixelCount(await regionPixels(rowRaster, 215, 372, 120, 20))).toBeGreaterThan(10);
+
+      const loneRaster = await rasterizeSourcePdfPage(lonePath, 0, new Map(), new Map(), { sanitizeFurniture: true });
+      expect(darkPixelCount(await regionPixels(loneRaster, 295, 350, 25, 25))).toBe(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("registers a cross-ref patch for a fused 'Question 5' item mid-sentence", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("You are advised to plan your answer to Question 5 before you start to write.", { x: 30, y: 120, size: 9, font });
+    page.drawText("Keep this answer text", { x: 30, y: 60, size: 12, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-qref-"));
+
+    try {
+      const sourcePath = join(directory, "source.pdf");
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), { sanitizeFurniture: true });
+      const ref = raster.crossRefs.find((entry) => entry.sourceNumber === "5");
+      expect(ref).toBeDefined();
+      expect(ref!.bounds.x0).toBeGreaterThan(150);
+      expect(ref!.bounds.x1).toBeLessThan(270);
+      // Other digits in the same sentence must not become refs.
+      expect(raster.crossRefs.filter((entry) => entry.sourceNumber !== "5")).toHaveLength(0);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("masks the Edexcel bottom progress strip while preserving nearby content", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("Keep this answer text", { x: 30, y: 60, size: 12, font });
+    // Answer-box bottom rule: 140pt wide, ~20pt above the squares.
+    page.drawRectangle({ x: 30, y: 30, width: 140, height: 0.75, color: rgb(0, 0, 0) });
+    // Progress squares: 5 filled 5.5pt boxes with 2pt gaps, page-bottom zone.
+    for (let index = 0; index < 5; index += 1) {
+      page.drawRectangle({ x: 30 + index * 7.5, y: 12, width: 5.5, height: 6, color: rgb(0, 0, 0) });
+    }
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-strip-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+      const image = await loadImage(rendered.pages[0].png);
+      const canvas = createCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+      // Raster y = 2 * (200 - pdfY): squares ≈ 364-376, rule ≈ 339-341, text ≈ 256-280.
+      expect(darkPixelCount(context.getImageData(55, 358, 90, 25).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(55, 334, 300, 15).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(55, 252, 200, 35).data)).toBeGreaterThan(50);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("masks AQA answer-line index digits while preserving the answer rule", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    const font = await source.embedFont(StandardFonts.Helvetica);
+    page.drawText("Write your answer on the lines below.", { x: 30, y: 150, size: 10, font });
+    // Numbered answer lines: "1 ___", "2 ___" — the digit is source furniture.
+    page.drawText("1", { x: 30, y: 120, size: 10, font });
+    page.drawRectangle({ x: 42, y: 119, width: 150, height: 0.75, color: rgb(0, 0, 0) });
+    page.drawText("2", { x: 30, y: 90, size: 10, font });
+    page.drawRectangle({ x: 42, y: 89, width: 150, height: 0.75, color: rgb(0, 0, 0) });
+    // A lone digit with no rule beside it is content, not a line index.
+    page.drawText("3", { x: 30, y: 50, size: 10, font });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-line-idx-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+      });
+      const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+      const image = await loadImage(rendered.pages[0].png);
+      const canvas = createCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+      // Raster y = 2 * (200 - pdfY): "1" ≈ rows 140-165, "2" ≈ rows 200-225, "3" ≈ 280-305.
+      expect(darkPixelCount(context.getImageData(55, 140, 20, 25).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(55, 200, 20, 25).data)).toBe(0);
+      // The rules themselves survive: 300px runs beside each masked digit.
+      expect(darkPixelCount(context.getImageData(84, 155, 300, 12).data)).toBeGreaterThan(50);
+      expect(darkPixelCount(context.getImageData(84, 215, 300, 12).data)).toBeGreaterThan(50);
+      // Control digit untouched.
+      expect(darkPixelCount(context.getImageData(55, 280, 20, 25).data)).toBeGreaterThan(10);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }
@@ -348,6 +570,45 @@ describe("source PDF rasterization", () => {
       expect(darkPixelCount(rotatedFurnitureBottom)).toBeLessThan(300);
       expect(darkPixelCount(graphAxis)).toBeGreaterThan(20);
       expect(darkPixelCount(edgeAnswerLine)).toBeGreaterThan(80);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
+  it("clears all four crop-boundary seams without erasing interior graph and table lines", async () => {
+    const source = await PDFDocument.create();
+    const page = source.addPage([300, 200]);
+    page.drawRectangle({ x: 20, y: 20, width: 260, height: 160, borderWidth: 2, borderColor: rgb(0, 0, 0) });
+    page.drawLine({ start: { x: 100, y: 60 }, end: { x: 100, y: 140 }, thickness: 2, color: rgb(0, 0, 0) });
+    page.drawRectangle({ x: 120, y: 80, width: 80, height: 40, borderWidth: 2, borderColor: rgb(0, 0, 0) });
+    const directory = mkdtempSync(join(tmpdir(), "gcsemeta-raster-crop-frame-"));
+    const sourcePath = join(directory, "source.pdf");
+
+    try {
+      writeFileSync(sourcePath, await source.save());
+      const raster = await rasterizeSourcePdfPage(sourcePath, 0, new Map(), new Map(), {
+        sanitizeFurniture: true,
+        cropBox: { left: 20, right: 280, bottom: 20, top: 180 },
+      });
+      const rendered = await renderPdfToPngBuffers(await raster.sourceDoc.save(), 2);
+      const image = await loadImage(rendered.pages[0].png);
+      const canvas = createCanvas(image.width, image.height);
+      const context = canvas.getContext("2d");
+      context.drawImage(image, 0, 0);
+      const darkPixelCount = (pixels: Uint8ClampedArray) => {
+        let count = 0;
+        for (let index = 0; index < pixels.length; index += 4) {
+          if (pixels[index] < 220 && pixels[index + 1] < 220 && pixels[index + 2] < 220) count += 1;
+        }
+        return count;
+      };
+
+      expect(darkPixelCount(context.getImageData(80, 36, 440, 12).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(80, 352, 440, 12).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(36, 70, 12, 260).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(552, 70, 12, 260).data)).toBe(0);
+      expect(darkPixelCount(context.getImageData(194, 120, 12, 160).data)).toBeGreaterThan(100);
+      expect(darkPixelCount(context.getImageData(236, 156, 168, 88).data)).toBeGreaterThan(200);
     } finally {
       rmSync(directory, { recursive: true, force: true });
     }

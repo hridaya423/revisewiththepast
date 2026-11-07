@@ -4,6 +4,7 @@ import { OpenRouter } from "@openrouter/sdk";
 import { ConvexHttpClient } from "convex/browser";
 import { config as loadEnv } from "dotenv";
 import type { QuestionIdentityAnchor } from "@/shared/domain/paper";
+import { discoverGroupedQuestionIdentityAnchors } from "./question-identity-anchor";
 import { deriveSourceRelativePath, getBooleanEnvironment, getFirstEnvironment, getNumberEnvironment, getOptionalEnvironment } from "./runtime";
 
 loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: true });
@@ -52,6 +53,10 @@ type ExtractedPaper = {
   year: number | null;
   session: string | null;
   parser_version: string;
+  pages?: Array<{
+    page_number: number;
+    text_lines: Array<{ text: string; bbox: { x0: number; y0: number; x1: number; y1: number }; y: number; spans?: Array<{ text: string; bbox: { x0: number; y0: number; x1: number; y1: number } }> }>;
+  }>;
   question_parts: ExtractedQuestionPart[];
 };
 
@@ -414,8 +419,8 @@ function getPaperPromptPayload(
   };
 }
 
-function assertEnv(writeToConvex: boolean) {
-  if (!API_KEY) throw new Error("Missing OPENROUTER_API_KEY");
+function assertEnv(writeToConvex: boolean, requireOpenRouter: boolean) {
+  if (requireOpenRouter && !API_KEY) throw new Error("Missing OPENROUTER_API_KEY");
   if (writeToConvex && !CONVEX_URL) {
     throw new Error("Missing CONVEX_URL or NEXT_PUBLIC_CONVEX_URL while WRITE_TO_CONVEX is enabled");
   }
@@ -423,12 +428,26 @@ function assertEnv(writeToConvex: boolean) {
 
 function parseArgs() {
   const args = process.argv.slice(2);
+  const valueFlags = new Set(["--paper-json", "--input-dir", "--config-dir"]);
+  const booleanFlags = new Set(["--skip-convex", "--force", "--retag", "--reconcile", "--sync-existing", "--dry-run"]);
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (valueFlags.has(arg)) {
+      if (args[index + 1] === undefined) throw new Error(`Missing value for ${arg}`);
+      index += 1;
+    } else if (!booleanFlags.has(arg)) {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
   const paperJsonIndex = args.indexOf("--paper-json");
   const inputDirIndex = args.indexOf("--input-dir");
   const configDirIndex = args.indexOf("--config-dir");
   const skipConvex = args.includes("--skip-convex");
   const forceRetag = args.includes("--force") || args.includes("--retag");
   const reconcile = args.includes("--reconcile");
+  const syncExisting = args.includes("--sync-existing");
+  const dryRun = args.includes("--dry-run");
+  if (dryRun && !syncExisting) throw new Error("--dry-run requires --sync-existing");
   return {
     paperJson: paperJsonIndex >= 0 ? resolve(process.cwd(), args[paperJsonIndex + 1]) : null,
     inputDir: inputDirIndex >= 0 ? resolve(process.cwd(), args[inputDirIndex + 1]) : DEFAULT_INPUT_DIR,
@@ -436,6 +455,8 @@ function parseArgs() {
     writeToConvex: WRITE_TO_CONVEX_BY_DEFAULT && !skipConvex,
     forceRetag,
     reconcile,
+    syncExisting,
+    dryRun,
   };
 }
 
@@ -1252,6 +1273,7 @@ async function upsertTaggedPaperToConvex(
   extracted: ExtractedPaper,
   normalizedPaperCode: string,
   taggedParts: TaggedQuestionPart[],
+  includeServiceSecret = process.env.CONVEX_TAGS_WITHOUT_SERVICE_SECRET !== "1",
 ) {
   const sourceRelativePath = deriveSourceRelativePath(extracted.source_file);
   const questionPartById = new Map(extracted.question_parts.map((part) => [part.question_id, part]));
@@ -1325,7 +1347,7 @@ async function upsertTaggedPaperToConvex(
   };
 
   await untypedClient.mutation("questionTags:upsertTaggedPaperWithQuestions", {
-    serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
+    ...(includeServiceSecret ? { serviceSecret: process.env.MCP_SERVICE_SECRET ?? "" } : {}),
     sourceFile: extracted.source_file,
     sourceRelativePath,
     boardCode: extracted.board_code,
@@ -1366,6 +1388,25 @@ function preparePaperForTagging(paperJsonPath: string, configDir: string) {
       sharedChoiceStem: part.sharedChoiceStem ?? null,
     })),
   };
+  if (normalizedExtracted.pages && normalizedExtracted.question_parts.some((part) => !part.identity_anchor)) {
+    const assigned = discoverGroupedQuestionIdentityAnchors({
+      boardCode: normalizedExtracted.board_code,
+      subjectSlug: normalizedExtracted.subject_slug,
+      pages: normalizedExtracted.pages.map((page) => ({ pageNumber: page.page_number, lines: page.text_lines })),
+      parts: normalizedExtracted.question_parts.map((part) => ({
+        questionId: part.question_id,
+        questionNumber: part.question_number,
+        questionPartNumber: part.question_part_number,
+        sectionCode: part.section_code,
+        choiceGroupId: part.choiceGroupId,
+        pageNumber: part.page_number,
+        pageNumbers: part.page_numbers,
+        identity_anchor: part.identity_anchor ?? null,
+      })),
+    });
+    const anchorById = new Map(assigned.parts.map((part) => [part.questionId, part.identity_anchor]));
+    for (const part of normalizedExtracted.question_parts) part.identity_anchor = anchorById.get(part.question_id) ?? null;
+  }
 
   return {
     paperJsonPath,
@@ -1500,7 +1541,10 @@ async function reconcilePaper(
   const existingByQid = new Map<string, TaggedQuestionPart>();
   if (convexClient) {
     const res = await (convexClient as unknown as { query: (n: string, a: Record<string, unknown>) => Promise<{ found: boolean; parts: Array<Record<string, unknown>> }> })
-      .query("questionTags:getFullTaggedPartsBySourceRelativePath", { sourceRelativePath });
+      .query("questionTags:getFullTaggedPartsBySourceRelativePath", {
+        serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
+        sourceRelativePath,
+      });
     if (res?.found) {
       for (const part of res.parts) existingByQid.set(part.questionId as string, convexPartToTagged(part));
     }
@@ -1542,6 +1586,8 @@ async function main() {
     console.log("Flags:");
     console.log("  --skip-convex (skip writing tags to Convex)");
     console.log("  --force / --retag (ignore existing tagged-paper.json and retag)");
+    console.log("  --sync-existing (upsert existing tagged-paper.json without retagging)");
+    console.log("  --dry-run (validate and print existing tags without writing)");
     console.log("Environment:");
     console.log("  OPENROUTER_API_KEY");
     console.log("  OPENROUTER_MODEL (optional)");
@@ -1557,10 +1603,35 @@ async function main() {
     return;
   }
 
-  const { paperJson, inputDir, configDir, writeToConvex, forceRetag, reconcile } = parseArgs();
-  assertEnv(writeToConvex);
+  const { paperJson, inputDir, configDir, writeToConvex, forceRetag, reconcile, syncExisting, dryRun } = parseArgs();
+  assertEnv(writeToConvex && !dryRun, !syncExisting);
   const discoveredPaperPaths = paperJson ? [paperJson] : collectPaperJsonPaths(inputDir);
   if (discoveredPaperPaths.length === 0) throw new Error("No extracted paper.json files found");
+
+  if (syncExisting) {
+    if (!dryRun && !writeToConvex) throw new Error("--sync-existing requires Convex unless --dry-run is set");
+    const convexClient = dryRun ? null : new ConvexHttpClient(CONVEX_URL as string);
+    for (const paperJsonPath of discoveredPaperPaths) {
+      const prepared = preparePaperForTagging(paperJsonPath, configDir);
+      if (prepared.status !== "ready") throw new Error(`No taxonomy found for ${prepared.extracted.board_code}/${prepared.extracted.subject_slug}`);
+      const taggedPath = getTaggedOutputPath(paperJsonPath);
+      if (!existsSync(taggedPath)) throw new Error(`Missing ${taggedPath}`);
+      const taggedPaper = JSON.parse(readFileSync(taggedPath, "utf8")) as { paper_code?: unknown; question_parts?: unknown };
+      if (taggedPaper.paper_code !== prepared.normalizedPaperCode) {
+        throw new Error(`${taggedPath} has paper_code ${String(taggedPaper.paper_code)}, expected ${prepared.normalizedPaperCode}`);
+      }
+      if (!Array.isArray(taggedPaper.question_parts)) throw new Error(`${taggedPath} has no question_parts array`);
+      const sourceIds = new Set(prepared.extracted.question_parts.map((part) => part.question_id));
+      const allTaggedParts = taggedPaper.question_parts as TaggedQuestionPart[];
+      const taggedParts = allTaggedParts.filter((part) => sourceIds.has(part.question_id));
+      if (taggedParts.length === 0) throw new Error(`${taggedPath} has no question IDs matching ${paperJsonPath}`);
+      const sourceRelativePath = deriveSourceRelativePath(prepared.extracted.source_file);
+      const missingParts = sourceIds.size - taggedParts.length;
+      console.log(`${dryRun ? "[dry-run]" : "[sync]"} ${sourceRelativePath} paperCode=${prepared.normalizedPaperCode} parts=${taggedParts.length} missing=${missingParts} ignored=${allTaggedParts.length - taggedParts.length}`);
+      if (convexClient) await upsertTaggedPaperToConvex(convexClient, prepared.extracted, prepared.normalizedPaperCode, taggedParts, false);
+    }
+    return;
+  }
 
   if (reconcile) {
     const convexClient = writeToConvex ? new ConvexHttpClient(CONVEX_URL as string) : null;

@@ -14,6 +14,7 @@ function toSavedPaperId(value: string): Id<"savedPapers"> {
 
 export async function createMarkingSubmissionInConvex(args: {
   idempotencyKey?: string;
+  newAttempt?: boolean;
   savedPaperId?: string;
   boardCode: string;
   subjectSlug: string;
@@ -99,6 +100,39 @@ export async function upsertMarkingScoreInConvex(args: {
   });
 }
 
+export async function recordQuestionScoreInConvex(args: {
+  submissionId: string;
+  questionKey: string;
+  score?: {
+    awardedMarks: number;
+    maxMarks: number;
+    confidence: number;
+    needsReview: boolean;
+    rationale: string;
+    evidenceJson: string;
+    scorerProvider: string;
+    scorerModel: string;
+    scoreStatus?: "ai_suggested" | "confirmed";
+  };
+  status:
+    | "unmapped"
+    | "pages_assigned"
+    | "ocr_pending"
+    | "ocr_ready"
+    | "mark_scheme_ready"
+    | "ai_scored"
+    | "saved"
+    | "needs_manual_review"
+    | "failed";
+  failureReason?: string;
+  expectedUpdatedAt?: number | null;
+}) {
+  return await fetchAuthMutation(api.marking.recordQuestionScore, {
+    ...args,
+    submissionId: toSubmissionId(args.submissionId),
+  });
+}
+
 export async function upsertMarkingQuestionStatusInConvex(args: {
   submissionId: string;
   questionKey: string;
@@ -124,13 +158,15 @@ export async function addMarkingResponsePageInConvex(args: {
   submissionId: string;
   uploadKey?: string;
   questionKey: string;
+  questionKeys?: string[];
   questionNumber?: string;
   questionPartNumber?: string;
   pageLabel?: string;
   fileName: string;
   contentType: string;
   fileSize: number;
-  cdnUploadId: string;
+  cdnUploadId?: string;
+  fileId?: string;
   sourceImageUrl: string;
   scriptPageNumber?: number;
   ocrText?: string;
@@ -138,6 +174,7 @@ export async function addMarkingResponsePageInConvex(args: {
 }) {
   return await fetchAuthMutation(api.marking.addMarkingResponsePage, {
     ...args,
+    fileId: args.fileId as Id<"markingFiles"> | undefined,
     submissionId: toSubmissionId(args.submissionId),
   });
 }
@@ -147,6 +184,14 @@ export function getMarkingResponsePageByUploadKey(submissionId: string, uploadKe
     submissionId: toSubmissionId(submissionId),
     uploadKey,
   });
+}
+
+export function validateResponsePageTargets(submissionId: string, questionKeys: string[]) {
+  return fetchAuthQuery(api.marking.validateResponsePageTargets, { submissionId: toSubmissionId(submissionId), questionKeys });
+}
+
+export function mergeResponsePageTargets(submissionId: string, pageId: string, questionKeys: string[]) {
+  return fetchAuthMutation(api.marking.mergeResponsePageTargets, { submissionId: toSubmissionId(submissionId), pageId: pageId as Id<"markingResponsePages">, questionKeys });
 }
 
 export async function getMarkingSubmissionBundleFromConvex(submissionId: string) {

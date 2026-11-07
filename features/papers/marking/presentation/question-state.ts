@@ -68,9 +68,9 @@ export function getQuestionStateLabel(state: QuestionState) {
   if (state === "review") return "Needs review";
   if (state === "scored") return "Scored";
   if (state === "suggested") return "AI suggestion";
-  if (state === "ocr") return "OCR ready";
-  if (state === "uploaded") return "Waiting for OCR";
-  return "Waiting";
+  if (state === "ocr") return "Ready to mark";
+  if (state === "uploaded") return "Not read yet";
+  return "No answer yet";
 }
 
 export function getQuestionStateTone(state: QuestionState) {

@@ -8,6 +8,7 @@ import { POST as score } from "@/features/papers/marking/infrastructure/http/sco
 import { GET as submission } from "@/features/papers/marking/infrastructure/http/submission";
 import { POST as submissions } from "@/features/papers/marking/infrastructure/http/submissions";
 import { POST as uploads } from "@/features/papers/marking/infrastructure/http/uploads";
+import { POST as pageMapping } from "@/features/papers/marking/infrastructure/http/page-mapping";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +22,7 @@ const postHandlers: Record<string, (request: NextRequest) => Promise<Response>> 
   score,
   submissions,
   uploads,
+  "page-mapping": pageMapping,
 };
 
 export async function GET(request: NextRequest, context: Context) {

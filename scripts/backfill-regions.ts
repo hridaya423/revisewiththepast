@@ -145,6 +145,7 @@ async function main() {
 
       try {
         const result = await client.mutation(api.paperRegions.backfillPaperRegions, {
+          serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
           sourceRelativePath,
           regionVersion: paper.parser_version,
           figures,

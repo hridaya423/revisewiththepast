@@ -118,10 +118,10 @@ export function createPaperMakerMcpServer() {
     async (input, context) => {
       return traceTool("generate_paper_bundle", async () => {
         try {
-          const output = await generatePaperBundle(input, context.http?.req);
+          const bundle = await generatePaperBundle(input, context.http?.req);
           return {
-            content: await paperBundleContent(output),
-            structuredContent: output,
+            content: await paperBundleContent(bundle),
+            structuredContent: bundle.output,
           };
         } catch (error) {
           return toolError(error, "Could not generate the requested paper bundle.");

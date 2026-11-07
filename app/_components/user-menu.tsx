@@ -32,7 +32,7 @@ export function UserMenu() {
 
   if (!isAuthenticated) {
     return (
-      <Link href="/auth" transitionTypes={["nav-forward"]} className="btn-press inline-flex min-h-10 min-w-[76px] items-center justify-center gap-1.5 rounded-[4px] bg-accent px-3 text-[0.78rem] font-bold text-white hover:bg-accent-deep" aria-label="Sign in">
+      <Link href="/auth" transitionTypes={["nav-forward"]} className="btn-press inline-flex min-h-10 min-w-[76px] items-center justify-center gap-1.5 rounded-[4px] bg-accent px-3 text-sm font-bold text-white hover:bg-accent-deep" aria-label="Sign in">
         <User className="h-3.5 w-3.5 shrink-0 text-white" strokeWidth={2} />
         <span className="text-white">Sign in</span>
       </Link>
@@ -68,8 +68,8 @@ export function UserMenu() {
         aria-label={open ? "Close account menu" : "Open account menu"}
         className="btn-press flex min-h-11 items-center gap-2 pl-3 hover:text-accent"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-warm-soft text-[0.68rem] font-bold text-text">{initials || "?"}</span>
-        <span className="hidden max-w-[100px] truncate text-[0.76rem] font-semibold text-text lg:block">{displayName.split(" ")[0]}</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-warm-soft text-sm font-bold text-text">{initials || "?"}</span>
+        <span className="hidden max-w-[100px] truncate text-sm font-semibold text-text lg:block">{displayName.split(" ")[0]}</span>
         <ChevronDown className={`hidden h-3 w-3 text-text-subtle transition-transform duration-150 ease-out sm:block ${open ? "rotate-180" : ""}`} strokeWidth={2} />
       </button>
 
@@ -89,14 +89,14 @@ export function UserMenu() {
           className="absolute right-0 top-full z-50 mt-2 min-w-[220px] overflow-hidden rounded-[8px] border border-text/10 bg-bg-elevated shadow-[0_18px_52px_rgba(23,33,63,0.14)]"
         >
           <div className="border-b border-text/[0.07] px-4 py-3.5">
-            <p className="truncate text-[0.86rem] font-semibold text-text">{displayName}</p>
-            <p className="mt-0.5 truncate text-[0.72rem] text-text-muted">{user?.email}</p>
+            <p className="truncate text-sm font-semibold text-text">{displayName}</p>
+            <p className="mt-0.5 truncate text-sm text-text-muted">{user?.email}</p>
           </div>
           <div className="p-1.5">
-            <Link ref={(element) => { itemRefs.current[0] = element; }} role="menuitem" tabIndex={-1} href="/marking" transitionTypes={["nav-forward"]} onClick={() => closeMenu(false)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[0.8rem] font-medium text-text-secondary transition-colors hover:bg-bg-soft hover:text-text focus:bg-bg-soft focus:text-text focus:outline-none">
+            <Link ref={(element) => { itemRefs.current[0] = element; }} role="menuitem" tabIndex={-1} href="/marking" transitionTypes={["nav-forward"]} onClick={() => closeMenu(false)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-bg-soft hover:text-text focus:bg-bg-soft focus:text-text focus:outline-none">
               Self-mark your papers
             </Link>
-            <button ref={(element) => { itemRefs.current[1] = element; }} role="menuitem" tabIndex={-1} type="button" onClick={() => { setOpen(false); void signOut(); }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-[0.8rem] font-medium text-text-secondary transition-colors hover:bg-bg-soft hover:text-text focus:bg-bg-soft focus:text-text focus:outline-none">
+            <button ref={(element) => { itemRefs.current[1] = element; }} role="menuitem" tabIndex={-1} type="button" onClick={() => { setOpen(false); void signOut(); }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-text-secondary transition-colors hover:bg-bg-soft hover:text-text focus:bg-bg-soft focus:text-text focus:outline-none">
               <LogOut className="h-3.5 w-3.5" strokeWidth={1.5} />
               <span>Sign out</span>
             </button>

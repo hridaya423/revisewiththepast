@@ -112,7 +112,7 @@ describe("MCP paper bundle", () => {
     mocks.generateMarkScheme.mockRejectedValue(new DomainError("No mark scheme pages could be assembled. /private/source/path.pdf"));
     mocks.uploadMcpArtifact.mockResolvedValue({ fileName: "paper.pdf", url: "https://cdn.example/paper.pdf", size: 4, mimeType: "application/pdf" });
 
-    const result = await generatePaperBundle({ ...baseInput, selectAllTopics: true });
+    const { output: result } = await generatePaperBundle({ ...baseInput, selectAllTopics: true });
 
     expect(result.markScheme).toBeNull();
     expect(result.paper.url).toBe("https://cdn.example/paper.pdf");
@@ -137,7 +137,7 @@ describe("MCP paper bundle", () => {
       .mockResolvedValueOnce({ fileName: "paper.pdf", url: "https://cdn.example/paper.pdf", size: 4, mimeType: "application/pdf" })
       .mockResolvedValueOnce({ fileName: "mark-scheme.pdf", url: "https://cdn.example/ms.pdf", size: 4, mimeType: "application/pdf" });
 
-    const result = await generatePaperBundle({ ...baseInput, selectAllTopics: true });
+    const { output: result } = await generatePaperBundle({ ...baseInput, selectAllTopics: true });
 
     expect(result.markScheme?.url).toBe("https://cdn.example/ms.pdf");
     expect(result.warnings).toEqual(["Q1: Mark-scheme source could not be assembled."]);
@@ -158,21 +158,21 @@ describe("MCP paper bundle", () => {
   });
 
   it("embeds generated PDFs as MCP resources", async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce(new Response(new Uint8Array([37, 80, 68, 70])))
-      .mockResolvedValueOnce(new Response(new Uint8Array([37, 80, 68, 70, 45])));
-
     const content = await paperBundleContent({
-      bundleId: "bundle_1",
-      subjectKey: "aqa-geography",
-      totalMarks: 40,
-      timeMinutes: 40,
-      questionCount: 4,
-      coveredTopicIds: ["physical"],
-      paper: { fileName: "paper.pdf", url: "https://cdn.example/paper.pdf", size: 4, mimeType: "application/pdf" },
-      markScheme: { fileName: "mark-scheme.pdf", url: "https://cdn.example/ms.pdf", size: 4, mimeType: "application/pdf" },
-      warnings: [],
-      expiresAt: new Date(1_800_000_000_000).toISOString(),
+      output: {
+        bundleId: "bundle_1",
+        subjectKey: "aqa-geography",
+        totalMarks: 40,
+        timeMinutes: 40,
+        questionCount: 4,
+        coveredTopicIds: ["physical"],
+        paper: { fileName: "paper.pdf", url: "https://cdn.example/paper.pdf", size: 4, mimeType: "application/pdf" },
+        markScheme: { fileName: "mark-scheme.pdf", url: "https://cdn.example/ms.pdf", size: 4, mimeType: "application/pdf" },
+        warnings: [],
+        expiresAt: new Date(1_800_000_000_000).toISOString(),
+      },
+      paperBytes: new Uint8Array([37, 80, 68, 70]),
+      markSchemeBytes: new Uint8Array([37, 80, 68, 70, 45]),
     });
 
     expect(content).toHaveLength(3);
@@ -196,5 +196,6 @@ describe("MCP paper bundle", () => {
         },
       },
     ]);
+    expect(fetch).not.toHaveBeenCalled();
   });
 });

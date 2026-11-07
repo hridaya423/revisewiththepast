@@ -38,12 +38,16 @@ export async function generatePaper(input: GeneratePaperRequest) {
   }
 }
 
-export function buildGenerationHeaders(result: Awaited<ReturnType<typeof generatePaper>>, questionMix: GeneratePaperRequest["questionMix"]) {
-  const exclusionKeys = result.selection.selectedUnits.map((unit) => (
+export function selectedSourceExclusionKeys(result: Awaited<ReturnType<typeof generatePaper>>) {
+  return result.selection.selectedUnits.map((unit) => (
     result.subject.key === "aqa-business" || result.subject.key === "edexcel-business" || result.subject.key === "aqa-english-language"
       ? unit.sourceQuestionKey
       : unit.unitKey
   ));
+}
+
+export function buildGenerationHeaders(result: Awaited<ReturnType<typeof generatePaper>>, questionMix: GeneratePaperRequest["questionMix"]) {
+  const exclusionKeys = selectedSourceExclusionKeys(result);
   const headers: Record<string, string> = {
     "Content-Type": "application/pdf",
     "Content-Disposition": `attachment; filename="${result.fileName}"`,

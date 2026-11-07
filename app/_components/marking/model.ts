@@ -1,3 +1,5 @@
+import { getResponsePageQuestionKeys } from "@/shared/domain/marking";
+
 export type MarkingTone = "neutral" | "active" | "confirmed" | "review" | "failure";
 
 export type MarkingSubmissionBundle = {
@@ -24,7 +26,7 @@ export type MarkingSubmissionBundle = {
     canonicalLeafIds?: string[];
     topicLabels?: string[];
   }>;
-  pages: Array<{ _id: string; questionKey: string; questionNumber?: string; questionPartNumber?: string; pageLabel?: string; fileName: string; sourceImageUrl: string; scriptPageNumber?: number; ocrText?: string }>;
+  pages: Array<{ _id: string; questionKey: string; questionKeys?: string[]; questionNumber?: string; questionPartNumber?: string; pageLabel?: string; fileName: string; sourceImageUrl: string; scriptPageNumber?: number; ocrText?: string }>;
   responses: Array<{ _id: string; questionKey: string; questionNumber?: string; questionPartNumber?: string; sourceImageUrl?: string; ocrText: string; ocrProvider?: string }>;
   scores: Array<{ _id: string; questionKey: string; awardedMarks: number; maxMarks: number; confidence: number; needsReview: boolean; rationale: string; evidenceJson?: string; scoreStatus?: "ai_suggested" | "confirmed"; updatedAt?: number }>;
   questionStatuses?: Array<{ questionKey: string; status: string; failureReason?: string }>;
@@ -40,13 +42,15 @@ export function buildQuestionRows(bundle: MarkingSubmissionBundle, markSchemeEnt
   const savedQuestions = bundle.savedPaperQuestions ?? [];
   const questionKeys = savedQuestions.length > 0
     ? savedQuestions.map((question) => question.unitKey)
-    : Array.from(new Set([...bundle.pages.map((page) => page.questionKey), ...bundle.responses.map((response) => response.questionKey), ...bundle.scores.map((score) => score.questionKey)]));
+    : Array.from(new Set([...bundle.pages.flatMap(getResponsePageQuestionKeys), ...bundle.responses.map((response) => response.questionKey), ...bundle.scores.map((score) => score.questionKey)]));
   const savedQuestionByKey = new Map(savedQuestions.map((question) => [question.unitKey, question]));
   const pagesByKey = new Map<string, MarkingSubmissionBundle["pages"]>();
   for (const page of bundle.pages) {
-    const pages = pagesByKey.get(page.questionKey) ?? [];
-    pages.push(page);
-    pagesByKey.set(page.questionKey, pages);
+    for (const key of getResponsePageQuestionKeys(page)) {
+      const pages = pagesByKey.get(key) ?? [];
+      pages.push(page);
+      pagesByKey.set(key, pages);
+    }
   }
   const responseByKey = new Map(bundle.responses.map((response) => [response.questionKey, response]));
   const scoreByKey = new Map(bundle.scores.map((score) => [score.questionKey, score]));

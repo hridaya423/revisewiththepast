@@ -27,13 +27,19 @@ export const upsert = mutation({
     ...keyFields,
     fileName: v.string(),
     fileSize: v.number(),
-    cdnUploadId: v.string(),
+    cdnUploadId: v.optional(v.string()),
+    fileId: v.optional(v.id("markingFiles")),
     sourceImageUrl: v.string(),
     ocrText: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const user = await requireAuthenticatedUser(ctx);
     const ownerId = String(user._id);
+    if (args.fileId) {
+      const file = await ctx.db.get("markingFiles", args.fileId);
+      if (!file || file.ownerId !== ownerId) throw new Error("Unauthorized");
+      args.sourceImageUrl = `/api/marking/files/${args.fileId}`;
+    }
     const existing = await ctx.db
       .query("markingImportAssets")
       .withIndex("by_owner_import_page", (q) => q

@@ -93,6 +93,7 @@ async function sourceAsset() {
   const page = document.addPage([500, 300]);
   const font = await document.embedFont(StandardFonts.Helvetica);
   page.drawText("1. Explain the process shown in the question.", { x: 40, y: 150, size: 12, font });
+  page.drawText("Figure 1: process diagram", { x: 40, y: 250, size: 12, font });
   page.drawText("P12345678", { x: 20, y: 12, size: 8, font });
   writeFileSync(path, await document.save());
   const asset = {
@@ -153,7 +154,7 @@ describe("prepareQuestionFragments", () => {
       expect(result.fragments[0]).toMatchObject({
         fragmentId: "unit-1:1:0",
         sourcePageNumber: 1,
-        crop: { left: 0, right: 500, bottom: 100, top: 180 },
+        crop: { left: 0, right: 500, bottom: 138, top: 180 },
         identity: anchor,
         kind: "question",
       });
@@ -223,6 +224,54 @@ describe("prepareQuestionFragments", () => {
       expect(result.fragments.map((fragment) => fragment.identity)).toEqual([null, splitAnchor]);
       expect(result.sources.get("unit-1:1:0")?.candidate.pdfUrl).toContain("-40-58-250-266");
       expect(result.sources.get("unit-1:1:1")?.candidate.pdfUrl).toContain("-40-58-250-266");
+    } finally {
+      rmSync(source.directory, { recursive: true, force: true });
+    }
+  });
+
+  it("masks a margin source number even when the first part marker is alphabetic", async () => {
+    const source = await sourceAsset();
+    try {
+      const current = unit("business", {
+        parts: [{ ...unit("business").parts[0], questionPartNumber: "a" }],
+      });
+      const result = await prepareQuestionFragments({
+        unit: current,
+        allUnits: [],
+        pageAssetsBySource: new Map([[current.sourceRelativePath, source.assets.get("edexcel/edexcel-business.pdf") ?? []]]),
+        figures: [],
+        pageLayouts: [layout()],
+      });
+      expect(result.kind).toBe("success");
+      if (result.kind !== "success") return;
+      expect(result.sources.get("unit-1:1:0")?.candidate.pdfUrl).toContain("-40-58-150-166");
+    } finally {
+      rmSync(source.directory, { recursive: true, force: true });
+    }
+  });
+
+  it("keeps an inline part marker when the anchor bounds overlap the prompt", async () => {
+    const source = await sourceAsset();
+    try {
+      const inlineAnchor = {
+        pageNumber: 1,
+        numberBounds: { x0: 64, x1: 84, y0: 150, y1: 166 },
+        promptBaseline: 158,
+        promptBounds: { x0: 64, x1: 420, y0: 140, y1: 170 },
+      };
+      const current = unit("business", {
+        parts: [{ ...unit("business").parts[0], questionPartNumber: "a", identityAnchor: inlineAnchor }],
+      });
+      const result = await prepareQuestionFragments({
+        unit: current,
+        allUnits: [],
+        pageAssetsBySource: new Map([[current.sourceRelativePath, source.assets.get("edexcel/edexcel-business.pdf") ?? []]]),
+        figures: [],
+        pageLayouts: [layout()],
+      });
+      expect(result.kind).toBe("success");
+      if (result.kind !== "success") return;
+      expect(result.sources.get("unit-1:1:0")?.candidate.pdfUrl).not.toContain("-64-84-150-166");
     } finally {
       rmSync(source.directory, { recursive: true, force: true });
     }

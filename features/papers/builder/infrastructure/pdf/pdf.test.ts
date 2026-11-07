@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { PDFDocument, StandardFonts } from "pdf-lib";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+import { getPdfDocument } from "@/features/papers/infrastructure/pdfjs-server";
 import type { QuestionUnit, SourcePageAsset } from "@/shared/domain/paper";
 import { filterUnitsByFigureResolvability } from "../../domain/integrity";
 import { buildUnitRenderPlan, getReferencedFigureLabels } from "../../domain/region-render";
@@ -13,7 +13,7 @@ import { expandScienceCropToReferencedFigures } from "./pdf";
 import { extendComputerScienceAnswerGeometryCropBox } from "./pdf";
 import { findMathUnitStartLine } from "./pdf";
 import { getFooterFloor } from "./pdf";
-import { formatGeneratedAqaMarker } from "./pdf";
+import { formatGeneratedAqaMarker, BOXED_MARKER_SUBJECTS } from "./pdf";
 import { isOcrAdditionalAnswerPage } from "./pdf";
 import { padScienceCropBox } from "./pdf";
 import { resolveContentHorizontalBounds } from "./pdf";
@@ -163,8 +163,26 @@ const coverPage = {
   revisionPaperCode: "test",
 } satisfies Parameters<typeof generateStrictSourcePaperPdf>[0]["coverPage"];
 
+type TextItems = Array<Array<{ str: string; transform: number[] }>>;
+
+function expectGeneratedOrdinal(pages: TextItems, pageIndex: number, ordinal: number, boxed: boolean) {
+  const items = pages[pageIndex] ?? [];
+  const bare = items.filter((item) => item.str === String(ordinal) && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1);
+  if (!boxed) {
+    expect(bare).toHaveLength(1);
+    return;
+  }
+  expect(bare).toHaveLength(0);
+  const markerDigits = items.filter((item) => /\d/.test(item.str) && (item.transform[4] ?? 0) > GENERATED_PAGE.numberX && (item.transform[4] ?? 0) < 260);
+  expect(markerDigits.length).toBeGreaterThan(0);
+}
+
+function isBoxedSubject(subject: typeof PAPER_MAKER_SUBJECTS[number]) {
+  return subject.boardCode === "aqa" && BOXED_MARKER_SUBJECTS.has(subject.subjectSlug);
+}
+
 async function textPages(bytes: Uint8Array) {
-  const pdf = await getDocument({ data: bytes, standardFontDataUrl: `${process.cwd()}/node_modules/pdfjs-dist/standard_fonts/` }).promise;
+  const pdf = await getPdfDocument(bytes);
   const pages: Array<Array<{ str: string; transform: number[] }>> = [];
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const content = await (await pdf.getPage(pageNumber)).getTextContent();
@@ -172,6 +190,39 @@ async function textPages(bytes: Uint8Array) {
   }
   return pages;
 }
+
+describe("region render planning", () => {
+  it("keeps the persisted identity anchor inside the question crop", () => {
+    const subject = PAPER_MAKER_SUBJECTS.find((candidate) => candidate.key === "edexcel-mathematics-higher");
+    if (!subject) throw new Error("Edexcel Mathematics Higher is not configured.");
+    const unit = syntheticUnit(subject);
+    const clippedLayout = { ...layout, headerFloorY: 150 };
+
+    const plan = buildUnitRenderPlan(unit, new Map([[1, clippedLayout]]), []);
+
+    expect(plan[0]?.cropBox.top).toBeGreaterThanOrEqual(anchor.promptBounds.y1);
+  });
+
+  it("drops a trailing region span outside the part's owned pages", () => {
+    const subject = PAPER_MAKER_SUBJECTS.find((candidate) => candidate.key === "aqa-english-literature");
+    if (!subject) throw new Error("AQA English Literature is not configured.");
+    const base = syntheticUnit(subject);
+    const unit = {
+      ...base,
+      parts: [{
+        ...base.parts[0],
+        regionSpans: [
+          { pageNumber: 1, yTop: 180, yBottom: 100 },
+          { pageNumber: 2, yTop: 280, yBottom: 250 },
+        ],
+      }],
+    } satisfies QuestionUnit;
+
+    const plan = buildUnitRenderPlan(unit, new Map([[1, syntheticLayout(1)], [2, syntheticLayout(2)]]), []);
+
+    expect(plan.map((crop) => crop.pageNumber)).toEqual([1]);
+  });
+});
 
 describe("generated question identity", () => {
   it("rejects a missing anchor without attempting a legacy render", async () => {
@@ -210,8 +261,14 @@ describe("generated question identity", () => {
           coverPage,
         });
         const pages = await textPages(bytes);
-        const generatedNumbers = pages.flat().filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1);
-        expect(generatedNumbers).toHaveLength(1);
+        if (isBoxedSubject(subject)) {
+          const contentItems = pages[pages.length - 1] ?? [];
+          expect(contentItems.filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1)).toHaveLength(0);
+          expect(contentItems.some((item) => /\d/.test(item.str))).toBe(true);
+        } else {
+          const generatedNumbers = pages.flat().filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1);
+          expect(generatedNumbers).toHaveLength(1);
+        }
       } finally {
         rmSync(source.directory, { recursive: true, force: true });
       }
@@ -278,15 +335,18 @@ describe("generated question identity", () => {
         prefaceSourcePdfs: [prefacePath],
         coverPage,
       });
-      const output = await PDFDocument.load(bytes);
+      const output = await PDFDocument.load(bytes, { updateMetadata: false });
       expect(output.getPageCount()).toBe(3);
+      expect(output.getTitle()).toBe(subject.label);
+      expect(output.getCreator()).toBeUndefined();
+      expect(output.getProducer()).toBeUndefined();
       expect(output.getPages().map((page) => page.getSize())).toEqual([
         { width: 595.28, height: 841.89 },
         { width: 500, height: 300 },
         { width: 595.28, height: 841.89 },
       ]);
       const pages = await textPages(bytes);
-      expect(pages[2]?.filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1)).toHaveLength(1);
+      expectGeneratedOrdinal(pages, 2, 1, isBoxedSubject(subject));
     } finally {
       rmSync(source.directory, { recursive: true, force: true });
     }
@@ -308,8 +368,8 @@ describe("generated question identity", () => {
         coverPage,
       }));
       expect(pages[2]?.some((item) => item.str.includes("Answer space for Question 1"))).toBe(true);
-      expect(pages[1]?.filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1)).toHaveLength(1);
-      expect(pages[3]?.filter((item) => item.str === "2" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1)).toHaveLength(1);
+      expectGeneratedOrdinal(pages, 1, 1, isBoxedSubject(subject));
+      expectGeneratedOrdinal(pages, 3, 2, isBoxedSubject(subject));
     } finally {
       rmSync(source.directory, { recursive: true, force: true });
     }
@@ -330,9 +390,10 @@ describe("generated question identity", () => {
         pageLayoutsBySource: new Map([[unit.sourceRelativePath, [1, 2, 3].map((pageNumber) => syntheticLayout(pageNumber))]]),
         coverPage: { ...coverPage, subjectLabel: subject.label, totalMarks: 3 },
       }));
-      const totalPageIndex = pages.findIndex((page) => page.some((item) => item.str === "Total for Question 1 = 3 marks"));
+      const totalPageIndex = pages.findIndex((page) => page.some((item) => item.str === "(Total for Question 1 is 3 marks)"));
       expect(totalPageIndex).toBeGreaterThan(0);
-      expect(pages[totalPageIndex]?.find((item) => item.str === "Total for Question 1 = 3 marks")?.transform[4]).toBeCloseTo(GENERATED_PAGE.contentLeft);
+      const totalItem = pages[totalPageIndex]?.find((item) => item.str === "(Total for Question 1 is 3 marks)");
+      expect(totalItem?.transform[4]).toBeGreaterThan(GENERATED_PAGE.contentRight - 200);
       expect(pages[totalPageIndex]?.filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1)).toHaveLength(1);
       expect(pages.flat().filter((item) => item.str === "1" && Math.abs((item.transform[4] ?? 0) - GENERATED_PAGE.numberX) < 0.1)).toHaveLength(1);
     } finally {
@@ -402,7 +463,7 @@ describe("generated question identity", () => {
       subjectSlug: "english-literature",
     };
 
-    expect(formatGeneratedAqaMarker(unit, 1, "2")).toBe("1.");
+    expect(formatGeneratedAqaMarker(unit, 1, "2")).toBe("01");
   });
 });
 
@@ -700,6 +761,37 @@ describe("science figure ownership", () => {
       pageLayoutsBySource,
       subjectUsesInserts: false,
     }).excluded).toEqual([{ unitKey: "science.pdf::q1", missingFigures: ["Figure 6"] }]);
+  });
+
+  it("trusts unresolved support only when a non-geography region unit is renderable", () => {
+    const unit = {
+      ...scienceUnit,
+      subjectSlug: "business",
+      parts: [{
+        promptText: "Using Table 1, calculate the net profit margin.",
+        referencedFigures: ["table 1"],
+        pageNumbers: [2],
+        regionSpans: [{ pageNumber: 2, yTop: 700, yBottom: 400 }],
+      }],
+    } as QuestionUnit;
+    const pageLayoutsBySource = new Map([["science.pdf", [
+      { pageNumber: 2, pageWidth: 595, pageHeight: 842, contentX0: 0, contentX1: 595, headerFloorY: 820, footerCeilingY: 20 },
+    ]]])
+
+    expect(filterUnitsByFigureResolvability([unit], {
+      figuresBySource: new Map(),
+      pageLayoutsBySource,
+      subjectUsesInserts: false,
+    })).toEqual({ kept: [unit], excluded: [] });
+
+    expect(filterUnitsByFigureResolvability([unit], {
+      figuresBySource: new Map(),
+      pageLayoutsBySource: new Map(),
+      subjectUsesInserts: false,
+    })).toEqual({
+      kept: [],
+      excluded: [{ unitKey: "science.pdf::q1", missingFigures: ["table 1"] }],
+    });
   });
 
   it("keeps unresolved references when the subject provides figures through inserts", () => {

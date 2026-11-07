@@ -184,37 +184,41 @@ export function formatSubjectCatalogForTool(output: SubjectCatalogOutput) {
     : `${text.slice(0, 11_800)}\n... catalog text truncated; use structuredContent for the remaining topic tree.`;
 }
 
-async function artifactResource(artifact: ArtifactOutput) {
-  const response = await fetch(artifact.url);
-  if (!response.ok) throw new DomainError(`Could not attach ${artifact.fileName}.`);
+function artifactResource(artifact: ArtifactOutput, bytes: Uint8Array) {
   return {
     type: "resource" as const,
     resource: {
       uri: artifact.url,
-      blob: Buffer.from(await response.arrayBuffer()).toString("base64"),
+      blob: Buffer.from(bytes).toString("base64"),
       mimeType: artifact.mimeType,
     },
   };
 }
 
-export async function paperBundleContent(output: PaperBundleOutput) {
+type GeneratedPaperBundle = {
+  output: PaperBundleOutput;
+  paperBytes: Uint8Array;
+  markSchemeBytes: Uint8Array | null;
+};
+
+export async function paperBundleContent({ output, paperBytes, markSchemeBytes }: GeneratedPaperBundle) {
   const summary = [
     `Generated ${output.subjectKey}: ${output.questionCount} questions, ${output.totalMarks} marks, ${output.timeMinutes} minutes.`,
     output.markScheme ? "Question paper and mark scheme are attached." : "Question paper is attached. Mark scheme: unavailable.",
     `Downloads expire at ${output.expiresAt}.`,
     ...output.warnings.map((warning) => `Warning: ${warning}`),
   ].join("\n");
-  const artifacts = await Promise.all([
-    artifactResource(output.paper),
-    ...(output.markScheme ? [artifactResource(output.markScheme)] : []),
-  ]);
+  const artifacts = [
+    artifactResource(output.paper, paperBytes),
+    ...(output.markScheme && markSchemeBytes ? [artifactResource(output.markScheme, markSchemeBytes)] : []),
+  ];
   return [
     { type: "text" as const, text: summary },
     ...artifacts,
   ];
 }
 
-export async function generatePaperBundle(input: GeneratePaperBundleInput, request?: Request): Promise<PaperBundleOutput> {
+export async function generatePaperBundle(input: GeneratePaperBundleInput, request?: Request): Promise<GeneratedPaperBundle> {
   const normalized = await normalizePaperBundleInput(input);
   await reservePaperGeneration(request);
   const startedAt = Date.now();
@@ -223,6 +227,7 @@ export async function generatePaperBundle(input: GeneratePaperBundleInput, reque
   const expiresAt = getArtifactExpiry();
   const warnings: string[] = [];
   let markScheme: ArtifactOutput | null = null;
+  let markSchemeBytes: Uint8Array | null = null;
 
   const paper = await uploadMcpArtifact({
     bundleId,
@@ -251,6 +256,7 @@ export async function generatePaperBundle(input: GeneratePaperBundleInput, reque
       bytes: markSchemeResult.bytes,
       expiresAt,
     });
+    markSchemeBytes = markSchemeResult.bytes;
   } catch (error) {
     const normalizedError = normalizeApplicationError(error, "Mark scheme generation was unavailable.");
     warnings.push(normalizedError instanceof DomainError ? "Mark scheme generation was unavailable." : normalizedError.message);
@@ -266,15 +272,19 @@ export async function generatePaperBundle(input: GeneratePaperBundleInput, reque
   });
 
   return {
-    bundleId,
-    subjectKey: normalized.subject.key,
-    totalMarks: result.selection.totalMarks,
-    timeMinutes: result.timeMinutes,
-    questionCount: result.selection.selectedUnits.length,
-    coveredTopicIds: result.selection.coveredLeafTopicIds,
-    paper,
-    markScheme,
-    warnings,
-    expiresAt: new Date(expiresAt).toISOString(),
+    output: {
+      bundleId,
+      subjectKey: normalized.subject.key,
+      totalMarks: result.selection.totalMarks,
+      timeMinutes: result.timeMinutes,
+      questionCount: result.selection.selectedUnits.length,
+      coveredTopicIds: result.selection.coveredLeafTopicIds,
+      paper,
+      markScheme,
+      warnings,
+      expiresAt: new Date(expiresAt).toISOString(),
+    },
+    paperBytes: result.pdfBytes,
+    markSchemeBytes,
   };
 }

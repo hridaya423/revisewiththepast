@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Manrope, Newsreader } from "next/font/google";
-import { AuthProvider } from "@/app/_components/auth-provider";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 
@@ -35,7 +34,7 @@ export default function RootLayout({
       data-scroll-behavior="smooth"
       className={`${sans.variable} ${display.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col"><AuthProvider>{children}</AuthProvider></body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

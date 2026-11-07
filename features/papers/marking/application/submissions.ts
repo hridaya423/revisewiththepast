@@ -1,7 +1,8 @@
 import { createMarkingSubmissionInConvex, getMarkingSubmissionBundleFromConvex } from "../infrastructure/convex/commands";
 import { getSavedPaper } from "../infrastructure/convex/queries";
 import type { CreateSubmissionRequest } from "../contracts/http";
-import { NotFoundError, ValidationError } from "@/shared/application/errors";
+import { DomainError, NotFoundError, ValidationError } from "@/shared/application/errors";
+import { SHADOW_MARKING_UNSUPPORTED_MESSAGE, isShadowSavedPaper } from "@/features/papers/shadow/application/marking-boundary";
 
 export async function createSubmission(input: CreateSubmissionRequest) {
   const savedPaper = input.savedPaperId
@@ -11,6 +12,7 @@ export async function createSubmission(input: CreateSubmissionRequest) {
   if (input.savedPaperId && !savedPaper?.savedPaper) {
     throw new NotFoundError("The saved paper could not be found.");
   }
+  if (isShadowSavedPaper(savedPaper?.savedPaper)) throw new DomainError(SHADOW_MARKING_UNSUPPORTED_MESSAGE);
 
   const canonicalPaper = savedPaper?.savedPaper;
   const canonicalQuestion = savedPaper?.questions[0];
@@ -24,6 +26,7 @@ export async function createSubmission(input: CreateSubmissionRequest) {
   const tier = canonicalPaper?.tier ?? input.tier;
   const submissionId = await createMarkingSubmissionInConvex({
     savedPaperId: input.savedPaperId,
+    newAttempt: input.newAttempt,
     boardCode,
     subjectSlug,
     subjectKey,

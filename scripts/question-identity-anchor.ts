@@ -420,7 +420,7 @@ export function discoverGroupedQuestionIdentityAnchors<T extends GroupedIdentity
 }) {
   const outcomes = new Map<string, GroupedIdentityResult>();
   for (const part of input.parts) {
-    const attempts = [part.questionPartNumber, null];
+    const attempts = part.questionPartNumber === null ? [null] : [null, part.questionPartNumber];
     let outcome: GroupedIdentityResult = { anchor: null, result: { status: "missing", reason: "no identity marker on the requested page" } };
     for (const questionPartNumber of attempts) {
       const result = discoverQuestionIdentityAnchor({

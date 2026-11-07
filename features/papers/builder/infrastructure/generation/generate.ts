@@ -31,7 +31,7 @@ import { getCoverExamContext, getPaperMakerSubject, type PaperMakerSubjectDefini
 import { estimatePaperTimeMinutes } from "../../domain/rules";
 import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
 import { buildGeneratedCoverModel } from "../pdf/cover";
-import { generateStrictSourcePaperPdf, SourceUnitRenderError } from "../pdf/pdf";
+import { generateStrictSourcePaperPdf, SourceUnitRenderError, type PdfAssemblyTimings } from "../pdf/pdf";
 import { assertGeneratedPaperQuality, type QaCheckOptions } from "../qa/validate";
 import {
   getInsertPageAssetsBySourceRelativePaths,
@@ -85,7 +85,39 @@ export type GenerateCustomPaperResult = {
   selectedTierHeader: SubjectTierKey | null;
   coverPage: GeneratedCoverModel;
   figureIntegrityIssues: OrphanFigureIssue[];
+  timings: GenerationTimings;
 };
+
+export type GenerationTimings = {
+  totalMs: number;
+  attempts: number;
+  stages: {
+    questionBankMs: number;
+    bankPreparationMs: number;
+    geometryMs: number;
+    integrityFilteringMs: number;
+    selectionMs: number;
+    pageAssetsMs: number;
+    prefaceMs: number;
+    pdfAssemblyMs: number;
+    qualityValidationMs: number;
+  };
+  pdfAssembly: PdfAssemblyTimings;
+};
+
+export async function measureGenerationStage<K extends string, T>(
+  stages: Record<K, number>,
+  stage: K,
+  operation: () => Promise<T>,
+  now: () => number = () => performance.now(),
+) {
+  const startedAt = now();
+  try {
+    return await operation();
+  } finally {
+    stages[stage] += now() - startedAt;
+  }
+}
 
 export type GeneratedPaperQualityCheck = (pdfBytes: Uint8Array, options: QaCheckOptions) => Promise<void>;
 
@@ -388,6 +420,31 @@ export function createSeededRng(seed: number) {
 }
 
 export async function generateCustomPaper(input: GenerateCustomPaperInput): Promise<GenerateCustomPaperResult> {
+  const startedAt = performance.now();
+  const timings: GenerationTimings = {
+    totalMs: 0,
+    attempts: 0,
+    stages: {
+      questionBankMs: 0,
+      bankPreparationMs: 0,
+      geometryMs: 0,
+      integrityFilteringMs: 0,
+      selectionMs: 0,
+      pageAssetsMs: 0,
+      prefaceMs: 0,
+      pdfAssemblyMs: 0,
+      qualityValidationMs: 0,
+    },
+    pdfAssembly: {
+      documentSetupMs: 0,
+      prefaceImportMs: 0,
+      sourcePreparationMs: 0,
+      layoutPlanningMs: 0,
+      paintingMs: 0,
+      serializationMs: 0,
+      sourcePageRenderCount: 0,
+    },
+  };
   const subject = getPaperMakerSubject(input.subjectKey);
   if (!subject) {
     throw new PaperGenerationError("Unknown subject selection.");
@@ -414,10 +471,13 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     throw new PaperGenerationError(config.messages.selectTopics);
   }
 
-  const questionBank = await getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug);
+  const questionBank = await measureGenerationStage(timings.stages, "questionBankMs", () => (
+    getPaperMakerQuestionBankFromConvex(subject.boardCode, subject.subjectSlug, { cache: true })
+  ));
   if (questionBank.length === 0) {
     throw new PaperGenerationError(config.messages.noBank, 500);
   }
+  const bankPreparationStartedAt = performance.now();
   if (isLocalGeometryEnabled()) {
     overlayQuestionBankWithLocalGeometry(questionBank);
   }
@@ -449,14 +509,21 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
         subject.recommendedMinutesPerMark,
       )
     : input.targetMarks;
+  timings.stages.bankPreparationMs += performance.now() - bankPreparationStartedAt;
 
   const candidateSourcePaths = Array.from(new Set(allUnits.map((unit) => unit.sourceRelativePath)));
-  const figuresBySource: Awaited<ReturnType<typeof getPaperFiguresBySourceRelativePaths>> = isLocalGeometryEnabled()
-    ? getLocalFiguresBySource(candidateSourcePaths)
-    : await getPaperFiguresBySourceRelativePaths(candidateSourcePaths);
-  const pageLayoutsBySource: Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>> = isLocalGeometryEnabled()
-    ? getLocalPageLayoutsBySource(candidateSourcePaths)
-    : await getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths);
+  const [figuresBySource, pageLayoutsBySource]: [
+    Awaited<ReturnType<typeof getPaperFiguresBySourceRelativePaths>>,
+    Awaited<ReturnType<typeof getPaperPageLayoutsBySourceRelativePaths>>,
+  ] = await measureGenerationStage(timings.stages, "geometryMs", async () => (
+    isLocalGeometryEnabled()
+      ? [getLocalFiguresBySource(candidateSourcePaths), getLocalPageLayoutsBySource(candidateSourcePaths)]
+      : await Promise.all([
+        getPaperFiguresBySourceRelativePaths(candidateSourcePaths),
+        getPaperPageLayoutsBySourceRelativePaths(candidateSourcePaths),
+      ])
+  ));
+  const integrityFilteringStartedAt = performance.now();
   let selectableUnits = allUnits;
   let pageAssetsBySource: Awaited<ReturnType<typeof getQuestionPageAssetsBySourceRelativePaths>> | undefined;
   if (figuresBySource) {
@@ -471,6 +538,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
       selectableUnits = contextGate.kept;
     }
   }
+  timings.stages.integrityFilteringMs += performance.now() - integrityFilteringStartedAt;
 
   const coverTierLabel = config.tier && tier ? config.tier.coverTierLabel(tier) : null;
   const selectedPapers = subject.paperOptions.filter((paper) => input.paperCodes.length === 0 || paperCodeSet.has(paper.code));
@@ -483,37 +551,47 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   let figureIntegrityIssues: OrphanFigureIssue[] = [];
 
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    selection = selectQuestionUnits({
-      units: selectableUnits,
-      selectedLeafTopicIds,
-      targetMarks: resolvedTargetMarks,
-      questionMix: input.questionMix,
-      paperCodes: input.paperCodes,
-      maxQuestions: input.maxQuestions,
-      tolerance: 7,
-      excludedSourceQuestionKeys: Array.from(renderExclusions),
-      remainingPaperCount: input.remainingPaperCount,
-      priorSelectedUnitMarks: input.priorSelectedUnitMarks,
-      priorPaperCount: input.priorPaperCount,
-      priorCoveredLeafTopicIds: input.priorCoveredLeafTopicIds,
-      rng: typeof input.seed === "number" ? createSeededRng(input.seed) : undefined,
-    });
+    timings.attempts = attempt + 1;
+    selection = await measureGenerationStage(timings.stages, "selectionMs", async () => selectQuestionUnits({
+        units: selectableUnits,
+        selectedLeafTopicIds,
+        targetMarks: resolvedTargetMarks,
+        questionMix: input.questionMix,
+        paperCodes: input.paperCodes,
+        maxQuestions: input.maxQuestions,
+        tolerance: 7,
+        excludedSourceQuestionKeys: Array.from(renderExclusions),
+        remainingPaperCount: input.remainingPaperCount,
+        priorSelectedUnitMarks: input.priorSelectedUnitMarks,
+        priorPaperCount: input.priorPaperCount,
+        priorCoveredLeafTopicIds: input.priorCoveredLeafTopicIds,
+        rng: typeof input.seed === "number" ? createSeededRng(input.seed) : undefined,
+      }));
 
     if (selection.selectedUnits.length === 0) {
       throw new PaperGenerationError(config.messages.noSelection(tier));
     }
+    const selected = selection;
 
-    if (subject.key === "aqa-business" || subject.key === "edexcel-business") sortBusinessSelectedUnitsForRendering(selection.selectedUnits);
-    else sortQuestionUnitsForRendering(selection.selectedUnits);
+    if (subject.key === "aqa-business" || subject.key === "edexcel-business") sortBusinessSelectedUnitsForRendering(selected.selectedUnits);
+    else sortQuestionUnitsForRendering(selected.selectedUnits);
 
-    const selectedSourcePaths = Array.from(new Set(selection.selectedUnits.map((unit) => unit.sourceRelativePath)));
-    const selectedPageAssets = await getQuestionPageAssetsBySourceRelativePaths(selectedSourcePaths);
-    pageAssetsBySource ??= new Map();
-    for (const [sourcePath, assets] of selectedPageAssets) pageAssetsBySource.set(sourcePath, assets);
+    const availablePageAssets = pageAssetsBySource ??= new Map();
+    const missingSourcePaths = Array.from(new Set(
+      selected.selectedUnits
+        .map((unit) => unit.sourceRelativePath)
+        .filter((sourcePath) => !availablePageAssets.has(sourcePath)),
+    ));
+    if (missingSourcePaths.length > 0) {
+      const selectedPageAssets = await measureGenerationStage(timings.stages, "pageAssetsMs", () => (
+        getQuestionPageAssetsBySourceRelativePaths(missingSourcePaths)
+      ));
+      for (const [sourcePath, assets] of selectedPageAssets) availablePageAssets.set(sourcePath, assets);
+    }
 
     figureIntegrityIssues = [];
     if (figuresBySource && pageLayoutsBySource) {
-      for (const unit of selection.selectedUnits) {
+      for (const unit of selected.selectedUnits) {
         const figures = figuresBySource.get(unit.sourceRelativePath) ?? [];
         if (figures.length === 0) continue;
         const layoutByPage = new Map(
@@ -524,51 +602,57 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     }
 
     timeMinutes = input.targetMode === "time"
-      ? (input.requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selection.totalMarks))
-      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selection.totalMarks);
-    coverPage = buildGeneratedCoverModel({
+      ? (input.requestedTimeMinutes ?? estimatePaperTimeMinutes(subject.recommendedMinutesPerMark, selected.totalMarks))
+      : estimatePaperTimeMinutes(benchmark.averageMinutesPerMark ?? subject.recommendedMinutesPerMark, selected.totalMarks);
+    const generatedCoverPage = buildGeneratedCoverModel({
       subject,
       tierLabel: coverTierLabel,
-      selectedUnits: selection.selectedUnits,
+      selectedUnits: selected.selectedUnits,
       selectedPapers,
       timeMinutes,
       examContext,
     });
+    coverPage = generatedCoverPage;
+    const prefaceSourcePdfs = config.prefaceInserts
+      ? await measureGenerationStage(timings.stages, "prefaceMs", () => config.prefaceInserts!(selected.selectedUnits))
+      : undefined;
 
     try {
-      pdfBytes = await generateStrictSourcePaperPdf({
+      pdfBytes = await measureGenerationStage(timings.stages, "pdfAssemblyMs", () => generateStrictSourcePaperPdf({
         title: config.title(resolvedTargetMarks, coverTierLabel),
-        selectedUnits: selection.selectedUnits,
+        selectedUnits: selected.selectedUnits,
         allUnits,
-        pageAssetsBySource,
+        pageAssetsBySource: availablePageAssets,
         figuresBySource,
         pageLayoutsBySource,
-        prefaceSourcePdfs: config.prefaceInserts ? await config.prefaceInserts(selection.selectedUnits) : undefined,
-        coverPage,
-      });
+        prefaceSourcePdfs,
+        coverPage: generatedCoverPage,
+        timings: timings.pdfAssembly,
+      }));
     } catch (error) {
       if (error instanceof SourceUnitRenderError && attempt < 2) {
         for (const unitKey of error.unitKeys) renderExclusions.add(unitKey);
         continue;
       }
       if (error instanceof SourceUnitRenderError) {
-        throw new PaperGenerationError("The selected topics do not have enough renderable source questions. Try different topics or papers.", 422);
+        const reasons = error.failures.map((failure) => `${failure.unitKey}:${failure.reason ?? "unknown"}`).join(", ");
+        throw new PaperGenerationError(`The selected topics do not have enough renderable source questions (${reasons}). Try different topics or papers.`, 422);
       }
       throw error;
     }
 
     try {
-      await assertGeneratedPaperForGeneration(pdfBytes, {
+      await measureGenerationStage(timings.stages, "qualityValidationMs", () => assertGeneratedPaperForGeneration(pdfBytes!, {
         subjectKey: subject.key,
-        totalMarks: selection.totalMarks,
-        selectedUnitCount: selection.selectedUnits.length,
-        selectedUnitMarks: selection.selectedUnits.map((unit) => unit.totalMarks),
+        totalMarks: selected.totalMarks,
+        selectedUnitCount: selected.selectedUnits.length,
+        selectedUnitMarks: selected.selectedUnits.map((unit) => unit.totalMarks),
         coverPage: {
-          totalMarks: coverPage.totalMarks,
+          totalMarks: generatedCoverPage.totalMarks,
           timeMinutes,
-          questionCount: coverPage.questionCount,
+          questionCount: generatedCoverPage.questionCount,
         },
-      });
+      }));
     } catch (error) {
       throw new PaperGenerationError(error instanceof Error ? error.message : String(error), 422);
     }
@@ -578,6 +662,7 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
   if (!selection || !pdfBytes || !coverPage) {
     throw new PaperGenerationError("The selected topics do not have enough renderable source questions. Try different topics or papers.", 422);
   }
+  timings.totalMs = performance.now() - startedAt;
 
   return {
     pdfBytes,
@@ -591,5 +676,6 @@ export async function generateCustomPaper(input: GenerateCustomPaperInput): Prom
     selectedTierHeader: config.tier?.includeSelectedTierHeader && tier ? tier : null,
     coverPage,
     figureIntegrityIssues,
+    timings,
   };
 }

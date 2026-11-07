@@ -182,6 +182,7 @@ async function upsertConvexMetadata(client: ConvexHttpClient, record: HackClubMa
   };
 
   await untypedClient.mutation("paperAssets:upsertPaperAsset", {
+    serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
     boardCode: record.boardCode,
     subjectSlug: record.subjectSlug,
     tier: record.tier,

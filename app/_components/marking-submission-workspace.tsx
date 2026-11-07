@@ -6,8 +6,10 @@ import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import { OperationNotice } from "@/app/_components/marking/presentation";
 import { QuestionProgressRail, type QuestionProgressState } from "@/app/_components/marking/question-progress";
 import { ActiveQuestionPanel } from "@/app/_components/marking/active-question-panel";
-import { MarkingQuestionNavigation, MarkingSetupControls } from "@/app/_components/marking-workspace-sections";
-import { autoScoreQuestion as requestAutoScoreQuestion, autoScoreWholePaper as requestAutoScoreWholePaper, formatQuestionLabel, formatStatus, getQuestionState, importFinishedPaper as requestImportFinishedPaper, loadCombinedMarkScheme as requestCombinedMarkScheme, parseScoreEvidence, prioritizeQuestion, runOcr as requestOcr, saveScore as requestSaveScore, uploadResponsePage as requestUploadResponsePage } from "@/features/papers/client";
+import type { ConfirmInput } from "@/app/_components/marking/score-panel";
+import { UploadMapping } from "@/app/_components/marking/upload-mapping";
+import { MarkingSetupControls } from "@/app/_components/marking-workspace-sections";
+import { autoScoreQuestion as requestAutoScoreQuestion, autoScoreWholePaper as requestAutoScoreWholePaper, formatQuestionLabel, formatStatus, getQuestionState, importFinishedPaper as requestImportFinishedPaper, loadCombinedMarkScheme as requestCombinedMarkScheme, parseScoreEvidence, prioritizeQuestion, runOcr as requestOcr, saveScore as requestSaveScore } from "@/features/papers/client";
 
 import { buildQuestionRows, statusToneClass } from "@/app/_components/marking/model";
 import type { CombinedMarkSchemeEntry, FeedbackScope, MarkingSubmissionBundle } from "@/app/_components/marking/model";
@@ -17,13 +19,10 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
   const [isPending, startTransition] = useTransition();
   const [operationFeedback, setOperationFeedback] = useState<{ scope: FeedbackScope; message: string } | null>(null);
   const [ocrLoadingKey, setOcrLoadingKey] = useState<string | null>(null);
-  const [scoreLoadingKey, setScoreLoadingKey] = useState<string | null>(null);
   const [autoScoreLoadingKey, setAutoScoreLoadingKey] = useState<string | null>(null);
   const [combinedMarkScheme, setCombinedMarkScheme] = useState<{ entries: CombinedMarkSchemeEntry[]; combinedText: string; failures?: Array<{ questionKey: string; error: string }> } | null>(null);
   const [isLoadingCombinedMarkScheme, setIsLoadingCombinedMarkScheme] = useState(false);
   const [selectedQuestionKey, setSelectedQuestionKey] = useState<string | null>(null);
-  const [pageLabel, setPageLabel] = useState("");
-  const [pendingBulkFiles, setPendingBulkFiles] = useState<File[]>([]);
 
   const questionRows = useMemo(() => buildQuestionRows(initialBundle, combinedMarkScheme?.entries), [combinedMarkScheme?.entries, initialBundle]);
 
@@ -38,7 +37,7 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
   const isImportedSubmission = initialBundle.submission.importSource === "imported_pdf";
   const hasImportedPages = initialBundle.pages.length > 0;
   const canAutoScoreWholePaper = questionRows.length > 0 && questionRows.every((row) => Boolean(row.response));
-  const bulkUploadTargets = useMemo(() => questionRows.flatMap((row) => row.pages.length === 0 && row.savedQuestion ? [row.savedQuestion] : []), [questionRows]);
+  const mappingQuestions = useMemo(() => questionRows.flatMap((row, index) => row.savedQuestion ? [{ key: row.questionKey, label: formatQuestionLabel({ questionNumber: row.savedQuestion.questionNumber ?? String(index + 1), questionPartNumber: row.savedQuestion.questionPartNumber, questionPath: row.savedQuestion.questionPath, questionKey: row.questionKey }) }] : []), [questionRows]);
   const reviewRows = useMemo(() => questionRows.filter((row) => {
     const state = getQuestionState(row);
     return state === "review" || state === "failed";
@@ -50,67 +49,6 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
   const showFeedback = (scope: FeedbackScope) => operationFeedback?.scope === scope ? <OperationNotice message={operationFeedback.message} /> : null;
   const fail = (scope: FeedbackScope, cause: unknown, fallback: string) => {
     setOperationFeedback({ scope, message: cause instanceof Error ? cause.message : fallback });
-  };
-
-  const uploadPageForQuestion = (questionKey: string, file: File | null, questionNumberOverride?: string, questionPartNumberOverride?: string | null) => {
-    if (!file) return;
-    setOperationFeedback(null);
-    startTransition(async () => {
-      try {
-        const formData = new FormData();
-        formData.append("submissionId", submissionId);
-        formData.append("questionKey", questionKey);
-        if (questionNumberOverride) formData.append("questionNumber", questionNumberOverride);
-        if (questionPartNumberOverride) formData.append("questionPartNumber", questionPartNumberOverride);
-        if (pageLabel.trim()) formData.append("pageLabel", pageLabel.trim());
-        formData.append("file", file);
-         await requestUploadResponsePage(formData);
-        setPageLabel("");
-        router.refresh();
-      } catch (cause) {
-        fail("upload", cause, "Could not upload response page.");
-      }
-    });
-  };
-
-  const uploadFinishedScriptPages = (files: File[]) => {
-    const savedQuestions = initialBundle.savedPaperQuestions ?? [];
-    if (files.length === 0) return;
-    if (savedQuestions.length === 0) {
-      setOperationFeedback({ scope: "bulk", message: "This submission needs a linked saved paper before script pages can be assigned automatically." });
-      return;
-    }
-    const targetQuestions = questionRows.flatMap((row) => row.pages.length === 0 && row.savedQuestion ? [row.savedQuestion] : []);
-    if (targetQuestions.length === 0) {
-      setOperationFeedback({ scope: "bulk", message: "Every generated question already has an uploaded page. Use the per-question upload control for extra pages." });
-      return;
-    }
-    if (files.length > targetQuestions.length) {
-      setOperationFeedback({ scope: "bulk", message: `You selected ${files.length} pages but only ${targetQuestions.length} questions are still missing uploads. Extra pages were not assigned automatically.` });
-    } else {
-      setOperationFeedback(null);
-    }
-    startTransition(async () => {
-      try {
-        for (let index = 0; index < Math.min(files.length, targetQuestions.length); index += 1) {
-          const file = files[index];
-          const question = targetQuestions[index];
-          const formData = new FormData();
-          formData.append("submissionId", submissionId);
-          formData.append("questionKey", question.unitKey);
-          formData.append("questionNumber", question.questionNumber);
-          if (question.questionPartNumber) formData.append("questionPartNumber", question.questionPartNumber);
-          formData.append("pageLabel", `Script page ${index + 1}`);
-          formData.append("file", file);
-           await requestUploadResponsePage(formData);
-        }
-        setPageLabel("");
-        setPendingBulkFiles([]);
-        router.refresh();
-      } catch (cause) {
-        fail("bulk", cause, "Could not upload the selected answer images.");
-      }
-    });
   };
 
   const processFinishedPaperPdf = (file: File | null) => {
@@ -168,25 +106,19 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     }
   };
 
-  const saveScore = async (questionKey: string, formData: FormData) => {
-    setScoreLoadingKey(questionKey);
-    setOperationFeedback(null);
-    const awardedMarks = Number(formData.get(`awarded-${questionKey}`) ?? 0);
-    const maxMarks = Number(formData.get(`max-${questionKey}`) ?? 0);
-    const rationale = String(formData.get(`rationale-${questionKey}`) ?? "").trim();
-    const confidence = Number(formData.get(`confidence-${questionKey}`) ?? 0.5);
-    const needsReview = formData.get(`review-${questionKey}`) === "on";
-    const existingScore = initialBundle.scores.find((entry) => entry.questionKey === questionKey);
-    const existingEvidence = parseScoreEvidence(existingScore?.evidenceJson);
-    try {
-      await requestSaveScore({ submissionId, questionKey, awardedMarks, maxMarks, confidence, needsReview, rationale, evidence: existingEvidence ?? { savedFrom: "marking-workspace" } });
-      if (formData.get("saveAction") === "next" && nextQuestion) setSelectedQuestionKey(nextQuestion.questionKey);
-      router.refresh();
-    } catch (cause) {
-      fail("score", cause, "Could not save score.");
-    } finally {
-      setScoreLoadingKey(null);
-    }
+  const confirmScore = async (questionKey: string, input: ConfirmInput) => {
+    const evidence = parseScoreEvidence(initialBundle.scores.find((entry) => entry.questionKey === questionKey)?.evidenceJson);
+    const result = await requestSaveScore({ submissionId, questionKey, ...input, evidence: evidence ?? { savedFrom: "marking-workspace" } });
+    router.refresh();
+    return result;
+  };
+
+  const openUploads = () => {
+    const element = document.getElementById("answer-pages");
+    const details = element?.querySelector("details");
+    if (details) details.open = true;
+    element?.scrollIntoView({ block: "start" });
+    element?.querySelector("summary")?.focus();
   };
 
   const loadCombinedMarkScheme = useCallback(async () => {
@@ -215,6 +147,9 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
   const confirmedMarks = initialBundle.scores.filter((score) => score.scoreStatus === "confirmed").reduce((sum, score) => sum + score.awardedMarks, 0);
   const paperMarks = (initialBundle.savedPaperQuestions ?? []).reduce((sum, question) => sum + question.totalMarks, 0) || initialBundle.insights.totalMaxMarks;
   const activeTopicLabel = activeRow?.savedQuestion?.topicLabels?.[0];
+  const confirmedRows = questionRows.filter((row) => row.score?.scoreStatus === "confirmed");
+  const allConfirmed = questionRows.length > 0 && confirmedRows.length === questionRows.length;
+  const weakTopics = Array.from(new Map(questionRows.flatMap((row) => row.score?.scoreStatus === "confirmed" && row.score.awardedMarks < row.score.maxMarks ? (row.savedQuestion?.canonicalLeafIds ?? []).map((id, index) => [id, row.savedQuestion?.topicLabels?.[index] ?? row.savedQuestion?.topicLabels?.[0] ?? id] as const) : [])).entries()).slice(0, 6);
 
   const progressItems = questionRows.map((row, index) => {
     const state = getQuestionState(row);
@@ -227,75 +162,82 @@ export function MarkingSubmissionWorkspace({ submissionId, initialBundle }: { su
     return { key: row.questionKey, label: String(index + 1).padStart(2, "0"), state: progressState };
   });
 
-  return (
-    <div className="space-y-4">
-      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 border-b border-text/10 pb-3 text-[0.875rem] text-text-muted">
-        <Link href="/marking" className="hover:text-accent">Mark your papers</Link><span aria-hidden="true">/</span><span>{initialBundle.savedPaper?.title || initialBundle.submission.paperCode || "Saved paper"}</span><span aria-hidden="true">/</span><span className="font-semibold text-text">{activeRow ? formatQuestionLabel({ questionNumber: activeRow.savedQuestion?.questionNumber, questionPartNumber: activeRow.savedQuestion?.questionPartNumber, questionKey: activeRow.questionKey }) : "Questions"}</span>
-      </nav>
-
-      <header className="border-b border-text/10 pb-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-[clamp(1.65rem,3vw,2.25rem)] font-bold leading-tight tracking-[-0.035em] text-text">{activeTopicLabel || initialBundle.savedPaper?.title || initialBundle.submission.studentLabel || "Untitled revision paper"}</h1>
-              <span className={`border px-2 py-1 text-[0.75rem] font-semibold ${statusToneClass(initialBundle.submission.status === "review_required" ? "review" : initialBundle.submission.status === "scored" ? "confirmed" : initialBundle.submission.status === "ocr_complete" ? "active" : "neutral")}`}>{formatStatus(initialBundle.submission.status)}</span>
-            </div>
-            <p className="mt-1 text-[0.875rem] text-text-muted">{activeRow ? `${formatQuestionLabel({ questionNumber: activeRow.savedQuestion?.questionNumber, questionPartNumber: activeRow.savedQuestion?.questionPartNumber, questionPath: activeRow.savedQuestion?.questionPath, questionKey: activeRow.questionKey })} of ${questionRows.length} · ${activeRow.savedQuestion?.totalMarks ?? activeRow.score?.maxMarks ?? 0} marks` : initialBundle.submission.paperCode || "No paper reference yet"}</p>
-          </div>
-          <p className="text-[0.95rem] font-semibold tabular-nums text-text">{confirmedMarks} / {paperMarks} confirmed</p>
-        </div>
-        {progressItems.length > 0 ? <div className="mt-4 overflow-x-auto pb-1"><QuestionProgressRail items={progressItems} activeKey={activeQuestionKey} onSelect={setSelectedQuestionKey} /></div> : null}
-      </header>
-
+  const tools = (
+    <>
+      <div id="answer-pages" className="scroll-mt-4">
+        <UploadMapping submissionId={submissionId} questions={mappingQuestions} initiallyOpen={initialBundle.pages.length === 0} onChange={() => router.refresh()} />
+      </div>
       <MarkingSetupControls
         bundle={initialBundle}
-        setupStatus={{ importState: isPending ? (isImportedSubmission && hasImportedPages ? "replacing" : "processing") : "idle", canAutoScoreWholePaper }}
+        importState={isPending ? (isImportedSubmission && hasImportedPages ? "replacing" : "processing") : "idle"}
+        canAutoScoreWholePaper={canAutoScoreWholePaper}
         autoScoreLoadingKey={autoScoreLoadingKey}
-        isLoadingCombinedMarkScheme={isLoadingCombinedMarkScheme}
-        combinedMarkScheme={combinedMarkScheme}
-        pendingBulkFiles={pendingBulkFiles}
-        bulkUploadTargets={bulkUploadTargets}
         reviewCount={reviewRows.length}
         processFinishedPaperPdf={processFinishedPaperPdf}
         autoScoreWholePaper={autoScoreWholePaper}
-        loadCombinedMarkScheme={loadCombinedMarkScheme}
-        setPendingBulkFiles={setPendingBulkFiles}
-        uploadFinishedScriptPages={uploadFinishedScriptPages}
         showFeedback={showFeedback}
       />
+    </>
+  );
 
-      {questionRows.length === 0 ? <div className="border border-dashed border-text/15 px-6 py-12 text-center text-[0.8rem] text-text-muted">Upload the first response page to start reviewing this saved paper.</div> : activeRow ? (
-        <div className="grid border-y border-text/10 xl:grid-cols-[12.5rem_minmax(0,1fr)]">
-          <MarkingQuestionNavigation rows={questionRows} activeQuestionKey={activeQuestionKey} onSelect={setSelectedQuestionKey} />
-          <div className="min-w-0 py-3 xl:pl-4">
+  return (
+    <div className="space-y-4">
+      <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 border-b border-text/10 pb-2 text-sm text-text-secondary">
+        <Link href="/marking" className="inline-flex min-h-11 items-center hover:text-accent"><span aria-hidden="true" className="mr-1 md:hidden">‹</span>My papers</Link>
+        <span aria-hidden="true" className="max-md:hidden">/</span><span className="max-md:hidden">{initialBundle.savedPaper?.title || initialBundle.submission.paperCode || "Saved paper"}</span>
+      </nav>
+
+      <header className="border-b border-text/10 pb-3 md:pb-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="min-w-0 text-[1.375rem] font-semibold leading-7 tracking-[-0.02em] text-text md:text-[2.25rem] md:leading-[2.75rem]">{initialBundle.savedPaper?.title || initialBundle.submission.studentLabel || "Untitled revision paper"}</h1>
+              <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${statusToneClass(initialBundle.submission.status === "review_required" ? "review" : initialBundle.submission.status === "scored" ? "confirmed" : initialBundle.submission.status === "ocr_complete" ? "active" : "neutral")}`}>{formatStatus(initialBundle.submission.status)}</span>
+            </div>
+            <p className="mt-1 text-sm text-text-secondary">{activeTopicLabel ? `${activeTopicLabel} · ` : ""}{activeRow ? `${formatQuestionLabel({ questionNumber: activeRow.savedQuestion?.questionNumber, questionPartNumber: activeRow.savedQuestion?.questionPartNumber, questionPath: activeRow.savedQuestion?.questionPath, questionKey: activeRow.questionKey })} of ${questionRows.length} · ${activeRow.savedQuestion?.totalMarks ?? activeRow.score?.maxMarks ?? 0} marks` : initialBundle.submission.paperCode || "No paper reference yet"}</p>
+          </div>
+          <p className="text-base text-text-secondary"><span className="font-mono font-semibold tabular-nums text-text">{confirmedMarks} / {paperMarks}</span> confirmed · {confirmedRows.length} of {questionRows.length} questions</p>
+        </div>
+        {progressItems.length > 0 ? <div className="mt-2 overflow-x-auto pb-1 md:mt-4"><QuestionProgressRail items={progressItems} activeKey={activeQuestionKey} onSelect={setSelectedQuestionKey} /></div> : null}
+      </header>
+
+      {allConfirmed ? (
+        <section aria-labelledby="paper-complete" className="rounded-[3px] border border-success/30 bg-white px-5 py-5">
+          <h2 id="paper-complete" className="text-xl font-semibold text-text">Every mark is confirmed</h2>
+          <p className="mt-1 text-base text-text-secondary"><span className="font-mono font-semibold tabular-nums text-text">{confirmedMarks} / {paperMarks}</span> across {questionRows.length} question{questionRows.length === 1 ? "" : "s"}.</p>
+          {weakTopics.length > 0 ? <>
+            <p className="mt-4 text-sm font-semibold text-text">Topics where marks were dropped</p>
+            <ul className="mt-2 flex flex-wrap gap-2">{weakTopics.map(([id, label]) => <li key={id} className="rounded-md border border-text/15 bg-bg-soft px-2.5 py-1 text-sm text-text">{label}</li>)}</ul>
+            <Link href={`/paper-maker?subject=${encodeURIComponent(initialBundle.submission.subjectKey)}&topics=${encodeURIComponent(weakTopics.map(([id]) => id).join(","))}`} className="mt-4 inline-flex min-h-11 items-center rounded-md bg-accent px-4 text-sm font-semibold text-white hover:bg-accent-deep">Practise these topics</Link>
+            <p className="mt-2 text-sm text-text-secondary">Opens the paper builder with these topics chosen, so you can check them before creating anything.</p>
+          </> : null}
+        </section>
+      ) : null}
+
+      {hasImportedPages ? null : tools}
+      {questionRows.length === 0 ? <div className="rounded-[3px] border border-dashed border-text/25 px-6 py-12 text-center text-base text-text-secondary">Add your first answer page to start reviewing this paper.</div> : activeRow ? (
+        <div>
+          <div className="min-w-0 py-3">
             <ActiveQuestionPanel
-              key={`${activeRow.questionKey}-${activeRow.score?.updatedAt ?? "empty"}`}
+              key={activeRow.questionKey}
               row={activeRow}
               nextQuestion={nextQuestion}
               previousQuestion={previousQuestion}
-              isPending={isPending}
-              pageLabel={pageLabel}
-              setPageLabel={setPageLabel}
-              uploadPageForQuestion={uploadPageForQuestion}
-              runOcr={runOcr}
-              ocrLoadingKey={ocrLoadingKey}
-              autoScore={autoScore}
-              autoScoreLoadingKey={autoScoreLoadingKey}
-              scoreLoadingKey={scoreLoadingKey}
-              saveScore={saveScore}
-              activeMarkSchemeEntry={activeMarkSchemeEntry}
-              activeMarkSchemePreview={activeMarkSchemePreview}
-              activeMarkSchemeUrl={activeMarkSchemeUrl}
-              activeMarkSchemePages={activeMarkSchemePages}
-              activeTopicLabel={activeTopicLabel}
-              activeTopicIds={activeRow.savedQuestion?.canonicalLeafIds ?? []}
+              onSelect={setSelectedQuestionKey}
+              runOcr={() => void runOcr(activeRow.questionKey)}
+              ocrLoading={ocrLoadingKey === activeRow.questionKey}
+              autoScore={() => void autoScore(activeRow.questionKey)}
+              autoScoreLoading={autoScoreLoadingKey === activeRow.questionKey}
+              onConfirm={(input) => confirmScore(activeRow.questionKey, input)}
+              markScheme={{ entry: activeMarkSchemeEntry, preview: activeMarkSchemePreview, url: activeMarkSchemeUrl, pages: activeMarkSchemePages, loading: isLoadingCombinedMarkScheme, onLoad: () => void loadCombinedMarkScheme() }}
+              onAddPages={openUploads}
               subjectKey={initialBundle.submission.subjectKey}
-              setSelectedQuestionKey={setSelectedQuestionKey}
-              showFeedback={showFeedback}
+              feedback={showFeedback("upload") || showFeedback("ocr") || showFeedback("score") ? <div className="mb-3 space-y-2">{showFeedback("upload")}{showFeedback("ocr")}{showFeedback("score")}</div> : null}
             />
           </div>
         </div>
       ) : null}
+      {hasImportedPages ? tools : null}
     </div>
   );
 }

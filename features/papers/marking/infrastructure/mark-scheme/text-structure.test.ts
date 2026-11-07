@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildStructuredLines, detectEdexcelScienceQuestionStart, detectOcrComputerScienceQuestionNumbers, detectPageQuestionNumber, normalizeQuestionNumber } from "./text-structure";
+import { buildStructuredLines, detectEdexcelScienceQuestionStart, detectOcrComputerScienceQuestionNumbers, detectPageQuestionNumber, normalizeQuestionNumber, pageHasQuestionStart } from "./text-structure";
 
 describe("mark-scheme text structure", () => {
   it("groups positioned text into the expected columns", () => {
@@ -28,6 +28,20 @@ describe("mark-scheme text structure", () => {
       text: "",
       lines: [{ pageNumber: 2, y: 1, leftText: "12 (b)", answerText: "", markText: "", schemeText: "", guidanceText: "", fullText: "12 (b)" }],
     })).toBe("12");
+  });
+
+  it("detects a later bare Mathematics question row on a shared mark-scheme page", () => {
+    const page = {
+      pageNumber: 10,
+      text: "Paper: 1MA1/1H Question Answer Mark Mark scheme Additional guidance 6 answer 7 answer",
+      lines: [
+        { pageNumber: 10, y: 500, leftText: "Question", answerText: "Answer", markText: "Mark", schemeText: "Mark scheme", guidanceText: "Additional guidance", fullText: "Question Answer Mark Mark scheme Additional guidance" },
+        { pageNumber: 10, y: 480, leftText: "6", answerText: "55", markText: "P1", schemeText: "", guidanceText: "", fullText: "6 55 P1" },
+        { pageNumber: 10, y: 420, leftText: "7 Rate of change", answerText: "", markText: "B1", schemeText: "", guidanceText: "", fullText: "7 Rate of change B1" },
+      ],
+    };
+
+    expect(pageHasQuestionStart(page, "7")).toBe(true);
   });
 
   it("uses source page geometry for landscape mark-scheme columns", () => {
@@ -90,6 +104,8 @@ describe("mark-scheme text structure", () => {
   it.each([
     "9 (a) selected answer",
     "09(a)(i) selected answer",
+    "9a selected answer",
+    "*9(c) selected answer",
     "Question Number Answer Mark 9(a)(i) selected answer",
     "Question Number Answer Additional guidance Mark 09 (a) selected answer",
   ])("detects an Edexcel Science question start in %s", (text) => {
@@ -130,5 +146,17 @@ describe("mark-scheme text structure", () => {
         { pageNumber: 23, y: 680, leftText: "7 1 mark for example:", answerText: "", markText: "3", schemeText: "", guidanceText: "Allow", fullText: "7 1 mark for example: 3 Allow" },
       ],
     })).toEqual(["7"]);
+  });
+
+  it("does not treat a numeric answer-table row as an OCR question", () => {
+    expect(detectOcrComputerScienceQuestionNumbers({
+      pageNumber: 8,
+      text: "Question Answer Mark Guidance 1 b answer Denary 8-bit binary Hexadecimal 7 00000111 7",
+      lines: [
+        { pageNumber: 8, y: 500, leftText: "Question", answerText: "Answer", markText: "Mark", schemeText: "", guidanceText: "Guidance", fullText: "Question Answer Mark Guidance" },
+        { pageNumber: 8, y: 480, leftText: "1 b 1 mark for each completed box", answerText: "", markText: "4", schemeText: "", guidanceText: "Must be 8-bits", fullText: "1 b 1 mark for each completed box 4 Must be 8-bits" },
+        { pageNumber: 8, y: 420, leftText: "7", answerText: "00000111", markText: "", schemeText: "7", guidanceText: "", fullText: "7 00000111 7" },
+      ],
+    })).toEqual(["1"]);
   });
 });

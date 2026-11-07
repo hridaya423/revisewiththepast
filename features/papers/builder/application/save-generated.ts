@@ -3,38 +3,55 @@ import { createHash } from "node:crypto";
 import { getMarkableUnitsByUnitKeys } from "@/features/papers/infrastructure/paper-maker";
 import { buildGeneratedCoverModel } from "../infrastructure/pdf/cover";
 import { getPaperMakerSubject } from "../domain/subjects";
-import { DomainError, NotFoundError, ValidationError } from "@/shared/application/errors";
+import { AuthorizationError, DomainError, NotFoundError, ValidationError } from "@/shared/application/errors";
 import { uploadToHackClubCdn } from "@/shared/infrastructure/cdn/hackclub";
+import { claimGenerationReceipt } from "../infrastructure/convex/generation-receipts";
 import { createSavedPaper, getSavedPaperByImportKey } from "../infrastructure/convex/saved-papers";
 
+const MAX_GENERATED_PDF_BYTES = 40 * 1024 * 1024;
+
 export async function saveGeneratedPaper(input: {
-  subjectKey: PaperMakerSubjectKey;
-  targetMarks: number;
-  totalMarks: number;
-  timeMinutes: number;
-  subjectTier?: "none" | "foundation" | "higher";
-  selectedUnitKeys: string[];
+  generationReceiptId: string;
   file: File;
 }) {
-  if (!input.file.type.includes("pdf") && !input.file.name.toLowerCase().endsWith(".pdf")) {
-    throw new ValidationError("Only PDF uploads are supported.");
-  }
-  if (input.selectedUnitKeys.length === 0) throw new ValidationError("selectedUnitKeys is required.");
+  if (input.file.size === 0) throw new ValidationError("The generated paper is empty.");
+  if (input.file.size > MAX_GENERATED_PDF_BYTES) throw new ValidationError("Generated papers are limited to 40 MB.");
 
-  const subject = getPaperMakerSubject(input.subjectKey);
+  const bytes = new Uint8Array(await input.file.arrayBuffer());
+  const pdfHeader = new TextDecoder().decode(bytes.slice(0, 5));
+  if (pdfHeader !== "%PDF-") throw new ValidationError("The uploaded file is not a valid PDF.");
+
+  const pdfSha256 = createHash("sha256").update(bytes).digest("hex");
+  const receipt = await claimGenerationReceipt(input.generationReceiptId, pdfSha256).catch((error) => {
+    const message = error instanceof Error ? error.message : "";
+    if (message === "Unauthorized") throw new AuthorizationError();
+    if (message.startsWith("This file was not produced")) throw new ValidationError(message);
+    throw error;
+  });
+
+  const subjectKey = receipt.subjectKey as PaperMakerSubjectKey;
+  const selectedUnitKeys = receipt.selectedUnitKeys;
+  const subjectTier = receipt.subjectTier;
+  if (selectedUnitKeys.length === 0) throw new ValidationError("The generation receipt does not list any questions.");
+
+  const subject = getPaperMakerSubject(subjectKey);
   if (!subject) throw new NotFoundError("Unknown subjectKey.");
   const selectedUnits = await getMarkableUnitsByUnitKeys(
-    input.subjectKey,
-    input.selectedUnitKeys,
-    input.subjectTier === "foundation" || input.subjectTier === "higher" ? input.subjectTier : null,
+    subjectKey,
+    selectedUnitKeys,
+    subjectTier === "foundation" || subjectTier === "higher" ? subjectTier : null,
   );
-  if (selectedUnits.length !== input.selectedUnitKeys.length) {
+  if (selectedUnits.length !== selectedUnitKeys.length) {
     throw new DomainError("Could not resolve every selected unit for this generated paper.");
   }
 
+  const totalMarks = selectedUnits.reduce((sum, unit) => sum + unit.totalMarks, 0);
+  const targetMarks = Number.isFinite(receipt.targetMarks) ? receipt.targetMarks : totalMarks;
+  const timeMinutes = Number.isFinite(receipt.timeMinutes) ? receipt.timeMinutes : 0;
+
   const importKey = createHash("sha256")
-    .update(new Uint8Array(await input.file.arrayBuffer()))
-    .update(`\0${input.subjectKey}\0${input.subjectTier ?? "none"}\0${input.selectedUnitKeys.join("\n")}`)
+    .update(bytes)
+    .update(`\0${subjectKey}\0${subjectTier ?? "none"}\0${selectedUnitKeys.join("\n")}`)
     .digest("hex");
   const existing = await getSavedPaperByImportKey(importKey);
   if (existing) return { savedPaperId: existing._id, pdfUrl: existing.pdfUrl };
@@ -42,14 +59,14 @@ export async function saveGeneratedPaper(input: {
   const paperOptionsByCode = new Map(subject.paperOptions.map((paper) => [paper.code, paper]));
   const savedPaperId = await createSavedPaper({
     importKey,
-    subjectKey: input.subjectKey,
+    subjectKey,
     boardCode: subject.boardCode,
     subjectSlug: subject.subjectSlug,
-    tier: input.subjectTier,
+    tier: subjectTier,
     title: `${subject.label} Custom Paper`,
-    targetMarks: Number.isFinite(input.targetMarks) ? input.targetMarks : 0,
-    totalMarks: Number.isFinite(input.totalMarks) ? input.totalMarks : 0,
-    timeMinutes: Number.isFinite(input.timeMinutes) ? input.timeMinutes : 0,
+    targetMarks,
+    totalMarks,
+    timeMinutes,
     pdfFileName: input.file.name,
     pdfContentType: upload.contentType,
     pdfFileSize: upload.size,
@@ -60,10 +77,10 @@ export async function saveGeneratedPaper(input: {
       const selectedPaper = paperOptionsByCode.get(unit.paperCode);
       const topicLabels = buildGeneratedCoverModel({
         subject,
-        tierLabel: input.subjectTier === "foundation" || input.subjectTier === "higher" ? input.subjectTier : null,
+        tierLabel: subjectTier === "foundation" || subjectTier === "higher" ? subjectTier : null,
         selectedUnits: [unit],
         selectedPapers: selectedPaper ? [selectedPaper] : [],
-        timeMinutes: input.timeMinutes,
+        timeMinutes,
         examContext: { materials: [], instructions: [] },
       }).topicLabels;
       return {

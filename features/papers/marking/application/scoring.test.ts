@@ -5,14 +5,12 @@ const mocks = vi.hoisted(() => ({
   buildCombinedMarkScheme: vi.fn(),
   autoScoreMathPaper: vi.fn(),
   autoScoreMathQuestion: vi.fn(),
-  upsertQuestionStatus: vi.fn(),
-  upsertScore: vi.fn(),
+  recordQuestionScore: vi.fn(),
 }));
 
 vi.mock("../infrastructure/convex/commands", () => ({
   getMarkingSubmissionBundleFromConvex: mocks.getBundle,
-  upsertMarkingQuestionStatusInConvex: mocks.upsertQuestionStatus,
-  upsertMarkingScoreInConvex: mocks.upsertScore,
+  recordQuestionScoreInConvex: mocks.recordQuestionScore,
 }));
 
 vi.mock("../infrastructure/scoring/scoring", () => ({
@@ -45,24 +43,35 @@ describe("marking scoring application", () => {
     expect(mocks.buildCombinedMarkScheme).toHaveBeenCalledWith(bundle);
   });
 
-  it("persists a manual score without coordinating a separate aggregate status write", async () => {
+  it("persists a manual score atomically with its status and server-owned confidence", async () => {
+    mocks.recordQuestionScore.mockResolvedValue({ scoreId: "score_1", updatedAt: 50, conflict: null });
     const input = {
       submissionId: "submission_123",
       questionKey: "question_1",
       awardedMarks: 3,
       maxMarks: 4,
-      confidence: 1,
       needsReview: false,
       rationale: "Checked manually.",
       evidence: {},
-      scorerProvider: "manual",
-      scorerModel: "manual",
+      expectedUpdatedAt: 10,
     };
 
-    await expect(saveManualScore(input)).resolves.toBe(input);
-    expect(mocks.upsertScore).toHaveBeenCalledWith(expect.objectContaining({ scoreStatus: "confirmed" }));
-    expect(mocks.upsertQuestionStatus).toHaveBeenCalledWith(expect.objectContaining({ status: "saved" }));
+    await expect(saveManualScore(input)).resolves.toEqual({ status: "saved", updatedAt: 50 });
+    expect(mocks.recordQuestionScore).toHaveBeenCalledTimes(1);
+    expect(mocks.recordQuestionScore).toHaveBeenCalledWith(expect.objectContaining({
+      status: "saved",
+      expectedUpdatedAt: 10,
+      score: expect.objectContaining({ scoreStatus: "confirmed", awardedMarks: 3, confidence: 1, scorerProvider: "manual" }),
+    }));
     expect(mocks.getBundle).not.toHaveBeenCalled();
+  });
+
+  it("reports a stale revision as a conflict carrying the current score", async () => {
+    const current = { awardedMarks: 1, maxMarks: 4, needsReview: false, rationale: "Other tab", scoreStatus: "confirmed", updatedAt: 99 };
+    mocks.recordQuestionScore.mockResolvedValue({ scoreId: "score_1", updatedAt: 99, conflict: current });
+
+    await expect(saveManualScore({ submissionId: "s", questionKey: "q", awardedMarks: 3, maxMarks: 4, needsReview: false, rationale: "", evidence: {}, expectedUpdatedAt: 10 }))
+      .resolves.toEqual({ status: "conflict", current });
   });
 
   it("records skipped automatic scoring as manual review", async () => {
@@ -71,8 +80,8 @@ describe("marking scoring application", () => {
 
     await autoScoreSubmission({ submissionId: "submission_123", questionKey: "question_1", scoreWholePaper: false });
 
-    expect(mocks.upsertScore).not.toHaveBeenCalled();
-    expect(mocks.upsertQuestionStatus).toHaveBeenCalledWith({
+    expect(mocks.recordQuestionScore).toHaveBeenCalledTimes(1);
+    expect(mocks.recordQuestionScore).toHaveBeenCalledWith({
       submissionId: "submission_123",
       questionKey: "question_1",
       status: "needs_manual_review",

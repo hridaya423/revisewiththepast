@@ -143,10 +143,13 @@ function hashCode(value: string) {
   return (hash >>> 0).toString(36).toUpperCase().slice(0, 4).padStart(4, "0");
 }
 
-function subjectCode(subject: PaperMakerSubjectDefinition) {
-  const words = subject.coverTitle.replace(/[^A-Za-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
-  const code = words.map((word) => word[0]).join("").toUpperCase();
-  return (code || "PAPER").slice(0, 5);
+// The code identifies the selection itself — subject + unit keys — so the mark
+// scheme (which only ever sees subjectKey + unitKeys) can mint the same code.
+export function buildRevisionPaperCode(subjectKey: string, coverTitle: string, unitKeys: string[]) {
+  const words = coverTitle.replace(/[^A-Za-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+  const code = words.map((word) => word[0]).join("").toUpperCase().slice(0, 5) || "PAPER";
+  const identity = [subjectKey, ...unitKeys].join("|");
+  return `RWTP-${code}-${hashCode(identity)}`;
 }
 
 function resolveCalculatorPolicy(selectedPapers: PaperOption[], materials: string[]): CalculatorPolicy {
@@ -188,14 +191,6 @@ export function buildGeneratedCoverModel(input: BuildCoverModelInput): Generated
     const cleaned = withoutBullet(instruction);
     return cleaned ? [cleaned] : [];
   });
-  const identity = [
-    input.subject.key,
-    input.subject.coverTitle,
-    input.tierLabel ?? "",
-    Math.round(input.timeMinutes),
-    ...paperLabels,
-    ...input.selectedUnits.map((unit) => unit.unitKey),
-  ].join("|");
 
   return {
     boardLabel: cleanLabel(input.subject.boardLabel),
@@ -212,7 +207,11 @@ export function buildGeneratedCoverModel(input: BuildCoverModelInput): Generated
     materials,
     calculatorPolicy: resolveCalculatorPolicy(input.selectedPapers, input.examContext.materials),
     instructions,
-    revisionPaperCode: `RWTP-${subjectCode(input.subject)}-${hashCode(identity)}`,
+    revisionPaperCode: buildRevisionPaperCode(
+      input.subject.key,
+      input.subject.coverTitle,
+      input.selectedUnits.map((unit) => unit.unitKey),
+    ),
   };
 }
 
@@ -312,7 +311,10 @@ export async function drawGeneratedCoverPage(outputDoc: PDFDocument, cover: Gene
   page.drawText("PRACTICE PAPER", { x: RIGHT - typeWidth, y: 773, size: 8.2, font: regular, color: NAVY });
   page.drawLine({ start: { x: LEFT, y: 748 }, end: { x: RIGHT, y: 748 }, thickness: 1, color: RULE });
 
-  const identity = `${cover.boardLabel} GCSE ${cover.subjectLabel}${cover.tierLabel ? ` · ${cover.tierLabel} tier` : ""}`.toUpperCase();
+  const paperDesignation = cover.paperLabels.length > 0 && cover.paperLabels.length <= 2
+    ? ` · ${cover.paperLabels.join(" · ").toUpperCase()}`
+    : "";
+  const identity = `${cover.boardLabel} GCSE ${cover.subjectLabel}${cover.tierLabel ? ` · ${cover.tierLabel} tier` : ""}${paperDesignation}`.toUpperCase();
   drawWrapped(page, bold, identity, LEFT, 716, 11, CONTENT_WIDTH, BLUE, 13, 1);
   page.drawText("Focused practice paper", { x: LEFT, y: 665, size: 32, font: bold, color: NAVY });
 
@@ -321,7 +323,7 @@ export async function drawGeneratedCoverPage(outputDoc: PDFDocument, cover: Gene
   const facts = [
     [String(cover.timeMinutes), "MINUTES"],
     [String(cover.totalMarks), "MARKS"],
-    [String(cover.questionCount), "QUESTIONS"],
+    [String(cover.questionCount), cover.questionCount === 1 ? "QUESTION" : "QUESTIONS"],
   ];
   const factWidth = CONTENT_WIDTH / facts.length;
   facts.forEach(([value, label], index) => {
@@ -347,12 +349,20 @@ export async function drawGeneratedCoverPage(outputDoc: PDFDocument, cover: Gene
 
   const informationX = LEFT + columnWidth + columnGap;
   page.drawText("Information", { x: informationX, y: columnTop, size: 14, font: bold, color: NAVY });
+  const calculatorLine = cover.calculatorPolicy === "not specified"
+    ? null
+    : cover.calculatorPolicy === "varies by selected paper"
+      ? "Calculator use varies by selected paper."
+      : `Calculators ${cover.calculatorPolicy}.`;
+  const materialList = cover.materials
+    .map((material) => material.replace(/^materials\s*:?\s*/i, "").replace(/\.\s*$/, ""))
+    .filter((material) => material && !/calculator/i.test(material));
   const information = [
     `The total mark for this paper is ${cover.totalMarks}.`,
-    `Calculators ${cover.calculatorPolicy}.`,
-    ...cover.materials.slice(0, 2).map((material) => `Materials: ${material}`),
+    calculatorLine,
+    materialList.length > 0 ? `Materials: ${materialList.join("; ")}.` : null,
     "Marks are shown in brackets beside each question.",
-  ];
+  ].filter((line): line is string => line !== null);
   drawList(page, regular, information.slice(0, 5), informationX, columnTop - 21, columnWidth, 9, NAVY);
 
   const topicHeadingY = 252;
@@ -364,10 +374,9 @@ export async function drawGeneratedCoverPage(outputDoc: PDFDocument, cover: Gene
       : ["No topic labels resolved."];
   let topicY = topicHeadingY - 19;
   for (const topic of topicRows) {
+    const extra = topic.startsWith("+");
     page.drawLine({ start: { x: LEFT, y: topicY - 6 }, end: { x: RIGHT, y: topicY - 6 }, thickness: 0.6, color: RULE });
-    page.drawLine({ start: { x: LEFT + 3, y: topicY + 1 }, end: { x: LEFT + 7, y: topicY - 3 }, thickness: 1.4, color: BLUE });
-    page.drawLine({ start: { x: LEFT + 7, y: topicY - 3 }, end: { x: LEFT + 15, y: topicY + 6 }, thickness: 1.4, color: BLUE });
-    drawWrapped(page, bold, topic, LEFT + 27, topicY, 10.5, CONTENT_WIDTH - 27, NAVY, 12, 1);
+    drawWrapped(page, extra ? regular : bold, topic, LEFT + 14, topicY, extra ? 9 : 10.5, CONTENT_WIDTH - 14, extra ? MUTED : NAVY, 12, 1);
     topicY -= 19;
   }
 
@@ -375,6 +384,4 @@ export async function drawGeneratedCoverPage(outputDoc: PDFDocument, cover: Gene
   const turnText = "DO NOT TURN OVER UNTIL YOU ARE READY";
   const turnWidth = bold.widthOfTextAtSize(turnText, 8.5);
   page.drawText(turnText, { x: LEFT + (CONTENT_WIDTH - turnWidth) / 2, y: 67, size: 8.5, font: bold, color: NAVY });
-  const footerCodeWidth = regular.widthOfTextAtSize(cover.revisionPaperCode, 8.5);
-  page.drawText(cover.revisionPaperCode, { x: RIGHT - footerCodeWidth, y: 42, size: 8.5, font: regular, color: MUTED });
 }

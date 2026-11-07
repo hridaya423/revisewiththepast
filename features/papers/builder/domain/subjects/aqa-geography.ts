@@ -555,6 +555,8 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
     return counts;
   })();
 
+  const candidateUnitMarks = candidates.map((unit) => unit.totalMarks);
+
   const finalizeSelection = (selected: QuestionUnit[], currentMarks: number) => {
     const finalCoveredLeafs = new Set<string>();
     for (const unit of selected) {
@@ -568,6 +570,7 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
       totalMarks: currentMarks,
       coveredLeafTopicIds: Array.from(finalCoveredLeafs),
       requestedLeafTopicIds: Array.from(selectedLeafSet),
+      candidateUnitMarks,
     };
   };
 
@@ -796,6 +799,30 @@ export function selectQuestionUnits({ units, selectedLeafTopicIds, targetMarks, 
         - (repeatedRunLeafPenalty * 120 * multiPaperSpreadMultiplier)
         - (unit.totalMarks <= 2 ? 20 : 0);
     };
+
+    // Band floor: when the balanced profile wants a mark band that the pool can
+    // supply, seed one unit of it up front — the leaf-coverage term otherwise
+    // starves short questions entirely (every new-leaf unit scores ~1000+).
+    if (questionMix === "balanced") {
+      for (const category of ["low", "medium", "high"] as const) {
+        if ((desiredCategoryCounts.get(category) ?? 0) <= 0) continue;
+        if (selectedMarkCategoryCounts.get(category)) continue;
+        if (maxQuestions && selected.length >= maxQuestions) break;
+        let bestSeed: QuestionUnit | null = null;
+        let bestSeedScore = Number.NEGATIVE_INFINITY;
+        for (const unit of candidates) {
+          if (!remaining.has(unit.unitKey)) continue;
+          if (getMarkCategory(unit.totalMarks) !== category) continue;
+          if (unit.totalMarks > targetMarks - currentMarks + overshootAllowance) continue;
+          const score = scoreUnit(unit);
+          if (score > bestSeedScore) {
+            bestSeedScore = score;
+            bestSeed = unit;
+          }
+        }
+        if (bestSeed) addUnit(bestSeed);
+      }
+    }
 
     while (remaining.size > 0) {
       if (maxQuestions && selected.length >= maxQuestions) break;

@@ -6,13 +6,15 @@ export type QuestionProgressItem = {
   state: QuestionProgressState;
 };
 
+const STATE_NAMES: Record<QuestionProgressState, string> = { confirmed: "confirmed", current: "open now", review: "needs checking", ready: "ready to mark", waiting: "waiting for answer", failed: "failed" };
+
 function stateClasses(state: QuestionProgressState) {
   if (state === "confirmed") return "border-success bg-success-soft text-success";
   if (state === "current") return "border-accent bg-accent text-white";
   if (state === "review") return "border-warning bg-warning-soft text-warning";
   if (state === "failed") return "border-danger bg-danger-soft text-danger";
   if (state === "ready") return "border-accent/45 bg-accent-soft text-accent-deep";
-  return "border-text/20 bg-white text-text-muted";
+  return "border-text/25 bg-white text-text-secondary";
 }
 
 function connectorClasses(left: QuestionProgressState, right: QuestionProgressState) {
@@ -39,7 +41,7 @@ export function QuestionProgressRail({
         const isActive = item.key === activeKey || item.state === "current";
         const marker = (
           <span
-            className={`flex h-8 w-8 items-center justify-center rounded-full border text-[0.72rem] font-semibold tabular-nums ${stateClasses(isActive ? "current" : item.state)}`}
+            className={`flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold tabular-nums ${stateClasses(isActive ? "current" : item.state)}`}
             aria-hidden="true"
           >
             {item.label}
@@ -47,24 +49,24 @@ export function QuestionProgressRail({
         );
         return (
           <li key={item.key} className="flex items-start">
-            <div className="flex w-10 flex-col items-center gap-1.5">
+            <div className="flex w-11 flex-col items-center gap-0.5">
               {onSelect ? (
                 <button
                   type="button"
                   onClick={() => onSelect(item.key)}
-                  aria-label={`Open question ${item.label}`}
+                  aria-label={`Question ${item.label}: ${STATE_NAMES[item.state]}`}
                   aria-current={isActive ? "step" : undefined}
-                  className="rounded-full"
+                  className="flex h-11 w-11 items-center justify-center rounded-full"
                 >
                   {marker}
                 </button>
               ) : marker}
-              {item.state === "confirmed" ? <span className="text-[0.62rem] font-bold text-success">✓</span> : null}
-              {item.state === "review" ? <span className="text-[0.6rem] font-semibold text-warning">Review</span> : null}
-              {isActive ? <span className="text-[0.6rem] font-semibold text-accent">Current</span> : null}
+              {item.state === "confirmed" ? <span className="text-xs font-semibold text-success" aria-hidden="true">Done</span> : null}
+              {item.state === "review" ? <span className="text-xs font-semibold text-warning" aria-hidden="true">Check</span> : null}
+              {isActive ? <span className="text-xs font-semibold text-accent" aria-hidden="true">Now</span> : null}
             </div>
             {index < items.length - 1 ? (
-              <span className={`mt-[15px] h-px w-8 sm:w-12 lg:w-16 ${connectorClasses(item.state, items[index + 1].state)}`} aria-hidden="true" />
+              <span className={`mt-[21px] h-px w-8 sm:w-12 lg:w-16 ${connectorClasses(item.state, items[index + 1].state)}`} aria-hidden="true" />
             ) : null}
           </li>
         );

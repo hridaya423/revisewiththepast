@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { requireAuthToken, unauthorizedResponse } from "@/shared/infrastructure/auth/tokens";
 import { uploadResponsePage } from "@/features/papers/server";
 import { normalizeApplicationError } from "@/shared/application/errors";
+import { uploadMappingSchema } from "../../contracts/http";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,14 +31,18 @@ export async function POST(request: NextRequest) {
   const file = formData.get("file");
 
   if (!submissionId) return badRequest("submissionId is required.");
+  if (!/^[a-z0-9]+$/i.test(submissionId)) return badRequest("Invalid submissionId.");
   if (!questionKey) return badRequest("questionKey is required.");
   if (!(file instanceof File)) return badRequest("file is required.");
   if (!file.type.startsWith("image/")) return badRequest("Only image uploads are supported right now.");
+  const mapping = uploadMappingSchema.safeParse({ submissionId, pageLabel, questionKeys: formData.has("questionKeys") ? formData.getAll("questionKeys") : [questionKey] });
+  if (!mapping.success) return badRequest(mapping.error.issues[0]?.message ?? "Check the questions for each page.");
 
   try {
     return Response.json(await uploadResponsePage({
       submissionId,
       questionKey,
+      questionKeys: mapping.data.questionKeys,
       questionNumber,
       questionPartNumber,
       pageLabel,

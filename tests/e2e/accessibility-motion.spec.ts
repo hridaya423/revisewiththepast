@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
 
 test("reduced motion keeps core landing and builder content available", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Build a paper from what you’ve studied." })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Practise the topics you need." })).toBeVisible();
 
   await page.goto("/paper-maker");
   await expect(page.getByRole("heading", { name: "Build a practice paper" })).toBeVisible();

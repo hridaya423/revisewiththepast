@@ -1,13 +1,19 @@
 import { PDFDocument } from "pdf-lib";
 
 import { getPdfDocument, renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
-import type { BoundingBox, QuestionUnit, SourcePageAsset } from "@/shared/domain/paper";
+import type { QuestionUnit, SourcePageAsset } from "@/shared/domain/paper";
 import { drawGeneratedCoverPage, type GeneratedCoverModel } from "./cover";
 import { prepareQuestionFragments } from "./question-fragments";
 import { paintGeneratedLayout } from "./paint-generated-layout";
-import { GENERATED_PAGE, planGeneratedQuestions } from "../../domain/generated-layout";
-import { fetchPdfBytes, rasterizeSourcePdfPage, type CropBox } from "./source-pdf";
-import { readExtractedPaperJson } from "../extracted-store";
+import { planGeneratedQuestions } from "../../domain/generated-layout";
+import { createSourcePdfCache, fetchPdfBytes, rasterizeSourcePdfPage, type CropBox } from "./source-pdf";import {
+  getExtractedPage,
+  isAnswerLine,
+  isSourceFooterFurnitureLine,
+  shouldIgnorePageLine,
+  type ExtractedPaperPage,
+  type ExtractedTextLine,
+} from "./source-text";
 import {
   normalizeFigureLabel,
   type RegionFigure,
@@ -24,6 +30,17 @@ type GeneratePaperPdfInput = {
   figuresBySource?: Map<string, RegionFigure[]>;
   pageLayoutsBySource?: Map<string, RegionPageLayout[]>;
   coverPage: GeneratedCoverModel;
+  timings?: PdfAssemblyTimings;
+};
+
+export type PdfAssemblyTimings = {
+  documentSetupMs: number;
+  prefaceImportMs: number;
+  sourcePreparationMs: number;
+  layoutPlanningMs: number;
+  paintingMs: number;
+  serializationMs: number;
+  sourcePageRenderCount: number;
 };
 
 export class SourceUnitRenderError extends Error {
@@ -39,82 +56,14 @@ export class SourceUnitRenderError extends Error {
   }
 }
 
-type ExtractedTextLine = {
-  text: string;
-  y: number;
-  bbox: BoundingBox;
-};
-
-type ExtractedPaperPage = {
-  page_number: number;
-  page_text: string;
-  text_lines: ExtractedTextLine[];
-};
-
-type ExtractedPaper = {
-  source_file: string;
-  pages: ExtractedPaperPage[];
-};
-
 const CROP_PADDING = 12;
 const MIN_VISIBLE_CROP_HEIGHT = 36;
-
-const LINE_IGNORE_PATTERNS = [
-  /^\d+$/,
-  /^\(\d+\)$/,
-  /^\*\d+\*$/,
-  /^g\/[a-z]{3}\d+/i,
-  /^ib\/g\/[a-z]{3}\d+/i,
-  /^question \d+ continues on the next page/i,
-  /^turn over(?: for the next question)?$/i,
-  /^end of questions$/i,
-  /^there are no questions printed on this page$/i,
-  /^do not write on this page$/i,
-  /^answer in the spaces provided$/i,
-  /^additional page, if required\.?$/i,
-  /^extra space$/i,
-  /^end of sources$/i,
-  /^section [a-z]\b.{0,40}$/i,
-  /^if you change your mind about an answer/i,
-  /^mark your new answer with a cross/i,
-  /^some questions must be answered with a cross/i,
-  /^do not write outside the/i,
-  /^do not write in this area/i,
-  /^write the question numbers in the left-hand margin\.?$/i,
-  /^copyright information$/i,
-  /^do not write in this area$/i,
-  /^shaded area$/i,
-  /^do not write outside the box$/i,
-  /^\(?\s*total for question/i,
-  /^total for section/i,
-  /^total for paper/i,
-  /^pmt$/i,
-];
-
-const extractedPaperCache = new Map<string, ExtractedPaper | null>();
 
 export function resolveContentHorizontalBounds(cropBox: CropBox, contentBoxes: Array<{ left: number; right: number }>, padding = CROP_PADDING) {
   if (contentBoxes.length === 0) return cropBox;
   const left = Math.max(cropBox.left, Math.min(...contentBoxes.map((box) => box.left)) - padding);
   const right = Math.min(cropBox.right, Math.max(...contentBoxes.map((box) => box.right)) + padding);
   return right - left >= 80 ? { ...cropBox, left, right } : cropBox;
-}
-
-function isSourceFooterFurnitureLine(text: string) {
-  const normalized = text.trim().toLowerCase().replace(/\s+/g, " ");
-  const compact = normalized.replace(/[^a-z0-9]/g, "");
-  return /\bquestion \d+ continues on the next page\b/.test(normalized)
-    || /^turn over(?: for the next question)?/.test(normalized)
-    || /\bturn over(?: for the next question)?\b/.test(normalized)
-    || /^ib\/[gmn]\//.test(normalized)
-    || /^g\/jun\d+\//.test(normalized)
-    || /^jun\d+\//.test(normalized)
-    || /^\*?[a-z]\d{5,}[a-z]?\*?$/i.test(normalized)
-    || /^p\d{8,}[a-z0-9]*$/.test(compact);
-}
-
-function isAnswerLine(text: string) {
-  return /^[.\s]+$/.test(text.trim()) || /^[._\-\s]+$/.test(text.trim());
 }
 
 export function trimSourceFooterCropBox(unit: QuestionUnit, pageNumber: number, cropBox: CropBox) {
@@ -133,21 +82,6 @@ export function trimSourceFooterCropBox(unit: QuestionUnit, pageNumber: number, 
   return cropBox.top - bottom >= MIN_VISIBLE_CROP_HEIGHT ? { ...cropBox, bottom } : cropBox;
 }
 
-function loadExtractedPaper(sourceRelativePath: string) {
-  if (extractedPaperCache.has(sourceRelativePath)) {
-    return extractedPaperCache.get(sourceRelativePath) ?? null;
-  }
-
-  const parsed = readExtractedPaperJson<ExtractedPaper>(sourceRelativePath);
-  extractedPaperCache.set(sourceRelativePath, parsed);
-  return parsed;
-}
-
-function getExtractedPage(sourceRelativePath: string, pageNumber: number) {
-  const paper = loadExtractedPaper(sourceRelativePath);
-  return paper?.pages.find((page) => page.page_number === pageNumber) ?? null;
-}
-
 function normalizeTextForSearch(text: string) {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -164,14 +98,6 @@ function getPromptSearchTokens(promptText: string) {
     .split(" ")
     .filter((token) => token.length >= 3)
     .slice(0, 10);
-}
-
-function shouldIgnorePageLine(text: string) {
-  const normalized = text.trim();
-  if (!normalized) return true;
-  if (/^[_\s]+$/.test(normalized)) return true;
-  if (/^[.\s]+$/.test(normalized)) return true;
-  return LINE_IGNORE_PATTERNS.some((pattern) => pattern.test(normalized));
 }
 
 function findPromptLine(page: ExtractedPaperPage, promptText: string) {
@@ -335,9 +261,28 @@ export function shouldSanitizeSourcePageForGeneratedIdentity(unit: Pick<Question
     || unit.subjectSlug === "business";
 }
 
+export const BOXED_MARKER_SUBJECTS = new Set(["business", "geography", "english-literature", "english-language"]);
+
 export function formatGeneratedAqaMarker(unit: Pick<QuestionUnit, "subjectSlug">, questionNumber: number, sourcePartNumber: string) {
-  if (unit.subjectSlug === "english-literature") return `${questionNumber}.`;
-  return `${String(questionNumber).padStart(2, "0")}.${sourcePartNumber}`;
+  if (unit.subjectSlug === "english-literature" || unit.subjectSlug === "english-language") {
+    return String(questionNumber).padStart(2, "0");
+  }
+  const subPart = sourcePartNumber.includes(".") ? sourcePartNumber.split(".").pop() : sourcePartNumber;
+  return subPart ? `${String(questionNumber).padStart(2, "0")}.${subPart}` : String(questionNumber).padStart(2, "0");
+}
+
+function usesBoxedMarkers(unit: QuestionUnit) {
+  return unit.boardCode === "aqa" && BOXED_MARKER_SUBJECTS.has(unit.subjectSlug);
+}
+
+export function subjectUsesBoxedMarkers(subjectKey: string) {
+  const [board, ...rest] = subjectKey.split("-");
+  return board === "aqa" && BOXED_MARKER_SUBJECTS.has(rest.join("-"));
+}
+
+function markerTextForPart(unit: QuestionUnit, questionNumber: number, partNumber: string | null) {
+  if (!usesBoxedMarkers(unit)) return undefined;
+  return formatGeneratedAqaMarker(unit, questionNumber, partNumber ?? "");
 }
 
 export function expandScienceCropToReferencedFigures(
@@ -470,16 +415,20 @@ export function extendComputerScienceAnswerGeometryCropBox(
   return hasFollowingContent ? cropBox : { ...cropBox, bottom };
 }
 
-export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, prefaceSourcePdfs = [], coverPage, figuresBySource, pageLayoutsBySource }: GeneratePaperPdfInput) {
-  const outputDoc = await PDFDocument.create();
+export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUnits, pageAssetsBySource, prefaceSourcePdfs = [], coverPage, figuresBySource, pageLayoutsBySource, timings }: GeneratePaperPdfInput) {
+  let stageStartedAt = performance.now();
+  const outputDoc = await PDFDocument.create({ updateMetadata: false });
   outputDoc.setTitle(title);
   await drawGeneratedCoverPage(outputDoc, coverPage);
+  if (timings) timings.documentSetupMs += performance.now() - stageStartedAt;
 
   const orderedUnits = Array.from(new Map(selectedUnits.map((unit) => [unit.unitKey, unit])).values());
   if (orderedUnits.length !== selectedUnits.length) throw new Error("Paper generation received duplicate selected units.");
 
   const sourcePdfCache = new Map<string, Uint8Array>();
   const sourceDocCache = new Map<string, PDFDocument>();
+  const sourceCache = createSourcePdfCache();
+  stageStartedAt = performance.now();
   for (const prefacePdfPath of Array.from(new Set(prefaceSourcePdfs))) {
     try {
       await addPdfPagesWithRasterFallback(outputDoc, prefacePdfPath, sourcePdfCache, sourceDocCache);
@@ -488,12 +437,17 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
       throw new Error(`Could not load preface source PDF "${prefacePdfPath}": ${reason}`, { cause: error });
     }
   }
+  if (timings) timings.prefaceImportMs += performance.now() - stageStartedAt;
 
+  const generatedNumberBySource = new Map(
+    orderedUnits.map((unit, index) => [`${unit.sourceRelativePath}#${Number(unit.questionNumber)}`, index + 1] as const),
+  );
   const prepared = [] as Array<{
     unit: QuestionUnit;
     fragments: Awaited<ReturnType<typeof prepareQuestionFragments>> & { kind: "success" };
   }>;
   const failures: Array<{ unitKey: string; page?: number; reason?: string }> = [];
+  stageStartedAt = performance.now();
   for (const unit of orderedUnits) {
     const result = await prepareQuestionFragments({
       unit,
@@ -501,6 +455,8 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
       pageAssetsBySource,
       figures: figuresBySource?.get(unit.sourceRelativePath) ?? [],
       pageLayouts: pageLayoutsBySource?.get(unit.sourceRelativePath) ?? [],
+      sourceCache,
+      maskPartMarkers: usesBoxedMarkers(unit),
     });
     if (result.kind === "unrenderable") {
       failures.push({ unitKey: result.unitKey, page: result.page, reason: result.reason });
@@ -508,29 +464,54 @@ export async function generateStrictSourcePaperPdf({ title, selectedUnits, allUn
       prepared.push({ unit, fragments: result });
     }
   }
-  if (failures.length > 0) throw new SourceUnitRenderError(failures.map((failure) => failure.unitKey), failures);
+  if (timings) {
+    timings.sourcePreparationMs += performance.now() - stageStartedAt;
+    timings.sourcePageRenderCount += sourceCache.sourcePages.size;
+  }
+  if (failures.length > 0) {
+    throw new SourceUnitRenderError(failures.map((failure) => failure.unitKey), failures);
+  }
 
-  const questions = prepared.map(({ unit, fragments }, index) => ({
-    unitKey: unit.unitKey,
-    number: index + 1,
-    fragments: fragments.fragments,
-    afterPage: unit.subjectSlug === "english-literature" ? { kind: "answer-space" as const, marks: unit.totalMarks } : undefined,
-    footer: unit.subjectSlug === "mathematics" ? {
-      text: `Total for Question ${index + 1} = ${unit.totalMarks} marks`,
-      x: GENERATED_PAGE.contentLeft,
-      y: 28,
-      fontSize: 10.5,
-    } : undefined,
-  }));
+  stageStartedAt = performance.now();
+  const questions = prepared.map(({ unit, fragments }, index) => {
+    const questionNumber = index + 1;
+    for (const fragment of fragments.fragments) {
+      for (const marker of fragment.markers ?? []) {
+        marker.text = markerTextForPart(unit, questionNumber, marker.partNumber);
+      }
+      for (const ref of fragment.crossRefs ?? []) {
+        ref.generatedNumber = generatedNumberBySource.get(`${unit.sourceRelativePath}#${Number(ref.sourceNumber)}`);
+      }
+    }
+    return {
+      unitKey: unit.unitKey,
+      number: questionNumber,
+      fragments: fragments.fragments,
+      afterPage: unit.subjectSlug === "english-literature" ? { kind: "answer-space" as const, marks: unit.totalMarks } : undefined,
+      footer: unit.subjectSlug === "mathematics" ? {
+        text: `(Total for Question ${questionNumber} is ${unit.totalMarks} ${unit.totalMarks === 1 ? "mark" : "marks"})`,
+      } : undefined,
+    };
+  });
   const plan = planGeneratedQuestions({ questions });
   if (plan.kind === "unrenderable") {
     throw new SourceUnitRenderError([plan.unitKey], [{ unitKey: plan.unitKey, reason: plan.reason }]);
   }
+  if (timings) timings.layoutPlanningMs += performance.now() - stageStartedAt;
 
   const sources = new Map<string, import("./question-fragments").PreparedFragmentSource>();
   for (const entry of prepared) {
     for (const [fragmentId, source] of entry.fragments.sources) sources.set(fragmentId, source);
   }
-  await paintGeneratedLayout(outputDoc, plan.blocks, sources);
-  return outputDoc.save();
+  stageStartedAt = performance.now();
+  await paintGeneratedLayout(outputDoc, plan.blocks, sources, {
+    totalMarks: orderedUnits.reduce((total, unit) => total + unit.totalMarks, 0),
+    endLabel: orderedUnits[0]?.boardCode === "aqa" ? "END OF QUESTIONS" : "END",
+    showPaperTotal: orderedUnits[0]?.boardCode === "edexcel",
+  });
+  if (timings) timings.paintingMs += performance.now() - stageStartedAt;
+  stageStartedAt = performance.now();
+  const bytes = await outputDoc.save();
+  if (timings) timings.serializationMs += performance.now() - stageStartedAt;
+  return bytes;
 }

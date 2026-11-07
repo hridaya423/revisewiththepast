@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 import { NextRequest } from "next/server";
 
 import {
@@ -5,8 +7,9 @@ import {
   generatePaper,
   parseGeneratePaperRequest,
 } from "@/features/papers/server";
+import { recordGenerationReceipt } from "@/features/papers/builder/infrastructure/convex/generation-receipts";
 import { reservePaperGeneration } from "@/features/mcp/rate-limit";
-import { ValidationError } from "@/shared/application/errors";
+import { ApplicationError, RateLimitError, ValidationError } from "@/shared/application/errors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +38,25 @@ export async function POST(request: NextRequest) {
     const headers = buildGenerationHeaders(result, body.questionMix);
     headers["X-RateLimit-Remaining"] = String(reservation.remainingForCaller);
 
+    const pdfSha256 = createHash("sha256").update(result.pdfBytes).digest("hex");
+    try {
+      const receiptId = await recordGenerationReceipt({
+        pdfSha256,
+        subjectKey: result.subject.key,
+        subjectTier: body.subjectTier,
+        selectedUnitKeys: result.selection.selectedUnits.map((unit) => unit.unitKey),
+        targetMarks: result.resolvedTargetMarks,
+        totalMarks: result.selection.totalMarks,
+        timeMinutes: result.timeMinutes,
+        questionCount: result.selection.selectedUnits.length,
+      });
+      headers["X-Generation-Receipt"] = String(receiptId);
+    } catch (receiptError) {
+      console.error("Could not record generation receipt; saving this paper will be unavailable.", {
+        message: receiptError instanceof Error ? receiptError.message : String(receiptError),
+      });
+    }
+
     return new Response(Buffer.from(result.pdfBytes), { headers });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -51,13 +73,12 @@ export async function POST(request: NextRequest) {
       message,
       stack: error instanceof Error ? error.stack : undefined,
     });
-    const status = typeof error === "object" && error !== null && "status" in error && typeof error.status === "number"
-      ? error.status
-      : 500;
+    const status = error instanceof ApplicationError ? error.status : 500;
     const headers: Record<string, string> = {};
-    if (typeof error === "object" && error !== null && "retryAt" in error && typeof error.retryAt === "number") {
+    if (error instanceof RateLimitError) {
       headers["Retry-After"] = String(Math.max(1, Math.ceil((error.retryAt - Date.now()) / 1000)));
     }
-    return new Response(status >= 500 ? `Failed to generate paper: ${message}` : message, { status, headers });
+    const clientMessage = error instanceof ApplicationError ? error.message : "Failed to generate paper. Try again.";
+    return new Response(clientMessage, { status, headers });
   }
 }

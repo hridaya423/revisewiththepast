@@ -26,6 +26,7 @@ export type QaCheckOptions = {
   selectedUnitCount?: number;
   expectedOrdinalCount?: number;
   selectedUnitMarks?: number[];
+  candidateUnitMarks?: number[];
   coverPage?: {
     totalMarks: number;
     timeMinutes: number;
@@ -168,10 +169,18 @@ async function checkVisibleFurniture(pngPages: RenderedPngPage[], textPages: Ren
   const pngByPage = new Map(pngPages.map((page) => [page.pageNumber, page.png]));
   for (const page of textPages) {
     if (page.pageNumber < CONTENT_PAGE_START) continue;
-    const normalized = page.text.replace(/\s+/g, " ");
+    const normalized = page.text
+      .replace(/\s+/g, " ")
+      .replace(/\s*turn over\.?\s*$/i, "");
     const hasFurniture = badPatterns.some((pattern) => pattern.test(normalized))
       || !includesLegitimateEnglishSourceFooter && /\bend of sources\b/i.test(normalized);
     if (!hasFurniture) continue;
+    if (process.env.PAPER_QA_DEBUG) {
+      const matched = badPatterns.find((pattern) => pattern.test(normalized))
+        ?? (/\bend of sources\b/i.test(normalized) ? /end of sources/i : null);
+      const at = normalized.toLowerCase().search(matched ?? /$/);
+      console.error(`FURNITURE DEBUG page ${page.pageNumber} pattern ${matched} :: "${normalized.slice(Math.max(0, at - 60), at + 120)}"`);
+    }
     const png = pngByPage.get(page.pageNumber);
     if (png) {
       const profile = await computeOuterGutterInkProfile(png);
@@ -259,15 +268,23 @@ function checkQuestionMix(options?: QaCheckOptions): QaFinding[] {
   const low = marks.filter((mark) => mark <= 2).length;
   const medium = marks.filter((mark) => mark > 2 && mark <= 5).length;
   const high = marks.filter((mark) => mark > 5).length;
+  // Only flag a missing band when the eligible pool actually contained it —
+  // whole-question subjects (science, french higher) have no short units to pick.
+  const pool = options?.candidateUnitMarks ?? [];
+  const poolHas = (band: "low" | "medium" | "high") => pool.length === 0
+    || pool.some((mark) => (band === "low" ? mark <= 2 : band === "medium" ? mark > 2 && mark <= 5 : mark > 5));
   const findings: QaFinding[] = [];
-  if (medium === 0 || low === 0 || high === 0) {
+  if ((medium === 0 && poolHas("medium")) || (low === 0 && poolHas("low")) || (high === 0 && poolHas("high"))) {
     findings.push({
       check: "question-mix-skew",
       severity: "warning",
       message: `question mix is skewed: ${low} short, ${medium} medium, ${high} extended`,
     });
   }
-  if (high >= marks.length - 1) {
+  // A lighter mix needs >= 2 non-extended slots; if the pool held fewer than
+  // two short/medium units the heavy outcome was unavoidable (e.g. OCR CS).
+  const poolLightCount = pool.filter((mark) => mark <= 5).length;
+  if (high >= marks.length - 1 && (pool.length === 0 || poolLightCount >= 2)) {
     findings.push({
       check: "question-mix-too-heavy",
       severity: "warning",
@@ -302,9 +319,9 @@ export function checkRenderedQuestionTotals(textPages: RenderedTextPage[], optio
       check: "question-total-mismatch",
       severity: "error",
       message: actual === undefined
-        ? `generated maths question ${questionNumber} has no rendered total; expected ${expected} marks`
+        ? `generated maths question ${questionNumber} has no rendered total; expected ${expected} mark${expected === 1 ? "" : "s"}`
         : actual.count > 1
-          ? `generated maths question ${questionNumber} renders ${actual.count} totals; expected exactly one total of ${expected} marks`
+          ? `generated maths question ${questionNumber} renders ${actual.count} totals; expected exactly one total of ${expected} mark${expected === 1 ? "" : "s"}`
           : `generated maths question ${questionNumber} renders ${Array.from(actual.marks).join(", ")} marks but its validated parts total ${expected}`,
     });
   });
@@ -352,7 +369,7 @@ function checkPageBloat(textPages: RenderedTextPage[], options?: QaCheckOptions)
   return [{
     check: "page-bloat",
     severity: "warning",
-    message: `${contentPageCount} content pages for ${options.totalMarks} marks exceeds expected ceiling ${maxExpectedPages}`,
+    message: `${contentPageCount} content pages for ${options.totalMarks} mark${options.totalMarks === 1 ? "" : "s"} exceeds expected ceiling ${maxExpectedPages}`,
   }];
 }
 

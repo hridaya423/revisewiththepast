@@ -1,0 +1,482 @@
+{
+  "manifests": [
+    {
+      "manifestId": "edexcel-gcse-mathematics-higher-2019-june-paper-1",
+      "revision": "2026-11-01.2",
+      "publicationStatus": "draft",
+      "source": {
+        "sourcePaperId": "edexcel-gcse-mathematics-higher-2019-june-paper-1",
+        "boardCode": "edexcel",
+        "boardLabel": "Pearson Edexcel",
+        "qualification": "gcse",
+        "subjectKey": "edexcel-mathematics-higher",
+        "subjectSlug": "mathematics",
+        "subjectLabel": "Mathematics",
+        "specCode": "1MA1",
+        "componentCode": "1H",
+        "tier": "higher",
+        "year": 2019,
+        "session": "june",
+        "sittingDate": "2019-05-21",
+        "paperCode": "paper-1",
+        "paperTitle": "Paper 1 (Non-Calculator)",
+        "calculator": "not-allowed",
+        "durationMinutes": 90,
+        "totalMarks": 80,
+        "equipment": "Ruler graduated in centimetres and millimetres, protractor, pair of compasses, pen, HB pencil, eraser. Tracing paper may be used."
+      },
+      "provenance": {
+        "questionPdfSha256": "d97b7d2d4325bbd3f78898f00fa2c58feef94d6954a4126ba53105281ccf7f45",
+        "markSchemePdfSha256": "13b5fc5097619d6ba664a243650700fe34919b5832707acec02a66f9c8cecb3d",
+        "questionPaperPaths": [
+          "data/downloads/edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf.pdf"
+        ],
+        "markSchemePaths": [
+          "data/downloads/edexcel/mathematics/higher/001793-2019-paper-1-mark_scheme-june-202019-20ms-pdf.pdf",
+          "data/downloads/edexcel/mathematics/higher/000507-2019-paper-1-mark_scheme-june-202019-20ms-pdf.pdf"
+        ],
+        "inventoryCommand": "npx tsx scripts/shadow-paper-inventory.ts --subject edexcel-mathematics-higher"
+      },
+      "units": [
+        {
+          "questionNumber": 1,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q1",
+          "parts": [
+            {
+              "path": "1(a)",
+              "marks": 2
+            },
+            {
+              "path": "1(b)",
+              "marks": 2
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q01-probability-table@1",
+          "topics": [
+            "probability",
+            "sample space"
+          ]
+        },
+        {
+          "questionNumber": 2,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q2",
+          "parts": [
+            {
+              "path": "2(a)",
+              "marks": 3
+            },
+            {
+              "path": "2(b)",
+              "marks": 2
+            }
+          ],
+          "marks": 5,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q02-recipe-packs@1",
+          "topics": [
+            "ratio and proportion",
+            "problem solving"
+          ]
+        },
+        {
+          "questionNumber": 3,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q3",
+          "parts": [
+            {
+              "path": "3",
+              "marks": 2
+            }
+          ],
+          "marks": 2,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q03-hcf@1",
+          "topics": [
+            "number",
+            "factors and multiples"
+          ]
+        },
+        {
+          "questionNumber": 4,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q4",
+          "parts": [
+            {
+              "path": "4",
+              "marks": 2
+            }
+          ],
+          "marks": 2,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q04-cylinder-elevations@1",
+          "topics": [
+            "geometry",
+            "plans and elevations"
+          ]
+        },
+        {
+          "questionNumber": 5,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q5",
+          "parts": [
+            {
+              "path": "5",
+              "marks": 3
+            }
+          ],
+          "marks": 3,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q05-reflect-translate@2",
+          "topics": [
+            "geometry",
+            "transformations"
+          ]
+        },
+        {
+          "questionNumber": 6,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q6",
+          "parts": [
+            {
+              "path": "6",
+              "marks": 4
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q06-pens-ratio@1",
+          "topics": [
+            "ratio and proportion",
+            "problem solving"
+          ]
+        },
+        {
+          "questionNumber": 7,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q7",
+          "parts": [
+            {
+              "path": "7",
+              "marks": 4
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q07-rectangles@1",
+          "topics": [
+            "geometry",
+            "perimeter and area"
+          ]
+        },
+        {
+          "questionNumber": 8,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q8",
+          "parts": [
+            {
+              "path": "8(a)",
+              "marks": 2
+            },
+            {
+              "path": "8(b)",
+              "marks": 1
+            },
+            {
+              "path": "8(c)",
+              "marks": 1
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q08-estimation-powers@2",
+          "topics": [
+            "number",
+            "estimation",
+            "indices",
+            "significant figures"
+          ]
+        },
+        {
+          "questionNumber": 9,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q9",
+          "parts": [
+            {
+              "path": "9",
+              "marks": 3
+            }
+          ],
+          "marks": 3,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q09-mixed-numbers@1",
+          "topics": [
+            "number",
+            "fractions"
+          ]
+        },
+        {
+          "questionNumber": 10,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q10",
+          "parts": [
+            {
+              "path": "10",
+              "marks": 2
+            }
+          ],
+          "marks": 2,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q10-graphical-simultaneous@1",
+          "topics": [
+            "algebra",
+            "simultaneous equations",
+            "graphs"
+          ]
+        },
+        {
+          "questionNumber": 11,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q11",
+          "parts": [
+            {
+              "path": "11(a)",
+              "marks": 2
+            },
+            {
+              "path": "11(b)",
+              "marks": 1
+            },
+            {
+              "path": "11(c)",
+              "marks": 1
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q11-coach-ages@1",
+          "topics": [
+            "statistics",
+            "averages and spread",
+            "comparing distributions"
+          ]
+        },
+        {
+          "questionNumber": 12,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q12",
+          "parts": [
+            {
+              "path": "12",
+              "marks": 3
+            }
+          ],
+          "marks": 3,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q12-sphere-volumes@2",
+          "topics": [
+            "ratio and proportion",
+            "percentages",
+            "fractions"
+          ]
+        },
+        {
+          "questionNumber": 13,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q13",
+          "parts": [
+            {
+              "path": "13",
+              "marks": 2
+            }
+          ],
+          "marks": 2,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q13-parity-proof@2",
+          "topics": [
+            "algebra",
+            "proof"
+          ]
+        },
+        {
+          "questionNumber": 14,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q14",
+          "parts": [
+            {
+              "path": "14",
+              "marks": 2
+            }
+          ],
+          "marks": 2,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q14-exact-trig@2",
+          "topics": [
+            "trigonometry",
+            "exact values",
+            "surds"
+          ]
+        },
+        {
+          "questionNumber": 15,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q15",
+          "parts": [
+            {
+              "path": "15",
+              "marks": 4
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q15-cone-hemisphere@1",
+          "topics": [
+            "geometry",
+            "volume",
+            "\u03c0"
+          ]
+        },
+        {
+          "questionNumber": 16,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q16",
+          "parts": [
+            {
+              "path": "16(a)",
+              "marks": 2
+            },
+            {
+              "path": "16(b)",
+              "marks": 2
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q16-combination-lock@1",
+          "topics": [
+            "probability",
+            "counting strategies"
+          ]
+        },
+        {
+          "questionNumber": 17,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q17",
+          "parts": [
+            {
+              "path": "17",
+              "marks": 4
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q17-ratio-quadratic@1",
+          "topics": [
+            "algebra",
+            "ratio",
+            "quadratic equations"
+          ]
+        },
+        {
+          "questionNumber": 18,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q18",
+          "parts": [
+            {
+              "path": "18(a)",
+              "marks": 2
+            },
+            {
+              "path": "18(b)",
+              "marks": 3
+            }
+          ],
+          "marks": 5,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q18-surds@1",
+          "topics": [
+            "number",
+            "surds",
+            "indices"
+          ]
+        },
+        {
+          "questionNumber": 19,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q19",
+          "parts": [
+            {
+              "path": "19(i)",
+              "marks": 2
+            },
+            {
+              "path": "19(ii)",
+              "marks": 1
+            }
+          ],
+          "marks": 3,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q19-completing-square@1",
+          "topics": [
+            "algebra",
+            "completing the square",
+            "turning points"
+          ]
+        },
+        {
+          "questionNumber": 20,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q20",
+          "parts": [
+            {
+              "path": "20",
+              "marks": 4
+            }
+          ],
+          "marks": 4,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q20-proportion@1",
+          "topics": [
+            "ratio and proportion",
+            "direct and inverse proportion"
+          ]
+        },
+        {
+          "questionNumber": 21,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q21",
+          "parts": [
+            {
+              "path": "21(a)",
+              "marks": 2
+            },
+            {
+              "path": "21(b)",
+              "marks": 5
+            }
+          ],
+          "marks": 7,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q21-functions@1",
+          "topics": [
+            "algebra",
+            "functions",
+            "inverse functions",
+            "composite functions"
+          ]
+        },
+        {
+          "questionNumber": 22,
+          "sourceUnitKey": "edexcel/mathematics/higher/001780-2019-paper-1-question_paper-june-202019-20qp-pdf#q22",
+          "parts": [
+            {
+              "path": "22",
+              "marks": 5
+            }
+          ],
+          "marks": 5,
+          "classification": "template",
+          "templateRevision": "edexcel-1ma1h-2019-06-q22-counters-probability@2",
+          "topics": [
+            "probability",
+            "algebra",
+            "simultaneous equations"
+          ]
+        }
+      ],
+      "review": {
+        "mathematics": {
+          "status": "approved",
+          "reviewer": "Claude Opus 5.5 (AI maths review)",
+          "reviewedAt": "2026-11-01",
+          "notes": "Every unit reproduces the source question and scheme; 100 fixed seeds per template pass independent verification. A human maths teacher should spot-check variants before wide release."
+        },
+        "visual": {
+          "status": "pending"
+        }
+      }
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { ActionButton } from "@/app/_components/ui/action-button";
+import { useState } from "react";
 
 type GenerationStateProps = {
   canGenerate: boolean;
@@ -12,26 +13,22 @@ type GenerationStateProps = {
 };
 
 export function GenerationState({ canGenerate, isPending, generationMode, paperCount, compact = false, onGenerate }: GenerationStateProps) {
-  const paperLabel = paperCount > 1 ? `Generate ${paperCount} papers` : "Generate paper";
-  const bothLabel = paperCount > 1 ? `Generate ${paperCount} papers + mark schemes` : "Generate paper + mark scheme";
+  const [includeMarkScheme, setIncludeMarkScheme] = useState(false);
+  const paperLabel = paperCount > 1 ? `Create ${paperCount} papers` : "Create paper";
 
   return (
-    <div className={`generation-actions ${compact ? "grid grid-cols-2 gap-2" : "grid gap-2.5"}`}>
+    <div className={`generation-actions grid gap-3 ${compact ? "grid-cols-1" : ""}`}>
+      <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-text-secondary">
+        <input type="checkbox" checked={includeMarkScheme} onChange={(event) => setIncludeMarkScheme(event.target.checked)} disabled={isPending} className="ui-checkbox shrink-0" />
+        Include a mark scheme
+      </label>
       <ActionButton
-        state={isPending && generationMode === "paper" ? "pending" : "idle"}
+        state={isPending && generationMode ? "pending" : "idle"}
         idleLabel={paperLabel}
         pendingLabel="Building paper"
-        onClick={() => onGenerate(false)}
+        onClick={() => onGenerate(includeMarkScheme)}
         disabled={!canGenerate || isPending}
-        className={`${compact ? "col-span-2 min-h-12 px-3 text-[0.68rem]" : "min-h-12 w-full px-4 text-[0.76rem]"} rounded-md bg-accent font-bold text-white hover:bg-accent-deep disabled:opacity-40`}
-      />
-      <ActionButton
-        state={isPending && generationMode === "paper-and-mark-scheme" ? "pending" : "idle"}
-        idleLabel={bothLabel}
-        pendingLabel="Building both"
-        onClick={() => onGenerate(true)}
-        disabled={!canGenerate || isPending}
-        className={`${compact ? "col-span-2 mx-auto min-h-10 px-3 text-[0.61rem]" : "min-h-11 w-full px-3 text-[0.68rem]"} rounded-md border border-text/15 bg-transparent font-bold text-accent hover:border-accent/50 hover:bg-white/55 disabled:opacity-40`}
+        className="min-h-12 w-full rounded-md bg-accent px-4 text-sm font-bold text-white hover:bg-accent-deep disabled:opacity-40"
       />
     </div>
   );

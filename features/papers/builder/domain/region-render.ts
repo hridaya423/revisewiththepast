@@ -141,11 +141,16 @@ export function buildUnitRenderPlan(
 ): RegionCrop[] {
   const rawQuestionSpans = dedupeSpans(unit.parts.flatMap((part) => part.regionSpans ?? []));
   const ownsQuestionSpan = (span: RegionSpan) => unit.parts.some((part) => (part.pageNumber === undefined || part.pageNumber <= span.pageNumber)
+    && (part.pageNumbers.length === 0 || part.pageNumbers.includes(span.pageNumber))
     && part.regionSpans?.some((candidate) => candidate.pageNumber === span.pageNumber
       && candidate.yTop === span.yTop
       && candidate.yBottom === span.yBottom));
   const questionSpans = rawQuestionSpans.filter(ownsQuestionSpan);
-  const leadingRegionSpans = rawQuestionSpans.filter((span) => !ownsQuestionSpan(span));
+  const leadingRegionSpans = rawQuestionSpans.filter((span) => unit.parts.some((part) => part.pageNumber !== undefined
+    && span.pageNumber < part.pageNumber
+    && part.regionSpans?.some((candidate) => candidate.pageNumber === span.pageNumber
+      && candidate.yTop === span.yTop
+      && candidate.yBottom === span.yBottom)));
 
   const referenced = new Set(getReferencedFigureLabels(unit));
 
@@ -232,6 +237,15 @@ export function buildUnitRenderPlan(
     const layout = layoutByPage.get(entry.pageNumber);
     if (!layout) continue;
     const cropBox = cropBoxForSpan({ yTop: entry.top, yBottom: entry.bottom }, layout);
+    const anchor = entry.kind === "question"
+      ? unit.parts.find((part) => part.identityAnchor?.pageNumber === entry.pageNumber)?.identityAnchor
+      : null;
+    if (anchor) {
+      cropBox.left = Math.max(0, Math.min(cropBox.left, anchor.numberBounds.x0, anchor.promptBounds.x0));
+      cropBox.right = Math.min(layout.pageWidth, Math.max(cropBox.right, anchor.numberBounds.x1, anchor.promptBounds.x1));
+      cropBox.bottom = Math.max(0, Math.min(cropBox.bottom, anchor.numberBounds.y0, anchor.promptBounds.y0));
+      cropBox.top = Math.min(layout.pageHeight, Math.max(cropBox.top, anchor.numberBounds.y1, anchor.promptBounds.y1));
+    }
     if (cropBox.top - cropBox.bottom < 8) continue;
     crops.push({
       unitKey: unit.unitKey,

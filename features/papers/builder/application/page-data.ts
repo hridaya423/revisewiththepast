@@ -1,5 +1,4 @@
 import type { SubjectTierKey } from "@/shared/domain/subject";
-import { getTaggingCountsFromConvex } from "../../infrastructure/question-bank";
 import { getPaperMakerSubject, PAPER_MAKER_SUBJECTS } from "../domain/subjects";
 
 export async function getPaperMakerPageData(input: {
@@ -11,20 +10,14 @@ export async function getPaperMakerPageData(input: {
     ? input.requestedTier as SubjectTierKey
     : undefined;
   const initialSubjectKey = getPaperMakerSubject(input.requestedSubject)?.key;
-  const taggingCounts = await getTaggingCountsFromConvex();
-  const countsByBoardSubject = new Map(
-    taggingCounts.byBoardSubject.map((row) => [`${row.boardCode}::${row.subjectSlug}`, row]),
-  );
-
   const subjectOptions = PAPER_MAKER_SUBJECTS.flatMap((subject) => {
     if (!subject.generationEnabled) return [];
-      const counts = countsByBoardSubject.get(`${subject.boardCode}::${subject.subjectSlug}`);
       return {
         key: subject.key,
         label: subject.label,
         boardLabel: subject.boardLabel,
         description: subject.description,
-        taggedQuestionUnits: counts?.taggedQuestionParts ?? 0,
+        taggedQuestionUnits: 0,
         topicSelectionEnabled: subject.topicSelectionEnabled,
         generationEnabled: subject.generationEnabled,
         availabilityNote: subject.availabilityNote,

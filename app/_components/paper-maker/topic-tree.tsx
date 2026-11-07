@@ -65,9 +65,9 @@ export function TopicNode({
           />
           <span className="flex min-w-0 flex-1 items-center">
             {depth > 0 ? <span className="shrink-0" style={{ width: `${depth * 8}px` }} aria-hidden="true" /> : null}
-            <span data-topic-label className="min-w-0 text-[0.8rem] font-medium leading-5 text-text">{node.label}</span>
+            <span data-topic-label className="min-w-0 text-sm font-medium leading-5 text-text">{node.label}</span>
           </span>
-          <span className="ml-3 shrink-0 font-mono text-[0.61rem] tabular-nums text-text-muted">
+          <span className="ml-3 shrink-0 font-mono text-sm tabular-nums text-text-muted">
             {node.questionUnitCount} question{node.questionUnitCount === 1 ? "" : "s"}
           </span>
         </label>

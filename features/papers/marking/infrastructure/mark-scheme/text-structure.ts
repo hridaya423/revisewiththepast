@@ -24,6 +24,7 @@ export type CachedPdfPage = {
   pageHeight?: number;
   regionTop?: number;
   regionBottom?: number;
+  regionNextBottom?: number;
 };
 
 export function normalizeInlineText(text: string) {
@@ -154,7 +155,15 @@ function detectLeftColumnQuestionNumber(lines: StructuredPdfLine[]): string | nu
 }
 
 export function pageHasQuestionStart(page: CachedPdfPage, questionNumber: string) {
-  return page.lines.some((line) => detectLeftColumnQuestionNumber([line]) === questionNumber);
+  const normalizedQuestionNumber = normalizeQuestionNumber(questionNumber);
+  if (page.lines.some((line) => detectLeftColumnQuestionNumber([line]) === normalizedQuestionNumber)) return true;
+  if (!page.lines.some((line) => /\bQuestion\b.*\bAnswer\b.*\bMark\b/i.test(line.fullText))) return false;
+  return page.lines.some((line) => {
+    const match = line.leftText.trim().match(/^(\d{1,2})(?:\s|$)/);
+    return match !== null
+      && normalizeQuestionNumber(match[1]) === normalizedQuestionNumber
+      && Boolean(line.markText || line.guidanceText);
+  });
 }
 
 function escapeRegExp(value: string) {
@@ -162,7 +171,7 @@ function escapeRegExp(value: string) {
 }
 
 function edexcelScienceQuestionMarker(questionNumber: string) {
-  return `0?${escapeRegExp(normalizeQuestionNumber(questionNumber))}\\s*\\(\\s*[a-z]\\s*\\)`;
+  return `(?:\\*\\s*|Q\\s*)?0?${escapeRegExp(normalizeQuestionNumber(questionNumber))}\\s*(?:\\(\\s*[a-z]\\s*\\)|[a-z]\\b)`;
 }
 
 export function findEdexcelScienceQuestionStart(text: string, questionNumber: string) {
@@ -195,7 +204,7 @@ export function detectOcrComputerScienceQuestionNumbers(page: CachedPdfPage) {
 
   for (const line of page.lines) {
     const match = line.leftText.trim().match(/^(\d{1,2})$/);
-    if (match && (line.answerText || line.markText || line.schemeText || line.guidanceText)) {
+    if (match && (line.markText || line.guidanceText)) {
       numbers.add(normalizeQuestionNumber(match[1]));
     }
   }

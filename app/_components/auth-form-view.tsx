@@ -46,7 +46,7 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
               </div>
               <div>
                 <p className="text-[0.92rem] font-semibold text-text">Authentication complete</p>
-                <p className="mt-1 flex items-center gap-2 text-[0.8rem] text-text-muted">
+                <p className="mt-1 flex items-center gap-2 text-sm text-text-muted">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   Redirecting securely
                 </p>
@@ -59,7 +59,7 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                   type="button"
                   onClick={() => actions.switchMode("sign-in")}
                   aria-pressed={mode === "sign-in"}
-                  className={`relative -mb-px border-b-2 px-0 pb-3 text-[0.84rem] font-semibold transition-colors ${
+                  className={`relative -mb-px border-b-2 px-0 pb-3 text-sm font-semibold transition-colors ${
                     mode === "sign-in"
                       ? "border-accent text-text"
                       : "border-transparent text-text-muted hover:text-text"
@@ -71,7 +71,7 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                   type="button"
                   onClick={() => actions.switchMode("sign-up")}
                   aria-pressed={mode === "sign-up"}
-                  className={`relative -mb-px border-b-2 px-0 pb-3 text-[0.84rem] font-semibold transition-colors ${
+                  className={`relative -mb-px border-b-2 px-0 pb-3 text-sm font-semibold transition-colors ${
                     mode === "sign-up"
                       ? "border-accent text-text"
                       : "border-transparent text-text-muted hover:text-text"
@@ -83,14 +83,14 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
 
               <form onSubmit={actions.submit} className="pt-8">
                 {serverError && (
-                  <div className="mb-6 border-l-2 border-danger bg-danger-soft px-4 py-3 text-[0.85rem] leading-6 text-danger" role="alert">
+                  <div className="mb-6 border-l-2 border-danger bg-danger-soft px-4 py-3 text-sm leading-6 text-danger" role="alert">
                     {serverError}
                   </div>
                 )}
 
                 {mode === "sign-up" && (
                   <div className="mb-4">
-                    <label htmlFor="auth-name" className="mb-1.5 block text-[0.72rem] font-semibold text-text-secondary">
+                    <label htmlFor="auth-name" className="mb-1.5 block text-sm font-semibold text-text-secondary">
                       Name
                     </label>
                     <div className="relative">
@@ -110,7 +110,7 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                           actions.blurField("nameField");
                         }}
                         placeholder="Your name"
-                        className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pl-11 text-[0.84rem] text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
+                        className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pl-11 text-sm text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
                           nameField.touched && nameField.error
                             ? "border-danger/40 focus:border-danger"
                             : "border-text/10 focus:border-accent"
@@ -119,13 +119,13 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                       <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" strokeWidth={1.5} />
                     </div>
                     {nameField.touched && nameField.error ? (
-                      <p id="auth-name-error" className="mt-1.5 text-[0.72rem] text-danger">{nameField.error}</p>
+                      <p id="auth-name-error" className="mt-1.5 text-sm text-danger">{nameField.error}</p>
                     ) : null}
                   </div>
                 )}
 
                 <div className="mb-4">
-                  <label htmlFor="auth-email" className="mb-1.5 block text-[0.72rem] font-semibold text-text-secondary">
+                  <label htmlFor="auth-email" className="mb-1.5 block text-sm font-semibold text-text-secondary">
                     Email
                   </label>
                   <div className="relative">
@@ -145,7 +145,7 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                         actions.blurField("emailField");
                       }}
                       placeholder="you@example.com"
-                      className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pl-11 text-[0.84rem] text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
+                      className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pl-11 text-sm text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
                         emailField.touched && emailField.error
                           ? "border-danger/40 focus:border-danger"
                           : "border-text/10 focus:border-accent"
@@ -154,12 +154,12 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                     <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-text-subtle" strokeWidth={1.5} />
                   </div>
                   {emailField.touched && emailField.error ? (
-                    <p id="auth-email-error" className="mt-1.5 text-[0.72rem] text-danger">{emailField.error}</p>
+                    <p id="auth-email-error" className="mt-1.5 text-sm text-danger">{emailField.error}</p>
                   ) : null}
                 </div>
 
                 <div className="mb-1">
-                  <label htmlFor="auth-password" className="mb-1.5 block text-[0.72rem] font-semibold text-text-secondary">
+                  <label htmlFor="auth-password" className="mb-1.5 block text-sm font-semibold text-text-secondary">
                     Password
                   </label>
                   <div className="relative">
@@ -179,7 +179,7 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                         actions.blurField("passwordField");
                       }}
                       placeholder={mode === "sign-up" ? "At least 8 characters" : "Enter your password"}
-                      className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pr-11 text-[0.84rem] text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
+                      className={`w-full rounded-[0.7rem] border bg-bg-soft px-4 py-3 pr-11 text-sm text-text outline-none placeholder:text-text-subtle focus:bg-white focus:shadow-[0_0_0_3px_var(--accent-glow)] ${
                         passwordField.touched && passwordField.error
                           ? "border-danger/40 focus:border-danger"
                           : "border-text/10 focus:border-accent"
@@ -190,17 +190,17 @@ export function AuthFormView({ state, mode, isSubmitting, showPassword, refs, ac
                     </button>
                   </div>
                   {passwordField.touched && passwordField.error ? (
-                    <p id="auth-password-error" className="mt-1.5 text-[0.72rem] text-danger">{passwordField.error}</p>
+                    <p id="auth-password-error" className="mt-1.5 text-sm text-danger">{passwordField.error}</p>
                   ) : null}
                   {mode === "sign-up" && !passwordField.touched && (
-                    <p id="auth-password-help" className="mt-1.5 text-[0.72rem] text-text-subtle">8 characters minimum</p>
+                    <p id="auth-password-help" className="mt-1.5 text-sm text-text-subtle">8 characters minimum</p>
                   )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="btn-press group mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-[0.7rem] bg-accent px-5 text-[0.8rem] font-bold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
+                  className="btn-press group mt-5 flex min-h-12 w-full items-center justify-center gap-2 rounded-[0.7rem] bg-accent px-5 text-sm font-bold text-white hover:bg-accent-deep disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 animate-spin" strokeWidth={2} />

@@ -16,8 +16,8 @@ async function textItems(bytes: Uint8Array) {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
     const page = await pdf.getPage(pageNumber);
     const content = await page.getTextContent();
-    pages.push(content.items.filter((item): item is typeof item & { str: string; transform: number[]; height: number } => (
-      "str" in item && "transform" in item && "height" in item
+    pages.push(content.items.filter((item): item is typeof item & { str: string; transform: number[]; height: number; width: number } => (
+      "str" in item && "transform" in item && "height" in item && "width" in item
     )));
   }
   return pages;
@@ -139,6 +139,115 @@ describe("paintGeneratedLayout", () => {
     expect(numbers[0]?.height).toBeCloseTo(GENERATED_PAGE.numberFontSize, 1);
   });
 
+  it("paints typeset sources that carry only a fragment ID and page", async () => {
+    const outputDoc = await PDFDocument.create();
+    const source = await sourceMaterial();
+    const sources = new Map([["fragment-1", { fragmentId: "fragment-1", sourcePdfPage: source.sourcePdfPage }]]);
+
+    const pages = await paintGeneratedLayout(outputDoc, [block()], sources);
+
+    expect(pages).toHaveLength(1);
+    expect((await textItems(await outputDoc.save())).flat().some((item) => item.str === "7")).toBe(true);
+  });
+
+  it("repaints the generated marker as boxed digits inside the masked source number strip", async () => {
+    const outputDoc = await PDFDocument.create();
+    const source = await sourceMaterial();
+    const identityFragment = {
+      ...block().fragments[0],
+      identity: {
+        pageNumber: 1,
+        numberBounds: { x0: 130, x1: 170, y0: 380, y1: 394 },
+        promptBaseline: 385,
+        promptBounds: { x0: 180, x1: 280, y0: 372, y1: 396 },
+      },
+      markers: [{
+        numberBounds: { x0: 130, x1: 170, y0: 380, y1: 394 },
+        partNumber: "1",
+        text: "02.1",
+      }],
+    };
+
+    await paintGeneratedLayout(outputDoc, [block({ fragments: [identityFragment] })], sourceMap(source));
+
+    const pages = await textItems(await outputDoc.save());
+    const glyphs = pages[0]?.map((item) => item.str.replace(/\s+/g, "")) ?? [];
+    expect(glyphs).toEqual(expect.arrayContaining(["0", "2", ".", "1"]));
+    expect(pages[0]?.filter((item) => item.str === "7")).toHaveLength(0);
+    const stripLeft = 120 + 2;
+    const stripRight = 120 + (170 + 4 - 12);
+    const marker = pages[0]?.find((item) => item.str === "0");
+    expect(marker).toBeDefined();
+    expect(marker!.transform[4]).toBeGreaterThanOrEqual(stripLeft);
+    expect(marker!.transform[4]).toBeLessThanOrEqual(stripRight);
+    const stripHeight = 394 - 380 + 7;
+    const boxHeight = Math.min(stripHeight - 1, stripHeight * 0.9);
+    const stripBottom = 420 + (380 - 3.5 - 20);
+    const boxBottom = stripBottom + (stripHeight - boxHeight) / 2;
+    const baseline = boxBottom + (boxHeight - boxHeight * 0.62 * 0.72) / 2;
+    expect(marker!.transform[5]).toBeCloseTo(baseline, 1);
+  });
+
+  it("repaints a two-cell marker for english literature", async () => {
+    const outputDoc = await PDFDocument.create();
+    const source = await sourceMaterial();
+    const identityFragment = {
+      ...block().fragments[0],
+      identity: {
+        pageNumber: 1,
+        numberBounds: { x0: 130, x1: 170, y0: 380, y1: 394 },
+        promptBaseline: 385,
+        promptBounds: { x0: 180, x1: 280, y0: 372, y1: 396 },
+      },
+      markers: [{
+        numberBounds: { x0: 130, x1: 170, y0: 380, y1: 394 },
+        partNumber: null,
+        text: "01",
+      }],
+    };
+
+    await paintGeneratedLayout(outputDoc, [block({ fragments: [identityFragment] })], sourceMap(source));
+
+    const pages = await textItems(await outputDoc.save());
+    const digits = pages[0]?.map((item) => item.str.replace(/\s+/g, "")) ?? [];
+    expect(digits).toEqual(expect.arrayContaining(["0", "1"]));
+    expect(pages[0]?.filter((item) => item.str === "7")).toHaveLength(0);
+  });
+
+  it("redraws only cross-refs inside the fragment crop", async () => {
+    const outputDoc = await PDFDocument.create();
+    const source = await sourceMaterial();
+    const fragment = {
+      ...block().fragments[0],
+      crossRefs: [
+        // Inside the crop [12,20,180,140]: a "(Total for Question 5)" digit.
+        { bounds: { x0: 60, x1: 68, y0: 50, y1: 60 }, baselineY: 52, fontHeight: 10, sourceNumber: "5" },
+        // Outside the crop (below it): would paint a lone digit into whitespace.
+        { bounds: { x0: 60, x1: 68, y0: 4, y1: 12 }, baselineY: 6, fontHeight: 10, sourceNumber: "9" },
+      ],
+    };
+
+    await paintGeneratedLayout(outputDoc, [block({ fragments: [fragment] })], sourceMap(source));
+
+    const pages = await textItems(await outputDoc.save());
+    const items = pages[0] ?? [];
+    expect(items.filter((item) => item.str === "5")).toHaveLength(1);
+    expect(items.filter((item) => item.str === "9")).toHaveLength(0);
+  });
+
+  it("paints the maths total footer with its rule directly below the last fragment", async () => {
+    const outputDoc = await PDFDocument.create();
+    const source = await sourceMaterial();
+    const footerText = "Total for Question 7 = 3 marks";
+
+    await paintGeneratedLayout(outputDoc, [block({
+      footer: { text: footerText, outputPageIndex: 0, x: GENERATED_PAGE.contentX, y: 380, ruleY: 394, fontSize: 10.5 },
+    })], sourceMap(source));
+
+    const pages = await textItems(await outputDoc.save());
+    expect(pages[0]?.filter((item) => item.str === footerText)).toHaveLength(1);
+  });
+
   it("preserves existing pages and treats output page indexes as relative content indexes", async () => {
     const outputDoc = await PDFDocument.create();
     outputDoc.addPage([300, 300]);
@@ -206,7 +315,7 @@ describe("paintGeneratedLayout", () => {
     const continuation = { ...first.fragments[0], fragmentId: "fragment-2", kind: "continuation" as const, outputPageIndex: 1, y: 300 };
     await paintGeneratedLayout(outputDoc, [block({
       fragments: [first.fragments[0], continuation],
-      footer: { text: "Total for Question 1 = 2 marks", outputPageIndex: 1, x: 42, y: 28, fontSize: 10.5 },
+      footer: { text: "Total for Question 1 = 2 marks", outputPageIndex: 1, x: 42, y: 28, ruleY: 42, fontSize: 10.5 },
     })], new Map([
       ...sourceMap(source),
       ["fragment-2", { fragmentId: "fragment-2", candidate: { pdfUrl: "fixture.pdf", sourcePageIndex: 0 }, sourceDoc: source.sourceDoc, sourcePdfPage: source.sourcePdfPage }],

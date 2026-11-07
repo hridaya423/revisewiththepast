@@ -20,10 +20,12 @@ export function InlineNotice({ message, tone = "failure", action, className = ""
   const Icon = tone === "failure" ? CircleAlert : tone === "review" ? CircleDot : tone === "confirmed" ? Check : Clock3;
 
   return (
-    <div role={tone === "failure" ? "alert" : "status"} className={`flex items-start gap-2 border px-3 py-2.5 text-[0.72rem] leading-5 ${toneClasses[tone]} ${className}`}>
+    <div role={tone === "failure" ? "alert" : "status"} className={`flex items-start gap-3 rounded-md border px-4 py-3 text-sm leading-6 ${toneClasses[tone]} ${className}`}>
       <Icon className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-      <span className="min-w-0 flex-1">{message}</span>
-      {action ? <button type="button" onClick={action.onSelect} className="shrink-0 font-bold underline underline-offset-2">{action.label}</button> : null}
+      <div className="min-w-0 flex-1">
+        <p>{message}</p>
+        {action ? <button type="button" onClick={action.onSelect} className="mt-1 min-h-11 text-left font-bold underline underline-offset-2">{action.label}</button> : null}
+      </div>
     </div>
   );
 }

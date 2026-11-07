@@ -37,7 +37,7 @@ export function drawGeneratedAnswerSpacePage(outputDoc: PDFDocument, questionNum
   const black = rgb(0.1, 0.1, 0.1);
   const grey = rgb(0.72, 0.72, 0.72);
 
-  page.drawText(`Answer space for Question ${questionNumber} (${marks} marks)`, { x: 50, y: 784, size: 12, color: black });
+  page.drawText(`Answer space for Question ${questionNumber} (${marks} ${marks === 1 ? "mark" : "marks"})`, { x: 50, y: 784, size: 12, color: black });
   for (let y = 742; y >= 72; y -= 28) {
     page.drawLine({ start: { x: 50, y }, end: { x: 545, y }, thickness: 0.6, color: grey });
   }

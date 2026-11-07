@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { questionIdentityAnchorValidator } from "./questionIdentityAnchor";
+import { shadowSourceValidator } from "./model/shadowSource";
 
 export default defineSchema({
   examBoards: defineTable({
@@ -168,6 +169,15 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_board_subject", ["boardCode", "subjectSlug"]),
 
+  questionBankPaperSnapshots: defineTable({
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+    sourceRelativePath: v.string(),
+    payloadJson: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_board_subject", ["boardCode", "subjectSlug"]),
+
   taggedQuestionParts: defineTable({
     taggedPaperId: v.id("taggedPapers"),
     questionId: v.string(),
@@ -306,10 +316,15 @@ export default defineSchema({
       sourceRelativePath: v.optional(v.string()),
       examReference: v.optional(v.string()),
     })),
+    savedPaperTitle: v.optional(v.string()),
+    savedPaperPdfUrl: v.optional(v.string()),
+    savedPaperQuestionCount: v.optional(v.number()),
+    summary: v.optional(v.any()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_owner", ["ownerId"])
+    .index("by_owner_updated_at", ["ownerId", "updatedAt"])
     .index("by_owner_idempotency_key", ["ownerId", "idempotencyKey"])
     .index("by_board_subject", ["boardCode", "subjectSlug"])
     .index("by_subject_key", ["subjectKey"])
@@ -335,14 +350,16 @@ export default defineSchema({
   markingResponsePages: defineTable({
     submissionId: v.id("markingSubmissions"),
     uploadKey: v.optional(v.string()),
+    fileId: v.optional(v.id("markingFiles")),
     questionKey: v.string(),
+    questionKeys: v.optional(v.array(v.string())),
     questionNumber: v.optional(v.string()),
     questionPartNumber: v.optional(v.string()),
     pageLabel: v.optional(v.string()),
     fileName: v.string(),
     contentType: v.string(),
     fileSize: v.number(),
-    cdnUploadId: v.string(),
+    cdnUploadId: v.optional(v.string()),
     sourceImageUrl: v.string(),
     scriptPageNumber: v.optional(v.number()),
     ocrText: v.optional(v.string()),
@@ -353,13 +370,24 @@ export default defineSchema({
     .index("by_submission_upload_key", ["submissionId", "uploadKey"])
     .index("by_submission_question", ["submissionId", "questionKey"]),
 
+  markingFiles: defineTable({
+    ownerId: v.string(),
+    storageId: v.id("_storage"),
+    sha256: v.string(),
+    fileName: v.string(),
+    contentType: v.string(),
+    size: v.number(),
+    createdAt: v.number(),
+  }).index("by_owner_hash", ["ownerId", "sha256"]),
+
   markingImportAssets: defineTable({
     ownerId: v.string(),
     importKey: v.string(),
     pageNumber: v.number(),
     fileName: v.string(),
     fileSize: v.number(),
-    cdnUploadId: v.string(),
+    cdnUploadId: v.optional(v.string()),
+    fileId: v.optional(v.id("markingFiles")),
     sourceImageUrl: v.string(),
     ocrText: v.optional(v.string()),
     createdAt: v.number(),
@@ -434,10 +462,13 @@ export default defineSchema({
     pdfCdnUploadId: v.string(),
     pdfUrl: v.string(),
     questionCount: v.number(),
+    generationKind: v.optional(v.union(v.literal("custom"), v.literal("shadow"))),
+    shadowVariantId: v.optional(v.id("shadowPaperVariants")),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("by_owner", ["ownerId"])
+    .index("by_owner_updated_at", ["ownerId", "updatedAt"])
     .index("by_owner_import_key", ["ownerId", "importKey"])
     .index("by_subject", ["subjectKey"]),
 
@@ -460,10 +491,134 @@ export default defineSchema({
     isChoiceQuestion: v.optional(v.boolean()),
     canonicalLeafIds: v.optional(v.array(v.string())),
     topicLabels: v.optional(v.array(v.string())),
+    shadowQuestionVariantId: v.optional(v.id("shadowQuestionVariants")),
     createdAt: v.number(),
   })
     .index("by_saved_paper", ["savedPaperId"])
     .index("by_saved_paper_order", ["savedPaperId", "displayOrder"]),
+
+  generationWorkers: defineTable({
+    workerId: v.string(),
+    seenAt: v.number(),
+  })
+    .index("by_worker_id", ["workerId"])
+    .index("by_seen_at", ["seenAt"]),
+
+  generationJobs: defineTable({
+    jobId: v.string(),
+    requestKey: v.string(),
+    guestHash: v.string(),
+    ownerId: v.optional(v.string()),
+    requestJson: v.string(),
+    snapshotJson: v.string(),
+    status: v.string(),
+    workerId: v.optional(v.string()),
+    leaseExpiresAt: v.number(),
+    attempts: v.number(),
+    cancelRequested: v.boolean(),
+    artifacts: v.array(v.object({ part: v.string(), storageId: v.id("_storage"), fileName: v.string(), contentType: v.optional(v.union(v.literal("application/pdf"), v.literal("image/png"))) })),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_job_id", ["jobId"])
+    .index("by_guest_request", ["guestHash", "requestKey"])
+    .index("by_status_lease", ["status", "leaseExpiresAt"])
+    .index("by_expires_at", ["expiresAt"]),
+
+  generationReceipts: defineTable({
+    pdfSha256: v.string(),
+    ownerId: v.optional(v.string()),
+    subjectKey: v.string(),
+    subjectTier: v.optional(v.union(v.literal("none"), v.literal("foundation"), v.literal("higher"))),
+    selectedUnitKeys: v.array(v.string()),
+    targetMarks: v.number(),
+    totalMarks: v.number(),
+    timeMinutes: v.number(),
+    questionCount: v.number(),
+    generationKind: v.optional(v.union(v.literal("custom"), v.literal("shadow"))),
+    shadowVariantId: v.optional(v.id("shadowPaperVariants")),
+    markSchemeSha256: v.optional(v.string()),
+    manifestRevision: v.optional(v.string()),
+    createdAt: v.number(),
+    claimedAt: v.optional(v.number()),
+  })
+    .index("by_pdf_sha256", ["pdfSha256"])
+    .index("by_shadow_variant_owner", ["shadowVariantId", "ownerId"]),
+
+  shadowGenerationJobs: defineTable({
+    ownerId: v.string(),
+    idempotencyKey: v.string(),
+    payloadKey: v.string(),
+    sourcePaperId: v.string(),
+    manifestRevision: v.string(),
+    paperSeed: v.string(),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("generating"),
+      v.literal("validating"),
+      v.literal("rendering"),
+      v.literal("ready"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+    ),
+    attempt: v.number(),
+    leaseToken: v.optional(v.string()),
+    leaseExpiresAt: v.optional(v.number()),
+    cancelRequested: v.boolean(),
+    progress: v.object({ completedUnits: v.number(), totalUnits: v.number() }),
+    errorCode: v.optional(v.string()),
+    variantId: v.optional(v.id("shadowPaperVariants")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_owner_idempotency", ["ownerId", "idempotencyKey"])
+    .index("by_owner_created", ["ownerId", "createdAt"])
+    .index("by_owner_status", ["ownerId", "status"])
+    .index("by_status_updated", ["status", "updatedAt"]),
+
+  shadowPaperVariants: defineTable({
+    ownerId: v.string(),
+    jobId: v.id("shadowGenerationJobs"),
+    sourcePaperId: v.string(),
+    manifestId: v.string(),
+    manifestRevision: v.string(),
+    semanticHash: v.string(),
+    displayCode: v.string(),
+    title: v.string(),
+    source: shadowSourceValidator,
+    totalMarks: v.number(),
+    durationMinutes: v.number(),
+    calculator: v.union(v.literal("allowed"), v.literal("not-allowed")),
+    questionCount: v.number(),
+    rendererVersion: v.string(),
+    validation: v.object({ checks: v.number(), failed: v.number() }),
+    paper: v.object({ storageId: v.id("_storage"), sha256: v.string(), fileSize: v.number(), pageCount: v.number() }),
+    markScheme: v.object({ storageId: v.id("_storage"), sha256: v.string(), fileSize: v.number(), pageCount: v.number() }),
+    savedPaperId: v.optional(v.id("savedPapers")),
+    createdAt: v.number(),
+    expiresAt: v.optional(v.number()),
+  })
+    .index("by_owner_created", ["ownerId", "createdAt"])
+    .index("by_job", ["jobId"])
+    .index("by_expires_at", ["expiresAt"]),
+
+  shadowQuestionVariants: defineTable({
+    paperVariantId: v.id("shadowPaperVariants"),
+    displayOrder: v.number(),
+    sourceUnitKey: v.string(),
+    templateRevision: v.string(),
+    unitSeed: v.string(),
+    marks: v.number(),
+    partMarks: v.array(v.object({ partId: v.string(), marks: v.number() })),
+    promptText: v.string(),
+    parametersJson: v.string(),
+    questionJson: v.string(),
+    solutionJson: v.string(),
+    validationJson: v.string(),
+  })
+    .index("by_paper_variant_order", ["paperVariantId", "displayOrder"])
+    .index("by_source_template", ["sourceUnitKey", "templateRevision"]),
 
   mcpArtifacts: defineTable({
     bundleId: v.string(),

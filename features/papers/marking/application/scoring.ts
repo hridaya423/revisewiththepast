@@ -1,8 +1,23 @@
 import { getServerEnvironment } from "@/shared/infrastructure/env/server";
-import { getMarkingSubmissionBundleFromConvex, upsertMarkingQuestionStatusInConvex, upsertMarkingScoreInConvex } from "../infrastructure/convex/commands";
+import { getMarkingSubmissionBundleFromConvex, recordQuestionScoreInConvex } from "../infrastructure/convex/commands";
 import { autoScoreMathPaper, autoScoreMathQuestion, buildCombinedMarkScheme } from "../infrastructure/scoring/scoring";
 import type { AutoScoreRequest, ScoreRequest } from "../contracts/http";
-import { NotFoundError } from "@/shared/application/errors";
+import { DomainError, NotFoundError } from "@/shared/application/errors";
+import { SHADOW_MARKING_UNSUPPORTED_MESSAGE, isShadowSavedPaper } from "@/features/papers/shadow/application/marking-boundary";
+
+const PERSIST_CONCURRENCY = 4;
+
+async function forEachConcurrent<T>(items: T[], concurrency: number, fn: (item: T) => Promise<void>) {
+  let index = 0;
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (index < items.length) {
+      const item = items[index];
+      index += 1;
+      await fn(item);
+    }
+  });
+  await Promise.all(workers);
+}
 
 function scorerModel() {
   return getServerEnvironment().OPENROUTER_MODEL;
@@ -10,32 +25,35 @@ function scorerModel() {
 
 async function persistAutoScore(submissionId: string, questionKey: string, result: Awaited<ReturnType<typeof autoScoreMathQuestion>>) {
   if (result.skipped) {
-    await upsertMarkingQuestionStatusInConvex({ submissionId, questionKey, status: "needs_manual_review", failureReason: result.rationale || "This question needs manual review." });
+    await recordQuestionScoreInConvex({ submissionId, questionKey, status: "needs_manual_review", failureReason: result.rationale || "This question needs manual review." });
     return;
   }
-  await upsertMarkingScoreInConvex({
+  await recordQuestionScoreInConvex({
     submissionId,
     questionKey,
-    awardedMarks: result.awardedMarks,
-    maxMarks: result.evidence.sourceUnit.totalMarks,
-    confidence: result.confidence,
-    needsReview: result.needsReview,
-    rationale: result.rationale,
-    evidenceJson: JSON.stringify(result.evidence),
-    scorerProvider: "openrouter",
-    scorerModel: scorerModel(),
-    scoreStatus: "ai_suggested",
+    score: {
+      awardedMarks: result.awardedMarks,
+      maxMarks: result.evidence.sourceUnit.totalMarks,
+      confidence: result.confidence,
+      needsReview: result.needsReview,
+      rationale: result.rationale,
+      evidenceJson: JSON.stringify(result.evidence),
+      scorerProvider: "openrouter",
+      scorerModel: scorerModel(),
+      scoreStatus: "ai_suggested",
+    },
+    status: result.needsReview ? "needs_manual_review" : "ai_scored",
   });
-  await upsertMarkingQuestionStatusInConvex({ submissionId, questionKey, status: result.needsReview ? "needs_manual_review" : "ai_scored" });
 }
 
 export async function autoScoreSubmission(input: AutoScoreRequest) {
   const bundle = await getMarkingSubmissionBundleFromConvex(input.submissionId);
   if (!bundle) throw new NotFoundError("Submission not found.");
+  if (isShadowSavedPaper(bundle.savedPaper)) throw new DomainError(SHADOW_MARKING_UNSUPPORTED_MESSAGE);
 
   if (input.scoreWholePaper) {
     const results = await autoScoreMathPaper(bundle);
-    for (const entry of results) await persistAutoScore(input.submissionId, entry.questionKey, entry.result);
+    await forEachConcurrent(results, PERSIST_CONCURRENCY, (entry) => persistAutoScore(input.submissionId, entry.questionKey, entry.result));
     return { results };
   }
 
@@ -45,21 +63,26 @@ export async function autoScoreSubmission(input: AutoScoreRequest) {
 }
 
 export async function saveManualScore(input: ScoreRequest) {
-  await upsertMarkingScoreInConvex({
+  const result = await recordQuestionScoreInConvex({
     submissionId: input.submissionId,
     questionKey: input.questionKey,
-    awardedMarks: input.awardedMarks,
-    maxMarks: input.maxMarks,
-    confidence: input.confidence,
-    needsReview: input.needsReview,
-    rationale: input.rationale,
-    evidenceJson: JSON.stringify(input.evidence),
-    scorerProvider: input.scorerProvider,
-    scorerModel: input.scorerModel,
-    scoreStatus: "confirmed",
+    score: {
+      awardedMarks: input.awardedMarks,
+      maxMarks: input.maxMarks,
+      // A student's own confirmation is authoritative; the client never sets confidence.
+      confidence: 1,
+      needsReview: input.needsReview,
+      rationale: input.rationale,
+      evidenceJson: JSON.stringify(input.evidence),
+      scorerProvider: "manual",
+      scorerModel: "manual",
+      scoreStatus: "confirmed",
+    },
+    status: input.needsReview ? "needs_manual_review" : "saved",
+    expectedUpdatedAt: input.expectedUpdatedAt,
   });
-  await upsertMarkingQuestionStatusInConvex({ submissionId: input.submissionId, questionKey: input.questionKey, status: input.needsReview ? "needs_manual_review" : "saved" });
-  return input;
+  if (result.conflict) return { status: "conflict" as const, current: result.conflict };
+  return { status: "saved" as const, updatedAt: result.updatedAt };
 }
 
 export async function getCombinedMarkScheme(submissionId: string) {

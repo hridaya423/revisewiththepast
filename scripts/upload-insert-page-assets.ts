@@ -164,6 +164,7 @@ async function main() {
       if (existing) {
         const relativePath = existing.relativePath ?? buildInsertPageRelativePath(existing.sourceRelativePath, existing.pageNumber);
         await convexClient.mutation(api.insertPageAssets.upsertInsertPageAsset, {
+          serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
           sourceRelativePath: existing.sourceRelativePath,
           pageNumber: existing.pageNumber,
           relativePath,
@@ -196,6 +197,7 @@ async function main() {
       manifest.records.push(record);
       existingByKey.set(`${sourceRelativePath}::${pageNumber}`, record);
       await convexClient.mutation(api.insertPageAssets.upsertInsertPageAsset, {
+        serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
         sourceRelativePath,
         pageNumber,
         relativePath,

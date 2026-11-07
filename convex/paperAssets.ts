@@ -1,6 +1,8 @@
 import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 
+import { requireServiceSecret, serviceSecretArg } from "./model/serviceAuth";
+
 const assetArgs = {
   boardCode: v.string(),
   subjectSlug: v.string(),
@@ -21,8 +23,9 @@ const assetArgs = {
 };
 
 export const upsertPaperAsset = mutationGeneric({
-  args: assetArgs,
+  args: { ...serviceSecretArg, ...assetArgs },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     const existing = await ctx.db
       .query("paperAssets")
@@ -46,8 +49,9 @@ export const upsertPaperAsset = mutationGeneric({
 });
 
 export const getPaperAssetByRelativePath = queryGeneric({
-  args: { relativePath: v.string() },
+  args: { ...serviceSecretArg, relativePath: v.string() },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     return await ctx.db
       .query("paperAssets")
       .withIndex("by_relative_path", (q) => q.eq("relativePath", args.relativePath))
@@ -57,10 +61,12 @@ export const getPaperAssetByRelativePath = queryGeneric({
 
 export const getPaperAssetsByBoardSubject = queryGeneric({
   args: {
+    ...serviceSecretArg,
     boardCode: v.string(),
     subjectSlug: v.string(),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     return await ctx.db
       .query("paperAssets")
       .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))

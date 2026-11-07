@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
   if (!parsed.success) return badRequest(parsed.error.issues[0]?.message ?? "Invalid score request.");
 
   try {
-    return Response.json(await saveManualScore(parsed.data));
+    const result = await saveManualScore(parsed.data);
+    return Response.json(result, { status: result.status === "conflict" ? 409 : 200, headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     const normalized = normalizeApplicationError(error, "Scoring update failed.");
     if (normalized.status === 403) return unauthorizedResponse();

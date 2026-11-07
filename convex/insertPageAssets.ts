@@ -1,6 +1,8 @@
 import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 
+import { requireServiceSecret, serviceSecretArg } from "./model/serviceAuth";
+
 const pageAssetArgs = {
   sourceRelativePath: v.string(),
   pageNumber: v.number(),
@@ -16,8 +18,9 @@ const pageAssetArgs = {
 };
 
 export const upsertInsertPageAsset = mutationGeneric({
-  args: pageAssetArgs,
+  args: { ...serviceSecretArg, ...pageAssetArgs },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     const existing = await ctx.db
       .query("insertPageAssets")
@@ -41,8 +44,9 @@ export const upsertInsertPageAsset = mutationGeneric({
 });
 
 export const getInsertPageAssetsBySourceRelativePaths = queryGeneric({
-  args: { sourceRelativePaths: v.array(v.string()) },
+  args: { ...serviceSecretArg, sourceRelativePaths: v.array(v.string()) },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const uniquePaths = Array.from(new Set(args.sourceRelativePaths));
     const rows = await Promise.all(uniquePaths.map(async (sourceRelativePath) => {
       const assets = await ctx.db

@@ -43,6 +43,7 @@ export type BuilderSelectionState = {
 };
 
 export type BuilderSelectionAction =
+  | { type: "selection-restored"; selection: BuilderSelectionState }
   | { type: "subject-changed"; subjectKey: PaperMakerSubjectKey; tier: SubjectTierKey; paperCodes: Set<string>; targetMarks: number; timeMinutes: number }
   | { type: "tier-changed"; tier: SubjectTierKey; leafIds: Set<string> }
   | { type: "marks-changed"; targetMarks: number; timeMinutes: number }
@@ -56,6 +57,8 @@ export type BuilderSelectionAction =
 
 export function builderSelectionReducer(state: BuilderSelectionState, action: BuilderSelectionAction): BuilderSelectionState {
   switch (action.type) {
+    case "selection-restored":
+      return action.selection;
     case "subject-changed":
       return { ...state, selectedSubjectKey: action.subjectKey, selectedTier: action.tier, selectedLeafIds: new Set(), selectedPaperCodes: new Set(action.paperCodes), paperSourcesCustomized: false, targetMarks: action.targetMarks, timeMinutes: action.timeMinutes };
     case "tier-changed":

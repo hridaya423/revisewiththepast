@@ -5,19 +5,20 @@ import { createHash } from "node:crypto";
 import {
   addMarkingResponsePageInConvex,
   createMarkingSubmissionInConvex,
+  recordQuestionScoreInConvex,
   updateMarkingSubmissionMetadataInConvex,
   upsertMarkingQuestionStatusInConvex,
   upsertMarkingResponseInConvex,
-  upsertMarkingScoreInConvex,
 } from "../convex/commands";
 import { requiresManualReview } from "../../domain/answer-extraction";
 import { getServerEnvironment } from "@/shared/infrastructure/env/server";
-import { uploadToHackClubCdn } from "@/shared/infrastructure/cdn/hackclub";
+import { uploadPrivateMarkingFile } from "../private-files";
 import {
   detectPaperIdentityFromPages,
   filterBodyPages,
   type DetectedPaperIdentity,
 } from "../../domain/paper-identity";
+import { SHADOW_IMPORT_UNSUPPORTED_MESSAGE, detectShadowVariantInPages } from "@/features/papers/shadow/application/marking-boundary";
 import {
   getMarkableUnitsForFinishedPaper,
   getMarkableUnitsForPaperIdentity,
@@ -62,8 +63,8 @@ export type ImportFinishedPaperResult = {
   matchedQuestionCount: number;
 };
 
-async function uploadBufferToCdn(buffer: Buffer, fileName: string, contentType: string) {
-  return await uploadToHackClubCdn(new File([new Uint8Array(buffer)], fileName, { type: contentType }));
+async function uploadPageFile(buffer: Buffer, fileName: string, contentType: string) {
+  return uploadPrivateMarkingFile(new File([new Uint8Array(buffer)], fileName, { type: contentType }));
 }
 
 async function prepareImportedPages(
@@ -77,19 +78,20 @@ async function prepareImportedPages(
   for (const rendered of renderedPages) {
     const fileName = `${sourceFileName.replace(/\.pdf$/i, "")}-page-${String(rendered.pageNumber).padStart(3, "0")}.png`;
     let asset = await getImportAsset(importKey, rendered.pageNumber);
-    if (!asset) {
-      const upload = await uploadBufferToCdn(rendered.png, fileName, "image/png");
+    if (!asset?.fileId) {
+      const upload = await uploadPageFile(rendered.png, fileName, "image/png");
       await saveImportAsset({
         importKey,
         pageNumber: rendered.pageNumber,
         fileName,
         fileSize: upload.size,
-        cdnUploadId: upload.id,
+        fileId: upload.id,
         sourceImageUrl: upload.url,
+        ocrText: asset?.ocrText,
       });
       asset = await getImportAsset(importKey, rendered.pageNumber);
     }
-    if (!asset) throw new Error(`Could not persist imported page ${rendered.pageNumber}.`);
+    if (!asset?.fileId) throw new Error(`Could not persist imported page ${rendered.pageNumber}.`);
 
     let ocrText = asset.ocrText;
     if (!ocrText) {
@@ -101,20 +103,20 @@ async function prepareImportedPages(
             pageNumber: rendered.pageNumber,
             fileName: asset.fileName,
             fileSize: asset.fileSize,
-            cdnUploadId: asset.cdnUploadId,
+            fileId: asset.fileId,
             sourceImageUrl: asset.sourceImageUrl,
             ocrText,
           });
         }
       } catch (error) {
-        console.warn(`Printed OCR failed for page ${rendered.pageNumber}:`, error);
+        console.warn(`Printed OCR failed for page ${rendered.pageNumber}:`, error instanceof Error ? error.name : "Error");
         ocrText = "";
       }
     }
 
     pageImageByNumber.set(rendered.pageNumber, {
       url: asset.sourceImageUrl,
-      uploadId: asset.cdnUploadId,
+      uploadId: asset.fileId,
       size: asset.fileSize,
       fileName: asset.fileName,
     });
@@ -143,6 +145,7 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
     .update(`\0${studentLabel ?? ""}\0${existingSubmissionId ?? ""}`)
     .digest("hex");
   const { pages: renderedPages, textPages } = await renderPdfToPngBuffers(pdfBytes);
+  if (detectShadowVariantInPages(textPages)) throw new DomainError(SHADOW_IMPORT_UNSUPPORTED_MESSAGE);
 
   if (existingSubmissionId) {
     return attachScriptToExistingSubmission({
@@ -221,7 +224,7 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
       size: existingSavedPaper.pdfFileSize,
       contentType: existingSavedPaper.pdfContentType,
     }
-    : await uploadToHackClubCdn(file);
+    : await uploadPrivateMarkingFile(file);
 
   const savedPaperId = await fetchAuthMutation(api.savedPapers.createSavedPaper, {
     importKey,
@@ -293,7 +296,7 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
         fileName: image.fileName,
         contentType: "image/png",
         fileSize: image.size,
-        cdnUploadId: image.uploadId,
+        fileId: image.uploadId,
         sourceImageUrl: image.url,
         scriptPageNumber: pageNumber,
         ocrText,
@@ -371,23 +374,20 @@ export async function importFinishedPaper(options: ImportFinishedPaperOptions): 
           continue;
         }
 
-        await upsertMarkingScoreInConvex({
+        await recordQuestionScoreInConvex({
           submissionId,
           questionKey: entry.questionKey,
-          awardedMarks: entry.result.awardedMarks,
-          maxMarks: entry.result.evidence.sourceUnit.totalMarks,
-          confidence: entry.result.confidence,
-          needsReview: entry.result.needsReview,
-          rationale: entry.result.rationale,
-          evidenceJson: JSON.stringify(entry.result.evidence),
-          scorerProvider: "openrouter",
-          scorerModel: getServerEnvironment().OPENROUTER_MODEL,
-          scoreStatus: "ai_suggested",
-        });
-
-        await upsertMarkingQuestionStatusInConvex({
-          submissionId,
-          questionKey: entry.questionKey,
+          score: {
+            awardedMarks: entry.result.awardedMarks,
+            maxMarks: entry.result.evidence.sourceUnit.totalMarks,
+            confidence: entry.result.confidence,
+            needsReview: entry.result.needsReview,
+            rationale: entry.result.rationale,
+            evidenceJson: JSON.stringify(entry.result.evidence),
+            scorerProvider: "openrouter",
+            scorerModel: getServerEnvironment().OPENROUTER_MODEL,
+            scoreStatus: "ai_suggested",
+          },
           status: entry.result.needsReview ? "needs_manual_review" : "ai_scored",
         });
       }
@@ -466,7 +466,7 @@ async function attachScriptToExistingSubmission(params: {
         fileName: image.fileName,
         contentType: "image/png",
         fileSize: image.size,
-        cdnUploadId: image.uploadId,
+        fileId: image.uploadId,
         sourceImageUrl: image.url,
         scriptPageNumber: pageNumber,
         ocrText,
@@ -550,22 +550,20 @@ async function attachScriptToExistingSubmission(params: {
           });
           continue;
         }
-        await upsertMarkingScoreInConvex({
+        await recordQuestionScoreInConvex({
           submissionId: params.submissionId,
           questionKey: entry.questionKey,
-          awardedMarks: entry.result.awardedMarks,
-          maxMarks: entry.result.evidence.sourceUnit.totalMarks,
-          confidence: entry.result.confidence,
-          needsReview: entry.result.needsReview,
-          rationale: entry.result.rationale,
-          evidenceJson: JSON.stringify(entry.result.evidence),
-          scorerProvider: "openrouter",
-          scorerModel: getServerEnvironment().OPENROUTER_MODEL,
-          scoreStatus: "ai_suggested",
-        });
-        await upsertMarkingQuestionStatusInConvex({
-          submissionId: params.submissionId,
-          questionKey: entry.questionKey,
+          score: {
+            awardedMarks: entry.result.awardedMarks,
+            maxMarks: entry.result.evidence.sourceUnit.totalMarks,
+            confidence: entry.result.confidence,
+            needsReview: entry.result.needsReview,
+            rationale: entry.result.rationale,
+            evidenceJson: JSON.stringify(entry.result.evidence),
+            scorerProvider: "openrouter",
+            scorerModel: getServerEnvironment().OPENROUTER_MODEL,
+            scoreStatus: "ai_suggested",
+          },
           status: entry.result.needsReview ? "needs_manual_review" : "ai_scored",
         });
       }

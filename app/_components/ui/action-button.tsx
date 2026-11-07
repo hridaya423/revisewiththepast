@@ -40,8 +40,6 @@ export function ActionButton({
       disabled={disabled || pending}
       aria-busy={pending}
       data-state={state}
-      whileTap={reduce || disabled || pending ? undefined : { scale: 0.97 }}
-      transition={motionTokens.press}
       className={`btn-press inline-grid place-items-center ${className}`}
     >
       <AnimatePresence initial={false} mode="popLayout">

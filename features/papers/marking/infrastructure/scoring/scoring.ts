@@ -37,20 +37,51 @@ function parseJsonBlock(content: string): unknown {
   return JSON.parse(candidate.slice(start, end + 1));
 }
 
+const scoreResultFields = {
+  awardedMarks: z.number().int().min(0),
+  confidence: z.number().min(0).max(1),
+  needsReview: z.boolean(),
+  rationale: z.string().min(1),
+  markBreakdown: z.array(z.object({
+    criterion: z.string().min(1),
+    awarded: z.boolean(),
+    evidence: z.string(),
+  })).default([]),
+};
+
+const singleScoreResponseSchema = z.object(scoreResultFields);
+
 const batchScoreResponseSchema = z.object({
   results: z.array(z.object({
-    questionKey: z.string().optional(),
-    awardedMarks: z.number().optional(),
-    confidence: z.number().optional(),
-    needsReview: z.boolean().optional(),
-    rationale: z.string().optional(),
-    markBreakdown: z.array(z.object({
-      criterion: z.string().optional(),
-      awarded: z.boolean().optional(),
-      evidence: z.string().optional(),
-    })).optional(),
-  })).optional(),
+    questionKey: z.string().min(1),
+    ...scoreResultFields,
+  })),
 });
+
+const MODEL_OUTPUT_ATTEMPTS = 2;
+
+type ScoreClient = ReturnType<typeof getClient>;
+
+async function sendJsonWithRetry<T>(
+  client: ScoreClient,
+  request: Parameters<ScoreClient["chat"]["send"]>[0]["chatRequest"],
+  parse: (content: string) => T,
+): Promise<T> {
+  let lastError: unknown = new Error("The scoring model returned no usable response.");
+  for (let attempt = 0; attempt < MODEL_OUTPUT_ATTEMPTS; attempt += 1) {
+    const responsePayload = await client.chat.send({ chatRequest: request });
+    const content = responsePayload && "choices" in responsePayload
+      ? responsePayload.choices?.[0]?.message?.content
+      : undefined;
+    try {
+      if (!content) throw new Error("The scoring model returned no content.");
+      return parse(content);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  throw lastError;
+}
 
 const environment = getServerEnvironment();
 const AI_KEY = environment.HACKCLUB_AI_API_KEY ?? environment.OPENROUTER_API_KEY;
@@ -387,8 +418,9 @@ export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKe
     },
   }, null, 2);
 
-  const responsePayload = await client.chat.send({
-    chatRequest: {
+  let parsed: z.infer<typeof singleScoreResponseSchema>;
+  try {
+    parsed = await sendJsonWithRetry(client, {
       model: AI_MODEL,
       messages: [
         { role: "system", content: systemPrompt },
@@ -396,15 +428,11 @@ export async function autoScoreMathQuestion(bundle: SubmissionBundle, questionKe
       ],
       responseFormat: { type: "json_object" },
       maxTokens: 1800,
-    },
-  });
-
-  const content = responsePayload?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("The scoring model returned no content.");
+    }, (content) => singleScoreResponseSchema.parse(parseJsonBlock(content)));
+  } catch (error) {
+    return buildSkipped(`AI scoring returned an unusable result and this question was flagged for manual review. (${error instanceof Error ? error.message : String(error)})`);
   }
 
-  const parsed = parseJsonBlock(content) as Parameters<typeof normalizeScoreModelResult>[0];
   const score = normalizeScoreModelResult(parsed, unit.totalMarks);
 
   return {
@@ -467,14 +495,9 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
   }));
 
   const scoreable = contexts.filter((entry) => !entry.skipped && entry.context) as Array<{ questionKey: string; skipped: false; context: NonNullable<(typeof contexts)[number]["context"]> }>;
-  let parsedByQuestionKey = new Map<string, {
-    questionKey?: string;
-    awardedMarks?: number;
-    confidence?: number;
-    needsReview?: boolean;
-    rationale?: string;
-    markBreakdown?: Array<{ criterion?: string; awarded?: boolean; evidence?: string }>;
-  }>();
+  type BatchEntry = z.infer<typeof batchScoreResponseSchema>["results"][number];
+  let parsedByQuestionKey = new Map<string, BatchEntry>();
+  let batchFailureReason: string | null = null;
 
   if (scoreable.length > 0) {
     const client = getClient();
@@ -514,8 +537,26 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
       },
     }, null, 2);
 
-    const responsePayload = await client.chat.send({
-      chatRequest: {
+    const requestedKeys = new Set(scoreable.map((entry) => entry.questionKey));
+    const parseBatch = (content: string) => {
+      const parsed = batchScoreResponseSchema.parse(parseJsonBlock(content));
+      const byKey = new Map<string, BatchEntry>();
+      for (const entry of parsed.results) {
+        if (!requestedKeys.has(entry.questionKey)) continue;
+        if (byKey.has(entry.questionKey)) {
+          throw new Error(`The scoring model returned a duplicate result for ${entry.questionKey}.`);
+        }
+        byKey.set(entry.questionKey, entry);
+      }
+      const missing = scoreable.filter((entry) => !byKey.has(entry.questionKey));
+      if (missing.length > 0) {
+        throw new Error(`The scoring model returned no result for ${missing.length} question(s): ${missing.map((entry) => entry.questionKey).join(", ")}.`);
+      }
+      return byKey;
+    };
+
+    try {
+      parsedByQuestionKey = await sendJsonWithRetry(client, {
         model: AI_MODEL,
         messages: [
           { role: "system", content: systemPrompt },
@@ -523,17 +564,10 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
         ],
         responseFormat: { type: "json_object" },
         maxTokens: 5000,
-      },
-    });
-
-    const content = responsePayload?.choices?.[0]?.message?.content;
-    if (!content) {
-      throw new Error("The whole-paper scoring model returned no content.");
+      }, parseBatch);
+    } catch (error) {
+      batchFailureReason = `AI scoring returned an unusable result and this question was flagged for manual review. (${error instanceof Error ? error.message : String(error)})`;
     }
-
-    const parsed = batchScoreResponseSchema.parse(parseJsonBlock(content));
-
-    parsedByQuestionKey = new Map((parsed.results ?? []).map((entry) => [entry.questionKey ?? "", entry]));
   }
 
   return contexts.map((entry) => {
@@ -577,7 +611,9 @@ export async function autoScoreMathPaper(bundle: SubmissionBundle) {
     }
 
     const modelResult = parsedByQuestionKey.get(entry.questionKey);
-    const score = normalizeScoreModelResult(modelResult, entry.context.unit.totalMarks);
+    const score = batchFailureReason
+      ? { awardedMarks: 0, confidence: 0, needsReview: true, rationale: batchFailureReason, markBreakdown: [] as Array<{ criterion: string; awarded: boolean; evidence: string }> }
+      : normalizeScoreModelResult(modelResult, entry.context.unit.totalMarks);
 
     return {
       questionKey: entry.questionKey,

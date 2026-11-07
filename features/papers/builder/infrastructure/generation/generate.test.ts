@@ -6,9 +6,19 @@ import { PDFDocument, StandardFonts } from "pdf-lib";
 import { PAPER_MAKER_SUBJECTS } from "@/shared/domain/subject-catalog";
 import { GENERATED_PAGE } from "../../domain/generated-layout";
 import { setGeneratedPageRole } from "../pdf/page-chrome";
-import { assertGeneratedPaperForGeneration } from "./generate";
+import { assertGeneratedPaperForGeneration, measureGenerationStage } from "./generate";
 
 describe("paper generation routing", () => {
+  it("accumulates repeated stage timings without changing the operation result", async () => {
+    const stages = { pdfAssemblyMs: 3 };
+    const timestamps = [10, 25];
+
+    const result = await measureGenerationStage(stages, "pdfAssemblyMs", async () => "pdf", () => timestamps.shift() ?? 25);
+
+    expect(result).toBe("pdf");
+    expect(stages.pdfAssemblyMs).toBe(18);
+  });
+
   it("declares a canonical route for every generation-enabled subject", () => {
     const source = readFileSync(new URL("./generate.ts", import.meta.url), "utf8");
     const configStart = source.indexOf("const SUBJECT_GENERATION_CONFIGS");
@@ -48,6 +58,7 @@ describe("paper generation routing", () => {
 
   it("rejects a known ordinal defect for every enabled subject", async () => {
     const pdf = await makeMisalignedPaper();
+    const boxedSubjects = new Set(["aqa-business", "aqa-geography", "aqa-english-literature", "aqa-english-language"]);
 
     for (const subject of PAPER_MAKER_SUBJECTS.filter((candidate) => candidate.generationEnabled)) {
       await expect(assertGeneratedPaperForGeneration(pdf, {
@@ -56,7 +67,7 @@ describe("paper generation routing", () => {
         selectedUnitCount: 1,
         selectedUnitMarks: [1],
         coverPage: { totalMarks: 1, timeMinutes: 1, questionCount: 1 },
-      })).rejects.toThrow(/x position/);
+      })).rejects.toThrow(boxedSubjects.has(subject.key) ? /number column|missing ordinal/ : /x position/);
     }
   });
 });

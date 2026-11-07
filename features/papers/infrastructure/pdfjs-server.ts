@@ -4,9 +4,33 @@ import { resolve } from "node:path";
 
 import { createCanvas, DOMMatrix, ImageData, Path2D } from "@napi-rs/canvas";
 
-globalThis.DOMMatrix ??= DOMMatrix as unknown as typeof globalThis.DOMMatrix;
-globalThis.ImageData ??= ImageData as unknown as typeof globalThis.ImageData;
-globalThis.Path2D ??= Path2D as unknown as typeof globalThis.Path2D;
+globalThis.DOMMatrix = DOMMatrix as unknown as typeof globalThis.DOMMatrix;
+globalThis.ImageData = ImageData as unknown as typeof globalThis.ImageData;
+globalThis.Path2D = Path2D as unknown as typeof globalThis.Path2D;
+
+type NapiCanvas = ReturnType<typeof createCanvas>;
+
+// pdfjs-dist resolves its own nested @napi-rs/canvas via createRequire; canvases
+// from that copy reject Path2D/ImageData instances from this copy. Routing every
+// pdf.js canvas through this factory keeps a single class realm.
+class NapiCanvasFactory {
+  constructor(_params: { ownerDocument?: unknown; enableHWA?: boolean } = {}) {}
+  create(width: number, height: number) {
+    if (width <= 0 || height <= 0) throw new Error("Invalid canvas size");
+    const canvas = createCanvas(Math.ceil(width), Math.ceil(height));
+    return { canvas, context: canvas.getContext("2d") };
+  }
+  reset(pair: { canvas: NapiCanvas }, width: number, height: number) {
+    if (!pair.canvas) throw new Error("Canvas is not specified");
+    if (width <= 0 || height <= 0) throw new Error("Invalid canvas size");
+    pair.canvas.width = width;
+    pair.canvas.height = height;
+  }
+  destroy(pair: { canvas: NapiCanvas }) {
+    if (!pair.canvas) throw new Error("Canvas is not specified");
+    pair.canvas.width = pair.canvas.height = 0;
+  }
+}
 
 type PdfJsModule = typeof import("pdfjs-dist/legacy/build/pdf.mjs");
 type PdfJsWorkerModule = typeof import("pdfjs-dist/legacy/build/pdf.worker.mjs");
@@ -52,6 +76,7 @@ export async function getPdfDocument(data: Uint8Array) {
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
     wasmUrl: WASM_URL,
     useWorkerFetch: false,
+    CanvasFactory: NapiCanvasFactory,
   } as never).promise;
 }
 

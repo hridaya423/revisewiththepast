@@ -2,6 +2,8 @@ import { mutationGeneric, queryGeneric } from "convex/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 
+import { requireServiceSecret, serviceSecretArg } from "./model/serviceAuth";
+
 const spanValidator = v.object({
   pageNumber: v.number(),
   yTop: v.number(),
@@ -10,6 +12,7 @@ const spanValidator = v.object({
 
 export const backfillPaperRegions = mutationGeneric({
   args: {
+    ...serviceSecretArg,
     sourceRelativePath: v.string(),
     regionVersion: v.string(),
     figures: v.array(v.object({
@@ -36,6 +39,7 @@ export const backfillPaperRegions = mutationGeneric({
     maxUnmatchedRatio: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const now = Date.now();
     const maxUnmatchedRatio = args.maxUnmatchedRatio ?? 0.05;
 
@@ -138,8 +142,9 @@ export const backfillPaperRegions = mutationGeneric({
 });
 
 export const getPaperFigures = queryGeneric({
-  args: { sourceRelativePaths: v.array(v.string()) },
+  args: { ...serviceSecretArg, sourceRelativePaths: v.array(v.string()) },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const uniquePaths = Array.from(new Set(args.sourceRelativePaths));
     const rows = await Promise.all(uniquePaths.map((sourceRelativePath) =>
       ctx.db
@@ -151,8 +156,9 @@ export const getPaperFigures = queryGeneric({
 });
 
 export const getPaperPageLayouts = queryGeneric({
-  args: { sourceRelativePaths: v.array(v.string()) },
+  args: { ...serviceSecretArg, sourceRelativePaths: v.array(v.string()) },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const uniquePaths = Array.from(new Set(args.sourceRelativePaths));
     const rows = await Promise.all(uniquePaths.map((sourceRelativePath) =>
       ctx.db

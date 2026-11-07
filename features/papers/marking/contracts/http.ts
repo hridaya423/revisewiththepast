@@ -1,10 +1,18 @@
 import { z } from "zod";
 
-export const submissionIdSchema = z.string().trim().min(1, "submissionId is required.");
+export const convexIdSchema = z.string().trim().regex(/^[a-z0-9]+$/i, "Invalid id format.");
+export const submissionIdSchema = convexIdSchema.min(1, "submissionId is required.");
 export const questionKeySchema = z.string().trim().min(1, "questionKey is required.");
 
+export const uploadMappingSchema = z.object({
+  submissionId: submissionIdSchema,
+  questionKeys: z.array(questionKeySchema.max(512)).min(1, "Choose at least one question for each page.").max(80),
+  pageLabel: z.string().trim().max(120).optional(),
+});
+
 export const createSubmissionRequestSchema = z.object({
-  savedPaperId: z.string().trim().min(1).optional(),
+  savedPaperId: convexIdSchema.optional(),
+  newAttempt: z.boolean().optional(),
   boardCode: z.string().trim().min(1).optional(),
   subjectSlug: z.string().trim().min(1).optional(),
   subjectKey: z.string().trim().min(1).optional(),
@@ -39,12 +47,11 @@ export const scoreRequestSchema = z.object({
   questionKey: questionKeySchema,
   awardedMarks: z.number().finite().nonnegative(),
   maxMarks: z.number().finite().nonnegative(),
-  confidence: z.number().finite().min(0).max(1).default(0),
   needsReview: z.boolean().default(false),
-  rationale: z.string().trim().min(1, "rationale is required."),
+  rationale: z.string().trim().max(4000).default(""),
   evidence: z.unknown().default({}),
-  scorerProvider: z.string().trim().min(1).default("manual"),
-  scorerModel: z.string().trim().min(1).default("manual"),
+  /** Score revision the student was looking at; `null` when no score existed. */
+  expectedUpdatedAt: z.number().int().nonnegative().nullable().optional(),
 }).superRefine((value, context) => {
   if (value.awardedMarks > value.maxMarks) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ["awardedMarks"], message: "awardedMarks cannot exceed maxMarks." });

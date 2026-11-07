@@ -10,9 +10,11 @@ type PaperAssemblyModalProps = {
   paperCount: number;
   subjectKey: string;
   subjectLabel: string;
+  progress?: { message: string; progress: number } | null;
+  onCancel?: () => void;
 };
 
-export function PaperAssemblyModal({ includeMarkScheme, paperCount, subjectKey, subjectLabel }: PaperAssemblyModalProps) {
+export function PaperAssemblyModal({ includeMarkScheme, paperCount, subjectKey, subjectLabel, progress, onCancel }: PaperAssemblyModalProps) {
   const modalRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -45,7 +47,19 @@ export function PaperAssemblyModal({ includeMarkScheme, paperCount, subjectKey, 
             <div className="flex items-center justify-between gap-4 border-b border-text/10 py-3"><dt className="text-text-subtle">Course</dt><dd className="max-w-[65%] text-right font-semibold text-text-secondary">{subjectLabel}</dd></div>
             <div className="flex items-center justify-between gap-4 py-3"><dt className="text-text-subtle">Output</dt><dd className="text-right font-semibold text-text-secondary">{paperCount} {paperCount === 1 ? "paper" : "papers"}{includeMarkScheme ? " + mark scheme" : ""}</dd></div>
           </dl>
-          <p className="mt-5 text-[0.67rem] leading-5 text-text-subtle">Keep this tab open. The download starts as soon as the document is ready.</p>
+          <div className="mt-6">
+            <div className="flex items-center justify-between gap-4 font-mono text-[0.61rem]">
+              <span className="text-text-secondary">{progress?.message ?? "Starting generation"}</span>
+              <span className="font-semibold text-text">{Math.round((progress?.progress ?? 0) * 100)}%</span>
+            </div>
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-text/10" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round((progress?.progress ?? 0) * 100)} aria-label="Generation progress">
+              <div className="h-full rounded-full bg-accent transition-[width] duration-500 ease-out" style={{ width: `${Math.round((progress?.progress ?? 0) * 100)}%` }} />
+            </div>
+          </div>
+          <div className="mt-5 flex items-center justify-between gap-4">
+            <p className="text-[0.67rem] leading-5 text-text-subtle">Keep this tab open. The download starts as soon as the document is ready.</p>
+            {onCancel ? <button type="button" onClick={onCancel} className="shrink-0 text-[0.67rem] font-semibold text-text-muted underline-offset-2 hover:text-text hover:underline">Cancel</button> : null}
+          </div>
         </div>
       </div>
     </dialog>

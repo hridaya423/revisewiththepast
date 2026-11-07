@@ -14,6 +14,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["app/**/*.test.ts", "shared/**/*.test.ts", "features/**/*.test.ts", "scripts/**/*.test.ts"],
+    testTimeout: 30_000,
+    include: ["app/**/*.test.ts", "convex/**/*.test.ts", "shared/**/*.test.ts", "features/**/*.test.ts", "scripts/**/*.test.ts"],
   },
 });

@@ -15,11 +15,11 @@ test("top navigation preserves the shell and updates the active section", async 
   await createAccount(page);
 
   const build = page.getByRole("navigation", { name: "Product navigation" }).getByRole("link", { name: "Build" });
-  const mark = page.getByRole("navigation", { name: "Product navigation" }).getByRole("link", { name: "Mark" });
+  const mark = page.getByRole("navigation", { name: "Product navigation" }).getByRole("link", { name: "My papers" });
   await expect(build).toHaveAttribute("aria-current", "page");
 
   await mark.click();
-  await expect(page.getByRole("heading", { name: "Mark your papers" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "My papers" })).toBeVisible();
   await expect(mark).toHaveAttribute("aria-current", "page");
 
   await build.click();
@@ -30,7 +30,7 @@ test("top navigation preserves the shell and updates the active section", async 
 test("navigation remains usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/paper-maker");
-  await page.getByRole("navigation", { name: "Product navigation" }).getByRole("link", { name: "Mark" }).click();
+  await page.getByRole("navigation", { name: "Product navigation" }).getByRole("link", { name: "My papers" }).click();
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 });
 

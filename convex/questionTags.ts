@@ -1,24 +1,10 @@
-import { mutationGeneric, queryGeneric, type GenericMutationCtx } from "convex/server";
+import { internalQueryGeneric, mutationGeneric, queryGeneric, type GenericMutationCtx, type GenericQueryCtx } from "convex/server";
 import { v } from "convex/values";
 import type { QuestionIdentityAnchor } from "../shared/domain/paper";
 import type { DataModel } from "./_generated/dataModel";
+import { query } from "./_generated/server";
 import { questionIdentityAnchorValidator } from "./questionIdentityAnchor";
-
-function secretsMatch(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let index = 0; index < a.length; index += 1) {
-    diff |= a.charCodeAt(index) ^ b.charCodeAt(index);
-  }
-  return diff === 0;
-}
-
-function requireServiceSecret(serviceSecret: string) {
-  const expected = process.env.MCP_SERVICE_SECRET;
-  if (!expected || !secretsMatch(serviceSecret, expected)) throw new Error("Unauthorized");
-}
-
-const serviceSecretArg = { serviceSecret: v.string() };
+import { requireServiceSecret, serviceSecretArg } from "./model/serviceAuth";
 
 function compareTaggedPaperPriority(
   left: {
@@ -46,18 +32,23 @@ function inferTierFromSourceRelativePath(sourceRelativePath: string | undefined)
 
 type SnapshotMutationContext = Pick<GenericMutationCtx<DataModel>, "db">;
 
-async function invalidateSubjectDetailSnapshot(
+async function invalidateSubjectSnapshots(
   ctx: SnapshotMutationContext,
   boardCode: string,
   subjectSlug: string,
 ) {
-  const existing = await ctx.db
-    .query("subjectDetailSnapshots")
-    .withIndex("by_board_subject", (q) => q.eq("boardCode", boardCode))
-    .filter((q) => q.eq(q.field("subjectSlug"), subjectSlug))
-    .collect();
+  const [detailSnapshots, questionBankSnapshots] = await Promise.all([
+    ctx.db
+      .query("subjectDetailSnapshots")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", boardCode).eq("subjectSlug", subjectSlug))
+      .collect(),
+    ctx.db
+      .query("questionBankPaperSnapshots")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", boardCode).eq("subjectSlug", subjectSlug))
+      .collect(),
+  ]);
 
-  for (const snapshot of existing) {
+  for (const snapshot of [...detailSnapshots, ...questionBankSnapshots]) {
     await ctx.db.delete(snapshot._id);
   }
 }
@@ -172,7 +163,7 @@ export const upsertTaggedPaperWithQuestions = mutationGeneric({
   handler: async (ctx, args) => {
     requireServiceSecret(args.serviceSecret);
     const now = Date.now();
-    await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
+    await invalidateSubjectSnapshots(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const [existingByIdentity, existingBySourceFile] = await Promise.all([
       ctx.db
         .query("taggedPapers")
@@ -289,7 +280,7 @@ export const upsertTaggedPaperWithQuestionsBySourcePath = mutationGeneric({
   handler: async (ctx, args) => {
     requireServiceSecret(args.serviceSecret);
     const now = Date.now();
-    await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
+    await invalidateSubjectSnapshots(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const existing = await ctx.db
       .query("taggedPapers")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
@@ -349,7 +340,7 @@ export const upsertTaggedPaperWithQuestionsBySourcePath = mutationGeneric({
   },
 });
 
-export const getDuplicateTaggedPapers = queryGeneric({
+export const getDuplicateTaggedPapers = internalQueryGeneric({
   args: {
     boardCode: v.string(),
     subjectSlug: v.string(),
@@ -458,6 +449,10 @@ export const dedupeTaggedPapersByIdentity = mutationGeneric({
       });
     }
 
+    if (deletedPapers > 0) {
+      await invalidateSubjectSnapshots(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
+    }
+
     return {
       boardCode: args.boardCode,
       subjectSlug: args.subjectSlug,
@@ -480,7 +475,7 @@ export const deleteTaggedByBoardSubjects = mutationGeneric({
     let deletedQuestionParts = 0;
 
     for (const subjectSlug of args.subjectSlugs) {
-      await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, subjectSlug);
+      await invalidateSubjectSnapshots(ctx as unknown as SnapshotMutationContext, args.boardCode, subjectSlug);
       const papers = await ctx.db
           .query("taggedPapers")
           .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
@@ -521,7 +516,7 @@ export const deleteTaggedByBoardSubjectTier = mutationGeneric({
   },
   handler: async (ctx, args) => {
     requireServiceSecret(args.serviceSecret);
-    await invalidateSubjectDetailSnapshot(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
+    await invalidateSubjectSnapshots(ctx as unknown as SnapshotMutationContext, args.boardCode, args.subjectSlug);
     const papers = await ctx.db
       .query("taggedPapers")
       .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
@@ -548,7 +543,7 @@ export const deleteTaggedByBoardSubjectTier = mutationGeneric({
   },
 });
 
-export const getTaggedPaperBySourceFile = queryGeneric({
+export const getTaggedPaperBySourceFile = internalQueryGeneric({
   args: { sourceFile: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -559,8 +554,9 @@ export const getTaggedPaperBySourceFile = queryGeneric({
 });
 
 export const getFullTaggedPartsBySourceRelativePath = queryGeneric({
-  args: { sourceRelativePath: v.string() },
+  args: { ...serviceSecretArg, sourceRelativePath: v.string() },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const paper = await ctx.db
       .query("taggedPapers")
       .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", args.sourceRelativePath))
@@ -576,10 +572,12 @@ export const getFullTaggedPartsBySourceRelativePath = queryGeneric({
 
 export const getSubjectDetailSnapshot = queryGeneric({
   args: {
+    ...serviceSecretArg,
     boardCode: v.string(),
     subjectSlug: v.string(),
   },
   handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     return await ctx.db
       .query("subjectDetailSnapshots")
       .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
@@ -623,8 +621,9 @@ export const upsertSubjectDetailSnapshot = mutationGeneric({
 });
 
 export const getTaggingCounts = queryGeneric({
-  args: {},
-  handler: async (ctx) => {
+  args: { ...serviceSecretArg },
+  handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
     const taggedPapers = await ctx.db.query("taggedPapers").collect();
 
     const byBoardSubject = new Map<string, { boardCode: string; subjectSlug: string; taggedPapers: number; taggedQuestionParts: number }>();
@@ -655,22 +654,30 @@ export const getTaggingCounts = queryGeneric({
   },
 });
 
-export const getPaperMakerQuestionBank = queryGeneric({
-  args: {
-    boardCode: v.string(),
-    subjectSlug: v.string(),
-  },
-  handler: async (ctx, args) => {
+type QuestionBankDb = Pick<GenericQueryCtx<DataModel>, "db"> | Pick<GenericMutationCtx<DataModel>, "db">;
+
+type BuiltQuestionBank = {
+  boardCode: string;
+  subjectSlug: string;
+  taggedPaperCount: number;
+  questionPartCount: number;
+  questionParts: Array<Record<string, unknown>>;
+  partsBySourceRelativePath: Map<string, Array<Record<string, unknown>>>;
+};
+
+async function buildPaperMakerQuestionBank(
+  ctx: QuestionBankDb,
+  boardCode: string,
+  subjectSlug: string,
+): Promise<BuiltQuestionBank> {
     const [taggedPapers, paperAssets] = await Promise.all([
       ctx.db
         .query("taggedPapers")
-        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
-        .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+        .withIndex("by_board_subject", (q) => q.eq("boardCode", boardCode).eq("subjectSlug", subjectSlug))
         .collect(),
       ctx.db
         .query("paperAssets")
-        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
-        .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+        .withIndex("by_board_subject", (q) => q.eq("boardCode", boardCode).eq("subjectSlug", subjectSlug))
         .collect(),
     ]);
 
@@ -738,35 +745,39 @@ export const getPaperMakerQuestionBank = queryGeneric({
       choiceSiblingQuestionIds?: string[];
     }> = [];
 
-    for (const paper of taggedPapers) {
-      const paperAsset = paperAssetByRelativePath.get(paper.sourceRelativePath)
+    const paperRows = await Promise.all(taggedPapers.map(async (paper) => {
+      const sourceRelativePath = paper.sourceRelativePath;
+      if (!sourceRelativePath) return [];
+      const paperAsset = paperAssetByRelativePath.get(sourceRelativePath)
         ?? paperAssetByIdentity.get([
           paper.boardCode,
           paper.subjectSlug,
-          inferTierFromSourceRelativePath(paper.sourceRelativePath),
+          inferTierFromSourceRelativePath(sourceRelativePath),
           paper.year ?? 0,
           paper.paperCode,
           "question_paper",
           paper.session ?? "",
         ].join("::"))
         ?? null;
-      const questionPageAssets = await ctx.db
-        .query("questionPageAssets")
-        .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", paper.sourceRelativePath))
-        .collect();
+      const [questionPageAssets, parts] = await Promise.all([
+        ctx.db
+          .query("questionPageAssets")
+          .withIndex("by_source_relative_path", (q) => q.eq("sourceRelativePath", sourceRelativePath))
+          .collect(),
+        ctx.db
+          .query("taggedQuestionParts")
+          .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", paper._id))
+          .collect(),
+      ]);
       const pageAssetByPageNumber = new Map(questionPageAssets.map((asset) => [asset.pageNumber, asset.cdnUrl]));
-      const parts = await ctx.db
-        .query("taggedQuestionParts")
-        .withIndex("by_tagged_paper", (q) => q.eq("taggedPaperId", paper._id))
-        .collect();
 
-      for (const part of parts) {
-        const unitKey = `${paper.sourceRelativePath}::${part.sectionCode ?? "-"}::q${part.questionNumber}`;
-        questionParts.push({
-          partKey: `${paper.sourceRelativePath}::${part.questionId}`,
+      return parts.map((part) => {
+        const unitKey = `${sourceRelativePath}::${part.sectionCode ?? "-"}::q${part.questionNumber}`;
+        return {
+          partKey: `${sourceRelativePath}::${part.questionId}`,
           unitKey,
           taggedPaperId: String(paper._id),
-          sourceRelativePath: paper.sourceRelativePath,
+          sourceRelativePath,
           questionPaperCdnUrl: paperAsset?.cdnUrl ?? null,
           questionPaperFileName: paperAsset?.fileName ?? null,
           pageAssetCdnUrls: part.pageNumbers.map((pageNumber: number) => ({
@@ -788,11 +799,11 @@ export const getPaperMakerQuestionBank = queryGeneric({
           sourceTotalMarks: part.sourceTotalMarks ?? null,
           marksValidated: part.marksValidated ?? "unknown",
           canonicalLeaf: part.canonicalLeaf,
-          promptText: part.promptText,
-          contextText: part.contextText,
+          promptText: part.promptText ?? "",
+          contextText: part.contextText ?? null,
           pageNumber: part.pageNumber,
           pageNumbers: part.pageNumbers,
-          bbox: part.bbox,
+          bbox: part.bbox ?? null,
           identityAnchor: part.identityAnchor ?? null,
           regionSpans: part.regionSpans ?? null,
           stemSpans: part.stemSpans ?? null,
@@ -805,10 +816,74 @@ export const getPaperMakerQuestionBank = queryGeneric({
           choiceGroupId: part.choiceGroupId,
           choiceGroupType: part.choiceGroupType,
           choiceSiblingQuestionIds: part.choiceSiblingQuestionIds,
-        });
-      }
+        };
+      });
+    }));
+    for (const parts of paperRows) questionParts.push(...parts);
+
+    const partsBySourceRelativePath = new Map<string, Array<Record<string, unknown>>>();
+    for (const part of questionParts) {
+      const existing = partsBySourceRelativePath.get(part.sourceRelativePath) ?? [];
+      existing.push(part);
+      partsBySourceRelativePath.set(part.sourceRelativePath, existing);
     }
 
+    return {
+      boardCode,
+      subjectSlug,
+      taggedPaperCount: taggedPapers.length,
+      questionPartCount: questionParts.length,
+      questionParts,
+      partsBySourceRelativePath,
+    };
+}
+
+export const getPaperMakerQuestionBank = query({
+  args: {
+    ...serviceSecretArg,
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
+    const built = await buildPaperMakerQuestionBank(ctx, args.boardCode, args.subjectSlug);
+    return {
+      boardCode: built.boardCode,
+      subjectSlug: built.subjectSlug,
+      taggedPaperCount: built.taggedPaperCount,
+      questionPartCount: built.questionPartCount,
+      questionParts: built.questionParts,
+    };
+  },
+});
+
+export const getQuestionBankSnapshot = queryGeneric({
+  args: {
+    ...serviceSecretArg,
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
+    const [taggedPapers, snapshotRows] = await Promise.all([
+      ctx.db
+        .query("taggedPapers")
+        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+        .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+        .collect(),
+      ctx.db
+        .query("questionBankPaperSnapshots")
+        .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+        .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+        .collect(),
+    ]);
+
+    const snapshotPaths = new Set(snapshotRows.map((row) => row.sourceRelativePath));
+    const isFresh = snapshotRows.length > 0
+      && taggedPapers.every((paper) => paper.sourceRelativePath && snapshotPaths.has(paper.sourceRelativePath));
+    if (!isFresh) return null;
+
+    const questionParts = snapshotRows.flatMap((row) => JSON.parse(row.payloadJson) as Array<Record<string, unknown>>);
     return {
       boardCode: args.boardCode,
       subjectSlug: args.subjectSlug,
@@ -819,7 +894,48 @@ export const getPaperMakerQuestionBank = queryGeneric({
   },
 });
 
-export const getTaggingHealth = queryGeneric({
+export const rebuildQuestionBankSnapshot = mutationGeneric({
+  args: {
+    ...serviceSecretArg,
+    boardCode: v.string(),
+    subjectSlug: v.string(),
+  },
+  handler: async (ctx, args) => {
+    requireServiceSecret(args.serviceSecret);
+    const built = await buildPaperMakerQuestionBank(ctx, args.boardCode, args.subjectSlug);
+    const now = Date.now();
+
+    const existingRows = await ctx.db
+      .query("questionBankPaperSnapshots")
+      .withIndex("by_board_subject", (q) => q.eq("boardCode", args.boardCode))
+      .filter((q) => q.eq(q.field("subjectSlug"), args.subjectSlug))
+      .collect();
+    for (const row of existingRows) {
+      await ctx.db.delete(row._id);
+    }
+
+    for (const [sourceRelativePath, parts] of built.partsBySourceRelativePath) {
+      await ctx.db.insert("questionBankPaperSnapshots", {
+        boardCode: args.boardCode,
+        subjectSlug: args.subjectSlug,
+        sourceRelativePath,
+        payloadJson: JSON.stringify(parts),
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+
+    return {
+      boardCode: built.boardCode,
+      subjectSlug: built.subjectSlug,
+      taggedPaperCount: built.taggedPaperCount,
+      questionPartCount: built.questionPartCount,
+      questionParts: built.questionParts,
+    };
+  },
+});
+
+export const getTaggingHealth = internalQueryGeneric({
   args: {},
   handler: async (ctx) => {
     const [taggedPapers, taggedQuestionParts] = await Promise.all([
@@ -869,7 +985,7 @@ export const getTaggingHealth = queryGeneric({
   },
 });
 
-export const getPlatformOverview = queryGeneric({
+export const getPlatformOverview = internalQueryGeneric({
   args: {},
   handler: async (ctx) => {
     const [taggedPapers, taggedQuestionParts] = await Promise.all([
@@ -1002,7 +1118,7 @@ export const getPlatformOverview = queryGeneric({
   },
 });
 
-export const getFrequencyDashboard = queryGeneric({
+export const getFrequencyDashboard = internalQueryGeneric({
   args: {},
   handler: async (ctx) => {
     const [taggedPapers, taggedQuestionParts] = await Promise.all([

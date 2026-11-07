@@ -1,6 +1,7 @@
 import type { QuestionUnit } from "@/shared/domain/paper";
 import type { PaperMakerSubjectKey } from "@/shared/domain/paper";
 import { PAPER_MAKER_SUBJECTS } from "@/shared/domain/subject-catalog";
+import { findShadowMarker } from "@/features/papers/shadow/domain/marker";
 
 export type DetectedPaperIdentity = {
   subjectKey: PaperMakerSubjectKey;
@@ -65,6 +66,7 @@ export function detectPaperIdentityFromPages(
   pages: Array<{ text: string }>,
   candidateUnits: QuestionUnit[],
 ): DetectedPaperIdentity | null {
+  if (pages.some((page) => findShadowMarker(page.text))) return null;
   const headerText = pages.slice(0, 4).map((page) => page.text).join("\n");
   const normalizedHeader = headerText.toLowerCase();
 

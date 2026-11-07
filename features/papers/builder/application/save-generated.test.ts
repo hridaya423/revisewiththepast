@@ -5,6 +5,7 @@ import type { QuestionUnit } from "@/shared/domain/paper";
 const mocks = vi.hoisted(() => ({
   createSavedPaper: vi.fn(),
   getSavedPaperByImportKey: vi.fn(),
+  claimGenerationReceipt: vi.fn(),
   getMarkableUnitsByUnitKeys: vi.fn(),
   getPaperMakerSubject: vi.fn(),
   upload: vi.fn(),
@@ -13,6 +14,9 @@ const mocks = vi.hoisted(() => ({
 vi.mock("../infrastructure/convex/saved-papers", () => ({
   createSavedPaper: mocks.createSavedPaper,
   getSavedPaperByImportKey: mocks.getSavedPaperByImportKey,
+}));
+vi.mock("../infrastructure/convex/generation-receipts", () => ({
+  claimGenerationReceipt: mocks.claimGenerationReceipt,
 }));
 vi.mock("@/features/papers/infrastructure/paper-maker", () => ({
   getMarkableUnitsByUnitKeys: mocks.getMarkableUnitsByUnitKeys,
@@ -74,9 +78,22 @@ function questionUnit(unitKey: string, questionNumber: string): QuestionUnit {
   };
 }
 
+function generatedPdfFile() {
+  return new File(["%PDF-1.7 fake body"], "paper.pdf", { type: "application/pdf" });
+}
+
 describe("save generated paper", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.claimGenerationReceipt.mockResolvedValue({
+      subjectKey: "aqa-geography",
+      subjectTier: undefined,
+      selectedUnitKeys: ["unit_1", "unit_2"],
+      targetMarks: 8,
+      totalMarks: 8,
+      timeMinutes: 10,
+      questionCount: 2,
+    });
     mocks.getPaperMakerSubject.mockReturnValue({
       key: "aqa-geography",
       label: "AQA Geography",
@@ -98,20 +115,72 @@ describe("save generated paper", () => {
   });
 
   it("returns the existing paper without uploading the same generated PDF again", async () => {
-    mocks.getSavedPaperByImportKey.mockResolvedValue({ _id: "paper_1", pdfUrl: "https://cdn.example/paper.pdf" });
-
-    const result = await saveGeneratedPaper({
+    mocks.claimGenerationReceipt.mockResolvedValue({
       subjectKey: "aqa-geography",
+      subjectTier: undefined,
+      selectedUnitKeys: ["unit_1"],
       targetMarks: 10,
       totalMarks: 10,
       timeMinutes: 15,
-      selectedUnitKeys: ["unit_1"],
-      file: new File(["pdf"], "paper.pdf", { type: "application/pdf" }),
+      questionCount: 1,
+    });
+    mocks.getSavedPaperByImportKey.mockResolvedValue({ _id: "paper_1", pdfUrl: "https://cdn.example/paper.pdf" });
+
+    const result = await saveGeneratedPaper({
+      generationReceiptId: "receipt_1",
+      file: generatedPdfFile(),
     });
 
     expect(result).toEqual({ savedPaperId: "paper_1", pdfUrl: "https://cdn.example/paper.pdf" });
     expect(mocks.upload).not.toHaveBeenCalled();
     expect(mocks.createSavedPaper).not.toHaveBeenCalled();
+  });
+
+  it("rejects files above the size cap before touching storage", async () => {
+    const oversized = new File([new Uint8Array(41 * 1024 * 1024)], "paper.pdf", { type: "application/pdf" });
+
+    await expect(saveGeneratedPaper({ generationReceiptId: "receipt_1", file: oversized })).rejects.toThrowError("limited to 40 MB");
+    expect(mocks.claimGenerationReceipt).not.toHaveBeenCalled();
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
+  it("rejects a non-PDF file renamed to .pdf before claiming the receipt", async () => {
+    const fake = new File(["this is definitely not a pdf"], "paper.pdf", { type: "application/pdf" });
+
+    await expect(saveGeneratedPaper({ generationReceiptId: "receipt_1", file: fake })).rejects.toThrowError("not a valid PDF");
+    expect(mocks.claimGenerationReceipt).not.toHaveBeenCalled();
+    expect(mocks.upload).not.toHaveBeenCalled();
+  });
+
+  it("rejects a file that does not match the generation receipt hash", async () => {
+    mocks.claimGenerationReceipt.mockRejectedValue(new Error("This file was not produced by paper generation."));
+
+    await expect(saveGeneratedPaper({ generationReceiptId: "receipt_1", file: generatedPdfFile() })).rejects.toThrowError("not produced by paper generation");
+    expect(mocks.upload).not.toHaveBeenCalled();
+    expect(mocks.createSavedPaper).not.toHaveBeenCalled();
+  });
+
+  it("derives totalMarks from resolved units, not from the receipt or client", async () => {
+    mocks.claimGenerationReceipt.mockResolvedValue({
+      subjectKey: "aqa-geography",
+      subjectTier: undefined,
+      selectedUnitKeys: ["unit_1", "unit_2"],
+      targetMarks: 999,
+      totalMarks: 999,
+      timeMinutes: 15,
+      questionCount: 2,
+    });
+    mocks.getSavedPaperByImportKey.mockResolvedValue(null);
+    mocks.getMarkableUnitsByUnitKeys.mockResolvedValue([
+      questionUnit("unit_1", "9"),
+      questionUnit("unit_2", "3"),
+    ]);
+    mocks.upload.mockResolvedValue({ id: "upload_1", url: "https://cdn.example/paper.pdf", size: 3, contentType: "application/pdf", createdAt: 0 });
+    mocks.createSavedPaper.mockResolvedValue("paper_1");
+
+    await saveGeneratedPaper({ generationReceiptId: "receipt_1", file: generatedPdfFile() });
+
+    expect(mocks.createSavedPaper).toHaveBeenCalledWith(expect.objectContaining({ totalMarks: 8 }));
   });
 
   it("keeps generated display order separate from source question identity", async () => {
@@ -130,12 +199,8 @@ describe("save generated paper", () => {
     mocks.createSavedPaper.mockResolvedValue("paper_1");
 
     await saveGeneratedPaper({
-      subjectKey: "aqa-geography",
-      targetMarks: 8,
-      totalMarks: 8,
-      timeMinutes: 10,
-      selectedUnitKeys: ["unit_1", "unit_2"],
-      file: new File(["pdf"], "paper.pdf", { type: "application/pdf" }),
+      generationReceiptId: "receipt_1",
+      file: generatedPdfFile(),
     });
 
     expect(mocks.createSavedPaper).toHaveBeenCalledWith(expect.objectContaining({

@@ -152,6 +152,7 @@ async function uploadFile(record: PageAssetRecord): Promise<ManifestRecord> {
 
 async function upsertConvexMetadata(client: ConvexHttpClient, record: ManifestRecord) {
   await client.mutation(api.questionPageAssets.upsertQuestionPageAsset, {
+    serviceSecret: process.env.MCP_SERVICE_SECRET ?? "",
     sourceRelativePath: record.sourceRelativePath,
     assetId: record.assetId,
     pageNumber: record.pageNumber,

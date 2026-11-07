@@ -98,10 +98,11 @@ export const listSavedPapers = query({
     const user = await requireAuthenticatedUser(ctx);
     const savedPapers = await ctx.db
       .query("savedPapers")
-      .withIndex("by_owner", (q) => q.eq("ownerId", String(user._id)))
+      .withIndex("by_owner_updated_at", (q) => q.eq("ownerId", String(user._id)))
+      .order("desc")
       .collect();
 
-    return savedPapers.sort((a, b) => b.updatedAt - a.updatedAt);
+    return savedPapers;
   },
 });
 

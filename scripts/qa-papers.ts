@@ -6,15 +6,15 @@ import { config as loadEnv } from "dotenv";
 loadEnv({ path: resolve(process.cwd(), ".env.local"), override: false, quiet: true });
 loadEnv({ path: resolve(process.cwd(), ".env"), override: false, quiet: true });
 
-import { generateCustomPaper, PaperGenerationError } from "@/features/papers/builder/infrastructure/generation/generate";
+import { generateCustomPaper, PaperGenerationError, type GenerationTimings } from "@/features/papers/builder/infrastructure/generation/generate";
 import type { QuestionMixProfile } from "@/shared/domain/paper";
-import { PAPER_MAKER_SUBJECTS } from "@/shared/domain/subject-catalog";
 import type { SubjectTierKey } from "@/shared/domain/subject";
-import { renderPdfToPngBuffers } from "@/features/papers/infrastructure/pdfjs-server";
 import { assembleMarkSchemePdf } from "@/features/papers/marking/infrastructure/mark-scheme/mark-scheme";
 import { runDeterministicChecks } from "@/features/papers/builder/infrastructure/qa/validate";
 import { checkQuestionLayout } from "@/features/papers/builder/infrastructure/qa/question-layout";
 import { decideQaPaperGate, type QaArtifactValidation } from "./qa-paper-gate";
+import { buildQaPaperMatrix, type QaPaperConfig } from "./qa-paper-matrix";
+import { inspectQaPdfArtifact, invalidQaPdfArtifact } from "./qa-pdf-artifact";
 
 type CliOptions = {
   subject: string;
@@ -39,11 +39,19 @@ type PaperRunReport = {
   configKey: string;
   subjectKey: string;
   subjectTier: SubjectTierKey | null;
+  paperCode: string;
   paperIndex: number;
   seed: number;
   ok: boolean;
   error?: string;
   durationMs: number;
+  generationTimings?: GenerationTimings;
+  postGenerationTimings?: {
+    questionPaperInspectionMs: number;
+    deterministicChecksMs: number;
+    markSchemeAssemblyMs: number;
+    markSchemeInspectionMs: number;
+  };
   pageCount?: number;
   totalMarks?: number;
   resolvedTargetMarks?: number;
@@ -68,31 +76,6 @@ type PriorSelectionState = {
 
 function shouldExcludeWholeSourceQuestion(subjectKey: string) {
   return subjectKey === "aqa-business" || subjectKey === "edexcel-business" || subjectKey === "aqa-english-language";
-}
-
-const invalidArtifact = (byteLength: number): QaArtifactValidation => ({
-  readable: false,
-  byteLength,
-  pageCount: 0,
-  renderedPageCount: 0,
-});
-
-async function validatePdfArtifact(bytes: Uint8Array, scale: number) {
-  if (bytes.byteLength === 0) return { artifact: invalidArtifact(0), rendered: null };
-  try {
-    const rendered = await renderPdfToPngBuffers(bytes, scale);
-    return {
-      artifact: {
-        readable: true,
-        byteLength: bytes.byteLength,
-        pageCount: rendered.document.numPages,
-        renderedPageCount: rendered.pages.length,
-      } satisfies QaArtifactValidation,
-      rendered,
-    };
-  } catch {
-    return { artifact: invalidArtifact(bytes.byteLength), rendered: null };
-  }
 }
 
 function parseCliOptions(argv: string[]): CliOptions {
@@ -134,42 +117,8 @@ function parseCliOptions(argv: string[]): CliOptions {
   return options;
 }
 
-type SubjectRunConfig = {
-  configKey: string;
-  subjectKey: string;
-  subjectTier: SubjectTierKey | null;
-};
-
-function buildSubjectMatrix(subjectFilter: string): SubjectRunConfig[] {
-  const configs: SubjectRunConfig[] = [];
-  for (const subject of PAPER_MAKER_SUBJECTS) {
-    if (!subject.generationEnabled) continue;
-    if (subject.tiers.length > 0) {
-      for (const tier of subject.tiers) {
-        configs.push({
-          configKey: `${subject.key}-${tier.key}`,
-          subjectKey: subject.key,
-          subjectTier: tier.key,
-        });
-      }
-    } else {
-      configs.push({ configKey: subject.key, subjectKey: subject.key, subjectTier: null });
-    }
-  }
-
-  if (subjectFilter === "all") return configs;
-  const filtered = configs.filter(
-    (config) => config.configKey === subjectFilter || config.subjectKey === subjectFilter,
-  );
-  if (filtered.length === 0) {
-    const known = configs.map((config) => config.configKey).join(", ");
-    throw new Error(`Unknown subject "${subjectFilter}". Known configs: ${known}`);
-  }
-  return filtered;
-}
-
 async function runPaper(
-  config: SubjectRunConfig,
+  config: QaPaperConfig,
   paperIndex: number,
   options: CliOptions,
   paperDir: string,
@@ -181,6 +130,7 @@ async function runPaper(
     configKey: config.configKey,
     subjectKey: config.subjectKey,
     subjectTier: config.subjectTier,
+    paperCode: config.paperCode,
     paperIndex,
     seed,
     ok: false,
@@ -197,7 +147,7 @@ async function runPaper(
       targetMarks: options.marks,
       questionMix: options.mix,
       targetMode: "marks",
-      paperCodes: [],
+      paperCodes: [config.paperCode],
       excludeSourceQuestionKeys: priorState.sourceQuestionKeys,
       remainingPaperCount: Math.max(1, options.papers - paperIndex),
       priorSelectedUnitMarks: priorState.unitMarks,
@@ -205,9 +155,18 @@ async function runPaper(
       priorCoveredLeafTopicIds: priorState.coveredLeafTopicIds,
       seed,
     });
+    report.generationTimings = result.timings;
+    report.postGenerationTimings = {
+      questionPaperInspectionMs: 0,
+      deterministicChecksMs: 0,
+      markSchemeAssemblyMs: 0,
+      markSchemeInspectionMs: 0,
+    };
 
     mkdirSync(paperDir, { recursive: true });
-    const questionPaperValidation = await validatePdfArtifact(result.pdfBytes, options.renderScale);
+    let stageStartedAt = performance.now();
+    const questionPaperValidation = await inspectQaPdfArtifact(result.pdfBytes, options.renderScale);
+    report.postGenerationTimings.questionPaperInspectionMs = performance.now() - stageStartedAt;
     report.questionPaperArtifact = questionPaperValidation.artifact;
     if (questionPaperValidation.rendered) {
       writeFileSync(resolve(paperDir, result.fileName), Buffer.from(result.pdfBytes));
@@ -215,12 +174,14 @@ async function runPaper(
         const pageName = `page-${String(page.pageNumber).padStart(2, "0")}.png`;
         writeFileSync(resolve(paperDir, pageName), page.png);
       }
+      stageStartedAt = performance.now();
       const deterministicFindings = await runDeterministicChecks(questionPaperValidation.rendered.pages, questionPaperValidation.rendered.textPages, {
         subjectKey: config.subjectKey,
         totalMarks: result.selection.totalMarks,
         selectedUnitCount: result.selection.selectedUnits.length,
         expectedOrdinalCount: result.selection.selectedUnits.length,
         selectedUnitMarks: result.selection.selectedUnits.map((unit) => unit.totalMarks),
+        candidateUnitMarks: result.selection.candidateUnitMarks,
         coverPage: {
           totalMarks: result.coverPage.totalMarks,
           timeMinutes: result.coverPage.timeMinutes,
@@ -230,10 +191,12 @@ async function runPaper(
       report.findings = [
         ...deterministicFindings,
         ...await checkQuestionLayout(result.pdfBytes, {
+          subjectKey: config.subjectKey,
           selectedUnitCount: result.selection.selectedUnits.length,
           expectedOrdinalCount: result.selection.selectedUnits.length,
         }),
       ];
+      report.postGenerationTimings.deterministicChecksMs = performance.now() - stageStartedAt;
     } else {
       report.findings.push({
         check: "question-paper-artifact",
@@ -249,9 +212,13 @@ async function runPaper(
       });
     }
 
-    let markSchemeArtifact = invalidArtifact(0);
+    let markSchemeArtifact = invalidQaPdfArtifact(0);
     try {
-      const markScheme = await assembleMarkSchemePdf(result.selection.selectedUnits);
+      stageStartedAt = performance.now();
+      const markScheme = await assembleMarkSchemePdf(result.selection.selectedUnits, {
+        revisionPaperCode: result.coverPage.revisionPaperCode,
+      });
+      report.postGenerationTimings.markSchemeAssemblyMs = performance.now() - stageStartedAt;
       report.markSchemeIncludedCount = markScheme.includedCount;
       report.markSchemeFailureCount = markScheme.failures.length;
       if (markScheme.includedCount !== result.selection.selectedUnits.length) {
@@ -269,7 +236,9 @@ async function runPaper(
           message: `${failure.label}: ${failure.error}`,
         });
       }
-      const markSchemeValidation = await validatePdfArtifact(markScheme.bytes, 1);
+      stageStartedAt = performance.now();
+      const markSchemeValidation = await inspectQaPdfArtifact(markScheme.bytes, 1);
+      report.postGenerationTimings.markSchemeInspectionMs = performance.now() - stageStartedAt;
       markSchemeArtifact = markSchemeValidation.artifact;
       if (markSchemeValidation.rendered) {
         writeFileSync(resolve(paperDir, "mark-scheme.pdf"), Buffer.from(markScheme.bytes));
@@ -333,7 +302,7 @@ async function runPaper(
 
 async function main() {
   const options = parseCliOptions(process.argv.slice(2));
-  const configs = buildSubjectMatrix(options.subject);
+  const configs = options.subject.split(",").flatMap((filter) => buildQaPaperMatrix(filter.trim()));
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   const runDir = resolve(process.cwd(), options.out, timestamp);
   mkdirSync(runDir, { recursive: true });

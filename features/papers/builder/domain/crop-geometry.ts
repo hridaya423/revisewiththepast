@@ -40,11 +40,9 @@ export function isValidLocalCropBox(
 }
 
 export function toPdfCropBox(cropBox: LocalCropBox, page: VisiblePageGeometry): LocalCropBox {
-  const local = clampLocalCropBox(cropBox, page.width, page.height);
-  return {
-    left: page.x + local.left,
-    right: page.x + local.right,
-    bottom: page.y + local.bottom,
-    top: page.y + local.top,
-  };
+  const left = Math.max(page.x, Math.min(page.x + page.width, cropBox.left));
+  const right = Math.max(left, Math.min(page.x + page.width, cropBox.right));
+  const bottom = Math.max(page.y, Math.min(page.y + page.height, cropBox.bottom));
+  const top = Math.max(bottom, Math.min(page.y + page.height, cropBox.top));
+  return { left, right, bottom, top };
 }

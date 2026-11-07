@@ -70,7 +70,11 @@ describe("MCP Streamable HTTP integration", () => {
     mocks.formatSubjectsForTool.mockReturnValue("Next tool: get_subject_catalog.");
     mocks.getGenerationSubjectCatalog.mockResolvedValue(catalog);
     mocks.formatSubjectCatalogForTool.mockReturnValue("Next tool: generate_paper_bundle.");
-    mocks.generatePaperBundle.mockResolvedValue(bundle);
+    mocks.generatePaperBundle.mockResolvedValue({
+      output: bundle,
+      paperBytes: new Uint8Array([37, 80, 68, 70]),
+      markSchemeBytes: new Uint8Array([37, 80, 68, 70]),
+    });
     mocks.paperBundleContent.mockReturnValue([
       { type: "text", text: "Generated paper." },
       { type: "resource", resource: { uri: bundle.paper.url, blob: "JVBERg==", mimeType: "application/pdf" } },

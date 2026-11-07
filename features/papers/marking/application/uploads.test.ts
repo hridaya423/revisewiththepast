@@ -4,13 +4,17 @@ const mocks = vi.hoisted(() => ({
   addPage: vi.fn(),
   getPage: vi.fn(),
   upload: vi.fn(),
+  validate: vi.fn(),
+  merge: vi.fn(),
 }));
 
 vi.mock("../infrastructure/convex/commands", () => ({
   addMarkingResponsePageInConvex: mocks.addPage,
   getMarkingResponsePageByUploadKey: mocks.getPage,
+  validateResponsePageTargets: mocks.validate,
+  mergeResponsePageTargets: mocks.merge,
 }));
-vi.mock("@/shared/infrastructure/cdn/hackclub", () => ({ uploadToHackClubCdn: mocks.upload }));
+vi.mock("../infrastructure/private-files", () => ({ uploadPrivateMarkingFile: mocks.upload }));
 
 import { uploadResponsePage } from "./uploads";
 
@@ -20,13 +24,13 @@ describe("response page upload", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("reuses an existing content-addressed upload", async () => {
-    mocks.getPage.mockResolvedValue({ _id: "page_1", sourceImageUrl: "https://cdn.example/page.png" });
+    mocks.getPage.mockResolvedValue({ _id: "page_1", fileId: "privatefile", sourceImageUrl: "/api/marking/files/privatefile" });
 
     await expect(uploadResponsePage({
       submissionId: "submission_1",
       questionKey: "question_1",
       file: new File([PNG_BYTES], "page.png", { type: "image/png" }),
-    })).resolves.toEqual({ pageId: "page_1", imageUrl: "https://cdn.example/page.png" });
+    })).resolves.toEqual({ pageId: "page_1", imageUrl: "/api/marking/files/privatefile" });
 
     expect(mocks.upload).not.toHaveBeenCalled();
     expect(mocks.addPage).not.toHaveBeenCalled();

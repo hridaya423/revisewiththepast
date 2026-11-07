@@ -2,11 +2,13 @@ import { getPdfDocument } from "@/features/papers/infrastructure/pdfjs-server";
 import { PDFDocument } from "pdf-lib";
 import { GENERATED_PAGE } from "../../domain/generated-layout";
 import { getGeneratedPageRole } from "../pdf/page-chrome";
+import { subjectUsesBoxedMarkers } from "../pdf/pdf";
 import type { QaFinding } from "./validate";
 
 export type QuestionLayoutOptions = {
   expectedOrdinalCount?: number;
   selectedUnitCount?: number;
+  subjectKey?: string;
 };
 
 type TextGeometry = {
@@ -84,6 +86,7 @@ export async function checkQuestionLayout(
     PDFDocument.load(pdfBytes),
   ]);
   const roles = roleDocument.getPages().map(getGeneratedPageRole);
+  const boxedOrdinals = options.subjectKey !== undefined && subjectUsesBoxedMarkers(options.subjectKey);
   const candidates: Array<{ value: number; pageNumber: number; geometry: TextGeometry }> = [];
   const findings: QaFinding[] = [];
 
@@ -100,6 +103,46 @@ export async function checkQuestionLayout(
       if (!SOURCE_FURNITURE.test(geometry.text)) continue;
       if (geometry.right <= 0 || geometry.left >= GENERATED_PAGE.contentLeft) continue;
       findings.push(finding(`source warning or furniture "${geometry.text}" occupies the generated number column`, pageNumber));
+    }
+
+    if (boxedOrdinals) {
+      for (const geometry of geometries) {
+        if (!/^\d+$/.test(geometry.text)) continue;
+        if (geometry.x < -20 || geometry.x >= GENERATED_PAGE.contentLeft) continue;
+        findings.push(finding(`source digit "${geometry.text}" occupies the generated number column`, pageNumber));
+      }
+      const markerItems = geometries.filter((geometry) => (
+        /\d/.test(geometry.text)
+        && /^\d[\d.\sa-z]*$/i.test(geometry.text)
+        && geometry.left >= GENERATED_PAGE.contentLeft - 6
+        && geometry.left < GENERATED_PAGE.contentLeft + 200
+        && geometry.height >= 4
+        && geometry.height <= 22
+      ));
+      markerItems.sort((first, second) => first.bottom - second.bottom || first.left - second.left);
+      const clusters: TextGeometry[][] = [];
+      for (const item of markerItems) {
+        const cluster = clusters[clusters.length - 1];
+        const last = cluster?.[cluster.length - 1];
+        if (last && item.bottom < last.top + 2 && item.top > last.bottom - 2) {
+          cluster.push(item);
+        } else {
+          clusters.push([item]);
+        }
+      }
+      if (process.env.PAPER_QA_DEBUG) {
+        console.error("QA DEBUG page", pageNumber, "digits", geometries.filter((g) => /\d/.test(g.text)).map((g) => `${g.text}@${g.left.toFixed(0)},${g.bottom.toFixed(0)} h${g.height.toFixed(1)}`));
+      }
+      for (const cluster of clusters) {
+        cluster.sort((first, second) => first.left - second.left);
+        const digitsOnly = cluster.map((item) => item.text.replace(/\D/g, "")).join("");
+        if (!digitsOnly) continue;
+        const value = Number(digitsOnly.slice(0, 2));
+        if (Number.isSafeInteger(value) && value > 0) {
+          candidates.push({ value, pageNumber, geometry: cluster[0]! });
+        }
+      }
+      continue;
     }
 
     for (const geometry of geometries) {
@@ -130,6 +173,18 @@ export async function checkQuestionLayout(
         findings.push(finding(`ordinal ${value} overlaps content on page ${pageNumber} at (${geometry.x.toFixed(2)}, ${geometry.y.toFixed(2)})`, pageNumber));
       }
     }
+  }
+
+  if (boxedOrdinals) {
+    const found = new Set(candidates.map((candidate) => candidate.value));
+    for (let value = 1; value <= expectedCount; value += 1) {
+      if (!found.has(value)) findings.push(finding(`missing ordinal ${value}`, 0));
+    }
+    for (const candidate of candidates) {
+      if (candidate.value >= 1 && candidate.value <= expectedCount) continue;
+      findings.push(finding(`unexpected ordinal ${candidate.value} at (${candidate.geometry.x.toFixed(2)}, ${candidate.geometry.y.toFixed(2)})`, candidate.pageNumber));
+    }
+    return findings;
   }
 
   const byValue = new Map<number, typeof candidates>();

@@ -47,3 +47,4 @@ data/*
 qa-reports/
 /qa-*/
 /DESIGN.md
+.devin/goal/

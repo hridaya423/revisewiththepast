@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getServerEnvironment } from "@/shared/infrastructure/env/server";
+import { resolveMarkingImageUrl } from "../private-files";
 
 const HACKCLUB_REPLICATE_BASE_URL = "https://ai.hackclub.com/proxy/v1/replicate";
 const DEEPSEEK_OCR_VERSION = "lucataco/deepseek-ocr:cb3b474fbfc56b1664c8c7841550bccecbe7b74c30e45ce938ffca1180b4dff5";
@@ -121,6 +122,7 @@ async function getPrediction(url: string): Promise<ReplicatePrediction> {
 }
 
 async function runReplicateOcr(imageUrl: string, modelVersion: string): Promise<OcrRunResult> {
+  imageUrl = await resolveMarkingImageUrl(imageUrl);
   if (!/^https?:\/\//i.test(imageUrl)) {
     throw new Error("OCR imageUrl must be an absolute http(s) URL");
   }
